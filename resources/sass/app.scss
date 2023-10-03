@@ -1,0 +1,19 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+
+.sideMenu{ float: left; width: 140px; }
+.mainContainer{ float: left; width: calc( 100% - 150px); padding: 10px;}
+
+.nav-item{ padding: 10px 0 0 0; }
+.nav-item:hover{ padding: 10px 0 0 0; }
+.card-body { background-color: #FFF; border-radius: 10px; }
+
+li.nav-item > a > div:hover { color: dodgerblue; }
+li.nav-item > a:hover { color: dodgerblue; }

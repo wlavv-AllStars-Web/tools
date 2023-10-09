@@ -1,19 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-<div>
-    <div class="row justify-content-center">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
+    <div class="navbar navbar-light customPanel">
+        <ul class="listUL">
+            <li class="rowStyling"> <a href="{{route('products.index')}}">      {{ __('messages.Products')}}</a></li>
+        </ul>
     </div>
-</div>
 @endsection

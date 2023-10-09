@@ -20,18 +20,20 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
 <body>
-    <div id="app">
+    <div id="app">                            
         <main>
-            <div class="sideMenu">
-                <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
-                    <div class="container" style="display: inline-block;padding: 0;">
-                        <a class="navbar-brand" href="https://www.allstars-web.com/" target="_blank">
-                            <img src="/admin/images/allstarsweb.gif" style="width: calc(100% - 20px); margin: 10px; @guest display: none; @endif">
-                        </a>
-                        <div class="navbar-collapse" id="navbarSupportedContent">
-                            @guest
-
-                            @else
+            @guest
+                <div style="margin: 60px 0">
+                    @yield('content')
+                </div>
+            @else
+                <div class="sideMenu">
+                    <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+                        <div class="container" style="display: inline-block;padding: 0;">
+                            <a class="navbar-brand" href="https://www.allstars-web.com/" target="_blank">
+                                <img src="/admin/images/allstarsweb.gif" style="width: calc(100% - 20px); margin: 10px; @guest display: none; @endif">
+                            </a>
+                            <div class="navbar-collapse" id="navbarSupportedContent">
                                 <ul class="navbar-nav me-auto margin-auto" style="margin-top: 10px;display: inline-block;">
                                     <li class="nav-item text-center @if(Route::is('dashboard') ) active-link @endif"> 
                                         <a class="nav-link uppercase" href="{{ route('dashboard') }}"> 
@@ -39,44 +41,44 @@
                                             <div style="margin-top:10px;">{{ __('menu.dashboard') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('adminPanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('adminPanels') }}"> 
+                                    <li class="nav-item text-center @if(Route::is('administration') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('administration') }}"> 
                                             <div><i class="fa fa-xl fa-gear" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;">{{ __('menu.admin') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('webmasterPanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('webmasterPanels') }}">
+                                    <li class="nav-item text-center @if(Route::is('webmastering') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('webmastering') }}">
                                             <div><i class="fa fa-xl fa-code" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;"> {{ __('menu.webmaster') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('hrPanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('hrPanels') }}">
+                                    <li class="nav-item text-center @if(Route::is('humanResources') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('humanResources') }}">
                                             <div><i class="fa fa-xl fa-people-arrows" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;"> {{ __('menu.human resources') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('financePanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('financePanels') }}">
+                                    <li class="nav-item text-center @if(Route::is('finances') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('finances') }}">
                                             <div><i class="fa fa-xl fa-chart-line" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;"> {{ __('menu.finance') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('logisticsPanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('logisticsPanels') }}">
+                                    <li class="nav-item text-center @if(Route::is('logistics') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('logistics') }}">
                                             <div><i class="fa fa-xl fa-box" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;"> {{ __('menu.logistics') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('marketingPanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('marketingPanels') }}">
+                                    <li class="nav-item text-center @if(Route::is('marketing') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('marketing') }}">
                                             <div><i class="fa fa-xl fa-bullhorn" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;"> {{ __('menu.marketing') }}</div>
                                         </a> 
                                     </li>
-                                    <li class="nav-item text-center @if(Route::is('customerSuportPanels') ) active-link @endif"> 
-                                        <a class="nav-link uppercase" href="{{ route('customerSuportPanels') }}">
+                                    <li class="nav-item text-center @if(Route::is('customerSuport') ) active-link @endif"> 
+                                        <a class="nav-link uppercase" href="{{ route('customerSuport') }}">
                                             <div><i class="fa fa-xl fa-headset" style="font-size: 30px;"></i></div>
                                             <div style="margin-top:10px;"> {{ __('menu.customer support') }}</div>
                                         </a>
@@ -101,25 +103,20 @@
                                         </div>
                                     </li>
                                 </ul>
-                            @endguest
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+                <div class="mainContainer" style="width: calc( 100% - 140px); float: left;">
+                    <div class="navbar navbar-light shadow-sm" style="background-color: #ededed;border: 1px solid #ddd;">
+                        <div style="display: contents;">
+                            <div style="width: 65%; float: left;">  @include('includes.breadcrumbs') </div>
+                            <div style="width: 35%; float: right;"> @include('includes.actions')     </div>
                         </div>
                     </div>
-                </nav>
-
-
-            </div>
-            <div>
-                <nav class="navbar navbar-expand-md navbar-light shadow-sm" style="background-color: #ddd;">
-                    <div class="container" style="display: inline-block;padding: 0; height: 50px;text-align: center;">
-                        <div class="card-header text-center"><b>{{ Auth::user()->name }}</b>, {{ __('messages.welcome to') }} <b>{{ __('messages.' . Route::currentRouteName()) }}</b></div>
-
-                        </div>
-                    </div>
-                    <div class="mainContainer">
-                        @yield('content')
-                    </div>
-                </nav>
-            </div>
+                    <div style="width: calc(100% - 20px);margin: 0 10px;display: inline-grid;"> @yield('content') </div>
+                </div>
+            @endguest
         </main>
     </div>
 </body>

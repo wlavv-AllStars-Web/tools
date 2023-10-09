@@ -1,15 +1,17 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\ps_bms_procurement_purchase_order;
 
-class ps_supplier extends Model
+class product extends Model
 {
     protected $connection = 'mysql2';
-    public $table = 'ps_supplier';
     use HasFactory;
 
+    public function __construct()
+    {
+        $this->table = env('DB2_prefix')."product";
+    }
 }

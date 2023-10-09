@@ -9,7 +9,6 @@
 
 
 .sideMenu{ float: left; width: 140px; }
-.mainContainer{ float: left; width: calc( 100% - 150px); padding: 10px;}
 
 .nav-item{ padding: 10px 0 0 0; }
 .nav-item:hover{ padding: 10px 0 0 0; }
@@ -17,3 +16,24 @@
 
 li.nav-item > a > div:hover { color: dodgerblue; }
 li.nav-item > a:hover { color: dodgerblue; }
+
+.rowStyling:hover{ background-color: #ddd;}
+
+.btn-action{ border: 1px solid dodgerblue; background-color: dodgerblue;color: #fff; }
+.btn-action:hover{ border: 1px solid dodgerblue; background-color: #0D6EFD; color: #FFF; }
+.btn-dimensions{display: grid; align-items: center; text-transform: uppercase;text-decoration: none;height: 70px;margin: 5px; width: 80px;float: right;padding: 0;}
+
+.customPanel{ background-color: #fff;border: 1px solid #ddd;border-radius: 5px;display:block; padding: 10px;margin-top: 10px; }
+.customInput{ width: 100%; background-color: #f1f1f1; border: 1px solid #ddd; border-radius: 5px;}
+.customInput20{ width: 100%; background-color: #f1f1f1; border: 1px solid #ddd; border-radius: 5px;font-size: 20px;}
+
+.tagLeft{ width: 50%;text-align: right;font-size: 16px; }
+.tagRight{ color: dodgerblue; font-size: 16px;padding: 5px; margin: 5px;text-align: left;font-size: 18px; }
+
+
+
+
+.showInfo{ padding: 5px 0; }
+.text-right{ text-align: right; }
+.text-green{ color: green; }
+.text-red{ color: red; }

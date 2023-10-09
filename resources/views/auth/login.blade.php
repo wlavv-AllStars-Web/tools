@@ -3,12 +3,12 @@
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="card">
-                <div class="card-header" style="@guest display: block;text-align: center;padding: 30px; @endif">
-                <a class="navbar-brand" href="https://www.allstars-web.com/" target="_blank">
-                    <img src="/admin/images/allstarsweb.gif" style="width: 250px">
-                </a>
+                <div class="card-header" style="@guest display: block;text-align: center;padding: 10px; @endif">
+                    <a class="navbar-brand" href="https://www.allstars-web.com/" target="_blank">
+                        <img src="/admin/images/allstarsweb.gif" style="width: 250px">
+                    </a>
                 </div>
 
                 <div class="card-body">

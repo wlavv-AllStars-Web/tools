@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-<div>
+<div class="navbar navbar-light customPanel">
     <ul class="listUL">
         
     </ul>

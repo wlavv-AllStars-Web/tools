@@ -19,14 +19,14 @@ class manufacturersController extends Controller
     
     public function __construct()
     {
-        $this->breadcrumbs[] = [ 'name' =>  trans('Manufacturers'), 'url' => route('manufacturers.index')];
+        $this->breadcrumbs[] = [ 'name' =>  trans('messages.Manufacturers'), 'url' => route('manufacturers.index')];
     }
 
     public function index()
     {
         $manufacturers = manufacturers::get();
         
-        $this->actions[]     = [ 'name' => 'Add manufacturer', 'icon' => '<i class="fa fa-add"></i>', 'url' => '#', 'class' => "btn btn-success"];
+        $this->actions[]     = [ 'name' => trans('messages.Add manufacturer'), 'icon' => '<i class="fa fa-add"></i>', 'url' => '#', 'class' => "btn btn-success"];
 
         $data = [
             'manufacturers'   => $manufacturers,

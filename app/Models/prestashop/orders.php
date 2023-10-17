@@ -20,7 +20,7 @@ class orders extends Model
 
     public static function counterPartialOrders(){
 
-        $data = Orders::select('id_order')->where('current_state', 28)->get();
+        $data = Orders::select('id_order', 'reference')->where('current_state', 28)->get();
 
         return [
             'col'     => 2,

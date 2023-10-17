@@ -47,6 +47,11 @@ li.nav-item > a:hover { color: dodgerblue; }
 .f-right{ float: right; }
 .f-none{  float: none;  }
 
+
+.imagesListing{ float: left;width: 10%;text-align: center;border-radius: 7px; }
+
+.labelContainerRight{ text-align: right; }
+
 @media (max-width: 768px) {
     .sideMenu{ float: left; width: 0px; display: none; }
     #mainMenuMobile{ display: block; }
@@ -62,9 +67,12 @@ li.nav-item > a:hover { color: dodgerblue; }
     .apps_icon_container{ width: 27%; float: left; height: 120px; }
     .logisticsActionLabel{ line-height: 1; }
     #mobileAction{ display: block; }
-    .btn-dimensions{display: flex; align-items: center; text-transform: uppercase;text-decoration: none;height: 40px;margin: 5px 0 0 0; width: 50%;float: right;padding: 10px;}
+    .btn-dimensions{display: flex; align-items: center; text-transform: uppercase;text-decoration: none;height: 40px;margin: 5px 10px 0 0; width: 35px;float: right;padding: 10px;}
     .hide_mobile{display: none; }
 
-    .customPanel{ width: 100%; overflow-x: scroll; }
+   /** .customPanel{ width: 100%; overflow-x: scroll; }**/
+    .imagesListing{ float: left;width: calc( 50% - 20px);text-align: center; height: 150px; display: inline-table; margin: 10px;}
+    .labelContainer{ text-align: right; float: left; font-weight: bolder; width: 150px; }
+    .dataContainer{ text-align: left; float: left; overflow-x: hidden; width: calc( 100% - 150px ); }
 
 }

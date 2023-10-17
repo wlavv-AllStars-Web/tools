@@ -143,7 +143,7 @@
 
                     }   
                 }else{
-                    alert(data.message);
+                    Swal.fire(data.message, '', 'warning')
                     $('#search').prop('value', '');
                 }      
             }
@@ -166,11 +166,8 @@
             if (event.which === 13){
                 stock_entry_quantity = $('#tag_received').val();
 
-                console.log(stock_entry_quantity);
-
                 if( (stock_entry_quantity+1) > $('#tag_ordered').text()){
-                    alert("Quantity higher than expected. Please close current invoice first!");
-
+                    Swal.fire("Quantity higher than expected. Please close current invoice first!", '', 'warning')
                 }else{
                     stock_entry_quantity= Number(stock_entry_quantity) + Number(1);
                     
@@ -224,7 +221,7 @@
             success: function(response) {
 
                 var data = JSON.parse(JSON.stringify(response));
-                alert(data.message);
+                Swal.fire(data.message, '', 'info')
 
                 $('#mainContainer').css('display', 'none');
                 $('#search').prop('value', '');
@@ -244,24 +241,34 @@
 
 
     function updateEAN(){
-        let ean = prompt("Please enter new EAN13");
 
-        $.ajax({
-            type: 'PUT',
-            url: $('#measurementsForm').attr('action'),
-            dataType: "json",
-            data: {
-                _token: "{{ csrf_token() }}",
-                action: 'updateEAN',
-                ean13: ean,
-                reference: $('#referenceMeasurementsForm').val(),
-            },
-            success: function(response) {
+        Swal.fire({
+            title: "EAN-13 UPDATE",
+            text: "Please enter new EAN13",
+            input: 'text',
+            showCancelButton: true        
+        }).then((result) => {
 
-                var data = JSON.parse(JSON.stringify(response));
-                alert(data.message);
-
-            }       
+            console.log(result);
+            if (result.value) {
+                $.ajax({
+                    type: 'PUT',
+                    url: $('#measurementsForm').attr('action'),
+                    dataType: "json",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        action: 'updateEAN',
+                        ean13: result.value,
+                        reference: $('#referenceMeasurementsForm').val(),
+                    },
+                    success: function(response) {
+                        var data = JSON.parse(JSON.stringify(response));
+                        Swal.fire(data.message, '', 'info')
+                    }       
+                });
+            }else{
+                Swal.fire("You have to enter the new EAN-13, please verify!", '', 'warning')
+            }
         });
     }
     
@@ -327,7 +334,6 @@
                     html+= '<div><b>REFERENCE: </b>' + data.reference + '</div>';
                 html+= '</div>';
 
-                console.log(html);
                 $('#containerReportButton').css('display', 'none');
                 $('#containerReportResponse').css('display', 'inline-block').css('width', '100%');
                 document.getElementById('containerReportResponse').innerHTML = html;

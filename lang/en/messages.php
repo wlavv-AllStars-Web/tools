@@ -23,8 +23,10 @@ return [
     'warranty' => 'Warranty',
     'short_description' => 'Short description',
 
+    /** ACTIONS **/
+    'Add' => 'Add',
 
-    
+
     /** Logistics **/
     'Logistics' => 'Logistics',
     'logistics' => 'Logistics',
@@ -115,6 +117,7 @@ return [
     /** Administration **/
 
     'administration' => 'Administration',
+    'administration.index' => 'Administration',
 
     /** Customer Support **/
     'customerSuport' => 'Customer Support',
@@ -123,15 +126,22 @@ return [
     
     /** Webmastering **/
     'webmastering' => 'Webmaster',
+    'web.index' => 'Webmaster',
+    'web' => 'web',
 
     /** Human Resources **/
     'humanResources' => 'Human Resources',
+    'hr.index' => 'Human Resources',
+    'hr' => 'Human Resources',
 
     /** finances **/
-    'finances' => 'finance',
+    'finances' => 'Finance',
+    'finance.index' => 'Finance',
+    'finance' => 'Finance',
 
     /** marketing **/
     'marketing' => 'Marketing',
+    'marketing.index' => 'Marketing',
 
     /** Modules **/
     'modules' => 'Modules',

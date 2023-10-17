@@ -221,6 +221,7 @@ class stockEntryController extends Controller
 
         }
     }
+    
 
     public function listToRemove(){
 

@@ -9,6 +9,7 @@ class product_attribute extends Model
 {
     protected $connection = 'mysql2';
     use HasFactory;
+    public $timestamps = false;
 
     public function __construct()
     {

@@ -19,7 +19,6 @@ class manufacturersController extends Controller
     
     public function __construct()
     {
-        $this->breadcrumbs[] = [ 'name' =>  trans('Logistics'), 'url' => route('logistics')];
         $this->breadcrumbs[] = [ 'name' =>  trans('Manufacturers'), 'url' => route('manufacturers.index')];
     }
 
@@ -27,7 +26,7 @@ class manufacturersController extends Controller
     {
         $manufacturers = manufacturers::get();
         
-        $this->actions[]     = [ 'name' => 'Add manufacturer', 'url' => '#', 'class' => "btn btn-success"];
+        $this->actions[]     = [ 'name' => 'Add manufacturer', 'icon' => '<i class="fa fa-add"></i>', 'url' => '#', 'class' => "btn btn-success"];
 
         $data = [
             'manufacturers'   => $manufacturers,
@@ -56,7 +55,7 @@ class manufacturersController extends Controller
      */
     public function show(string $id)
     {
-        $this->actions[]     = [ 'name' => 'Edit', 'url' => route('manufacturers.edit', $id), 'class' => "btn btn-warning"];
+        $this->actions[]     = [ 'name' => 'Edit', 'icon' => '<i class="fa fa-edit"></i>', 'url' => route('manufacturers.edit', $id), 'class' => "btn btn-warning"];
         $this->breadcrumbs[] = [ 'name' => 'Manufacturers info', 'url' => route('manufacturers.show', $id)];
 
         $manufacturer = manufacturers::with('lang')->where('id_manufacturer', $id)->first();
@@ -76,7 +75,7 @@ class manufacturersController extends Controller
     public function edit(string $id)
     {
  
-        $this->actions[]     = [ 'name' => 'Save', 'url' => "", 'class' => "btn btn-primary", 'onclick' => "$('#manufacturersForm').submit()"];
+        $this->actions[]     = [ 'name' => 'Save', 'icon' => '<i class="fa fa-save"></i>', 'url' => "", 'class' => "btn btn-primary", 'onclick' => "$('#manufacturersForm').submit()"];
         $this->breadcrumbs[] = [ 'name' => 'Manufacturers edit', 'url' => route('manufacturers.store')];
 
         $manufacturer = manufacturers::with('lang')->where('id_manufacturer', $id)->first();

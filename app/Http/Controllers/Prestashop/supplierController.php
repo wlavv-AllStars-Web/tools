@@ -16,7 +16,6 @@ class supplierController extends Controller
     
     public function __construct()
     {
-        $this->breadcrumbs[] = [ 'name' =>  trans('Logistics'), 'url' => route('logistics')];
         $this->breadcrumbs[] = [ 'name' =>  trans('Suppliers'), 'url' => route('suppliers.index')];
     }
 
@@ -24,7 +23,7 @@ class supplierController extends Controller
     {
         $suppliers = suppliers::get();
         
-        $this->actions[]     = [ 'name' => 'Add supplier', 'url' => '#', 'class' => "btn btn-success"];
+        $this->actions[]     = [ 'name' => 'Add supplier', 'icon' => '<i class="fa fa-add"></i>', 'url' => '#', 'class' => "btn btn-success"];
 
         $data = [
             'suppliers'   => $suppliers,
@@ -53,7 +52,7 @@ class supplierController extends Controller
      */
     public function show(string $id)
     {
-        $this->actions[]     = [ 'name' => 'Edit', 'url' => route('suppliers.edit', $id), 'class' => "btn btn-warning"];
+        $this->actions[]     = [ 'name' => 'Edit', 'icon' => '<i class="fa fa-edit"></i>', 'url' => route('suppliers.edit', $id), 'class' => "btn btn-warning"];
         $this->breadcrumbs[] = [ 'name' => 'Supplier info', 'url' => route('suppliers.show', $id)];
 
         $supplier = suppliers::with('lang')->where('id_supplier', $id)->first();
@@ -73,7 +72,7 @@ class supplierController extends Controller
     public function edit(string $id)
     {
  
-        $this->actions[]     = [ 'name' => 'Save', 'url' => "", 'class' => "btn btn-primary", 'onclick' => "$('#suppliersForm').submit()"];
+        $this->actions[]     = [ 'name' => 'Save', 'icon' => '<i class="fa fa-save"></i>', 'url' => "", 'class' => "btn btn-primary", 'onclick' => "$('#suppliersForm').submit()"];
         $this->breadcrumbs[] = [ 'name' => 'Suppliers edit', 'url' => route('suppliers.store')];
 
         $supplier = suppliers::with('lang')->where('id_supplier', $id)->first();

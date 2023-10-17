@@ -11,6 +11,7 @@ class bms_procurement_purchase_order_product extends Model
 {
     protected $connection = 'mysql2';
     use HasFactory;
+    public $timestamps = false;
 
     public function __construct()
     {

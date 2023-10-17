@@ -2,11 +2,19 @@
 
 return [
     'dashboard' => 'Dashboard',
-    'admin' => 'Administration',
-    'webmaster' => 'Webmaster',
+    'admin' => 'Admin',
+    'webmaster' => 'Web',
     'human resources' => 'HR',
     'finance' => 'Finance',
     'logistics' => 'Logistics',
     'marketing' => 'Marketing',
     'customer support' => 'Support',
+    'modules' => 'Modules',
+    
+    /** Mobile **/
+    'menuMobile' => 'MENU',
+    'logout' => 'Logout',
+
+    /** Desktop **/
+
 ];

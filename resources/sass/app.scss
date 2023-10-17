@@ -8,14 +8,22 @@
 @import 'bootstrap/scss/bootstrap';
 
 
+/** app.blade.js **/
 .sideMenu{ float: left; width: 140px; }
-
+.mainContainer{ width: calc( 100% - 140px); float: left; }
+#mainMenuMobile{ display: none; }
+#mobileAction{ display: none; }
+.sideMenuUL{ margin-top: 10px;display: inline-block; }
+.sideMenuText{ margin-top: 10px; }
 .nav-item{ padding: 10px 0 0 0; }
 .nav-item:hover{ padding: 10px 0 0 0; }
-.card-body { background-color: #FFF; border-radius: 10px; }
-
 li.nav-item > a > div:hover { color: dodgerblue; }
 li.nav-item > a:hover { color: dodgerblue; }
+
+
+.card-body { background-color: #FFF; border-radius: 10px; }
+
+
 
 .rowStyling:hover{ background-color: #ddd;}
 
@@ -31,9 +39,32 @@ li.nav-item > a:hover { color: dodgerblue; }
 .tagRight{ color: dodgerblue; font-size: 16px;padding: 5px; margin: 5px;text-align: left;font-size: 18px; }
 
 
-
-
 .showInfo{ padding: 5px 0; }
 .text-right{ text-align: right; }
 .text-green{ color: green; }
 .text-red{ color: red; }
+.f-left{  float: left;  }
+.f-right{ float: right; }
+.f-none{  float: none;  }
+
+@media (max-width: 768px) {
+    .sideMenu{ float: left; width: 0px; display: none; }
+    #mainMenuMobile{ display: block; }
+    .mainContainer{ width: 100%; float: left; }
+    .sideMenuUL{ margin-top: 10px;display: inline-block; width: 70px; }
+    .sideMenuUL >li{ width: 70px; font-size: 14px;}
+    .sideMenuText{ font-size: 10px; }
+    .sideMenuLogo{ display: none; }
+    #mobileMenu{ display: none; }
+    .mobileMenuItem{ width: 25%; float: left; height: 75px; padding: 15px 0; border: 1px solid #ddd; }
+    #desktopAction{ display: none; }
+    #breadcrumbs{ width: 100% !important; }
+    .apps_icon_container{ width: 27%; float: left; height: 120px; }
+    .logisticsActionLabel{ line-height: 1; }
+    #mobileAction{ display: block; }
+    .btn-dimensions{display: flex; align-items: center; text-transform: uppercase;text-decoration: none;height: 40px;margin: 5px 0 0 0; width: 50%;float: right;padding: 10px;}
+    .hide_mobile{display: none; }
+
+    .customPanel{ width: 100%; overflow-x: scroll; }
+
+}

@@ -28,17 +28,24 @@ return [
     /** Logistics **/
     'Logistics' => 'Logistics',
     'logistics' => 'Logistics',
+    'logistics.index' => 'Logistics',
     'Stock entry' => 'Stock Entry',
     'Suppliers' => 'Suppliers',
     'Orders list' => 'Orders list',
-    'bmsProcurement.index' => "List of suppliers with open orders",
-    'bmsProcurement.show' => "List of open orders",
     'Do entry' => 'Add entry',
     'Remove entry' => 'Remove entry',
 
     'stockEntry.show' => 'Stock Entry',
-    'Entry form' => 'Entry form',
+    'Remove entry' => 'Remove entry',
+    'Entry form' => 'Stock Entry form',
+    'Remove stock entry' => 'Remove stock entry',
+    'stockEntry.listToRemove' => 'Last 100 stock entries',
+
     
+    /** SUPPLIERS **/
+    'Dashboard'      => 'Dashboard',
+    'dashboard'      => 'Dashboard',
+    'dashboard.index'=> "Dashboard",
 
     
     /** SUPPLIERS **/
@@ -49,17 +56,17 @@ return [
     'suppliers.edit' => "Edit Supplier's profile",
     'Suppliers edit' => "Edit profile",
     'Add supplier'   => "Add supplier",
-    'Supplier info'  => 'Supplier info',
+    'Supplier info'  => 'Info',
     
     /** Manufacturers **/
     'Manufacturers'      => 'Manufacturers',
     'manufacturers'      => 'Manufacturers',
     'manufacturers.index'=> "Manufacturers's list",
-    'manufacturers.show' => 'Manufacturers info',
+    'manufacturers.show' => 'Info',
     'manufacturers.edit' => "Edit Manufacturers's profile",
     'manufacturers edit' => "Edit profile",
     'Add manufacturer'   => "Add",
-    'Manufacturers info' => "Manufacturers info ",
+    'Manufacturers info' => "Info ",
     'Manufacturers edit' => 'Edit profile',
 
     
@@ -68,7 +75,7 @@ return [
     'Products' => 'Products',
     'products' => 'Products',
     'products.index' => "Products's list",
-    'products.show'  => 'Products info',
+    'products.show'  => 'Info',
     'products.edit'  => "Edit Products's profile",
     'products edit'  => "Edit profile",
     'Add product'    => "Add product",
@@ -77,10 +84,16 @@ return [
     'Customers' => 'Customers',
     'customers' => 'Customers',
     'customers.index' => "Customers's list",
-    'customers.show'  => 'Customers info',
+    'customers.show'  => 'Info',
     'customers.edit'  => "Edit Customers's profile",
     'customers edit'  => "Edit profile",
     'Add customer'    => "Add customer",
+    'customers list'  => "Customers",
+    
+    
+    
+    /** Orders **/
+    'addresses'       => 'Addresses',
     
     
     /** Orders **/
@@ -99,13 +112,57 @@ return [
     'profiles'       => 'Profiles',
     'Carriers'       => 'Carriers',
 
-    'welcome to' => 'welcome to the ',
-    'dashboard' => 'Dashboard',
+    /** Administration **/
+
     'administration' => 'Administration',
-    'webmastering' => 'Webmastering',
-    'humanResources' => 'Human Resources',
-    'finances' => 'Finances',
-    'logistics' => 'Logistics',
-    'marketing' => 'Marketing',
+
+    /** Customer Support **/
     'customerSuport' => 'Customer Support',
+    'customer.index' => 'Customer Support',
+    'customer'       => 'Customer Support',
+    
+    /** Webmastering **/
+    'webmastering' => 'Webmaster',
+
+    /** Human Resources **/
+    'humanResources' => 'Human Resources',
+
+    /** finances **/
+    'finances' => 'finance',
+
+    /** marketing **/
+    'marketing' => 'Marketing',
+
+    /** Modules **/
+    'modules' => 'Modules',
+    'modules.index' => 'Modules list',
+    'bmsProcurement' => 'BMS Procurement',
+    'bmsProcurement.index' => "List of suppliers with open orders",
+    'bmsProcurement.show' => "List of open orders",
+    
+
+    /** swal **/
+
+    /** Stock entry **/
+    'Please confirm the removal of the stock entry!' => 'Please confirm the removal of the stock entry!',
+    'Stock entry removed!' => 'Stock entry removed!',
+    'The stock entry has not been removed!' => 'The stock entry has not been removed!',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+    '' => '',
+
+
 ];

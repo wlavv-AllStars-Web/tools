@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Modules;
+namespace App\Http\Controllers\Modules\bmsProcurement;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -8,14 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
 use App\Models\prestashop\suppliers;
 
-class bmsController extends Controller
+class bmsProcurementPurchaseOrderController extends Controller
 {
     public $actions;
     public $breadcrumbs;
     
     public function __construct()
     {
-        $this->breadcrumbs[] = [ 'name' =>  trans('Logistics'), 'url' => route('logistics')];
+        $this->breadcrumbs[] = [ 'name' =>  trans('Logistics'), 'url' => route('logistics.index')];
         $this->breadcrumbs[] = [ 'name' =>  trans('Stock entry'), 'url' => route('bmsProcurement.index')];
     }
 
@@ -53,16 +53,8 @@ class bmsController extends Controller
         return View::make('areas/logistics/bmsProcurement/entryView')->with($data);
     }
 
-    public function edit(string $id)
-    {
-        //
-    }
-
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
+    public function edit(string $id) { }
+    public function update(Request $request, string $id) { }
     public function create(){ }
     public function store(Request $request){ }
     public function destroy(string $id){ }

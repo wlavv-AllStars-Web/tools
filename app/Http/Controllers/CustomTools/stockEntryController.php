@@ -43,51 +43,89 @@ class stockEntryController extends Controller
 
     public function post(Request $request){ 
 
-        $data_found = 0;
-
         $product = [];
+        $data_found = 0;
+        $nr_open_orders= 0;
+
+        $field = 'wmean13';
         $message = "Product not found!";
-        if($request->action == 'getProductByEAN'){
-            $product = bms_procurement_purchase_order_product::where('wmean13', $request->code)->where('qty_expected', '>', 0)->with('product', 'attribute')->first();
-            if(isset($product->product_id)) $message = "Product found by EAN-13";
-        }elseif($request->action == 'getProductByRef'){
-            $product = bms_procurement_purchase_order_product::where('sku', $request->code)->where('qty_expected', '>', 0)->with('product', 'attribute')->first();
-            if(isset($product->product_id)) $message = "Product found by reference";
+
+        if($request->action == 'getProductByRef') $field = 'sku';
+        
+        $nr_open_orders = bms_procurement_purchase_order_product::where($field, $request->code)->where('qty_expected', '>', 0)->with('product', 'attribute')->count();
+
+        if($nr_open_orders == 1){
+            $product = bms_procurement_purchase_order_product::where($field, $request->code)->where('qty_expected', '>', 0)->with('product', 'attribute')->first();
+            if(isset($product->product_id)) $message = "Product found";
+        }elseif($request->po_id != 0){
+            $product = bms_procurement_purchase_order_product::where($field, $request->code)->where('qty_expected', '>', 0)->where('po_id', $request->po_id)->with('product', 'attribute')->first();
+            if(isset($product->product_id)) $message = "Product found";
+            $nr_open_orders = 1;
         }
         
-        if(isset($product->sku)) $data_found = 1;
-        
-        if($data_found == 1){
+        if($nr_open_orders == 1){
+            if(isset($product->sku)) $data_found = 1;
+            
+            if($data_found == 1){
 
-            $partial      = orders::getParcials($product->sku);
-            $preparations = orders::getPreparations($product->sku);
-            $backorders   = orders::getBackorders($product->sku);
+                $partial      = orders::getParcials($product->sku);
+                $preparations = orders::getPreparations($product->sku);
+                $backorders   = orders::getBackorders($product->sku);
+
+                $openOrder = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $product->po_id)->first();
+
+                return response()->json([
+                    'status' => 'success', 
+                    'order_reference' => $openOrder->reference, 
+                    'product' => $product, 
+                    'partials' => $partial, 
+                    'preparations' => $preparations, 
+                    'backorders' => $backorders, 
+                    'message' => $message,
+                    'selectedOrder' => $nr_open_orders,
+                    'updateRoute' => route('stockEntry.update', $product->product_id)
+                ], 200);
+
+            }else{
+
+                $productInfo = product::where('ean13', $request->code)->first();
+
+                if(isset($productInfo->reference)){
+                    $message =  "No orders open for: " .$productInfo->reference;
+                }else{
+                    $message =  $request->code . " is not related with any product on our database. Please verify!";
+                }
+                
+                return response()->json([
+                    'status' => 'nok', 
+                    'message' => $message,
+                ], 200);
+                
+            }
+
+        }else{
+            $message = "Product found";
+            
+            $openOrders = bms_procurement_purchase_order_product::where($field, $request->code)->where('qty_expected', '>', 0)->with('product', 'attribute')->get();
+           
+            $openOrderHTML='<div style="text-align: center;">';
+
+            foreach($openOrders AS $order){
+
+                $openOrder = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $order->po_id)->first();
+                $openOrderHTML.="<div style='margin-top: 10px;'><button style='width: 200px; margin: 0 auto;' class='btn btn-info' onclick='ajaxCall(\"" . $request->action . "\", " . $openOrder->id_bms_procurement_purchase_order . ")'>" . $openOrder->reference . '</button></div>';
+
+            }
+
+            $openOrderHTML.='</div>';
 
             return response()->json([
                 'status' => 'success', 
-                'product' => $product, 
-                'partials' => $partial, 
-                'preparations' => $preparations, 
-                'backorders' => $backorders, 
-                'message' => $message,
-                'updateRoute' => route('stockEntry.update', $product->product_id)
-            ], 200);
-
-        }else{
-
-            $productInfo = product::where('ean13', $request->code)->first();
-
-            if(isset($productInfo->reference)){
-                $message =  "No orders open for: " .$productInfo->reference;
-            }else{
-                $message =  $request->code . " is not related with any product on our database. Please verify!";
-            }
-            
-            return response()->json([
-                'status' => 'nok', 
+                'selectedOrder' => $nr_open_orders,
+                'open_orders' => $openOrderHTML,
                 'message' => $message,
             ], 200);
-            
+
         }
 
     }
@@ -301,8 +339,11 @@ class stockEntryController extends Controller
             );
         }
 
-        bms_procurement_purchase_order_reception_product::where('reception_id', $id)->delete();
-        bms_procurement_purchase_order_reception::where('id_bms_procurement_purchase_order_reception', $id)->delete();
+        bms_procurement_purchase_order_reception_product::where('reception_id', $id)->update( 
+            [ 
+                'deleted' => 1
+            ] 
+        );
 
         return redirect()->route('stockEntry.listToRemove');
     }

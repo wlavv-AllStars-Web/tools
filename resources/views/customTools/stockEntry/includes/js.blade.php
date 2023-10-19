@@ -17,9 +17,10 @@
 
     let stock_entry_quantity = 0;
 
-    function ajaxCall(type) {
+    function ajaxCall(type, po_id = 0) {
         
         $('#mainContainer').css('display', 'none');
+        $('#entryStockContainer').css('display', 'none');
 
         $.ajax({
             type: 'POST',
@@ -28,120 +29,135 @@
             data: {
                 _token: "{{ csrf_token() }}",
                 action: type,
+                po_id: po_id,
                 code: $('#search').val(),
             },
             success: function(response) {
 
                 var data = JSON.parse(JSON.stringify(response));
 
-                const object = data.product;
-                const partials = data.partials;
-                const backorders = data.backorders;
-                const preparations = data.preparations;
-
                 if(data.status == "success"){
-                    if(data.product.product_id > 0){
-                    
-                        $('#mainContainer').css('display', 'block');
-                        emptyTag = '<span style="color: #666; padding: 5px; border-radius: 5px; margin: 5px;"> - </span>';
-                        $('#mainContainer').css('display', 'inline-block');
-                        $('#mainContainerEmpty').css('display', 'none');
-                        
-                        document.getElementById("tag_product_reference").innerHTML = object.product.reference;
 
-                        
-                        let counter_partials = 0;
-                        let counter_backorders = 0;
-                        let counter_preparations = 0;
-                        
-                        if ( partials !== null )     counter_partials     = partials.length;
-                        if ( backorders !== null )   counter_backorders   = backorders.length;
-                        if ( preparations !== null ) counter_preparations = preparations.length;
-                        
-                        let location = object.product.housing;
-                        let weight   = object.product.weight;
-                        let width    = object.product.width;
-                        let depth    = object.product.depth;
-                        let height   = object.product.height;
-                        let measures = Number(width).toFixed(0) + " X " + Number(height).toFixed(0) + " X " + Number(depth).toFixed(0) + " ( cm ) ";
-                        if(object.product.housing == 'ZZ-ZZ-ZZ') location = object.product.attr_location;
-                        
-                        if(location.length < 1) location = emptyTag;
-                        document.getElementById("tag_weight").innerHTML = Number(weight).toFixed(2) + " Kg";
-                        document.getElementById("tag_measures").innerHTML = measures;
-                        document.getElementById("tag_location").innerHTML = location;
-                        
-                        document.getElementById("span_partial").innerHTML = counter_partials;
-                        document.getElementById("span_backorder").innerHTML = counter_backorders;
-                        document.getElementById("span_preparation").innerHTML = counter_preparations;
-                        
-                        html_partials = '';
-                        html_backorders = '';
-                        html_preparations = '';
-                        
-                        if(counter_partials > 0 ) {
-                            partials.forEach(createPartialsLink);
-                            $("#tr_partials").css('display', 'table-row');
-                            document.getElementById('container_partials').innerHTML = html_partials;
-                        }else{
-                            document.getElementById('container_partials').innerHTML = emptyTag;
-                        }
-                        
-                        if(counter_backorders > 0 ) {
-                            backorders.forEach(createBackordersLink);
-                            $("#tr_backorders").css('display', 'table-row');
-                            document.getElementById('container_backorders').innerHTML = html_backorders;
-                        }else{
-                            document.getElementById('container_backorders').innerHTML = emptyTag;
-                        }
-                        
-                        if(counter_preparations > 0 ) {
-                            preparations.forEach(createPreparationsLink);
-                            $("#tr_preparations").css('display', 'table-row');
-                            document.getElementById('container_preparations').innerHTML = html_preparations;
-                        }else{
-                            document.getElementById('container_preparations').innerHTML = emptyTag;
-                        }
-                        
-                        if(object.is_new === "0"){
-                            $("#span_new").css('display', 'none');
-                            $("#tag_new").css('color', 'red');
-                            document.getElementById("tag_new").innerHTML = "NO";
-                        }else{
-                            $("#span_new").css('display', 'block');
-                            $("#tag_new").css('color', 'darkgreen');
-                            document.getElementById("tag_new").innerHTML = "YES";
-                        }
-                        
-                        if(object.product.dim_verify === 1){
-                            $("#mearues_set").css('display', 'block');
-                            $("#set_measures").css('display', 'none');                        
-                        }else{
-                            $("#mearues_set").css('display', 'none');
-                            $("#set_measures").css('display', 'block'); 
+                    if(data.selectedOrder == 1){
+                                                
+                        const object = data.product;
+                        const partials = data.partials;
+                        const backorders = data.backorders;
+                        const preparations = data.preparations;
 
-                            $('#measurementsForm').prop('action', data.updateRoute);
+                        console.log(object);
+
+                        if(data.product.product_id > 0){
+                        
+                            $('#mainContainer').css('display', 'block');
+                            $('#entryStockContainer').css('display', 'block');
+                            $('#container_select_order').css('display', 'none');
                             
-                        }
+                            emptyTag = '<span style="color: #666; padding: 5px; border-radius: 5px; margin: 5px;"> - </span>';
+                            $('#mainContainer').css('display', 'inline-block');
+                            $('#mainContainerEmpty').css('display', 'none');
+                            
+                            document.getElementById("tag_product_reference").innerHTML = object.product.reference;
+                            document.getElementById("tag_order_reference").innerHTML = data.order_reference;
+                            
+                            let counter_partials = 0;
+                            let counter_backorders = 0;
+                            let counter_preparations = 0;
+                            
+                            if ( partials !== null )     counter_partials     = partials.length;
+                            if ( backorders !== null )   counter_backorders   = backorders.length;
+                            if ( preparations !== null ) counter_preparations = preparations.length;
+                            
+                            let location = object.product.housing;
+                            let weight   = object.product.weight;
+                            let width    = object.product.width;
+                            let depth    = object.product.depth;
+                            let height   = object.product.height;
+                            let measures = Number(width).toFixed(0) + " X " + Number(height).toFixed(0) + " X " + Number(depth).toFixed(0) + " ( cm ) ";
+                            if(object.product.housing == 'ZZ-ZZ-ZZ') location = object.product.attr_location;
+                            
+                            if( location === undefined) location = emptyTag;
 
-                        $('#idProductMeasurementsForm').prop('value', object.product.id_product);
-                        $('#idProductAttributeMeasurementsForm').prop('value', object.product.id_product_attribute);
-                        $('#referenceMeasurementsForm').prop('value', object.product.reference);
-                        $('#id_bms_procurement_purchase_order_product').prop('value', object.id_bms_procurement_purchase_order_product);
-                        
-                        
-                        document.getElementById('tag_ordered').innerHTML    = object.qty_ordered;
-                        document.getElementById('tag_billed').innerHTML     = object.qty_wmfaturado;
-                        document.getElementById('tag_expecting').innerHTML  = object.qty_expected;
-                        $('#tag_received').prop('value', object.qty_received);
+                            document.getElementById("tag_weight").innerHTML = Number(weight).toFixed(2) + " Kg";
+                            document.getElementById("tag_measures").innerHTML = measures;
+                            document.getElementById("tag_location").innerHTML = location;
+                            
+                            document.getElementById("span_partial").innerHTML = counter_partials;
+                            document.getElementById("span_backorder").innerHTML = counter_backorders;
+                            document.getElementById("span_preparation").innerHTML = counter_preparations;
+                            
+                            html_partials = '';
+                            html_backorders = '';
+                            html_preparations = '';
+                            
+                            if(counter_partials > 0 ) {
+                                partials.forEach(createPartialsLink);
+                                $("#tr_partials").css('display', 'table-row');
+                                document.getElementById('container_partials').innerHTML = html_partials;
+                            }else{
+                                document.getElementById('container_partials').innerHTML = emptyTag;
+                            }
+                            
+                            if(counter_backorders > 0 ) {
+                                backorders.forEach(createBackordersLink);
+                                $("#tr_backorders").css('display', 'table-row');
+                                document.getElementById('container_backorders').innerHTML = html_backorders;
+                            }else{
+                                document.getElementById('container_backorders').innerHTML = emptyTag;
+                            }
+                            
+                            if(counter_preparations > 0 ) {
+                                preparations.forEach(createPreparationsLink);
+                                $("#tr_preparations").css('display', 'table-row');
+                                document.getElementById('container_preparations').innerHTML = html_preparations;
+                            }else{
+                                document.getElementById('container_preparations').innerHTML = emptyTag;
+                            }
+                            
+                            if(object.is_new == 0){
+                                $("#span_new").css('display', 'none');
+                                $("#tag_new").css('color', 'red');
+                                document.getElementById("tag_new").innerHTML = "NO";
+                            }else{
+                                $("#span_new").css('display', 'block');
+                                $("#tag_new").css('color', 'darkgreen');
+                                document.getElementById("tag_new").innerHTML = "YES";
+                            }
+                            
+                            if(object.product.dim_verify === 1){
+                                $("#mearues_set").css('display', 'block');
+                                $("#set_measures").css('display', 'none');                        
+                            }else{
+                                $("#mearues_set").css('display', 'none');
+                                $("#set_measures").css('display', 'block'); 
 
-                        $('#stock_entry').focus();
-                        
+                                $('#measurementsForm').prop('action', data.updateRoute);
+                                
+                            }
+
+                            $('#idProductMeasurementsForm').prop('value', object.product.id_product);
+                            $('#idProductAttributeMeasurementsForm').prop('value', object.product.id_product_attribute);
+                            $('#referenceMeasurementsForm').prop('value', object.product.reference);
+                            $('#id_bms_procurement_purchase_order_product').prop('value', object.id_bms_procurement_purchase_order_product);
+                            
+                            
+                            document.getElementById('tag_ordered').innerHTML    = object.qty_ordered;
+                            document.getElementById('tag_billed').innerHTML     = object.qty_wmfaturado;
+                            document.getElementById('tag_expecting').innerHTML  = object.qty_expected;
+                            $('#tag_received').prop('value', object.qty_received);
+
+                            $('#stock_entry').focus();
+                            
+                        }else{
+                            $('#mainContainer').css('display', 'none');
+                            $('#entryStockContainer').css('display', 'none');
+                            $('#mainContainerEmpty').css('display', 'inline-block');
+                        }   
                     }else{
-                        $('#mainContainer').css('display', 'none');
-                        $('#mainContainerEmpty').css('display', 'inline-block');
-
-                    }   
+                        $('#mainContainer').css('display', 'block');
+                        $('#entryStockContainer').css('display', 'none');
+                        document.getElementById('container_select_order').innerHTML    = data.open_orders;
+                    }
                 }else{
                     Swal.fire(data.message, '', 'warning')
                     $('#search').prop('value', '');
@@ -156,7 +172,6 @@
     function createBackordersLink(item){ html_backorders += '<a href="#" style="background-color: #f78e1f; color: #fff; padding: 5px; border-radius: 5px; text-decoration: none;margin: 5px;">' + item['id_order'] + '</a>'; }
     
     function createPreparationsLink(item){ html_preparations += '<a href="#" style="background-color: dodgerblue; color: #fff; padding: 5px; border-radius: 5px; text-decoration: none;margin: 5px;">' + item['id_order'] + '</a>'; }
-
 
     function addQuantity(){
         event.stopPropagation();
@@ -186,21 +201,6 @@
 
     }   
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     function saveStockEntry(){
         
         received = $('#tag_received').val();
@@ -224,21 +224,12 @@
                 Swal.fire(data.message, '', 'info')
 
                 $('#mainContainer').css('display', 'none');
+                $('#entryStockContainer').css('display', 'none');
                 $('#search').prop('value', '');
                 $('#search').focus();
             }       
         });
     }   
-
-
-
-
-
-
-
-
-
-
 
     function updateEAN(){
 
@@ -249,7 +240,6 @@
             showCancelButton: true        
         }).then((result) => {
 
-            console.log(result);
             if (result.value) {
                 $.ajax({
                     type: 'PUT',

@@ -13,7 +13,12 @@
                     <td></td>
                 </tr>
                 @foreach ($entries as $entry)
+
+                    @if ($entry['deleted'] == 1 )
+                    <tr style="border-bottom: 1px solid #ccc;" class="alert alert-danger">
+                    @else
                     <tr style="border-bottom: 1px solid #ccc;background-color: #fff;">
+                    @endif
                         <td class="hide_mobile">{{$entry['po_id']}}</td>
                         <td>{{$entry['reference']}}</td>
                         <td>{{$entry['sku']}}</td>

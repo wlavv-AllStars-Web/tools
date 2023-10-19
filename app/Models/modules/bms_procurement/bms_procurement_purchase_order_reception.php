@@ -22,7 +22,7 @@ class bms_procurement_purchase_order_reception extends Model
     public static function getLastEntries($nrEntries){
 
         $tempData = DB::table(env('DB2_DB_prefix') . 'bms_procurement_purchase_order_reception')
-        ->select('po_id', 'id_bms_procurement_purchase_order_reception', 'reference', 'sku', 'qty', 'firstname', 'lastname')
+        ->select('po_id', 'id_bms_procurement_purchase_order_reception', 'reference', 'sku', 'qty', 'firstname', 'lastname', 'deleted')
         ->join(       env('DB2_DB_prefix') . 'bms_procurement_purchase_order', env('DB2_DB_prefix') . 'bms_procurement_purchase_order_reception.po_id', '=', env('DB2_DB_prefix') . 'bms_procurement_purchase_order.id_bms_procurement_purchase_order')
         ->join(       env('DB2_DB_prefix') . 'bms_procurement_purchase_order_reception_product', env('DB2_DB_prefix') . 'bms_procurement_purchase_order_reception.id_bms_procurement_purchase_order_reception', '=', env('DB2_DB_prefix') . 'bms_procurement_purchase_order_reception_product.reception_id')
         ->join(       env('DB2_DB_prefix') . 'employee', env('DB2_DB_prefix') . 'bms_procurement_purchase_order_reception.employee_id', '=', env('DB2_DB_prefix') . 'employee.id_employee')

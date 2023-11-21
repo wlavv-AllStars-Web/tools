@@ -23,6 +23,7 @@ class customerSupportController extends Controller
             'actions'    => $this->actions,
             'breadcrumbs'=> $this->breadcrumbs,
             'accessList' => [
+                ['name' =>  trans('messages.autoOrders'),'url' => route('autoOrders.index'),'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-packing"></i>'],
                 ['name' =>  trans('messages.customers list'),  'url' => route('customer.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-users"></i>'],
                 ['name' =>  trans('messages.products'),  'url' => route('products.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-stacked"></i>'],
                 ['name' =>  trans('messages.orders'),    'url' => route('orders.index'),    'icon' => '<i style="font-size: 40px;" class="fa-solid fa-truck-fast"></i>'],

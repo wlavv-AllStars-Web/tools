@@ -32,6 +32,7 @@ class stockEntryController extends Controller
 
         $this->breadcrumbs[] = [ 'name' => 'Entry form',   'url' => route('stockEntry.show', $id)];
         $this->actions[]     = [ 'name' => 'Remove entry', 'icon' => '<i class="f-left fa fa-trash"></i>', 'url' => route('stockEntry.listToRemove'), 'class' => "btn btn-danger"];
+        $this->actions[]     = [ 'name' => 'Remove entry', 'icon' => '<i class="f-left fa fa-trash"></i>', 'url' => route('stockEntry.listToRemove'), 'class' => "btn btn-danger"];
 
         $data = [
             'actions'    => $this->actions,
@@ -108,6 +109,31 @@ class stockEntryController extends Controller
             
             $openOrders = bms_procurement_purchase_order_product::where($field, $request->code)->where('qty_expected', '>', 0)->with('product', 'attribute')->get();
            
+            if(count( $openOrders ) < 1){
+                
+                $status = 'NOK';
+                $message = 'No open orders for this product!';
+
+                if($field == 'wmean13'){
+                
+                    $exist_product = product::where('ean13', $request->code)->count() + 0;    
+                    $exist_attr = product_attribute::where('ean13', $request->code)->count() + 0;    
+                    
+                    if( ( $exist_product + $exist_attr ) > 0){
+                        $message = 'No open orders for this product!';
+                    }else{
+                        $message = 'No products with this code!';
+                    }
+                }
+                
+                return response()->json([
+                    'status' => $status, 
+                    'selectedOrder' => 0,
+                    'open_orders' => [],
+                    'message' => $message,
+                ], 200);                
+            }
+            
             $openOrderHTML='<div style="text-align: center;">';
 
             foreach($openOrders AS $order){
@@ -156,16 +182,18 @@ class stockEntryController extends Controller
 
 
         }elseif($request->action == 'saveStockEntry'){
-
+            
             $current = bms_procurement_purchase_order_product::where('id_bms_procurement_purchase_order_product', $request->id_bms_procurement_purchase_order_product)->first();
-
+            
             $quantityToReceive = $request->received - $current->qty_received;
+        
+            $date = date("Y-m-d h:i:s");
 
             //product -> StockArrive ( Descontar QTD arrive )
-            product::where('reference', $request->get('reference'))->update( [ 'stock_arrive' => $quantityToReceive ] );
+            product::where('reference', $request->get('reference'))->decrement( 'stock_arrive',  $quantityToReceive);
 
             //attribute -> StockArrive ( Descontar QTD arrive )
-            product_attribute::where('reference', $request->get('reference'))->update( [ 'stock_arrivepa' => $quantityToReceive ] );
+            product_attribute::where('reference', $request->get('reference'))->decrement( 'stock_arrivepa', $quantityToReceive );
 
             //ps_bms_procurement_purchase_order_product ( atualizar qty_received | qty_expected  )
             bms_procurement_purchase_order_product::where('id_bms_procurement_purchase_order_product', $request->get('id_bms_procurement_purchase_order_product'))->update( 
@@ -175,27 +203,41 @@ class stockEntryController extends Controller
                 ] 
             );
 
-            //ps_bms_procurement_purchase_order_reception ( criar linha  de recepção )
-            $bms_procurement_purchase_order_reception_data = bms_procurement_purchase_order_reception::create(
-                [
-                    'po_id' => $current->po_id,
-                    'date_add' => date("Y-m-d h:i:s"),
-                    'employee_id' => 1,
-                    'products_count' => 0
-                ]
-            );
+            $bms_procurement_purchase_order_reception_data = new bms_procurement_purchase_order_reception;
+            $bms_procurement_purchase_order_reception_data->po_id= $current->po_id;
+            $bms_procurement_purchase_order_reception_data->date_add = $date;
+            $bms_procurement_purchase_order_reception_data->employee_id = 59;
+            $bms_procurement_purchase_order_reception_data->products_count = 0;
+            $bms_procurement_purchase_order_reception_data->save();
+            
+            $save_bms_procurement_purchase_order_reception_product = new bms_procurement_purchase_order_reception_product;
+            $save_bms_procurement_purchase_order_reception_product->reception_id= $bms_procurement_purchase_order_reception_data->id;
+            $save_bms_procurement_purchase_order_reception_product->product_id = $current->product_id;
+            $save_bms_procurement_purchase_order_reception_product->product_attribute_id = $current->product_attribute_id;
+            $save_bms_procurement_purchase_order_reception_product->sku = $current->sku;
+            $save_bms_procurement_purchase_order_reception_product->name = '';
+            $save_bms_procurement_purchase_order_reception_product->qty =$quantityToReceive;
+            $save_bms_procurement_purchase_order_reception_product->save();
+            
+            if($current->product_attribute_id > 0){
+                
+                $products_with_ref = product_attribute::where('reference', $request->get('reference'))->get();
+    
+                foreach($products_with_ref AS $prod){
+                    stock_available::where('id_product', $prod->id_product )->where('id_product_attribute', $prod->id_product_attribute )->increment( 'quantity', $quantityToReceive );
+                }
 
-            //ps_bms_procurement_purchase_order_reception_product ( criar linha  de recepção )
-            bms_procurement_purchase_order_reception_product::create(
-                [
-                    'reception_id' => $bms_procurement_purchase_order_reception_data->id,
-                    'product_id' => $request->get('id_product'),
-                    'product_attribute_id' => $request->get('id_product_attribute'),
-                    'sku' => $request->get('reference'),
-                    'name' => '',
-                    'qty' => $quantityToReceive,
-                ]
-            );
+            }else{
+                
+                $products_with_ref = product::where('reference', $request->get('reference'))->get();
+    
+                foreach($products_with_ref AS $prod){
+                    stock_available::where('id_product', $prod->id_product )->where('id_product_attribute', 0)->increment( 'quantity', $quantityToReceive );
+                }
+                
+            }
+
+            /** stock_available::where('id_product', $current->product_id )->where('id_product_attribute', $current->product_attribute_id )->increment( 'quantity', $quantityToReceive ); **/
 
             $new_current = bms_procurement_purchase_order_product::select( DB::raw('SUM(qty_received) AS received, SUM(qty_ordered) AS ordered, SUM(qty_expected) AS expected'))->where('po_id', $current->po_id)->first();
 
@@ -223,9 +265,9 @@ class stockEntryController extends Controller
 
             $closeMessage = '';
             if($progress > 99){
-                $closeMessage= ' Order will close automatically. ';
+                $closeMessage= ' Order will close automatically. ' . $progress . ' ( (' . $new_current->received . ' / ' . $new_current->expected . ') * 100 )';
             }else{
-                $closeMessage= ' Order reception progress is at ' . number_format($progress) . "%";
+                $closeMessage= ' Order reception progress is at ' . number_format($progress) . "%" . $progress . ' ( (' . $new_current->received . ' / ' . $new_current->expected . ') * 100 )';
             }
 
             return response()->json([
@@ -234,6 +276,9 @@ class stockEntryController extends Controller
             ], 200);
 
         }elseif($request->action == 'updateEAN'){
+            
+            //2000000072968
+            //9999999999999
 
             product::where('reference', $request->get('reference'))->update( [ 'ean13' => $request->get('ean13') ] );
             product_attribute::where('reference', $request->get('reference'))->update( [ 'ean13' => $request->get('ean13') ] );

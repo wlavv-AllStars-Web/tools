@@ -124,6 +124,7 @@ return [
     'customerSuport' => 'Customer Support',
     'customer.index' => 'Customer Support',
     'customer'       => 'Customer Support',
+    'autoOrders'     => 'Auto orders',
     
     /** Webmastering **/
     'webmastering' => 'Webmaster',

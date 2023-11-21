@@ -5,13 +5,13 @@
 
     <div class="navbar navbar-light customPanel" style="max-width: 500px;">
         <div style="display: inline-block;width: 100%;">
-            <div style="width: calc( 100% - 50px ); float: left;">   
+            <div style="width: calc( 100% - 100px ); float: left;">   
                 <input class="customInput20 text-center" type="text" name="search" id="search" placeholder="Insert tag to search"> 
             </div>
             <div style="width: 50px; float: left;text-align: right;padding: 0 10px;"> 
                 <button class="btn btn-dark"><i class="fa-solid fa-barcode" onclick="ajaxCall('getProductByEAN')"></i></button> 
             </div>
-            <div style="width: 50px; float: left;text-align: right;display:none;"> 
+            <div style="width: 50px; float: left;text-align: right;"> 
                 <button class="btn btn-primary"><i class="fa-solid fa-magnifying-glass" onclick="ajaxCall('getProductByRef')"></i></button> 
             </div>
         </div>

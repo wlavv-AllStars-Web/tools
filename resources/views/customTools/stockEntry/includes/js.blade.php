@@ -7,7 +7,14 @@
     });
 
     $(document).keyup(function(event) {
-        if (event.which === 13) ajaxCall('getProductByEAN');
+        
+        /**setTimeout(function(){
+            ajaxCall('getProductByEAN');
+         }, 2000);**/
+     
+        //if (event.which === 13) ajaxCall('getProductByEAN');
+        
+        ajaxCall('getProductByEAN');
     });      
 
 
@@ -57,7 +64,7 @@
                             $('#mainContainer').css('display', 'inline-block');
                             $('#mainContainerEmpty').css('display', 'none');
                             
-                            document.getElementById("tag_product_reference").innerHTML = object.product.reference;
+                            document.getElementById("tag_product_reference").innerHTML = object.sku;
                             document.getElementById("tag_order_reference").innerHTML = data.order_reference;
                             
                             let counter_partials = 0;
@@ -135,9 +142,9 @@
                                 
                             }
 
-                            $('#idProductMeasurementsForm').prop('value', object.product.id_product);
-                            $('#idProductAttributeMeasurementsForm').prop('value', object.product.id_product_attribute);
-                            $('#referenceMeasurementsForm').prop('value', object.product.reference);
+                            $('#idProductMeasurementsForm').prop('value', object.product_id);
+                            $('#idProductAttributeMeasurementsForm').prop('value', object.product_attribute_id);
+                            $('#referenceMeasurementsForm').prop('value', object.sku);
                             $('#id_bms_procurement_purchase_order_product').prop('value', object.id_bms_procurement_purchase_order_product);
                             
                             
@@ -154,9 +161,15 @@
                             $('#mainContainerEmpty').css('display', 'inline-block');
                         }   
                     }else{
+                        
                         $('#mainContainer').css('display', 'block');
                         $('#entryStockContainer').css('display', 'none');
                         document.getElementById('container_select_order').innerHTML    = data.open_orders;
+
+                        if (typeof enhanceWithin === 'function') {
+                            $('#container_select_order').enhanceWithin();
+                        }
+
                     }
                 }else{
                     Swal.fire(data.message, '', 'warning')
@@ -178,10 +191,15 @@
 
         if( $('#search').val() === $('#stock_entry').val()){
 
-            if (event.which === 13){
                 stock_entry_quantity = $('#tag_received').val();
-
-                if( (stock_entry_quantity+1) > $('#tag_ordered').text()){
+                
+                console.log(stock_entry_quantity);
+                console.log($('#tag_ordered').text());
+                console.log(Number($('#tag_ordered').text()));
+                console.log((stock_entry_quantity+1) > $('#tag_ordered').text());
+                
+                let entry = Number(stock_entry_quantity) + Number(1);
+                if( entry > Number($('#tag_billed').text())){
                     Swal.fire("Quantity higher than expected. Please close current invoice first!", '', 'warning')
                 }else{
                     stock_entry_quantity= Number(stock_entry_quantity) + Number(1);
@@ -196,7 +214,7 @@
                     $('#stock_entry').prop('value', '');
                     $('#stock_entry').focus();
                 }
-            }
+            
         }            
 
     }   
@@ -204,7 +222,8 @@
     function saveStockEntry(){
         
         received = $('#tag_received').val();
-
+        
+        if(received > 0){
         $.ajax({
             type: 'PUT',
             url: $('#measurementsForm').attr('action'),
@@ -229,7 +248,10 @@
                 $('#search').focus();
             }       
         });
-    }   
+        }else{
+            Swal.fire("You are trying to do stock entry equal a 0, please verify!", '', 'warning')
+        }
+    }  
 
     function updateEAN(){
 

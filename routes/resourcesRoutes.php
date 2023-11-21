@@ -34,7 +34,7 @@ Route::resources([ 'marketing'      => marketingController::class      ]);
 Route::resources([ 'customer'       => customerSupportController::class]);
 
 /** Controllers **/
-Route::resources([ 'addresses'      => addressesController::class     ]);
+Route::resources([ 'addresses'      => addresseController::class     ]);
 Route::resources([ 'suppliers'      => supplierController::class      ]);
 Route::resources([ 'manufacturers'  => manufacturersController::class ]);
 Route::resources([ 'products'       => productsController::class      ]);

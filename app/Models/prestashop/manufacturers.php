@@ -21,4 +21,9 @@ class manufacturers extends Model
     {
         return $this->hasMany(manufacturers_lang::class, "id_manufacturer", 'id_manufacturer');
     }
+    
+    public static function getManufacturersForSelect()
+    {
+        return self::select('id_manufacturer', 'name')->get();
+    }
 }

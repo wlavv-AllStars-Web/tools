@@ -5,11 +5,11 @@
         <div style="display: table;width: 100%;">
             <table style="width: 100%;background-color: #ddd;border: 1px solid #ccc; text-align: center;">
                 <tr style="border-bottom: 1px solid #ccc;">
-                    <td class="hide_mobile">ID ORDER</td>
-                    <td>ORDER REFERENCE</td>
-                    <td>SKU</td>
-                    <td>QUANTITY</td>
-                    <td class="hide_mobile">OPERATOR</td>
+                    <td class="hide_mobile">{{ __("messages.id_order")}}</td>
+                    <td>{{ __("messages.ORDER REFERENCE")}}</td>
+                    <td>{{ __("messages.SKU")}}</td>
+                    <td>{{ __("messages.QUANTITY")}}</td>
+                    <td class="hide_mobile">{{ __("messages.OPERATOR")}}</td>
                     <td></td>
                 </tr>
                 @foreach ($entries as $entry)

@@ -1,119 +1,141 @@
 @extends('layouts.app')
 
+<style>
+    
+     .custom_title{ text-transform: uppercase; color: dodgerblue; font-weight: bolder; font-size: 40px; }
+     
+</style>
+
+<script>
+    
+    function getShippingReport(){
+    
+        Swal.fire({
+          title: '{{ __("messages.Loading...")}}',
+          html: '{{ __("messages.Please wait a moment")}}'
+        });
+        Swal.showLoading()
+    
+        $.ajax({
+            type: 'POST',
+            url: "{{route('dashboard.shipping_report')}}",
+            dataType: "json",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+    
+                Swal.hideLoading();
+                Swal.close();
+                
+                var data = JSON.parse(JSON.stringify(response));
+                
+                $('#shipping_report').replaceWith(data.html);
+    
+            }       
+        });
+    } 
+    
+    function generateStandCell(){
+        
+        Swal.fire({
+            title: "INSERT CODE",
+            input: "text",
+            inputAttributes: {
+            autocapitalize: "off"
+            },
+            showCancelButton: true,
+            confirmButtonText: "PRINT",
+        }).then((result) => {
+            window.open('https://webtools.all-stars-motorsport.com/barcode/stand/cell/print/' + result.value, '_blank');
+        });
+
+    } 
+
+</script>
+
 @section('content')
 
     <div class="navbar navbar-light customPanel">
-        <div style="display: table;margin: 0 auto;">
-            <div class="apps_icon_container">
-                <div style="text-align: center">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModulePicking&amp;token=dd4d9d04c5ac4935ca7390e1b56b9fd8', '_blank')">
-                        <img src="/admin/icons/picking.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">PICKING</div>
-                    </a>
-                </div>
-            </div>
 
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModule&amp;token=c7e6df2b4c5c998d82da167db8502792', '_blank')">
-                        <img src="/admin/icons/housing.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">HOUSING</div>
-                    </a>
-                </div>
-            </div>
-        
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModuleStocks&amp;token=811de942c3f68b1ffcb91ba0ef7c0229&amp;action=find_housing', '_blank')">
-                        <img src="/admin/icons/iventory.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">INVENTORY</div>
-                    </a>
-                </div>
-            </div>
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModule&amp;token=c7e6df2b4c5c998d82da167db8502792&amp;action=find_housing', '_blank')">
-                        <img src="/admin/icons/find_housing.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">FIND HOUSING</div>
-                    </a>
-                </div>
-            </div>
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                <a href="#" title="Stock Check">
-                        <img src="/admin/icons/stock_check.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">STOCK <br> CHECK</div>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a href="{{ route('stockEntry.show', 1) }}" title="Stock entry">
-                        <img src="/admin/icons/stock.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">STOCK <br> ENTRY</div>
-                    </a>
-                </div>
-            </div>
-                                    
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModuleInventoryTracker&amp;token=c174e56e4b7cf40270cc5957304bb90a', '_blank')">
-                        <img src="/admin/icons/shelf_cleaning.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">SHELF CLEANING</div>
-                    </a>
-                </div>
-            </div>
-                                
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModuleTable&amp;token=77e95209d48fafa9966a1ecf6fa0ae2f&amp;action=check_shippings_web_app', '_blank')">
-                        <img src="/admin/icons/carrier_check.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">CARRIER CHECK</div>
-                    </a>
-                </div>
-            </div>
-        
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModuleTable&amp;token=77e95209d48fafa9966a1ecf6fa0ae2f&amp;action=plataformas_check_web_app', '_blank')">
-                        <img src="/admin/icons/safety_check.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">SAFETY CHECK</div>
-                    </a>
-                </div>
-            </div>
-        
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModuleToDo&amp;token=ffe4561d0ee714d0d6ac7f5663a02251', '_blank')">
-                        <img src="/admin/icons/doit.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">TO DO</div>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="window.open('/admin77500/index.php?controller=AdminWmModuleTable&amp;token=77e95209d48fafa9966a1ecf6fa0ae2f&amp;action=returns_web_app', '_blank')">
-                        <img src="/admin/icons/returns.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">RETURNS</div>
-                    </a>
-                </div>
-            </div>
-
-            <div class="apps_icon_container">
-                <div style="text-align: center;">
-                    <a onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        <img src="/admin/icons/logout.jpg" style="width: 100%;border-radius: 5px;">
-                        <div class="logisticsActionLabel">LOGOUT</div>
-                    </a>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="listUL" style="margin: 0 auto;display: table;">
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('shipping.index') }}" title="IMPORTATIONS">   
+                            <div><i class="fa-solid fa-plane-departure" style="font-size: 40px;"></i></div>
+                            <div>STATS</div>
+                        </a>
+                    </div>
+                    
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('carrierIssues.index') }}" title="ISSUES">   
+                            <div><i class="fa-solid fa-triangle-exclamation" style="font-size: 40px;"></i></div>
+                            <div>{{ __("messages.issues.carrier")}}</div>
+                        </a>
+                    </div>
+                    
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('picking.index') }}" title="PICKING">   
+                            <div><i class="fa-solid fa-warehouse" style="font-size: 40px;"></i></div>
+                            <div>{{ __("messages.PICKING")}}</div>
+                        </a>
+                    </div>
+                    
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('housing.index') }}" title="PICKING">   
+                            <div><i class="fa-solid fa-location-crosshairs" style="font-size: 40px;"></i></div>
+                            <div>{{ __("messages.HOUSING")}}</div>
+                        </a>
+                    </div>
+                    
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('stockEntry.show', 1) }}" title="PICKING">   
+                            <div><i class="fa-solid fa-boxes-stacked" style="font-size: 40px;"></i></div>
+                            <div>ENTRY</div>
+                        </a>
+                    </div>
+                    {{--
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <span onclick="getShippingReport()" title="SHIPPING REPORT">   
+                            <div><i class="fa-solid fa-person-chalkboard" style="font-size: 40px;"></i></div>
+                            <div>SHIPPING</div>
+                        </span>
+                    </div>
+                    --}}
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <span onclick="generateStandCell()" title="GENERATE AND PRINT">   
+                            <div><i class="fa-solid fa-barcode" style="font-size: 40px;"></i></div>
+                            <div>PRINT</div>
+                        </span>
+                    </div>
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('suppliersIssues.index', ['type' => 2]) }}" title="SUPPLIER">   
+                            <div><i class="fa-solid fa-boxes-packing" style="font-size: 40px;"></i></div>
+                            <div style="line-height: 1.2;">Supplier's Delivery</div>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="navbar navbar-light customPanel">
+
+    <div class="row">
+        <div class="col-lg-12" id="shipping_report"> </div>
+    </div>
+    
+    {!! $counters !!}
+    
+    <div class="row">
+        @foreach( $panels AS $panel)
+            @include("areas.dashboard.includes.panels", $panel)
+        @endforeach
+    </div>
+    
+
+    
+    <div class="navbar navbar-light customPanel" style="display: none;">
         <ul class="listUL">
-        {{--<li class="rowStyling"> <a href="{{route('orders.index')}}">        {{ __('messages.Orders')}}</a></li>--}}
             <li class="rowStyling"> <a href="{{route('products.index')}}">      {{ __('messages.Products')}}</a></li>
             <li class="rowStyling"> <a href="{{route('manufacturers.index')}}"> {{ __('messages.Manufacturers')}}</a></li>
             <li class="rowStyling"> <a href="{{route('suppliers.index')}}">     {{ __('messages.Suppliers')}}</a></li>

@@ -1,0 +1,58 @@
+<table id="ordersTable" class="display" style="width:100%;text-align: center;">
+    <thead>
+        <tr style="text-align: center;">
+            <th></th>
+            <th>RETURN</th>
+            <th>ORDER</th>
+            <th>STATUS</th>
+            <th>REFERENCE</th>
+            <th>CUSTOMER</th>
+            <th>REFUND METHOD</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($returns AS $return)
+            <tr>
+                <td style="text-align: center;">
+                    @if($return->order->id_lang == 1) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/en.png" alt="English" width="25" height="20"> @endif
+                    @if($return->order->id_lang == 4) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/es.png" alt="Spanish" width="25" height="20"> @endif
+                    @if($return->order->id_lang == 5) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/fr.png" alt="French"  width="25" height="20"> @endif
+                </td>
+                <td>{{date('d-m-Y', strtotime($return->date_add))}}</td>
+                <td style="cursor: pointer;" onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminOrders&id_order={{$return->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')">{{$return->id_order}}</td>
+                <td>
+                    <button class="open-ajax-modal" style="display: none;" data-route="{{ route('returns.getModal', ['id' => $return->id_order_return]) }}">{{$return->status->lang->name}}</button>
+                    @if( ( $return->state != 3 ) && ( $return->state != 8 ) && ( $return->state != 12 ) && ( $return->state != 13 ) )
+                        <form id="returnStatusForm" class="formSubmit-{{$return->id_order_return}}" method="POST" action="{{ route('returns.changeStatus') }}">
+                            @csrf
+                            <input type="hidden" name="id_order_return" value="{{$return->id_order_return}}" name="id_order_return">
+                            <input type="hidden" name="return_type" value="return" name="return_type">
+                            <select id="returnStatusSelect" name="returnStatusSelect" class="form-select return-status-select" data-id="{{ $return->id_order_return }}" style="text-align: center;color: #FFF;background-color: {{$return->status->color}};">
+                                <option value="11" {{ $return->state=='11' ? 'selected' : '' }}>Return – awaiting delivery</option>
+                                <option value="14" {{ $return->state=='14' ? 'selected' : '' }}>Return – package received</option>
+                                <option value="12" {{ $return->state=='12' ? 'selected' : '' }}>Return – not approved</option>
+                                <option value="13" {{ $return->state=='13' ? 'selected' : '' }}>Return – approved</option>
+                            </select>                
+                        </form>
+                    @else
+                        <div style="text-align: center;color: #FFF;background-color: {{$return->status->color}}; padding: 10px;border-radius: 5px;width: 100%;">
+                            @if( $return->state=='12') Return – not approved @endif
+                            @if( $return->state=='13') Return – approved @endif
+                        </div>
+                    @endif
+                </td>
+                <td>
+                    @foreach($return->details AS $detail)
+                        <div style="height: 28px;"> 
+                            <span style="margin-right: 5px; background-color: dodgerblue; color: #FFF; width: 25px; height: 25px; border-radius: 25px;text-align: center;display: inline-block;"> {{$detail->product_quantity}} </span>
+                            <span>@if(isset($detail->orderDetail)){{$detail->orderDetail->product_reference}}@else ??? @endif</span>
+                        </div>
+                    @endforeach
+                </td>
+                <td style="cursor: pointer;" onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?tab=AdminCustomers&id_customer={{$return->customer->id_customer}}&viewcustomer&token={{Config::get('token')->AdminCustomers}}', '_blank')">{{$return->customer->firstname}} {{$return->customer->lastname}}</td>
+                <td style="text-transform: uppercase;">{{$detail->refund_method}}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+

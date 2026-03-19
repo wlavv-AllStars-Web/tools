@@ -10,11 +10,11 @@ class hrController extends Controller
 {
     public $actions;
     public $breadcrumbs;
-    
+
     public function __construct()
     {
+        $this->middleware('auth');
         $this->breadcrumbs[] = [ 'name' =>  trans('hr'), 'url' => route('hr.index')];
-
     }
 
     public function index()
@@ -36,4 +36,5 @@ class hrController extends Controller
     public function edit(string $id) { }
     public function update(Request $request, string $id) { }
     public function destroy(string $id) { }
+
 }

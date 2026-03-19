@@ -6,6 +6,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 
+use App\Models\prestashop\product;
+use App\Models\prestashop\orders;
+use App\Models\prestashop\issues;
+use App\Models\prestashop\product_lang;
+use App\Models\prestashop\stock_available;
+use App\Models\prestashop\asm_email_alert;
+
 class customerSupportController extends Controller
 {
     public $actions;
@@ -13,6 +20,7 @@ class customerSupportController extends Controller
     
     public function __construct()
     {
+        $this->middleware('auth');
         $this->breadcrumbs[] = [ 'name' =>  trans('customer'), 'url' => route('customer.index')];
 
     }
@@ -20,24 +28,28 @@ class customerSupportController extends Controller
     public function index()
     {
         $data = [
-            'actions'    => $this->actions,
-            'breadcrumbs'=> $this->breadcrumbs,
-            'accessList' => [
-                ['name' =>  trans('messages.customers list'),  'url' => route('customer.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-users"></i>'],
-                ['name' =>  trans('messages.products'),  'url' => route('products.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-stacked"></i>'],
-                ['name' =>  trans('messages.orders'),    'url' => route('orders.index'),    'icon' => '<i style="font-size: 40px;" class="fa-solid fa-truck-fast"></i>'],
-                ['name' =>  trans('messages.suppliers'), 'url' => route('suppliers.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-cart-flatbed"></i>'],
-                ['name' =>  trans('messages.addresses'), 'url' => route('addresses.index'), 'icon' => '<i style="font-size: 40px;" class="fa-regular fa-map"></i>'],
-            ]
+            'counters'      => self::counters(),
+            'panels'        => [],
+            'accessList'    => self::accessList(),
+            'actions'       => $this->actions,
+            'breadcrumbs'   => $this->breadcrumbs
         ];
 
         return View::make('areas/customer/index')->with($data);
     }
 
-    public function create() {}
-    public function store(Request $request) { }
-    public function show(string $id) { }
-    public function edit(string $id) { }
-    public function update(Request $request, string $id) { }
-    public function destroy(string $id) { }
+    private function accessList(){
+        
+        $accessList = array();
+        return $accessList;
+    }
+
+    private function counters(){
+        $counters = array();
+        $counters['warranties']                 = issues::dashboard_warranties('counter');
+        $counters['returns']                    = issues::dashboard_returns('counter');
+        $counters['waiting_info']               = orders::dashboard_waiting_info('counter');
+        return $counters;
+    }
+
 }

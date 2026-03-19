@@ -12,14 +12,14 @@
                 </div>
 
                 <div class="card-body">
-                    <form method="POST" action="{{ route('login') }}">
+                    <form method="POST" id="login_form" action="{{ route('login') }}">
                         @csrf
 
                         <div class="row mb-3">
                             <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
 
                             <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus  onchange="loginWithQRCode()">
 
                                 @error('email')
                                     <span class="invalid-feedback" role="alert">
@@ -57,7 +57,7 @@
 
                         <div class="row mb-0">
                             <div class="col-md-8 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="button" class="btn btn-primary" onclick="submitForm()">
                                     {{ __('Login') }}
                                 </button>
 
@@ -74,4 +74,49 @@
         </div>
     </div>
 </div>
+<script>
+
+    function submitForm(){
+        
+        let qrCodeString = $('#email').val();
+        
+        if ( ( qrCodeString.indexOf('|') > -1 ) || ( qrCodeString.indexOf('^') > -1 ) || ( qrCodeString.indexOf('$') > -1 ) ){
+            loginWithQRCode();
+        }else{
+           $('#login_form').submit(); 
+        }
+
+    }
+    
+    function loginWithQRCode(){
+        
+        let qrCodeString = $('#email').val();
+        
+        if ( qrCodeString.indexOf('@') > -1 ){
+            $('#login_form').submit();
+        }else{
+            
+            let qrCodeArray = splitMulti(qrCodeString, ['||', '^^', '$$'])
+            
+            if(qrCodeArray.length < 2) qrCodeArray = splitMulti(qrCodeString, ['||', '^^', '$$'])
+
+            $('#email').val(qrCodeArray[0] + '@all-stars-motorsport.com');
+            $('#password').val(qrCodeArray[1]);
+            
+            $('#login_form').submit();
+            
+        }
+        
+    }
+
+    function splitMulti(str, tokens){
+        var tempChar = tokens[0]; 
+        for(var i = 1; i < tokens.length; i++){
+            str = str.split(tokens[i]).join(tempChar);
+        }
+        str = str.split(tempChar);
+        return str;
+    }
+</script>
+
 @endsection

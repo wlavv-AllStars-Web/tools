@@ -22,4 +22,8 @@ class country extends Model
     {
         return $this->hasMany(country_lang::class, "id_country", 'id_country');
     }
+
+    public function lang_en(){
+        return $this->hasOne(country_lang::class, "id_country", 'id_country')->where('id_lang', 1);
+    }
 }

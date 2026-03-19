@@ -7,9 +7,8 @@
     });
 
     $(document).keyup(function(event) {
-        if (event.which === 13) ajaxCall('getProductByEAN');
+        ajaxCall('getProductByEAN');
     });      
-
 
     let html_partials = '';
     let html_backorders = '';
@@ -17,7 +16,7 @@
 
     let stock_entry_quantity = 0;
 
-    function ajaxCall(type, po_id = 0) {
+    function ajaxCall(type, po_id = 0, open_orders = 0) {
         
         $('#mainContainer').css('display', 'none');
         $('#entryStockContainer').css('display', 'none');
@@ -45,8 +44,6 @@
                         const backorders = data.backorders;
                         const preparations = data.preparations;
 
-                        console.log(object);
-
                         if(data.product.product_id > 0){
                         
                             $('#mainContainer').css('display', 'block');
@@ -57,7 +54,7 @@
                             $('#mainContainer').css('display', 'inline-block');
                             $('#mainContainerEmpty').css('display', 'none');
                             
-                            document.getElementById("tag_product_reference").innerHTML = object.product.reference;
+                            document.getElementById("tag_product_reference").innerHTML = object.sku;
                             document.getElementById("tag_order_reference").innerHTML = data.order_reference;
                             
                             let counter_partials = 0;
@@ -135,16 +132,27 @@
                                 
                             }
 
-                            $('#idProductMeasurementsForm').prop('value', object.product.id_product);
-                            $('#idProductAttributeMeasurementsForm').prop('value', object.product.id_product_attribute);
-                            $('#referenceMeasurementsForm').prop('value', object.product.reference);
+                            $('#idProductMeasurementsForm').prop('value', object.product_id);
+                            $('#idProductAttributeMeasurementsForm').prop('value', object.product_attribute_id);
+                            $('#referenceMeasurementsForm').prop('value', object.sku);
                             $('#id_bms_procurement_purchase_order_product').prop('value', object.id_bms_procurement_purchase_order_product);
                             
                             
                             document.getElementById('tag_ordered').innerHTML    = object.qty_ordered;
                             document.getElementById('tag_billed').innerHTML     = object.qty_wmfaturado;
-                            document.getElementById('tag_expecting').innerHTML  = object.qty_expected;
                             $('#tag_received').prop('value', object.qty_received);
+
+                            if(open_orders == 1){
+
+                                $('#container_select_order').css('display', 'block');
+
+                                document.getElementById('container_select_order').innerHTML    = '<div><button type="button" class="btn btn-warning" onclick="listOpenOrders()" style="width: 100px;">{{ __("messages.< BACK")}}</button<</div>';
+
+                                if (typeof enhanceWithin === 'function') {
+                                    $('#container_select_order').enhanceWithin();
+                                }
+                        
+                            }
 
                             $('#stock_entry').focus();
                             
@@ -154,9 +162,15 @@
                             $('#mainContainerEmpty').css('display', 'inline-block');
                         }   
                     }else{
+                        
                         $('#mainContainer').css('display', 'block');
                         $('#entryStockContainer').css('display', 'none');
                         document.getElementById('container_select_order').innerHTML    = data.open_orders;
+
+                        if (typeof enhanceWithin === 'function') {
+                            $('#container_select_order').enhanceWithin();
+                        }
+
                     }
                 }else{
                     Swal.fire(data.message, '', 'warning')
@@ -178,10 +192,15 @@
 
         if( $('#search').val() === $('#stock_entry').val()){
 
-            if (event.which === 13){
                 stock_entry_quantity = $('#tag_received').val();
-
-                if( (stock_entry_quantity+1) > $('#tag_ordered').text()){
+                
+                console.log(stock_entry_quantity);
+                console.log($('#tag_ordered').text());
+                console.log(Number($('#tag_ordered').text()));
+                console.log((stock_entry_quantity+1) > $('#tag_ordered').text());
+                
+                let entry = Number(stock_entry_quantity) + Number(1);
+                if( entry > Number($('#tag_billed').text())){
                     Swal.fire("Quantity higher than expected. Please close current invoice first!", '', 'warning')
                 }else{
                     stock_entry_quantity= Number(stock_entry_quantity) + Number(1);
@@ -196,46 +215,60 @@
                     $('#stock_entry').prop('value', '');
                     $('#stock_entry').focus();
                 }
-            }
+            
         }            
 
     }   
     
-    function saveStockEntry(){
+    function saveStockEntry(element){
+        
+        element.css('display', 'none');
         
         received = $('#tag_received').val();
+        
+        if(received > 0){
+            
+            /**
+                1CCVW08F02
+            **/
+    
+            $.ajax({
+                type: 'PUT',
+                url: $('#measurementsForm').attr('action'),
+                dataType: "json",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    action: 'saveStockEntry',
+                    id_product: $('#idProductMeasurementsForm').val(),
+                    id_product_attribute: $('#idProductAttributeMeasurementsForm').val(),
+                    reference: $('#referenceMeasurementsForm').val(),
+                    id_bms_procurement_purchase_order_product: $('#id_bms_procurement_purchase_order_product').val(),
+                    received: received,
+                },
+                success: function(response) {
+    
+                    var data = JSON.parse(JSON.stringify(response));
+                    Swal.fire(data.message, '', 'info')
 
-        $.ajax({
-            type: 'PUT',
-            url: $('#measurementsForm').attr('action'),
-            dataType: "json",
-            data: {
-                _token: "{{ csrf_token() }}",
-                action: 'saveStockEntry',
-                id_product: $('#idProductMeasurementsForm').val(),
-                id_product_attribute: $('#idProductAttributeMeasurementsForm').val(),
-                reference: $('#referenceMeasurementsForm').val(),
-                id_bms_procurement_purchase_order_product: $('#id_bms_procurement_purchase_order_product').val(),
-                received: received,
-            },
-            success: function(response) {
-
-                var data = JSON.parse(JSON.stringify(response));
-                Swal.fire(data.message, '', 'info')
-
-                $('#mainContainer').css('display', 'none');
-                $('#entryStockContainer').css('display', 'none');
-                $('#search').prop('value', '');
-                $('#search').focus();
-            }       
-        });
+                    element.css('display', 'initial');
+    
+                    $('#mainContainer').css('display', 'none');
+                    $('#entryStockContainer').css('display', 'none');
+                    $('#search').prop('value', '');
+                    $('#search').focus();
+                }   
+            });
+            
+        }else{
+            Swal.fire('{{ __("messages.You are trying to do stock entry equal a 0, please verify!")}}', '', 'warning')
+        }
     }   
 
     function updateEAN(){
 
         Swal.fire({
-            title: "EAN-13 UPDATE",
-            text: "Please enter new EAN13",
+            title: "{{ __('messages.EAN-13 UPDATE')}}",
+            text: "{{ __('messages.Please enter new EAN13')}}",
             input: 'text',
             showCancelButton: true        
         }).then((result) => {
@@ -257,7 +290,7 @@
                     }       
                 });
             }else{
-                Swal.fire("You have to enter the new EAN-13, please verify!", '', 'warning')
+                Swal.fire("{{ __('messages.You have to enter the new EAN-13, please verify!')}}", '', 'warning')
             }
         });
     }
@@ -319,9 +352,9 @@
                 html= '<div class="alert alert-success" role="alert">';
                 html+= '<div style="text-align: center;">' + data.response + '</div>';
                 html+= '<hr>';
-                    html+= '<div><b>TITLE: </b>' + data.title + '</div>';
-                    html+= '<div><b>MESSAGE: </b>' + data.message + '</div>';
-                    html+= '<div><b>REFERENCE: </b>' + data.reference + '</div>';
+                    html+= '<div><b>{{ __("messages.TITLE: ")}} </b>' + data.title + '</div>';
+                    html+= '<div><b>{{ __("messages.MESSAGE: ")}} </b>' + data.message + '</div>';
+                    html+= '<div><b>{{ __("messages.REFERENCE: ")}}: </b>' + data.reference + '</div>';
                 html+= '</div>';
 
                 $('#containerReportButton').css('display', 'none');
@@ -356,5 +389,13 @@
 
         });
     }
+    
+    function listOpenOrders(){
+    
+        ajaxCall('getProductByEAN');
+   
+    }
+
+
 
 </script>

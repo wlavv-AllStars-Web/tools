@@ -4,12 +4,12 @@
     <ul class="listUL">
         <li class="rowStyling">
             <div style="display: flex;">
-                <div style="width: 60px;float:left;text-align: center;">ID</div> 
-                <div style="width: 250px;float:left;text-align: center;">REFERENCE</div> 
-                <div style="width: 150px;float:left;text-align: center;">ETA</div>
-                <div style="width: 80px;float:left;text-align: right;">TOTAL</div>
+                <div style="width: 60px;float:left;text-align: center;">{{ __("messages.ID")}}</div> 
+                <div style="width: 250px;float:left;text-align: center;">{{ __("messages.REFERENCE")}}</div> 
+                <div style="width: 150px;float:left;text-align: center;">{{ __("messages.ETA")}}</div>
+                <div style="width: 80px;float:left;text-align: right;">{{ __("messages.TOTAL")}}</div>
                 <div style="width: 20px;float:left;"></div>
-                <div style="width: 600px;float:left;">COMMENTS</div>
+                <div style="width: 600px;float:left;">{{ __("messages.COMMENTS")}}</div>
             </div>
         </li>
         @foreach ($openOrders as $suppliers)
@@ -30,14 +30,14 @@
                 <div id="order_{{ $suppliers->id_bms_procurement_purchase_order }}" style="display: none;background-color: #ddd;">
                     <ul class="listUL" style="display: grid;padding: 10px;">
                         <li class="rowStyling">
-                            <div style="width: 100px;float:left;text-align: center;">NEW</div> 
-                            <div style="width: 150px;float:left;text-align: center;">REFERENCE</div> 
-                            <div style="width: 150px;float:left;text-align: center;">QTY ORDERED</div>
-                            <div style="width: 150px;float:left;text-align: center;">QTY INVOICED</div>
-                            <div style="width: 150px;float:left;text-align: center;">QTY RECEIVED</div>
-                            <div style="width: 150px;float:left;text-align: center;">QTY EXPECTED</div>
-                            <div style="width: 150px;float:left;text-align: center;">INVOICE DATE</div>
-                            <div style="width: 100px;float:left;text-align: center;">PRICE</div>
+                            <div style="width: 100px;float:left;text-align: center;">{{ __("messages.NEW")}}</div> 
+                            <div style="width: 150px;float:left;text-align: center;">{{ __("messages.REFERENCE")}}</div> 
+                            <div style="width: 150px;float:left;text-align: center;">{{ __("messages.QTY ORDERED")}}</div>
+                            <div style="width: 150px;float:left;text-align: center;">{{ __("messages.QTY INVOICED")}}</div>
+                            <div style="width: 150px;float:left;text-align: center;">{{ __("messages.QTY RECEIVED")}}</div>
+                            <div style="width: 150px;float:left;text-align: center;">{{ __("messages.QTY EXPECTED")}}</div>
+                            <div style="width: 150px;float:left;text-align: center;">{{ __("messages.INVOICE DATE")}}</div>
+                            <div style="width: 100px;float:left;text-align: center;">{{ __("messages.PRICE")}}</div>
                         </li>
 
                     @foreach ($suppliers['rows'] as $row)

@@ -20,3 +20,5 @@ yarn-error.log
 
 error_log
 /public/admin/download/*.csv
+
+/public/uploads/

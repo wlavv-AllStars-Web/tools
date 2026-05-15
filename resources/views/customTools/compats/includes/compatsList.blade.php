@@ -19,7 +19,7 @@
                     @foreach($compats AS $compat)
                     <tr onclick="$('.hideRows').css('display', 'none'); $('#editRow_{{$compat->id_compat}}').toggle();" style="text-align: center;">
                         <td>{{$compat->id_compat}}</td>
-                        <td><img src="/images/logos/{{$compat->store}}.png?v1=1" style="width: 60px;padding: 7px 2px;border: 1px solid #ccc; background: #fff;border-radius: 5px 0 0 5px;"></td>
+                        <td><img src="/uploads/logos/{{$compat->store}}.png?v1=1" style="width: 60px;padding: 7px 2px;border: 1px solid #ccc; background: #fff;border-radius: 5px 0 0 5px;"></td>
                         <td>{{$compat->brand->name}}</td>
                         <td>{{$compat->model->name}}</td>
                         <td>{{$compat->type->name}}</td>

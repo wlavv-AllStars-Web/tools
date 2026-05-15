@@ -19,3 +19,6 @@
 # /.vscode
 error_log
 error_log
+
+/vendor
+/node_modules

@@ -143,9 +143,9 @@ class statsController extends Controller
     
     public function kpi()
     {
-        $asd = orders::getCounters(1, self::$expectedEvolution);
+        $asd = orders::getCounters(3, self::$expectedEvolution);
         $asm = orders::getCounters(2, self::$expectedEvolution);
-        $er  = orders::getCounters(3, self::$expectedEvolution);
+        $er  = orders::getCounters(1, self::$expectedEvolution);
         $em  = orders::getCounters(4, self::$expectedEvolution);
     
         $yesterday_forcast  = ($asm->yesterday_forcast  + $asd->yesterday_forcast  + $er->yesterday_forcast  + $em->yesterday_forcast);

@@ -17,3 +17,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+/vendor
+/node_modules
+/storage/logs
+/bootstrap/cache
+.env
+error_log

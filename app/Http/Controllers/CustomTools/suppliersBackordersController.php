@@ -1,0 +1,164 @@
+<?php
+
+namespace App\Http\Controllers\CustomTools;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
+
+use App\Models\prestashop\suppliers;
+
+use App\Models\modules\backorders_list\backorders_list;
+use App\Services\oms\OmsLegacyProcurementService;
+
+class suppliersBackordersController extends Controller
+{
+    public $actions;
+    public $breadcrumbs;
+    
+    public function __construct()
+    {
+        $indexRoute = request()->routeIs('purchase.tools.suppliersBackorders.*')
+            ? 'purchase.tools.suppliersBackorders.index'
+            : (request()->routeIs('backoffice.tools.suppliersBackorders.*') ? 'backoffice.tools.suppliersBackorders.index' : 'suppliersBackorders.index');
+
+        $this->breadcrumbs[] = ['name' => 'purchase', 'url' => route('purchase.index')];
+        $this->breadcrumbs[] = ['name' => trans('messages.suppliersBackorders'), 'url' => route($indexRoute), 'no_translation' => 1];
+    }
+
+    public function index(){
+        
+        $current_year = date('Y');
+        $current_month= date('M');
+        
+        $available_data = backorders_list::checkIfExistData($current_month, $current_year);
+        
+        if($available_data == 0){
+            self::insertData();
+        }
+        
+        $suppliers = backorders_list::getSuppliersBackordersOf($current_month, $current_year);
+        
+        $openOrders = backorders_list::getBackordersOfSupplier($suppliers[0]->id_supplier, $current_month, $current_year);
+        $replied = backorders_list::getSupplierRepliedFromTokenOf($suppliers[0]->id_supplier, $suppliers[0]->token);
+
+        $dataView = [ 
+            'openOrders' => $openOrders, 
+            'token' => $suppliers[0]->token,
+            'reply' => $replied,
+            'quantity_replied' => $suppliers[0]->quantity_replied,
+            'number_of_rows' => $suppliers[0]->number_of_rows,
+            'selected_supplier_name' => $suppliers[0]->supplier,
+            'selected_supplier_id'   => $suppliers[0]->id_supplier
+        ];
+        
+        $supplierBackorder = '';
+        $supplierBackorder = view('customTools.suppliersBackorders.includes.render', compact('dataView'))->render();
+
+        $data = [
+            'suppliers'   => $suppliers,
+            'actions'    => $this->actions,
+            'breadcrumbs'=> $this->breadcrumbs,
+            'supplierBackorder' => $supplierBackorder
+        ];
+
+        return View::make('customTools/suppliersBackorders/index')->with($data);
+    }
+    
+    public function getSuppliersBackorders(Request $request){
+
+        $current_year = date('Y');
+        $current_month= date('M');
+        
+        $supplier = backorders_list::getSupplierBackordersOf($request->id_supplier, $current_month, $current_year);
+        $openOrders = backorders_list::getBackordersOfSupplier($request->id_supplier, $current_month, $current_year);
+        
+        $dataView = [ 
+            'openOrders' => $openOrders, 
+            'reply' => $supplier->reply,
+            'token' => $supplier->token,
+            'quantity_replied' => $supplier->quantity_replied,
+            'number_of_rows' => $supplier->number_of_rows,
+            'selected_supplier_name' => $supplier->supplier,
+            'selected_supplier_id'   => $supplier->id_supplier
+        ];
+        
+        $viewRendered = view('customTools.suppliersBackorders.includes.render', compact('dataView'))->render();
+        return response()->json([ 'html' => $viewRendered ]);
+    }
+
+    public function insertData(){ 
+        
+        $openOrderLines = OmsLegacyProcurementService::openBackorderLinesOlderThan(date("Y-m-d", strtotime("-1 months")));
+
+        foreach($openOrderLines->groupBy('supplier_id') AS $supplierId => $openOrdersOfSupplier){
+
+            $num1 = rand(10000,99999);
+            $num2 = rand(1000,9999);
+            $num3 = rand(100,999);
+            $token = $num1.$num2.$num3;
+
+            $supplier_id = (int) $supplierId;
+            $supplier_name = suppliers::where('id_supplier', $supplier_id)->value('name');
+
+            foreach($openOrdersOfSupplier AS $order_supplier){
+                
+                $order_date = $order_supplier->order_date;
+
+                $data = [
+                    'id_supplier' => $supplier_id,
+                    'supplier' => $supplier_name,
+                    'report_month' => date('M'),
+                    'report_year' => date('Y'),
+                    'order_id' => $order_supplier->order_id,
+                    'order_reference' => $order_supplier->order_reference,
+                    'order_date' => $order_date,
+                    'order_month' => date("M", strtotime($order_date)),
+                    'product_reference' => $order_supplier->product_reference,
+                    'qty_ordered' => $order_supplier->qty_ordered,
+                    'qty_billed' => $order_supplier->qty_billed,
+                    'qty_received' => $order_supplier->qty_received,
+                    'token' => $token
+                ];
+                
+                backorders_list::saveBackordersReport($data);
+            }
+        }
+    }
+
+    public function send_report($id_supplier, $token){
+
+        $supplier = backorders_list::getFirstSupplierBackordersFromTokenOf($id_supplier, $token);
+        $openOrders = backorders_list::getBackordersOfSupplierFromToken($id_supplier, $token);
+        
+        $dataView = [ 
+            'token' => $supplier->token,
+            'openOrders' => $openOrders, 
+            'selected_supplier_name' => $supplier->supplier,
+            'selected_supplier_id'   => $supplier->id_supplier
+        ];
+        
+        $html = view('customTools/suppliersBackorders/email', compact('dataView'))->render();
+        $email = suppliers::where('id_supplier', $supplier->id_supplier)->value('email');
+        $subject = "ALL STARS BACK ORDERS OVERVIEW - " . $supplier->supplier . ' ( ' . date('m-Y') . ' )' . ' - ' . $email;        
+
+        config(['mail.mailers.smtp.username' => config('allstars.mailers.suppliers.username')]);
+        if (config('allstars.mailers.suppliers.password')) {
+            config(['mail.mailers.smtp.password' => config('allstars.mailers.suppliers.password')]);
+        }
+        config(['mail.from.address' => config('allstars.mailers.suppliers.from_address')]);
+        config(['mail.from.name' => config('allstars.mailers.suppliers.from_name')]);
+
+        Mail::html($html, function ($message) use ($email, $subject) {
+            $message->to($email)->subject($subject);
+        });
+    }
+
+    public function create(){ }
+    public function store(Request $request){ }
+    public function show(string $id){ }
+    public function edit(string $id){ }
+    public function update(Request $request, string $id){ }
+    public function destroy(string $id){ }
+}

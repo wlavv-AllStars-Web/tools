@@ -231,7 +231,7 @@ class shippingController extends Controller
             ->groupBy(
                 DB::raw('COALESCE(pa.reference, p.reference, "")'),
                 DB::raw('COALESCE(pl.name, "")'),
-                'p.nc',
+                'cp.nc',
                 'p.weight',
                 'p.depth',
                 'p.width',
@@ -246,7 +246,7 @@ class shippingController extends Controller
             ->select([
                 DB::raw('COALESCE(pa.reference, p.reference, "") as referencia'),
                 DB::raw('COALESCE(pl.name, "") as name'),
-                DB::raw('p.nc as hs_code'),
+                DB::raw('cp.nc as hs_code'),
                 DB::raw("COALESCE(cpa.wholesale_price_base_currency, pa.wholesale_price, cp.wholesale_price_base_currency, p.wholesale_price, 0) AS wholesale_price"),
                 'p.weight',
                 DB::raw('p.depth as comprimento'),

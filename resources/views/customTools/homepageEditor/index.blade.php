@@ -45,7 +45,7 @@
     $isMobile = ($mode ?? 'desktop') === 'mobile';
     $activeLang = $lang ?? 'en';
     $imageColumn = $imageColumn ?? ('image_' . $activeLang);
-    $mockBase = $isMobile ? '/images/homepage/mock/mobile' : '/images/homepage/mock/desktop';
+    $mockBase = $isMobile ? '/homepage/images/homepage/mock/mobile' : '/homepage/images/homepage/mock/desktop';
     $slotImage = function ($item, $fallback = null) use ($imageColumn, $mockBase) {
         return config('allstars.services.resources.base_url') . $item->{$imageColumn};
     };

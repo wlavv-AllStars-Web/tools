@@ -280,19 +280,19 @@ class HomepageAdminController extends Controller
         $mode = $mode === 'mobile' ? 'mobile' : 'desktop';
         $lang = $this->normalizeLang($lang);
 
-        $localized = public_path("homepage/mock/{$mode}/{$zone}_{$lang}.png");
+        $localized = public_path("uploads/homepage/mock/{$mode}/{$zone}_{$lang}.png");
 
         if (file_exists($localized)) {
-            return "/homepage/mock/{$mode}/{$zone}_{$lang}.png";
+            return "/uploads/homepage/mock/{$mode}/{$zone}_{$lang}.png";
         }
 
-        $fallback = public_path("homepage/mock/{$mode}/{$zone}_en.png");
+        $fallback = public_path("uploads/homepage/mock/{$mode}/{$zone}_en.png");
 
         if (file_exists($fallback)) {
-            return "/homepage/mock/{$mode}/{$zone}_en.png";
+            return "/uploads/homepage/mock/{$mode}/{$zone}_en.png";
         }
 
-        return "/homepage/mock/{$mode}/{$zone}_{$lang}.png";
+        return "/uploads/homepage/mock/{$mode}/{$zone}_{$lang}.png";
     }
 
     private function hasPendingChanges(): bool

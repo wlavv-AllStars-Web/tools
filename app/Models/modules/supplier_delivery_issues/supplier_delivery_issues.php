@@ -2,6 +2,7 @@
 
 namespace App\Models\modules\supplier_delivery_issues;
 
+use App\Models\prestashop\suppliers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,9 +15,17 @@ class supplier_delivery_issues extends Model
         return $this->hasOne(suppliers::class, "id_supplier", 'id_supplier'); 
     }
 
+    private static function prestashopTable(string $table): string
+    {
+        $prefix = (string) (env('DB2_DB_prefix') ?: env('DB2_prefix') ?: 'ps_');
+        $prefix = str_contains($prefix, '.') ? $prefix : config('database.connections.mysql2.database') . '.' . $prefix;
+
+        return $prefix . $table;
+    }
+
     public static function getAllActive( ){ 
         
-        $supplierTable = env('DB2_DB_prefix', env('DB2_prefix', 'ps_')) . 'supplier';
+        $supplierTable = self::prestashopTable('supplier');
         $suppliers = supplier_delivery_issues::select('supplier_delivery_issues.id_supplier', 's.name')
             ->join($supplierTable . ' as s', 's.id_supplier', '=', 'supplier_delivery_issues.id_supplier')
             ->groupBy('supplier_delivery_issues.id_supplier', 's.name')

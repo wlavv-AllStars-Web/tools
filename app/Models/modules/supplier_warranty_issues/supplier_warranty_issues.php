@@ -20,6 +20,14 @@ use HasFactory;
     public function supplier(){
         return $this->hasOne(suppliers::class, "id_supplier", 'id_supplier'); 
     }
+
+    private static function prestashopTable(string $table): string
+    {
+        $prefix = (string) (env('DB2_DB_prefix') ?: env('DB2_prefix') ?: 'ps_');
+        $prefix = str_contains($prefix, '.') ? $prefix : config('database.connections.mysql2.database') . '.' . $prefix;
+
+        return $prefix . $table;
+    }
 /**
     public static function getAllActive( ){ 
         return supplier_warranty_issues::where('closed', '=', 0)->get();
@@ -27,7 +35,7 @@ use HasFactory;
 **/
     public static function getAllActive( ){ 
         
-        $supplierTable = env('DB2_DB_prefix', env('DB2_prefix', 'ps_')) . 'supplier';
+        $supplierTable = self::prestashopTable('supplier');
         $suppliers = supplier_warranty_issues::select('supplier_warranty_issues.id_supplier', 's.name')
             ->join($supplierTable . ' as s', 's.id_supplier', '=', 'supplier_warranty_issues.id_supplier')
             ->groupBy('supplier_warranty_issues.id_supplier', 's.name')

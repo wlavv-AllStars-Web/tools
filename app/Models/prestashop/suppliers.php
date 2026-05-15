@@ -3,24 +3,38 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use App\Models\prestashop\suppliers_lang;
 
-class suppliers extends Model
+class suppliers extends PrestashopModel
 {
-    protected $connection = 'mysql2';
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
+    protected $primaryKey = 'id_supplier';
+    protected $fillable = ['name'];
+
+    public function __construct(array $attributes = [])
     {
-        $this->table = env('DB2_prefix')."supplier";
+        parent::__construct($attributes);
+        $this->table = self::tableName('supplier');
     }
     
     public function lang()
     {
-        return $this->hasMany(suppliers_lang::class, "id_supplier", 'id_supplier');
+        return $this->hasMany(suppliers_lang::class, 'id_supplier', 'id_supplier');
+    }
+    
+    public function lang_en()
+    {
+        return $this->hasOne(suppliers_lang::class, 'id_supplier', 'id_supplier')
+            ->where('id_lang', 1);
+    }
+    
+    public function address()
+    {
+        return $this->hasOne(address::class, 'id_supplier', 'id_supplier');
     }
 
+    public function products()
+    {
+        return $this->hasMany(product::class, 'id_supplier', 'id_supplier');
+    }
 }

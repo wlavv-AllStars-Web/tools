@@ -5,78 +5,94 @@
         </a>
         <div class="navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto margin-auto sideMenuUL">
-                <li class="nav-item text-center @if(Route::is('dashboard.index') ) active-link @endif"> 
+                <li class="nav-item text-center @if(Route::is('dashboard.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('dashboard.index') }}"> 
-                        <div><i class="fa fa-xl fa-dashboard" style="font-size: 30px;"></i></div>
+                        <div><i class="fa-solid fa-chart-pie" style="font-size: 30px;"></i></div>
                         <div class="sideMenuText">{{ __('menu.dashboard') }}</div>
                     </a> 
                 </li>
-                <li class="nav-item text-center @if(Route::is('administration.index') ) active-link @endif"> 
-                    <a class="nav-link uppercase" href="{{ route('administration.index') }}"> 
-                        <div><i class="fa fa-xl fa-gear" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText">{{ __('menu.admin') }}</div>
-                    </a> 
-                </li>
-                <li class="nav-item text-center @if(Route::is('web.index') ) active-link @endif"> 
+                @if( ( Auth::id() == 2 ) || ( Auth::id() == 43 ) )
+                <li class="nav-item text-center @if(Route::is('web.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('web.index') }}">
-                        <div><i class="fa fa-xl fa-code" style="font-size: 30px;"></i></div>
+                        <div><i class="fa-solid fa-code" style="font-size: 30px;"></i></div>
                         <div class="sideMenuText"> {{ __('menu.webmaster') }}</div>
                     </a> 
                 </li>
-                <li class="nav-item text-center @if(Route::is('hr.index') ) active-link @endif"> 
-                    <a class="nav-link uppercase" href="{{ route('hr.index') }}">
-                        <div><i class="fa fa-xl fa-people-arrows" style="font-size: 30px;"></i></div>
-                        <div  class="sideMenuText"> {{ __('menu.human resources') }}</div>
+                @endif
+                <li class="nav-item text-center @if(Route::is('administration.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
+                    <a class="nav-link uppercase" href="{{ route('administration.index') }}">
+                        <div><i class="fa-solid fa-people-roof" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> {{ __('menu.admin') }}</div>
                     </a> 
                 </li>
-                <li class="nav-item text-center @if(Route::is('finance.index') ) active-link @endif"> 
+                <li class="nav-item text-center @if(Route::is('finance.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('finance.index') }}">
-                        <div><i class="fa fa-xl fa-chart-line" style="font-size: 30px;"></i></div>
+                        <div><i class="fa-solid fa-chart-line" style="font-size: 30px;"></i></div>
                         <div class="sideMenuText"> {{ __('menu.finance') }}</div>
                     </a> 
                 </li>
-                <li class="nav-item text-center @if(Route::is('logistics.index') ) active-link @endif"> 
+                <li class="nav-item text-center @if(Route::is('logistics.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('logistics.index') }}">
-                        <div><i class="fa fa-xl fa-box" style="font-size: 30px;"></i></div>
+                        <div><i class="fa-solid fa-box" style="font-size: 30px;"></i></div>
                         <div class="sideMenuText"> {{ __('menu.logistics') }}</div>
                     </a> 
                 </li>
-                <li class="nav-item text-center @if(Route::is('marketing.index') ) active-link @endif"> 
+                <li class="nav-item text-center @if(Route::is('marketing.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('marketing.index') }}">
-                        <div><i class="fa fa-xl fa-bullhorn" style="font-size: 30px;"></i></div>
+                        <div><i class="fa-solid fa-bullhorn" style="font-size: 30px;"></i></div>
                         <div class="sideMenuText"> {{ __('menu.marketing') }}</div>
                     </a> 
                 </li>
-                <li class="nav-item text-center @if(Route::is('customer.index') ) active-link @endif"> 
-                    <a class="nav-link uppercase" href="{{ route('customer.index') }}">
-                        <div><i class="fa fa-xl fa-headset" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('menu.customer support') }}</div>
+                <li class="nav-item text-center @if(Route::is('purchase.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
+                    <a class="nav-link uppercase" href="{{ route('purchase.index') }}">
+                        <div><i class="fa-solid fa-dollar-sign" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> BACKOFFICE </div>
                     </a>
                 </li>
-                <li class="nav-item text-center @if(Route::is('modules') ) active-link @endif"> 
-                    <a class="nav-link uppercase" href="{{ route('modules.index') }}">
-                        <div><i class="fa fa-xl fa-boxes-packing" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('menu.modules') }}</div>
+                <li class="nav-item text-center @if(Route::is('sales.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
+                    <a class="nav-link uppercase" href="{{ route('sales.index') }}">
+                        <div><i class="fa-solid fa-comments-dollar" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> FRONTOFFICE </div>
                     </a>
                 </li>
+                
+                <li class="nav-item text-center @if(Route::is('data.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
+                    <a class="nav-link uppercase" href="{{ route('data.index') }}">
+                        <div><i class="fa-solid fa-database" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> {{ __('menu.data') }}</div>
+                    </a> 
+                </li>
 
-                <li class="nav-item dropdown">
-                    <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                        <div><i class="fa fa-xl fa-user" style="font-size: 30px;color: dodgerblue"></i></div>
-                        <div class="sideMenuText"> {{ Auth::user()->name }}</div>
-                    </a>
-
-                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="{{ route('logout') }}"
-                        onclick="event.preventDefault();
-                                        document.getElementById('logout-form').submit();">
-                            {{ __('Logout') }}
+                <li class="nav-item text-center @if(Route::is('checklist.index') || Route::is('checklist.today')) active-link @endif" style="display: inline-block;height: unset !important;"> 
+                    @if(auth()->user()->id == 59 || auth()->user()->id == 94 || auth()->user()->id == 43)
+                
+                        <a class="nav-link uppercase" data-bs-toggle="collapse" href="#collapseChecklist" role="button" aria-expanded="false" aria-controls="collapseChecklist">
+                            <div><i class="fa-solid fa-list" style="font-size:30px;"></i></div>
+                            <div class="sideMenuText">{{ __('messages.Checklist') }}</div>
                         </a>
-
-                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                            @csrf
-                        </form>
-                    </div>
+                        <div class="collapse bg-secondary" id="collapseChecklist">
+                            <a class="nav-link uppercase text-white" href="{{ route('checklist.index') }}">
+                                <div><i class="fa-solid fa-clipboard-list" style="font-size:22px;"></i></div>
+                                <div class="sideMenuText"> {{ __('messages.Checklist Manager') }}</div>
+                            </a>
+                            <a class="nav-link uppercase text-white" href="{{ route('checklist.today') }}">
+                                <div><i class="fa-solid fa-list-check" style="font-size: 22px;"></i></div>
+                                <div class="sideMenuText"> {{ __('messages.Checklist') }}</div>
+                            </a>
+                        </div>
+                    @else
+                        <a class="nav-link uppercase" href="{{ route('checklist.today') }}">
+                            <div><i class="fa-solid fa-clipboard-list" style="font-size:30px;"></i></div>
+                            <div class="sideMenuText"> {{ __('messages.Checklist') }}</div>
+                        </a>
+                    @endif
+                    
+                </li>
+                <li class="nav-item text-center @if(Route::is('documentsManager.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
+                    <a class="nav-link uppercase" href="{{ route('documentsManager.index') }}">
+                        <div><i class="fa-solid fa-folder" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> {{ __('messages.Documents Manager') }}</div>
+                    </a>
                 </li>
             </ul>
         </div>

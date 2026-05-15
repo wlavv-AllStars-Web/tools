@@ -15,7 +15,8 @@ class Controller extends BaseController
 
     public function __construct() 
     {
-        $this->defaultLang = 5;
+        $this->defaultLang = 1;
         Config::set('defaultLang', $this->defaultLang);
+
     }
 }

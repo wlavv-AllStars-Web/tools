@@ -98,6 +98,13 @@ return [
 
     'fallback_locale' => 'en',
 
+    'available_locales' => [
+        'English' => 'en',
+        'Spanish' => 'es',
+        'French' => 'fr',
+        'Português' => 'pt',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Faker Locale
@@ -168,6 +175,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        Milon\Barcode\BarcodeServiceProvider::class,
     ])->toArray(),
 
     /*
@@ -182,6 +190,9 @@ return [
     */
 
     'aliases' => Facade::defaultAliases()->merge([
+        
+        'DNS1D' => Milon\Barcode\Facades\DNS1DFacade::class,
+        'DNS2D' => Milon\Barcode\Facades\DNS2DFacade::class,
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 

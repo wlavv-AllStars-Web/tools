@@ -2,38 +2,29 @@
 
 namespace App\Http\Controllers\Areas;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
+use App\Models\modules\dashboard\dashboard;
 
 class logisticsController extends Controller
 {
-    public $actions;
-    public $breadcrumbs;
+    public $actions = [];
+    public $breadcrumbs = [];
     
-    public function __construct()
-    {
+    public function __construct(){
+        $this->middleware('auth');
         $this->breadcrumbs[] = [ 'name' =>  trans('Logistics'), 'url' => route('logistics.index')];
-
     }
 
-    public function index()
-    {
+    public function index(){
         $data = [
-            'actions'    => $this->actions,
-            'breadcrumbs'=> $this->breadcrumbs,
-            'accessList' => [
-                ['name' =>  trans('Logistics'), 'url' => route('logistics.index')],
-            ]
+            'counters'      => dashboard::calculateAndGetCountersOfTab('logistics'),
+            'accessList'    => ['name' =>  trans('Logistics'), 'url' => route('logistics.index')],
+            'actions'       => $this->actions,
+            'breadcrumbs'   => $this->breadcrumbs
         ];
 
         return View::make('customTools/logistics/index')->with($data);
     }
 
-    public function create(){ }
-    public function store(Request $request){ }
-    public function show(string $id){}
-    public function edit(string $id){}
-    public function update(Request $request, string $id){}
-    public function destroy(string $id){}
 }

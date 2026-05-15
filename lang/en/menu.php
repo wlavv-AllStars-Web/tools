@@ -1,20 +1,24 @@
 <?php
 
 return [
-    'dashboard' => 'Dashboard',
+    'dashboard' => 'Statistics',
     'admin' => 'Admin',
-    'webmaster' => 'Web',
-    'human resources' => 'HR',
-    'finance' => 'Finance',
+    'finance' => 'ACCOUNTING',
     'logistics' => 'Logistics',
     'marketing' => 'Marketing',
     'customer support' => 'Support',
-    'modules' => 'Modules',
+    'sales' => 'SALES',
+    'Auto Orders' => 'Auto Orders',
+    'data' => 'data',
     
     /** Mobile **/
     'menuMobile' => 'MENU',
     'logout' => 'Logout',
 
     /** Desktop **/
+    'language' => 'Current ',
+    'Suplliers B.O.' => 'Suplliers B.O.',
+    'Purchase' => 'Purchase',
+    'webmaster' => 'WEBMASTER'
 
 ];

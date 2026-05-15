@@ -3,9 +3,16 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class categories_lang extends Model
-{
+class categories_lang extends PrestashopModel{
+    
     use HasFactory;
+
+    protected $fillable = [];
+
+    public function __construct(array $attributes = []){
+        
+        parent::__construct($attributes);
+        $this->table = self::tableName('category_lang');
+    }
 }

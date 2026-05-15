@@ -3,17 +3,19 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class currency extends Model
-{
-    protected $connection = 'mysql2';
+class currency extends PrestashopModel{
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."currency";
+    protected $fillable = ['name'];
+    protected $primaryKey = 'id_currency';
+
+    public function __construct(array $attributes = []){
+        parent::__construct($attributes);
+        $this->table = self::tableName('currency');
+    }
+
+    public function shops(){
+        return $this->hasMany(currency_shop::class, 'id_currency', 'id_currency');
     }
 }

@@ -3,45 +3,183 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use App\Models\modules\oms\BilledOrderLine;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
-class product_attribute extends Model
+class product_attribute extends PrestashopModel
 {
-    protected $connection = 'mysql2';
     use HasFactory;
-    public $timestamps = false;
 
-    public function __construct()
+    protected $primaryKey = 'id_product_attribute';
+    protected $fillable = ['wholesale_price'];
+
+    public function __construct(array $attributes = [])
     {
-        $this->table = env('DB2_prefix')."product_attribute";
+        parent::__construct($attributes);
+        $this->table = self::tableName('product_attribute');
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONS
+    |--------------------------------------------------------------------------
+    */
 
     public function product()
     {
-        return $this->hasOne(product::class, "id_product", 'id_product');
+        return $this->hasOne(product::class, 'id_product', 'id_product');
     }
 
-    public static function getCombination($id_product_attribute){
+    public function stock()
+    {
+        return $this->hasOne(stock_available::class, 'id_product_attribute', 'id_product_attribute');
+    }
 
-        $combination = '';
-        $attribute_name = null;
-   
-        if($id_product_attribute > 0){
+    public function pack()
+    {
+        return $this->hasMany(pack::class, 'id_product_pack', 'id_product');
+    }
 
-            $data = DB::table(env('DB2_DB_prefix') . 'attribute_lang')
-            ->select( env('DB2_DB_prefix') . 'attribute_lang.name')
-            ->join(   env('DB2_DB_prefix') . 'product_attribute_combination', env('DB2_DB_prefix') . 'attribute_lang.id_attribute', '=', env('DB2_DB_prefix') . 'product_attribute_combination.id_attribute')
-            ->join(   env('DB2_DB_prefix') . 'product_attribute', env('DB2_DB_prefix') . 'product_attribute_combination.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
-            ->where(  env('DB2_DB_prefix') . 'product_attribute.id_product_attribute', $id_product_attribute )
-            ->where(  env('DB2_DB_prefix') . 'attribute_lang.id_lang', 1 )
-            ->get();
+    public function sold()
+    {
+        return $this->hasMany(orders_details::class, 'product_attribute_id', 'id_product_attribute');
+    }
 
-            foreach($data AS $item) $attribute_name .= $item->name. '; ';
-            $combination =  substr($attribute_name, 0, -2);
+    public function images()
+    {
+        return $this->hasMany(product_attribute_image::class, 'id_product_attribute', 'id_product_attribute');
+    }
+
+    public function erp_invoiced()
+    {
+        return $this->hasOne(BilledOrderLine::class, 'product_attribute_id', 'id_product_attribute')
+            ->selectRaw('product_attribute_id, SUM(qty_billed) as qty_wmfaturado')
+            ->whereRaw('COALESCE(qty_billed, 0) > COALESCE(qty_received, 0)')
+            ->groupBy('product_attribute_id')
+            ->withDefault([
+                'qty_wmfaturado' => 0
+            ]);
+    }
+
+    public function erp_expected()
+    {
+        return $this->hasOne(BilledOrderLine::class, 'product_attribute_id', 'id_product_attribute')
+            ->selectRaw('product_attribute_id, SUM(GREATEST(COALESCE(qty_billed, 0) - COALESCE(qty_received, 0), 0)) as qty_expected')
+            ->whereRaw('COALESCE(qty_billed, 0) > COALESCE(qty_received, 0)')
+            ->groupBy('product_attribute_id')
+            ->withDefault([
+                'qty_expected' => 0
+            ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | HELPERS
+    |--------------------------------------------------------------------------
+    */
+
+    public static function getCombination($id_product_attribute)
+    {
+        if ((int) $id_product_attribute <= 0) {
+            return '';
         }
 
-        return $combination;
+        $attributeLangTable = self::tableName('attribute_lang');
+        $combinationTable = self::tableName('product_attribute_combination');
+        $productAttributeTable = self::tableName('product_attribute');
+
+        $data = DB::connection('mysql2')
+            ->table($attributeLangTable)
+            ->select($attributeLangTable . '.name')
+            ->join($combinationTable, $attributeLangTable . '.id_attribute', '=', $combinationTable . '.id_attribute')
+            ->join($productAttributeTable, $combinationTable . '.id_product_attribute', '=', $productAttributeTable . '.id_product_attribute')
+            ->where($productAttributeTable . '.id_product_attribute', $id_product_attribute)
+            ->where($attributeLangTable . '.id_lang', 1)
+            ->get();
+
+        $names = [];
+
+        foreach ($data as $item) {
+            $names[] = $item->name;
+        }
+
+        return implode('; ', $names);
     }
-    
+
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARDS
+    |--------------------------------------------------------------------------
+    */
+
+    public static function dashboard_attribute_less_then_5_pics($type)
+    {
+        $products = [];
+
+        $productAttributeTable = self::tableName('product_attribute');
+        $productTable = self::tableName('product');
+        $manufacturerTable = self::tableName('manufacturer');
+        $stockTable = self::tableName('stock_available');
+        $customProductAttributeTable = self::tableName('custom_product_attribute');
+        $productAttributeImageTable = self::tableName('product_attribute_image');
+
+        $excludedProductIds = asm_dashboard::getExceptions('marketing_no_images')
+            ->pluck('id_product')
+            ->toArray();
+
+        $query = self::select(
+                $productTable . '.id_product',
+                $productTable . '.id_category_default',
+                DB::raw('COUNT(*) AS nr_images'),
+                $productAttributeTable . '.reference',
+                DB::raw($customProductAttributeTable . '.location AS housing'),
+                DB::raw($manufacturerTable . '.name AS brand')
+            )
+            ->leftJoin($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
+            ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->leftJoin($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+            ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
+            ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
+            ->where($stockTable . '.quantity', '>', 0)
+            ->where($productTable . '.visibility', '<>', 'none')
+            ->orderBy($productTable . '.id_product')
+            ->groupBy(
+                $productTable . '.id_product',
+                $productTable . '.id_category_default',
+                $productAttributeTable . '.reference',
+                $customProductAttributeTable . '.location',
+                $manufacturerTable . '.name'
+            );
+
+        if (!empty($excludedProductIds)) {
+            $query->whereNotIn($productTable . '.id_product', $excludedProductIds);
+        }
+
+        $no_images = $query->get();
+
+        foreach ($no_images as $image) {
+            if (isset($image->id_product) && ((int) $image->nr_images < 5)) {
+                $products[$image->reference] = [
+                    'id_product' => $image->id_product,
+                    'id_category_default' => $image->id_category_default,
+                    'nr_images' => $image->nr_images,
+                    'reference' => $image->reference,
+                    'housing' => $image->housing,
+                    'brand' => $image->brand,
+                    'url' => PrestashopAdminLinkService::dashboardProductAdminUrl((int) $image->id_product, 'ASD')
+                ];
+            }
+        }
+
+        return [
+            'name' => trans('dashboard.ATTRIBUTES - No 5 photos'),
+            'col' => 4,
+            'item_id' => $type . '_attributes_no_5_pics',
+            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD'),
+            'columns' => ['id_product', 'reference', 'brand', 'housing', 'nr_images'],
+            'counter' => count($products),
+            'data' => $products
+        ];
+    }
 }

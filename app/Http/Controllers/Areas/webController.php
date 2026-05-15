@@ -2,38 +2,44 @@
 
 namespace App\Http\Controllers\Areas;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
+use App\Models\modules\dashboard\dashboard;
 
-class webController extends Controller
-{
-    public $actions;
-    public $breadcrumbs;
+class webController extends Controller{
     
-    public function __construct()
-    {
+    public $breadcrumbs = [];
+    
+    public function __construct(){
+        $this->middleware('auth');
         $this->breadcrumbs[] = [ 'name' =>  trans('web'), 'url' => route('web.index')];
-
     }
 
-    public function index()
-    {
+    public function index(){
+
         $data = [
-            'actions'    => $this->actions,
-            'breadcrumbs'=> $this->breadcrumbs,
-            'accessList' => [
-                ['name' =>  trans('web'), 'url' => route('web.index')],
-            ]
+            'counters'      => dashboard::calculateAndGetCountersOfTab('web'),
+            'breadcrumbs'   => $this->breadcrumbs,
+            'accessList'    => $this->accessList()
         ];
 
         return View::make('areas/web/index')->with($data);
     }
+    
+    private function accessList(){
+        
+        $accessList = array();
+        $accessList[]                           = ['name' =>  trans('messages.logs'),               'url' => route('logs.index'),                       'icon' => '<i style="font-size: 40px;" class="fa fa-history" aria-hidden="true"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.trackingTranslation'),'url' => route('web.tools.tracking.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-language"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.seoComparator'),      'url' => route('web.tools.seo.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-not-equal"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.rawText'),            'url' => route('web.tools.raw_text.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-not-equal"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.changesTracker'),     'url' => route('web.tools.changes.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-code"></i>'];
 
-    public function create() {}
-    public function store(Request $request) { }
-    public function show(string $id) { }
-    public function edit(string $id) { }
-    public function update(Request $request, string $id) { }
-    public function destroy(string $id) { }
+        /**
+        $accessList[]                           = ['name' =>  trans('messages.purchasePrice'),      'url' => route('purchasePrice.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.basePrice'),        'url' => route('basePrice.index'),                  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-eur"></i>'];
+        **/
+        
+        return $accessList;
+    }
 }

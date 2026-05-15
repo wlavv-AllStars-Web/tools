@@ -3,8 +3,4 @@
 
     @include("customTools.dashboard.panel")
 
-    <div class="navbar navbar-light customPanel">
-
-    </div>
-
 @endsection

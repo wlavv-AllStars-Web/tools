@@ -3,17 +3,28 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class language extends Model
-{
-    protected $connection = 'mysql2';
+class language extends PrestashopModel{
+    
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."lang";
+    protected $primaryKey = 'id_lang';
+    protected $fillable = ['name'];
+
+    public function __construct(array $attributes = []){
+        parent::__construct($attributes);
+        $this->table = self::tableName('lang');
+    }
+
+    public function countries(){
+        return $this->hasMany(country_lang::class, 'id_lang', 'id_lang');
+    }
+
+    public function categories(){
+        return $this->hasMany(category_lang::class, 'id_lang', 'id_lang');
+    }
+
+    public function products(){
+        return $this->hasMany(product_lang::class, 'id_lang', 'id_lang');
     }
 }

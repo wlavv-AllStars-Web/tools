@@ -2,11 +2,9 @@
 
 namespace App\Models\modules\shipping;
 
-use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Support\Facades\DB;
 
 use App\Models\prestashop\suppliers;
 use App\Models\modules\shipping\shipping_package;

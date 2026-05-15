@@ -3,22 +3,19 @@
 namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 
-use Illuminate\Support\Facades\Http;
 
 use App\Models\modules\compats\compats;
 use App\Models\modules\compats\compats_product;
 
 class compatsController extends Controller
 {
-    private static $token = 'UMb85YcQcDKQK021JKLAMM5yJ9pCgt';
-    private static $BOtoken = 'DSuqgsPKdWGM7oyc77z759DAGtYhd1c3Ryr5UvdjrXmIepwfqBGOlYRPvW7Ba0XgvxBZJ8eeXtiaehD2yLHwGf2fSQfIh3iDtf9i115YQIbMqtmfBPrCUMxeqVt0Ua1iB6FuTeQ2cES8UUYcTVcIFir6f8Xh5TrXFr9UBzHuqbSKpZWFcuzeWCFyK0GqeZuLL7apgoTzdJjwcrI1sf0BmqBItDPBljAaBeG0Pcb5Z8HlyPbalUqKABCMW9i5sseA';
-    
     private static function validateToken($token)
     {
-        if($token != self::$token){
+        $expectedToken = (string) config('allstars.api.tokens.compats');
+
+        if($expectedToken === '' || !hash_equals($expectedToken, (string) $token)){
             $data =[
                 'status' => 'FAIL',
                 'message' => 'API token invalid'
@@ -31,7 +28,9 @@ class compatsController extends Controller
     
     private static function validateBOtoken($token)
     {
-        if($token != self::$BOtoken){
+        $expectedToken = (string) config('allstars.api.tokens.compats_backoffice');
+
+        if($expectedToken === '' || !hash_equals($expectedToken, (string) $token)){
             $data =[
                 'status' => 'FAIL',
                 'message' => 'API token invalid'
@@ -155,29 +154,29 @@ class compatsController extends Controller
         exit;
     }
     
-    public function getProductCompatDetails(Request $request)
-    {
-        self::validateToken($request->token);
-        
-        $compat = compats::getProductCompatDetails($request->id_product, $request->store);
-        
-        if( count( $compat) > 0 ){
-            $data = [
-                'status'    => 'SUCCESS',
-                'message'   => count($compat) . ' COMPATS AVAILABLE',
-                'data'      => $compat
-            ];
-        }else{
-            $data = [
-                'status'    => 'SUCCESS',
-                'message'   => 'NO COMPATS AVAILABLE',
-                'data'      => $compat
-            ];
-        }
-        
-        echo json_encode($data);
-        exit;
+public function getProductCompatDetails(Request $request)
+{
+    self::validateToken($request->token);
+
+    $compat = compats::getProductCompatDetails($request->id_product, $request->store);
+
+    if (count($compat) > 0) {
+        $data = [
+            'status' => 'SUCCESS',
+            'message' => count($compat) . ' COMPATS AVAILABLE',
+            'data' => $compat,
+        ];
+    } else {
+        $data = [
+            'status' => 'SUCCESS',
+            'message' => 'NO COMPATS AVAILABLE',
+            'data' => $compat,
+        ];
     }
+
+    echo json_encode($data);
+    exit;
+}
     
     public function getProducts(Request $request)
     {

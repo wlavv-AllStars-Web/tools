@@ -2,22 +2,21 @@
 
 namespace App\Models\modules\productIssues;
 
-use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\manufacturers;
 
-use Illuminate\Support\Facades\Config;
 
+use App\Models\Concerns\BuildsDashboardPanels;
 class productIssues extends Model
 {
-    use HasFactory;
+    
+    use BuildsDashboardPanels;
+use HasFactory;
     protected $table = "productIssues";
     public $primaryKey = 'id_issue';
     
@@ -131,24 +130,28 @@ public static function getProductIssues()
     public static function getIssue($id){
         return productIssues::where('id_issue', $id)->first();
     }
-
-    public static function dashboard_product_issues($type){
-
-        $data = array();
-
-        $bd_data = self::select('id_order', 'reference', 'description')->where('status', '<>', 'SOLVED')->get();
-
-        foreach($bd_data AS $item) $data[] = ['id_order' => $item->id_order, 'reference' => $item->reference, 'description' => $item->description];
-        
-        return [
-            'name'              => 'PRODUCT ISSUES',
-            'col'               => 4,
-            'item_id'           => $type . '_product_issues',
-            'columns'           => ['id_order', 'reference', 'description'],
-            'prestashop'        => ( isset ( Config::get('token')->AdminProducts ) ) ? [ 'token' => Config::get('token')->AdminOrders, 'controller' => 'AdminOrders', 'element' => 'id_order', 'extraParameters' => '&vieworder' ] : [],
-            'counter'           => count($data),
-            'data'              => $data
-        ];        
+    
+    public static function dashboard_product_issues($type)
+    {
+        $rows = self::select('id_order', 'reference', 'description')
+            ->where('status', '<>', 'SOLVED')
+            ->orderBy('date', 'DESC')
+            ->get();
+    
+        return self::dashboardPanel(
+            'PRODUCT ISSUES',
+            $type,
+            'product_issues',
+            ['id_order', 'reference', 'description'],
+            $rows->map(fn ($item) => [
+                'id_order' => $item->id_order,
+                'reference' => $item->reference,
+                'description' => $item->description,
+                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASM'),
+            ]),
+            [],
+            \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM')
+        );
     }
     
 }

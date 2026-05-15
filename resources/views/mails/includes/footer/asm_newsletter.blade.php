@@ -19,10 +19,10 @@
                             <table style="width: 730px;">
                                 <tbody><tr>
                                     <td style="width: 250px;"></td>
-                                    <td> <a href="https://www.facebook.com/allstarsmotorsport">       <img src="https://www.all-stars-motorsport.com/img/newsletter_images/facebook.jpg" style="width: 60px;"> </a> </td>
-                                    <td> <a href="https://instagram.com/allstarsmotorsport">          <img src="https://www.all-stars-motorsport.com/img/newsletter_images/instagram.jpg" style="width: 60px;"> </a> </td>
-                                    <td> <a href="https://www.flickr.com/photos/allstarsmotorsport/"> <img src="https://www.all-stars-motorsport.com/img/newsletter_images/flickr.jpg" style="width: 60px;"> </a> </td>
-                                    <td> <a href="https://www.youtube.com/user/allstarsmotorsport">   <img src="https://www.all-stars-motorsport.com/img/newsletter_images/youtube.jpg" style="width: 60px;"> </a> </td>
+                                    <td> <a href="https://www.facebook.com/allstarsmotorsport">       <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/newsletter_images/facebook.jpg" style="width: 60px;"> </a> </td>
+                                    <td> <a href="https://instagram.com/allstarsmotorsport">          <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/newsletter_images/instagram.jpg" style="width: 60px;"> </a> </td>
+                                    <td> <a href="https://www.flickr.com/photos/allstarsmotorsport/"> <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/newsletter_images/flickr.jpg" style="width: 60px;"> </a> </td>
+                                    <td> <a href="https://www.youtube.com/user/allstarsmotorsport">   <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/newsletter_images/youtube.jpg" style="width: 60px;"> </a> </td>
                                     <td style="width: 250px;"></td>
                                 </tr>
                             </tbody></table>

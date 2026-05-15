@@ -3,7 +3,7 @@
         <div class="row">
             <div class="col-lg-4">
                 <div class="navbar navbar-light customPanel">
-                    @include("customTools.documentsManager.listSearch", ['documents' => $documents, 'searchName' => ( isset($searchName) ) ? $searchName : '', 'searchNumber' => ( isset($searchNumber) ) ? $searchName : '', 'searchCategory' => ( isset($searchCategory) ) ? $searchCategory : '', 'searchDate' => ( isset($searchDate) ) ? $searchDate : '' ])
+                    @include("customTools.documentsManager.listSearch", ['documents' => $documents, 'searchName' => ( isset($searchName) ) ? $searchName : '', 'searchNumber' => ( isset($searchNumber) ) ? $searchNumber : '', 'searchCategory' => ( isset($searchCategory) ) ? $searchCategory : '', 'searchDate' => ( isset($searchDate) ) ? $searchDate : '' ])
                 </div>            
             </div>
             <div class="col-lg-8">

@@ -2,7 +2,6 @@
 @section('content')
 
     @include("customTools.priceMap.includes.js")
-    @include("customTools.priceMap.includes.css")
     
     <div class="navbar navbar-light customPanel" style="display: flex;">
         <select onchange="getPriceMapOf(this.value)" class="form-select" style="max-width: 300px;">

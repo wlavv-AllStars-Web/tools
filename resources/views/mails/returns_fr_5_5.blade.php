@@ -26,7 +26,7 @@
                         
 						<p>Vous pouvez retrouver tous les détails sur nos conditions de retour en cliquant sur le lien ci-dessous <br>( paragraphe 7 ) :</p>
 						<p>
-							<a href="https://www.all-stars-motorsport.com/fr/content/3-conditions-generales-de-ventes">Conditions d'utilisation</a><br>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-generales-de-ventes">Conditions d'utilisation</a><br>
 						</p>
 						<p>Nous restons à votre disposition pour toute autre question.</p>
 						<br>

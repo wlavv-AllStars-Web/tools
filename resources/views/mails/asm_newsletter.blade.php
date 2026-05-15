@@ -3,7 +3,7 @@
         <table style="width: 740px;">
             <tr style="background-color: #ffffff;">
                 <td colspan="3" style="text-align: center; background-image: white;">
-                    <img id="main_image" onclick="window.open(\'{!! __('mails.asm_newsletter.asm_newsletter.base_link') !!}{{ $data->id_product}}-product.html\')" src="https://www.all-stars-motorsport.com/{{ $data->id_image}}-tm_thickbox_default/main_product.jpg" style="width: 600px;margin: 0 auto;">
+                    <img id="main_image" onclick="window.open(\'{!! __('mails.asm_newsletter.asm_newsletter.base_link') !!}{{ $data->id_product}}-product.html\')" src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/{{ $data->id_image}}-tm_thickbox_default/main_product.jpg" style="width: 600px;margin: 0 auto;">
                 </td>
             </tr>
         </table>

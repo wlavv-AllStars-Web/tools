@@ -20,15 +20,15 @@ return [
     
     'asm_newsletter' => [
         'asm_newsletter' => [
-            'header_link' => 'https://www.all-stars-motorsport.com/img/newsletter_images/newsletter_header_en.jpg',
+            'header_link' => rtrim(config('allstars.stores.ASM.base_url'), '/') . '/img/newsletter_images/newsletter_header_en.jpg',
             'see_product' => 'See product',
             'Price: ' => 'Price: ',
             'Inc VAT' => 'Inc. VAT',
             'Ex VAT' => 'Ex. VAT',
             'follow_us' => 'Follow us:',
-            'unsubscribe_link' => 'https://www.all-stars-motorsport.com/en/my-car?getUnsubscribeEmail=1',
+            'unsubscribe_link' => rtrim(config('allstars.stores.ASM.base_url'), '/') . '/en/my-car?getUnsubscribeEmail=1',
             'unsubscribe_message' => 'To unsubscribe from All Stars Motorsport newsletter, please click here',
-            'base_link' => 'https://www.all-stars-motorsport.com/en/engine/'
+            'base_link' => rtrim(config('allstars.stores.ASM.base_url'), '/') . '/en/engine/'
         ]
     ],
     

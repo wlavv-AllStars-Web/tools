@@ -1,189 +1,523 @@
-<div id="housingInfo" style="font-size: 16px;">
-    @if( isset($product->id_product) )
-    
-        <input type="hidden" value="{{$product->id_product}}" name="id_product" id="id_product">                     
-        <input type="hidden" value="@if(isset($product->id_product_attribute)) {{$product->id_product_attribute}} @else 0 @endif" name="id_product_attribute" id="id_product_attribute"> 
-        
-        @if( ( strlen($product->housing) < 1 ) && ( strlen($product->location) < 1 ) )
-            <div class="navbar navbar-light customPanel" style="width: 100%;">
-                <div style="text-align: left">
-                    <table style="width: 100%;">
-                        <tr>
-                            <td colspan="2"> 
-                                <div style="text-align: center;display: grid;">
-                                    <div style="text-align: center; text-transform: uppercase; ">NEW PRODUCT LOCATION?</div>
-                                    <div style="margin-top: 20px;">
-                                        <div style="float: left; width: 100px; text-align: right;padding: 5px 10px;">PRODUCT</div>
-                                        <input value="{{$barcode}}" type="text" name="newBarcode" id="newBarcode" style="float: left; width: calc( 100% - 100px ); border-radius: 5px; border: 1px solid #ccc;">
-                                    </div>
-                                    <div style="margin: 10px 0;">
-                                        <div style="float: left; width: 100px; text-align: right;padding: 5px 10px;">STAND</div>
-                                        <input type="text" name="newStandBarcode" id="newStandBarcode" style="float: left; width: calc( 100% - 100px ); border-radius: 5px; border: 1px solid #ccc;">                
-                                    </div>
-                                    <div style="margin-top: 10px;">
-                                        <button class="btn btn-primary" style="width: 100%;" onclick="saveNewLocation()">SAVE</button>
+<div id="housingInfo">
+    @if($mode === 'empty')
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center py-5">
+                <div class="mb-3"><i class="fa-solid fa-circle-xmark fa-2x text-danger"></i></div>
+                <div class="fw-semibold">No product found</div>
+                <div class="text-muted small">No match for <strong>{{ $search }}</strong>.</div>
+            </div>
+        </div>
+    @elseif($mode === 'multiple' || $mode === 'housing_list')
+        <div class="card shadow-sm border-0" style="background-color: #FFF;margin-top: 10px;">
+            <div class="card-body" style="padding: 0;">
+                @if($products->count())
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0" style="text-align: center;background-color: #FFF;">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>EAN13</th>
+                                    <th>Location</th>
+                                    <th>#</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($products as $row)
+                                    <tr>
+                                        <td onclick='pickProduct({{ $row['id_product'] }}, {{ $row['id_product_attribute'] }}, @json($search))'>{{ $row['reference'] ?: '—' }}</td>
+                                        <td onclick='pickProduct({{ $row['id_product'] }}, {{ $row['id_product_attribute'] }}, @json($search))'>{{ $row['ean13'] ?: '—' }}</td>
+                                        <td onclick='pickProduct({{ $row['id_product'] }}, {{ $row['id_product_attribute'] }}, @json($search))'>{{ $row['operational_location'] ?: '—' }}</td>
+                                        <td onclick='pickProduct({{ $row['id_product'] }}, {{ $row['id_product_attribute'] }}, @json($search))'>{{ $row['stock'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="text-center text-muted small py-4">
+                        No products found in this housing.
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        @if($mode === 'housing_list' && $canEditLogistics)
+            <div id="bulkHousingPanel" data-housing="{{ $housing ?? $search }}" class="card shadow-sm border-0" style="background-color: #FFF;margin-top: 10px;">
+                <div class="card-body" style="text-align: center;margin: 0;padding: 1rem 2px;">
+                    <input type="hidden" id="bulk_housing_target" value="{{ $housing ?? $search }}">
+                    <div class="fw-semibold mb-1">Bulk housing</div>
+                    <div class="row g-2 align-items-end mb-3">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label">Scan EAN13 / Reference</label>
+                            <input type="text" class="form-control" id="bulk_product_scan" value="" autocomplete="off" style="text-align: center;">
+                        </div>
+                        <div class="col-12 col-md-4 d-grid">
+                            <button type="button" class="btn btn-primary" onclick="bulkAddProductFromScan()">
+                                <i class="fa-solid fa-plus"></i> Add product
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0" style="text-align: center;background-color: #FFF;">
+                            <thead>
+                                <tr>
+                                    <th>Scan</th>
+                                    <th>Current</th>
+                                    <th class="text-end"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkHousingRows">
+                                <tr id="bulkHousingEmptyRow">
+                                    <td colspan="3" class="text-muted small py-3">No products scanned yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-grid mt-3">
+                        <button type="button" class="btn btn-success" onclick="bulkSaveHousing()" id="bulkSaveHousingBtn" disabled>
+                            <i class="fa-solid fa-floppy-disk"></i> Save bulk housing
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        @endif
+    @elseif($mode === 'single' && $product)
+        <input type="hidden" id="selected_id_product" value="{{ $product->id_product }}">
+        <input type="hidden" id="selected_id_product_attribute" value="{{ $product->id_product_attribute }}">
+
+        <style>
+            .housing-edit-panel {
+                border: 1px solid rgba(0, 0, 0, .10);
+                border-radius: 8px;
+                background: #fff;
+                overflow: hidden;
+                margin-bottom: 10px;
+            }
+
+            .housing-edit-panel__header {
+                width: 100%;
+                border: 0;
+                background: rgba(248, 249, 250, .95);
+                padding: 12px 14px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                text-align: left;
+            }
+
+            .housing-edit-panel__title {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 600;
+            }
+
+            .housing-edit-panel__meta {
+                color: #6c757d;
+                font-size: .82rem;
+                white-space: nowrap;
+            }
+
+            .housing-edit-panel__body {
+                padding: 14px;
+                border-top: 1px solid rgba(0, 0, 0, .08);
+            }
+
+            .housing-edit-panel__chevron {
+                transition: transform .15s ease;
+            }
+
+            .housing-edit-panel.is-open .housing-edit-panel__chevron {
+                transform: rotate(180deg);
+            }
+        </style>
+
+        <div class="row g-3">
+            <div class="col-12 col-xl-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body" style="text-align: center;padding: 2px;">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="text-muted small">Reference</div>
+                                <div class="fw-semibold">{{ $product->reference ?: '—' }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">EAN13</div>
+                                <div class="fw-semibold">{{ $product->ean13 ?: '—' }}</div>
+                            </div>
+
+                            @if($product->attribute_housing)
+                                <div class="col-4">
+                                    <div class="text-muted small">Housing</div>
+                                    <div class="fw-semibold">{{ $product->attribute_housing ?: '—' }}</div>
+                                </div>
+                            @else
+                                <div class="col-4">
+                                    <div class="text-muted small">Location</div>
+                                    <div class="fw-semibold">{{ $product->product_location ?: '—' }}</div>
+                                </div>
+                            @endif
+
+                            <div class="col-4">
+                                <div class="text-muted small">Stock</div>
+                                <div class="fw-semibold">{{ $product->stock }}</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-muted small">Stock arrive</div>
+                                <div class="fw-semibold">{{ $product->quantity_arrive }}</div>
+                            </div>
+
+                            <div class="col-6">
+                                <div class="text-muted small">ID Product</div>
+                                <div class="fw-semibold">{{ $product->id_product }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">ID Attribute</div>
+                                <div class="fw-semibold">{{ $product->id_product_attribute }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        @if($canEditLogistics)
+                            <div class="housing-edit-panel" id="panel-location">
+                                <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-location')">
+                                    <span class="housing-edit-panel__title">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        Location / Housing
+                                    </span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="housing-edit-panel__meta">{{ $product->operational_location ?: '—' }}</span>
+                                        <i class="fa-solid fa-chevron-down housing-edit-panel__chevron"></i>
+                                    </span>
+                                </button>
+                                <div class="housing-edit-panel__body d-none">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-8">
+                                            <label class="form-label">Location / Housing</label>
+                                            <input type="text" class="form-control" id="edit_location" value="{{ $product->operational_location }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-12 col-md-4 d-grid align-items-end">
+                                            <button class="btn btn-primary mt-md-4" type="button" onclick="updateLocation()">
+                                                <i class="fa-solid fa-location-dot"></i> Update location
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            
-            <script>
-                document.getElementById("newStandBarcode").focus(); 
-            </script>
-        @endif
-                        
-        <div class="navbar navbar-light customPanel" style="width: 100%;">
-            <div style="text-align: left">
-                <table style="width: 100%;">
-                    <tr>
-                        <td style="text-align: right; padding-right: 5px;"><b>REFERENCE: </b></td>
-                        <td style="padding-left: 5px;">{{$product->reference}}</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right; padding-right: 5px;"><b>EAN-13: </b></td>
-                        <td style="padding-left: 5px;">@if( strlen($product->ean13) > 0) {{$product->ean13}} @else <span style="color: red; font-weight: bolder;">NOT DEFINED YET!</span> @endif</td>
-                    </tr>
-                    @if( ( strlen($product->housing) > 0 ) || ( strlen($product->location)  > 0 ))
-                    <tr>
-                        <td style="text-align: right; padding-right: 5px;"><b>HOUSING: </b></td>
-                        <td style="padding-left: 5px;"> 
-                            @if( ( strlen($product->housing) > 0 ) )
-                                {{$product->housing}}
-                                @else
-                                {{$product->location}}
-                            @endif
-                        </td>
-                    </tr>
-                    @endif
-                    <tr>
-                        <td style="text-align: right; padding-right: 5px;"><b>STOCK: </b></td>
-                        <td style="padding-left: 5px;">{{$product->stock->quantity}}</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right; padding-right: 5px;"><b>Weight: </b></td>
-                        <td style="padding-left: 5px;">
-                            @if(isset($product->product) == 1)
-                                {{number_format($product->product->weight, 2)}} ( Kg )
-                            @else
-                                {{number_format($product->weight, 2)}} ( Kg )
-                            @endif
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right; padding-right: 5px;"><b>MEASURES: </b></td>
-                        <td style="padding-left: 5px;">
-                            @if(isset($product->product) == 1)
-                                {{number_format($product->product->width, 2)}} * {{number_format($product->product->height, 2)}} * {{number_format($product->product->depth, 2)}} ( cm )
-                            @else
-                                {{number_format($product->width, 2)}} * {{number_format($product->height, 2)}} * {{number_format($product->depth, 2)}} ( cm )
-                            @endif
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
+                            </div>
 
-        <div class="navbar navbar-light customPanel" style="width: 100%;text-align: center;display: flex;">
-            <button class="btn btn-dark" type="button" onclick="$('#editHousing').toggle(); $('#editMeasurements').css('display', 'none')" style="width: 48%;float: left;">EDIT HOUSING</button>
-            <button class="btn btn-dark" type="button" onclick="$('#editMeasurements').toggle(); $('#editHousing').css('display', 'none')" style="width: 48%;float: right;">EDIT MEASURES</button>
+                            <div class="housing-edit-panel" id="panel-ean13">
+                                <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-ean13')">
+                                    <span class="housing-edit-panel__title">
+                                        <i class="fa-solid fa-barcode"></i>
+                                        EAN13
+                                    </span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="housing-edit-panel__meta">{{ $product->ean13 ?: '—' }}</span>
+                                        <i class="fa-solid fa-chevron-down housing-edit-panel__chevron"></i>
+                                    </span>
+                                </button>
+                                <div class="housing-edit-panel__body d-none">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-8">
+                                            <label class="form-label">EAN13</label>
+                                            <input type="text" class="form-control" id="edit_ean13" value="{{ $product->ean13 }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-12 col-md-4 d-grid align-items-end">
+                                            <button class="btn btn-outline-primary mt-md-4" type="button" onclick="updateEan13()">
+                                                <i class="fa-solid fa-barcode"></i> Update EAN13
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-            <div id="editHousing" style="display: none;padding: 20px 0;width: 100%;">
-                <div style="float: left; width: 70px; text-align: right;padding: 7px 10px;">STAND</div>
-                <input value="{{$product->housing}}" type="text" name="editedBarcode" id="editedBarcode" style="float: left; width: calc( 100% - 130px ); border-radius: 5px; border: 1px solid #ccc;height: 38px;">                
-                <button class="btn btn-primary" type="button" onclick="editLocation()" style="width: 50px;margin-left: 10px;"><i class="fa-regular fa-floppy-disk" style="font-size: 20px;"></i></button>
+                            <div class="housing-edit-panel" id="panel-measures">
+                                <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-measures')">
+                                    <span class="housing-edit-panel__title">
+                                        <i class="fa-solid fa-ruler-combined"></i>
+                                        Measures
+                                    </span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="housing-edit-panel__meta">{{ number_format((float) $product->weight, 2) }}( kg ) | {{ number_format((float) $product->width, 0, '.', '') }} * {{ number_format((float) $product->height, 0, '.', '') }} * {{ number_format((float) $product->depth, 0, '.', '') }} ( cm )</span>
+                                        <i class="fa-solid fa-chevron-down housing-edit-panel__chevron"></i>
+                                    </span>
+                                </button>
+                                <div class="housing-edit-panel__body d-none">
+                                    <div class="row g-3">
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label">Weight</label>
+                                            <input type="number" step="0.01" min="0" class="form-control" id="edit_weight" value="{{ number_format((float) $product->weight, 2, '.', '') }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label">Width</label>
+                                            <input type="number" step="0.01" min="0" class="form-control" id="edit_width" value="{{ number_format((float) $product->width, 2, '.', '') }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label">Height</label>
+                                            <input type="number" step="0.01" min="0" class="form-control" id="edit_height" value="{{ number_format((float) $product->height, 2, '.', '') }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label">Depth</label>
+                                            <input type="number" step="0.01" min="0" class="form-control" id="edit_depth" value="{{ number_format((float) $product->depth, 2, '.', '') }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-12 d-grid mt-2">
+                                            <button class="btn btn-outline-dark" type="button" onclick="updateMeasures()">
+                                                <i class="fa-solid fa-ruler-combined"></i> Update measures
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($canEditAdminFields)
+                            <div class="housing-edit-panel" id="panel-reference">
+                                <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-reference')">
+                                    <span class="housing-edit-panel__title">
+                                        <i class="fa-solid fa-hashtag"></i>
+                                        Reference
+                                    </span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="housing-edit-panel__meta">{{ $product->reference ?: '—' }}</span>
+                                        <i class="fa-solid fa-chevron-down housing-edit-panel__chevron"></i>
+                                    </span>
+                                </button>
+                                <div class="housing-edit-panel__body d-none">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-8">
+                                            <label class="form-label">Reference</label>
+                                            <input type="text" class="form-control" id="edit_reference" value="{{ $product->reference }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-12 col-md-4 d-grid align-items-end">
+                                            <button class="btn btn-outline-primary mt-md-4" type="button" onclick="updateReference()">
+                                                <i class="fa-solid fa-hashtag"></i> Update reference
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="housing-edit-panel" id="panel-stock">
+                                <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-stock')">
+                                    <span class="housing-edit-panel__title">
+                                        <i class="fa-solid fa-boxes-stacked"></i>
+                                        Stock
+                                    </span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="housing-edit-panel__meta">{{ $product->stock }}</span>
+                                        <i class="fa-solid fa-chevron-down housing-edit-panel__chevron"></i>
+                                    </span>
+                                </button>
+                                <div class="housing-edit-panel__body d-none">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-8">
+                                            <label class="form-label">Stock</label>
+                                            <input type="number" step="1" class="form-control" id="edit_stock" value="{{ $product->stock }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-12 col-md-4 d-grid align-items-end">
+                                            <button class="btn btn-outline-danger mt-md-4" type="button" onclick="updateStock()">
+                                                <i class="fa-solid fa-boxes-stacked"></i> Update stock
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="housing-edit-panel" id="panel-stock-arrive">
+                                <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-stock-arrive')">
+                                    <span class="housing-edit-panel__title">
+                                        <i class="fa-solid fa-truck-ramp-box"></i>
+                                        Stock arrive
+                                    </span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span class="housing-edit-panel__meta">{{ $product->quantity_arrive }}</span>
+                                        <i class="fa-solid fa-chevron-down housing-edit-panel__chevron"></i>
+                                    </span>
+                                </button>
+                                <div class="housing-edit-panel__body d-none">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-8">
+                                            <label class="form-label">Stock arrive</label>
+                                            <input type="number" step="1" class="form-control" id="edit_stock_arrive" value="{{ $product->quantity_arrive }}" style="text-align: center;">
+                                        </div>
+                                        <div class="col-12 col-md-4 d-grid align-items-end">
+                                            <button class="btn btn-outline-danger mt-md-4" type="button" onclick="updateStockArrive()">
+                                                <i class="fa-solid fa-truck-ramp-box"></i> Update stock arrive
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(!$canEditLogistics && !$canEditAdminFields)
+                            <div class="text-muted small text-center">You do not have permission to edit this product.</div>
+                        @endif
+                    </div>
+                </div>
             </div>
-            <div id="editMeasurements" style="display: none;padding: 20px 0;width: 100%;">
-                <div style="display: flex;">
-                    <div style="float: left; width: 100px; text-align: right;padding: 7px 10px;">WEIGHT</div>
-                    <input type="text" value="@if(isset($product->product)) {{number_format($product->product->weight, 2)}} @else {{number_format($product->weight, 2)}} @endif" name="editedWeight" id="editedWeight" style="float: left; width: calc( 100% - 110px ); border-radius: 5px; border: 1px solid #ccc;height: 38px;">                     
+
+            <div class="col-12">
+                <div class="card shadow-sm border-0" style="text-align: center;">
+                    <div class="card-body">
+                        <div class="fw-semibold mb-3">Orders with this product</div>
+                        @if($orderRows->count())
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Order</th>
+                                            <th>Status</th>
+                                            <th>Product</th>
+                                            <th>Reference</th>
+                                            <th>EAN13</th>
+                                            <th class="text-end">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($orderRows as $row)
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold">#{{ $row->id_order }}</div>
+                                                    <div class="text-muted small">{{ $row->order_reference ?: '—' }}</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge" style="background: {{ $row->state_color }}; color: #fff;">{{ $row->state_label }}</span>
+                                                </td>
+                                                <td>{{ $row->product_name ?: '—' }}</td>
+                                                <td>{{ $row->product_reference ?: '—' }}</td>
+                                                <td>{{ $row->product_ean13 ?: '—' }}</td>
+                                                <td class="text-end">
+                                                    <div>{{ (int) $row->product_quantity }}</div>
+                                                    <div class="text-muted small">In stock: {{ (int) $row->product_quantity_in_stock }}</div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-muted small">No orders found in the tracked states for this product.</div>
+                        @endif
+                    </div>
                 </div>
-                <div style="display: flex;">
-                    <div style="float: left; width: 100px; text-align: right;padding: 7px 10px;">WIDTH</div>
-                    <input type="text" value="@if(isset($product->product)) {{number_format($product->product->width, 2)}}  @else {{number_format($product->width, 2)}}  @endif" name="editedWidth" id="editedWidth" style="float: left; width: calc( 100% - 110px ); border-radius: 5px; border: 1px solid #ccc;height: 38px;">                     
-                </div>
-                <div style="display: flex;">
-                    <div style="float: left; width: 100px; text-align: right;padding: 7px 10px;">HEIGHT</div>
-                    <input type="text" value="@if(isset($product->product)) {{number_format($product->product->height, 2)}} @else {{number_format($product->height, 2)}} @endif" name="editedHeight" id="editedHeight" style="float: left; width: calc( 100% - 110px ); border-radius: 5px; border: 1px solid #ccc;height: 38px;">                     
-                </div>
-                <div style="display: flex;">
-                    <div style="float: left; width: 100px; text-align: right;padding: 7px 10px;">DEPTH</div>
-                    <input type="text" value="@if(isset($product->product)) {{number_format($product->product->depth, 2)}}  @else {{number_format($product->depth, 2)}}  @endif" name="editedDepth" id="editedDepth" style="float: left; width: calc( 100% - 110px ); border-radius: 5px; border: 1px solid #ccc;height: 38px;">                     
-                </div>
-                <button class="btn btn-primary" type="button" onclick="editMeasurements()" style="width: calc( 100% - 20px );margin-top: 20px;margin: 10px 10px 0 10px;">UPDATE MEASUREMENTS</button>
             </div>
-        </div>
-        
-        <div class="navbar navbar-light customPanel" style="width: 100%;">
-            <div>
-                <table style="width: 100%;text-align: center;">
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding-bottom: 20px;"><b>QUANTITY BY ORDER STATUS </b></td>
-                    </tr>
-                    <tr>
-                        <td style="width: 100px;"></td>
-                        <td style="width: calc( ( 100% - 100px ) / 2);">ASD</td>
-                        <td style="width: calc( ( 100% - 100px ) / 2);">ASM</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #048dcd;text-align: right;">PROGRESS</td>
-                        <td>{{$order_ASD['progress']}}</td>
-                        <td>{{$order_ASM['progress']}}</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #956f55;text-align: right;">PARTIAL</td>
-                        <td>{{$order_ASD['partial']}}</td>
-                        <td>{{$order_ASM['partial']}}</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #f78e1f;text-align: right;">BACKORDERS</td>
-                        <td>{{$order_ASD['backorder']}}</td>
-                        <td>{{$order_ASM['backorder']}}</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #EBC5E0;text-align: right;">WARRANTY</td>
-                        <td>{{$order_ASD['warranty']}}</td>
-                        <td>{{$order_ASM['warranty']}}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        
-        <div class="navbar navbar-light customPanel" style="width: 100%;text-align: center;">
-            @if(isset($product->id_product_attribute))
-            
-                @if(isset($product->ean13))
-                    <button class="btn btn-dark" type="button" onclick="generateListStandBarcode({{$product->id_product}},{{$product->id_product_attribute}})" style="width: 40%;margin-right: 10px;">SHELF PRINT</button>
-                    <button class="btn btn-dark" type="button" onclick="generateListBarcode({{$product->id_product}},{{$product->id_product_attribute}})" style="width: 40%;margin-left: 10px;">EAN PRINT</button>
-                @else
-                    <div class="alert alert-danger" role="alert" style="text-align: center;margin: 0;"> NO EAN BARCODE SET YET!  </div>
-                @endif
-            @else
-                @if(isset($product->ean13))
-                    <button class="btn btn-dark" type="button" onclick="generateListStandBarcode({{$product->id_product}},0)" style="width: 40%;margin-right: 10px;">SHELF PRINT</button>
-                    <button class="btn btn-dark" type="button" onclick="generateListBarcode({{$product->id_product}},0)" style="width: 40%;margin-left: 10px;">EAN PRINT</button>
-                @else
-                    <div class="alert alert-danger" role="alert" style="text-align: center;margin: 0;"> NO EAN BARCODE SET YET!  </div>
-                @endif
+
+            @if($canEditAdminFields)
+                <div class="col-12">
+                    <div class="card shadow-sm border-0" style="text-align: center;">
+                        <div class="card-body" style="margin: 0; padding: 1rem 2px;">
+                            <div class="justify-content-between align-items-center gap-2 mb-3">
+                                <div>
+                                    <div class="fw-semibold">Latest history</div>
+                                    <div class="text-muted small">Click a row to view audit details.</div>
+                                </div>
+                            </div>
+
+                            @if($history->count())
+                                @php
+                                    $formatHistoryValue = function ($value) {
+                                        if ($value === null || $value === '') {
+                                            return '—';
+                                        }
+
+                                        $normalized = str_replace(',', '.', trim((string) $value));
+
+                                        return is_numeric($normalized)
+                                            ? number_format((float) $normalized, 2, '.', '')
+                                            : $value;
+                                    };
+                                @endphp
+
+                                <div class="table-responsive">
+                                    <table class="table align-middle mb-0 table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 22%;">Operation</th>
+                                                <th style="width: 22%;">Field</th>
+                                                <th style="width: 28%;">Old</th>
+                                                <th style="width: 28%;">New</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($history as $row)
+                                                @php
+                                                    $historyRowId = 'history-details-' . $loop->index;
+                                                @endphp
+                                                <tr role="button" onclick="toggleHistoryDetails('{{ $historyRowId }}')">
+                                                    <td>
+                                                        <div class="fw-semibold">{{ $row->operation }}</div>
+                                                        <div class="text-muted small d-md-none">{{ $row->created_at }}</div>
+                                                    </td>
+                                                    <td>{{ $row->field_name }}</td>
+                                                    <td class="text-break">{{ $formatHistoryValue($row->old_value) }}</td>
+                                                    <td class="text-break">{{ $formatHistoryValue($row->new_value) }}</td>
+                                                </tr>
+                                                <tr id="{{ $historyRowId }}" class="d-none bg-light">
+                                                    <td colspan="4">
+                                                        <div class="row g-2 small">
+                                                            <div class="col-12 col-md-3">
+                                                                <div class="text-muted">Date</div>
+                                                                <div class="fw-semibold">{{ $row->created_at }}</div>
+                                                            </div>
+                                                            <div class="col-12 col-md-3">
+                                                                <div class="text-muted">User</div>
+                                                                <div class="fw-semibold">{{ $row->user_name ?? ('#' . ($row->user_id ?? '—')) }}</div>
+                                                            </div>
+                                                            <div class="col-6 col-md-2">
+                                                                <div class="text-muted">Target</div>
+                                                                <div class="fw-semibold">{{ $row->target_type ?? '—' }}</div>
+                                                            </div>
+                                                            <div class="col-6 col-md-2">
+                                                                <div class="text-muted">Product ID</div>
+                                                                <div class="fw-semibold">{{ $row->id_product ?? '—' }}</div>
+                                                            </div>
+                                                            <div class="col-6 col-md-2">
+                                                                <div class="text-muted">Attribute ID</div>
+                                                                <div class="fw-semibold">{{ $row->id_product_attribute ?? '—' }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-muted small">No history recorded yet.</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
             @endif
-            
-            <div id="barcode_container"></div>
         </div>
-        
+
         <script>
-    
-            function generateListBarcode(id_product, id_product_attribute) {
-                window.open('https://webtools.all-stars-motorsport.com/barcode/product/print/'+id_product+'/'+id_product_attribute+'/1', '_blank');
+            function toggleHousingPanel(panelId) {
+                const panel = document.getElementById(panelId);
+                if (!panel) return;
+
+                const body = panel.querySelector('.housing-edit-panel__body');
+                if (!body) return;
+
+                body.classList.toggle('d-none');
+                panel.classList.toggle('is-open', !body.classList.contains('d-none'));
             }
-            
-            function generateListStandBarcode(id_product, id_product_attribute) {
-                window.open('https://webtools.all-stars-motorsport.com/barcode/stand/print/'+id_product+'/'+id_product_attribute, '_blank');
+
+            function toggleHistoryDetails(rowId) {
+                const row = document.getElementById(rowId);
+                if (!row) return;
+                row.classList.toggle('d-none');
             }
-        
         </script>
-    @else
-        <div class="navbar navbar-light customPanel" style="width: 100%;"> <div class="alert alert-danger" role="alert" style="text-align: center;margin: 0;"> PRODUCT NOT FOUND!  </div> </div>
     @endif
 </div>

@@ -3,17 +3,23 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class customer extends Model
+class customer extends PrestashopModel
 {
-    protected $connection = 'mysql2';
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
+    protected $primaryKey = 'id_customer';
+    protected $fillable = [];
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."customer";
+    public function __construct(array $attributes = []){
+        parent::__construct($attributes);
+        $this->table = self::tableName('customer');
+    }
+    
+    public function orders(){
+        return $this->hasMany(orders::class, 'id_customer', 'id_customer');
+    }
+    
+    public function carts(){
+        return $this->hasMany(cart::class, 'id_customer', 'id_customer');
     }
 }

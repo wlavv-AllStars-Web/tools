@@ -4,9 +4,6 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
 use App\Http\Controllers\Controller;
 
 use App\Models\prestashop\orders;
@@ -23,9 +20,7 @@ use App\Models\modules\supplier_warranty_issues\supplier_warranty_issues;
 use App\Models\modules\carrierIssues\carrierIssues;
 
 use App\Models\modules\documents_manager\documents_manager;
-
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_reception_product;
+use App\Services\oms\OmsLegacyProcurementService;
 
 class searchController extends Controller
 {
@@ -41,23 +36,8 @@ class searchController extends Controller
 
         $this->breadcrumbs[] = [ 'name' =>  trans('search'), 'url' => route('search.globalSearch', [ 'tag' => $tag ])];
 
-        $erpOpenOrders = bms_procurement_purchase_order::SELECT('*', 'ps_supplier.name AS supplier_name')
-        ->leftJoin('ps_bms_procurement_purchase_order_product', 'ps_bms_procurement_purchase_order_product.po_id', 'ps_bms_procurement_purchase_order.id_bms_procurement_purchase_order')
-        ->leftJoin('ps_supplier', 'ps_supplier.id_supplier', 'ps_bms_procurement_purchase_order.supplier_id')
-            ->where(function ($query) use ($tag) {
-                $query->where('ps_bms_procurement_purchase_order.reference', 'like', '%' . $tag . '%')
-                      ->orWhere('ps_supplier.name', 'like', '%' . $tag . '%')
-                      ->orWhere('ps_bms_procurement_purchase_order_product.sku', 'like', '%' . $tag . '%');
-            })
-            ->whereIn('ps_bms_procurement_purchase_order.status_id', [5, 6])
-            ->orderBy('po_id', 'DESC')
-            ->get();
-            
-            
-        $receivedProducts = bms_procurement_purchase_order_reception_product::where('ps_bms_procurement_purchase_order_reception_product.sku', 'like', '%' . $tag . '%')
-                    ->leftJoin('ps_bms_procurement_purchase_order_reception', 'ps_bms_procurement_purchase_order_reception.id_bms_procurement_purchase_order_reception', 'ps_bms_procurement_purchase_order_reception_product.reception_id')
-                    ->orderBy('date_add', 'DESC')
-                    ->get();
+        $erpOpenOrders = OmsLegacyProcurementService::searchOpenOrders((string) $tag);
+        $receivedProducts = OmsLegacyProcurementService::searchReceivedProducts((string) $tag);
 
         $orders = orders::leftjoin('ps_order_carrier', 'ps_order_carrier.id_order', 'ps_orders.id_order')->leftjoin('ps_order_state', 'ps_orders.current_state', 'ps_order_state.id_order_state')->leftjoin('ps_order_state_lang', 'ps_orders.current_state', 'ps_order_state_lang.id_order_state')->where('ps_order_state_lang.id_lang', 1)->where('ps_orders.id_order', 'like', '%' . $tag . '%')->orWhere('ps_orders.reference', 'LIKE', '"%' . $tag . '%"')->orderBy('ps_orders.id_order', 'DESC')->get();
         $tracking = order_carrier::leftjoin('ps_orders', 'ps_orders.id_order', 'ps_order_carrier.id_order')->leftjoin('ps_order_state', 'ps_orders.current_state', 'ps_order_state.id_order_state')->leftjoin('ps_order_state_lang', 'ps_orders.current_state', 'ps_order_state_lang.id_order_state')->where('tracking_number', 'LIKE', '%' . $tag . '%')->orderBy('ps_orders.id_order', 'DESC')->groupBy('tracking_number')->get();

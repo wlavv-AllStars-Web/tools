@@ -10,6 +10,13 @@
                 <tr id="tr_pickingContainer_{{$product->id_order}}" @if($product->barcode == '') style="display: none;" @endif>
                     <td colspan="3" style="text-align: center;border-bottom: 1px solid #ccc;"><b>PICKING CONTAINER: </b><span style="color: dodgerblue;" id="pickingContainer_{{$product->id_order}}"> {{$product->barcode}}</span></td>
                 </tr>
+
+                @if( strlen($row->order_main->note) > 0)
+                    <tr>
+                        <td colspan="3" style="text-align: center;border-bottom: 1px solid #ccc;"><b>ORDER NOTE: </b><span style="color: red;">{{$row->order_main->note}}</span></td>
+                    </tr>
+                @endif
+                
             @endif
             
             <tr class="product_{{$product->id_order}}_{{$product->product_barcode}} {{--product_{{$product->id_order}}_{{str_replace(' ', '',$product->reference)}}--}}  @if( strlen( $product->component_1) > 0) blurData @endif">

@@ -25,16 +25,16 @@
                     <div class="col-lg-2" style="text-align: right;"><label for="name">NAME</label></div>
                     <div class="col-lg-10">                        
                         <div class="input-group mb-3">
-                            <div class="input-group-prepend"> <img src="https://www.all-stars-motorsport.com/img/l/1.jpg" style="width: 40px;padding: 7px 2px;border: 1px solid #ccc; background: #eee;border-radius: 5px 0 0 5px;"> </div>
+                            <div class="input-group-prepend"> <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/l/1.jpg" style="width: 40px;padding: 7px 2px;border: 1px solid #ccc; background: #eee;border-radius: 5px 0 0 5px;"> </div>
                             <input type="text" class="form-control" placeholder="" id="name_en" name="name_en" aria-label="name_en" aria-describedby="basic-addon1" onkeyup="$('#name_es').attr('value', $(this).val());$('#name_fr').attr('value', $(this).val());">
                         </div>
                         <div class="input-group mb-3">
-                            <div class="input-group-prepend"> <img src="https://www.all-stars-motorsport.com/img/l/4.jpg" style="width: 40px;padding: 7px 2px;border: 1px solid #ccc; background: #eee;border-radius: 5px 0 0 5px;"> </div>
+                            <div class="input-group-prepend"> <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/l/4.jpg" style="width: 40px;padding: 7px 2px;border: 1px solid #ccc; background: #eee;border-radius: 5px 0 0 5px;"> </div>
                             <input type="text" class="form-control" placeholder="" id="name_es" name="name_es" aria-label="name_es" aria-describedby="basic-addon1">
                         </div>
 
                         <div class="input-group mb-3">
-                            <div class="input-group-prepend"> <img src="https://www.all-stars-motorsport.com/img/l/5.jpg" style="width: 40px;padding: 7px 2px;border: 1px solid #ccc; background: #eee;border-radius: 5px 0 0 5px;"> </div>
+                            <div class="input-group-prepend"> <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/l/5.jpg" style="width: 40px;padding: 7px 2px;border: 1px solid #ccc; background: #eee;border-radius: 5px 0 0 5px;"> </div>
                             <input type="text" class="form-control" placeholder="" id="name_fr" name="name_fr" aria-label="name_fr" aria-describedby="basic-addon1">
                         </div>
                     </div>

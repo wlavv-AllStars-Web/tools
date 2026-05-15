@@ -8,9 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Models\prestashop\stock_available;
 use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\pack;
-use App\Models\prestashop\issues;
-use App\Models\prestashop\orders;
+use App\Models\prestashop\CurrencyVariation;
 use App\Models\prestashop\product;
+use App\Models\modules\issues\issues;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\modules\dashboard\dashboard;
@@ -18,9 +18,8 @@ use App\Models\modules\dashboard\dashboard;
 
 class financeController extends Controller
 {
-    public $actions;
-    public $breadcrumbs;
-    /**public $convertion = 1;**/
+    public $actions = [];
+    public $breadcrumbs = [];
     public $convertion = 1;
     public $year;
     public $month;
@@ -29,7 +28,6 @@ class financeController extends Controller
     {
         $this->middleware('auth');
         $this->breadcrumbs[] = [ 'name' =>  trans('finance'), 'url' => route('finance.index')];
-        $this->actions[]     = [];
         $this->year = date("Y");
         
         $month = date("m");
@@ -45,23 +43,13 @@ class financeController extends Controller
 
     public function index(){
         
-        
-        dashboard::orderInvoiceExVat();
-        
-        $rates = issues::getCurrencyRates();
-
         $data = [
-            'counters'      => dashboard::getCountersOFTab('finance'),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('finance'),
             'panels'        => [],
-            'accessList'    => self::accessList(),
+            'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs,
-            'rates'         => (object)[
-                'yuan'      => $rates->field_1,
-                'pound'     => $rates->field_2,
-                'dollar'    => $rates->field_3,
-                'yen'       => $rates->field_4,
-            ]
+            'rates'         => CurrencyVariation::orderBy('id', 'DESC')->first()
         ];
 
         return View::make('areas/finance/index')->with($data);
@@ -71,9 +59,9 @@ class financeController extends Controller
         
         $accessList = array();
         $accessList[] =         ['name' =>  trans('messages.Inventory'), 'url' => route('finance.download_inventory'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-download"></i>'];
-        $accessList[] =         ['name' =>  trans('messages.INTRASTAT'), 'url' => route('finance.download_intrastat'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-download"></i>'];
-        $accessList[] =         ['name' =>  trans('messages.VERIFICATION'), 'url' => route('carrierIssues.verification.index'), 'icon' => '<i class="fa-solid fa-truck-fast" style="font-size: 40px;"></i>'];
-        $accessList[] =         ['name' =>  trans('messages.Return'), 'url' => route('carrierReturn.index'), 'icon' => '<i class="fa-solid fa-truck-arrow-right" style="font-size: 40px;"></i>'];
+        $accessList[] =         ['name' =>  trans('messages.INTRASTAT'), 'url' => route('finance.tools.intrastat.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-download"></i>'];
+        $accessList[] =         ['name' =>  trans('messages.VERIFICATION'), 'url' => route('finance.tools.carrier_check.index'), 'icon' => '<i class="fa-solid fa-truck-fast" style="font-size: 40px;"></i>'];
+        $accessList[] =         ['name' =>  trans('messages.Return'), 'url' => route('finance.tools.carrier_returns.index'), 'icon' => '<i class="fa-solid fa-truck-arrow-right" style="font-size: 40px;"></i>'];
         return $accessList;
     }
 
@@ -119,9 +107,20 @@ class financeController extends Controller
         $currency = 'EUR';
         $field = 'wholesale_price';
 
-        $fathers = DB::table(env('DB2_DB_prefix') . 'stock_available')
-            ->select( env('DB2_DB_prefix') . 'manufacturer.*', env('DB2_DB_prefix') . 'stock_available.id_product', env('DB2_DB_prefix') . 'stock_available.id_product_attribute', env('DB2_DB_prefix') . 'product.reference', env('DB2_DB_prefix') . 'product.wholesale_price', env('DB2_DB_prefix') . 'product.wholesale_price_pound', env('DB2_DB_prefix') . 'product.wholesale_price_dollar', env('DB2_DB_prefix') . 'product.wholesale_price_yen', env('DB2_DB_prefix') . 'stock_available.quantity')
+        $fathers = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+            ->select(
+                env('DB2_DB_prefix') . 'manufacturer.*',
+                env('DB2_DB_prefix') . 'stock_available.id_product',
+                env('DB2_DB_prefix') . 'stock_available.id_product_attribute',
+                env('DB2_DB_prefix') . 'product.reference',
+                env('DB2_DB_prefix') . 'product.wholesale_price',
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                env('DB2_DB_prefix') . 'stock_available.quantity'
+            )
             ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+            ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
             ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
             ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
             ->where( env('DB2_DB_prefix') . 'stock_available.id_product_attribute', 0 )
@@ -149,9 +148,20 @@ class financeController extends Controller
                         
                         if($product->id_product_attribute_item == 0){
                             
-                            $pack_father = DB::table(env('DB2_DB_prefix') . 'stock_available')
-                                ->select( env('DB2_DB_prefix') . 'manufacturer.*', env('DB2_DB_prefix') . 'stock_available.id_product', env('DB2_DB_prefix') . 'stock_available.id_product_attribute', env('DB2_DB_prefix') . 'product.reference', env('DB2_DB_prefix') . 'product.wholesale_price', env('DB2_DB_prefix') . 'product.wholesale_price_pound', env('DB2_DB_prefix') . 'product.wholesale_price_dollar', env('DB2_DB_prefix') . 'product.wholesale_price_yen', env('DB2_DB_prefix') . 'stock_available.quantity')
+                            $pack_father = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+                                ->select(
+                                    env('DB2_DB_prefix') . 'manufacturer.*',
+                                    env('DB2_DB_prefix') . 'stock_available.id_product',
+                                    env('DB2_DB_prefix') . 'stock_available.id_product_attribute',
+                                    env('DB2_DB_prefix') . 'product.reference',
+                                    env('DB2_DB_prefix') . 'product.wholesale_price',
+                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                                    env('DB2_DB_prefix') . 'stock_available.quantity'
+                                )
                                 ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+                                ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
                                 ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
                                 ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
                                 ->where( env('DB2_DB_prefix') . 'stock_available.id_product', $product->id_product_item )
@@ -191,9 +201,21 @@ class financeController extends Controller
                             if($item->currency == 'YEN') { $field = 'wholesale_price_yen';      $currency = 'YEN'; }
                             if($item->currency == 'EUR') { $field = 'wholesale_price';          $currency = 'EUR'; }
             
-                            $pack_son = DB::table(env('DB2_DB_prefix') . 'stock_available')
-                                ->select( env('DB2_DB_prefix') . 'manufacturer.*', env('DB2_DB_prefix') . 'stock_available.id_product', env('DB2_DB_prefix') . 'stock_available.id_product_attribute', env('DB2_DB_prefix') . 'product.reference', env('DB2_DB_prefix') . 'product.wholesale_price', env('DB2_DB_prefix') . 'product.wholesale_price_pound', env('DB2_DB_prefix') . 'product.wholesale_price_dollar', env('DB2_DB_prefix') . 'product.wholesale_price_yen', env('DB2_DB_prefix') . 'stock_available.quantity')
+                            $pack_son = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+                                ->select(
+                                    env('DB2_DB_prefix') . 'manufacturer.*',
+                                    env('DB2_DB_prefix') . 'stock_available.id_product',
+                                    env('DB2_DB_prefix') . 'stock_available.id_product_attribute',
+                                    env('DB2_DB_prefix') . 'product.reference',
+                                    env('DB2_DB_prefix') . 'product.wholesale_price',
+                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, ' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, ' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, ' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                                    env('DB2_DB_prefix') . 'stock_available.quantity'
+                                )
                                 ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+                                ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+                                ->leftJoin(env('DB2_DB_prefix') . 'custom_product_attribute', env('DB2_DB_prefix') . 'custom_product_attribute.id_product_attribute', '=', env('DB2_DB_prefix') . 'stock_available.id_product_attribute')
                                 ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
                                 ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
                                 ->where( env('DB2_DB_prefix') . 'stock_available.id_product', $product->id_product_item )
@@ -217,7 +239,15 @@ class financeController extends Controller
                                         'total_row' => ( $item->quantity * ( $wholesale * $rate[$currency] ) )
                                     ];
                                 }else{
-                                    $attr= product_attribute::where('id_product_attribute', $item->id_product_attribute)->first();
+                                    $attr = product_attribute::select(
+                                        env('DB2_DB_prefix') . 'product_attribute.*',
+                                        DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                                        DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                                        DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_yen')
+                                    )
+                                        ->leftJoin(env('DB2_DB_prefix') . 'custom_product_attribute', env('DB2_DB_prefix') . 'custom_product_attribute.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
+                                        ->where(env('DB2_DB_prefix') . 'product_attribute.id_product_attribute', $item->id_product_attribute)
+                                        ->first();
 
                                     $wholesale = $attr->$field;
                                     if( $wholesale < 0.01 ) $wholesale = $attr->wholesale_price;  
@@ -259,24 +289,26 @@ class financeController extends Controller
         $array = array();
         $currency = 'EUR';
  
-        $sons = DB::table(env('DB2_DB_prefix') . 'stock_available')
+        $sons = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
             ->select( 
                 env('DB2_DB_prefix') . 'manufacturer.*', 
                 env('DB2_DB_prefix') . 'stock_available.id_product', 
                 env('DB2_DB_prefix') . 'stock_available.id_product_attribute', 
                 env('DB2_DB_prefix') . 'product_attribute.reference', 
                 env('DB2_DB_prefix') . 'product.wholesale_price', 
-                env('DB2_DB_prefix') . 'product.wholesale_price_pound', 
-                env('DB2_DB_prefix') . 'product.wholesale_price_dollar', 
-                env('DB2_DB_prefix') . 'product.wholesale_price_yen', 
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
                 env('DB2_DB_prefix') . 'stock_available.quantity',
                 env('DB2_DB_prefix') . 'product_attribute.wholesale_price AS attr_wholesale_price', 
-                env('DB2_DB_prefix') . 'product_attribute.wholesale_price_pound AS attr_wholesale_price_pound', 
-                env('DB2_DB_prefix') . 'product_attribute.wholesale_price_dollar AS attr_wholesale_price_dollar', 
-                env('DB2_DB_prefix') . 'product_attribute.wholesale_price_yen AS attr_wholesale_price_yen'
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_pound'),
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_dollar'),
+                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_yen')
             )
             ->join(  env('DB2_DB_prefix') . 'product_attribute', env('DB2_DB_prefix') . 'stock_available.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
             ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+            ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+            ->leftJoin(env('DB2_DB_prefix') . 'custom_product_attribute', env('DB2_DB_prefix') . 'custom_product_attribute.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
             ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
             ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
             ->where( env('DB2_DB_prefix') . 'stock_available.id_product_attribute', '<>', 0 )
@@ -329,15 +361,6 @@ class financeController extends Controller
             
             $converted = ( str_contains($field, '_price_') ) ?  $wholesale * $rate[$currency] :  $wholesale;
             
-            
-            /**
-            if($item->reference == '61000591001MM'){
-                
-                echo $converted;
-                echo '<br>' . $wholesale;
-                dd($item);
-            }**/
-            
             $data[$item->reference] = (object)[
                 'reference' => $item->reference,
                 'quantity' => $item->quantity,
@@ -361,10 +384,6 @@ class financeController extends Controller
         
         $rates = array();
         $rates['EUR'] = 1.00;
-        
-        //$rates['YEN'] = 0.00666; //3829208.54
-        //$rates['YEN'] = 0.00588;   //3789335.99
-        
         $rates['YEN'] = 0.00588; /** 1/170 - LUDUVINA SET IT ON 03/12/2025**/
         $rates['GBP'] = 1.15;    /** LUDUVINA SET IT ON 03/12/2025**/
         $rates['USD'] = 1;
@@ -376,11 +395,13 @@ class financeController extends Controller
 
         $data = [
             'actions'    => [],
-            'breadcrumbs'=> $this->breadcrumbs,
+            'breadcrumbs'=> array_merge($this->breadcrumbs, [
+                ['name' => 'Inventory', 'url' => route('finance.download_inventory'), 'no_translation' => 1],
+            ]),
             'array' => $data,
             'total' => $total,
             'rates' => $rates,
-            'link' => 'https://webtools.all-stars-motorsport.com/admin/download/inventory_' . date('Ymd') . '.csv?t='.rand(),
+            'link' => '/admin/download/inventory_' . date('Ymd') . '.csv?t='.rand(),
         ];
         
         return View::make('areas/finance/inventory')->with($data);
@@ -400,9 +421,10 @@ class financeController extends Controller
             'year' => $this->year,
             'month' => $this->month,
             'actions'    => [],
-            'breadcrumbs'=> $this->breadcrumbs,
+            'breadcrumbs'=> array_merge($this->breadcrumbs, [
+                ['name' => 'Intrastat', 'url' => route(request()->routeIs('finance.tools.intrastat.*') ? 'finance.tools.intrastat.index' : 'finance.download_intrastat'), 'no_translation' => 1],
+            ]),
             'htmlAfterUpload' => ''
-            /**'htmlAfterUpload' => '<a id="dropZoneDownload" class="btn btn-success" href="https://webtools.all-stars-motorsport.com/admin/download/INTRA-EX-' . $this->year . $this->month . '.csv" download="download" style="margin: 5px;width: calc( 100% - 10px );">DOWNLOAD</a>'**/
         ];
         
         return View::make('areas/finance/intrastat')->with($data);
@@ -425,17 +447,26 @@ class financeController extends Controller
         
         fputcsv($file, ['FLUXO', 'PERIODO', 'NIF', 'REF', 'NC', 'PAIS', 'PORIGEM', 'REGIAO', 'CODENT', 'NATTRA', 'MODTRA', 'AERPOR', 'MASSA', 'UNSUP', 'VALFAC', 'ADQNIF', 'ERRO'], ';');
 
-        $data = DB::select("SELECT " . env('DB2_DB_prefix') . "manufacturer.country_code AS iso_code, " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception_product.sku AS reference, " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception_product.qty AS qty, " . env('DB2_DB_prefix') . "product.nc, " . env('DB2_DB_prefix') . "product.weight, (" . env('DB2_DB_prefix') . "product.wholesale_price*" . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception_product.qty) AS wholesale_price 
-        FROM " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception 
-        LEFT JOIN " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception_product 
-        ON " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception.id_bms_procurement_purchase_order_reception = " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception_product.reception_id 
-        LEFT JOIN " . env('DB2_DB_prefix') . "product 
-        ON " . env('DB2_DB_prefix') . "product.id_product = " . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception_product.product_id 
-        LEFT JOIN " . env('DB2_DB_prefix') . "manufacturer 
-        ON " . env('DB2_DB_prefix') . "manufacturer.id_manufacturer = " . env('DB2_DB_prefix') . "product.id_manufacturer
-        WHERE MONTH(" . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception.date_add) = " . $this->month . " 
-        AND YEAR(" . env('DB2_DB_prefix') . "bms_procurement_purchase_order_reception.date_add) = " . $this->year . " 
-        AND " . env('DB2_DB_prefix') . "product.id_manufacturer in (109, 113, 138, 141, 72, 93, 117, 136, 104, 68, 99, 69, 82, 142, 20, 124, 143, 92, 66, 121, 122, 123, 161)");
+        $ps = env('DB2_DB_prefix', 'ps_');
+        $ps = str_contains($ps, '.') ? $ps : config('database.connections.mysql2.database') . '.' . $ps;
+
+        $data = DB::select("SELECT {$ps}manufacturer.country_code AS iso_code, COALESCE({$ps}product_attribute.reference, {$ps}product.reference) AS reference, oms_reception_lines.qty_received AS qty, {$ps}custom_product.nc, {$ps}product.weight, ({$ps}product.wholesale_price * oms_reception_lines.qty_received) AS wholesale_price
+        FROM oms_receptions
+        LEFT JOIN oms_reception_lines
+        ON oms_receptions.id = oms_reception_lines.reception_id
+        LEFT JOIN oms_billed_order_lines
+        ON oms_billed_order_lines.id = oms_reception_lines.billed_order_line_id
+        LEFT JOIN {$ps}product
+        ON {$ps}product.id_product = oms_billed_order_lines.product_id
+        LEFT JOIN {$ps}product_attribute
+        ON {$ps}product_attribute.id_product_attribute = oms_billed_order_lines.product_attribute_id
+        LEFT JOIN {$ps}custom_product
+        ON {$ps}custom_product.id_product = {$ps}product.id_product
+        LEFT JOIN {$ps}manufacturer
+        ON {$ps}manufacturer.id_manufacturer = {$ps}product.id_manufacturer
+        WHERE MONTH(oms_receptions.created_at) = " . $this->month . "
+        AND YEAR(oms_receptions.created_at) = " . $this->year . "
+        AND {$ps}product.id_manufacturer in (109, 113, 138, 141, 72, 93, 117, 136, 104, 68, 99, 69, 82, 142, 20, 124, 143, 92, 66, 121, 122, 123, 161)");
         
         foreach($data AS $row){
         
@@ -502,7 +533,11 @@ class financeController extends Controller
                                     $reference = $data[12];
                                 }
                                 
-                                $product = product::join( env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer', '=', env('DB2_DB_prefix') . 'product.id_manufacturer' )->where('reference', $reference)->first();
+                                $product = product::select(env('DB2_DB_prefix') . 'product.*', env('DB2_DB_prefix') . 'custom_product.nc')
+                                    ->join( env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer', '=', env('DB2_DB_prefix') . 'product.id_manufacturer' )
+                                    ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+                                    ->where('reference', $reference)
+                                    ->first();
 
                                 if(is_null($product)){
                                     

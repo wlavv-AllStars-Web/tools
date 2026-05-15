@@ -5,7 +5,7 @@
         <div style="width: 100%;height: 20px;"></div>    
     @endif
     <div style="text-align: center; font-weight: bolder;padding:5px 0 0 0;font-size: 35px;margin-bottom: 20px;">{{$data->reference}}</div>
-    <img src="https://webtools.all-stars-motorsport.com/uploads/logistics/barcode/{{str_replace('/', '&&', $data->image_code)}}.png?t={{rand()}}" style="margin: 0 auto; width: 150px;">
+    <img src="{{ config('allstars.services.webtools.base_url') }}/uploads/logistics/barcode/{{str_replace('/', '&&', $data->image_code)}}.png?t={{rand()}}" style="margin: 0 auto; width: 150px;">
     
     @if(is_numeric($data->code))
         <div style="margin: 0 auto;font-weight: bolder;font-size: 25px;"> {{ number_format($data->code, 0, ' ', ' ')}} </div>

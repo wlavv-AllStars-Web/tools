@@ -22,7 +22,7 @@
 						<p>In such cases, the terms are straightforward: the client is responsible for shipping the product to our service center at their own expense, and we will forward it to the manufacturer for assessment.</p>
 						<p>If the product is indeed incompatible with your vehicle, and the incompatibility is not due to a modification of your vehicle, an external factor, or wear and tear, a refund will be issued (product value + shipping costs). To avoid any potential loss of time or costs, we recommend consulting with the professional who installed the product to ensure an accurate diagnosis regarding the product’s role in your issue. From there, at your exclusive request, we will provide the details required to initiate a return process in accordance with the procedure outlined above.</p>
 						<p>You can view our general terms and conditions at the following link:<br>
-							<a href="https://www.all-stars-motorsport.com/fr/content/3-conditions-d-utilization">https://www.all-stars-motorsport.com/fr/content/3-conditions-d-utilization</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-d-utilization">{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-d-utilization</a>
 						</p>
 						<p>We remain available for any further information.</p>
 						<br>

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
 
 use App\Http\Controllers\Controller;
 
@@ -113,7 +112,7 @@ class checklistManagerController extends Controller
         return redirect()->route('checklist.index')->with('ok','Template criada.');
     }
     
-    public function edit($taskId = null,checklist_templates $template) {
+    public function edit($taskId, checklist_templates $template) {
         // $this->authorize('manage', $template);
         // $employees = auth()->user()->employees()->orderBy('name')->get();
         

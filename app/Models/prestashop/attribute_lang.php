@@ -3,17 +3,16 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class attribute_lang extends Model{
-    
-    protected $connection = 'mysql2';
+class attribute_lang extends PrestashopModel
+{
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
+    protected $fillable = ['name'];
+
+    public function __construct(array $attributes = [])
     {
-        $this->table = env('DB2_prefix')."attribute_lang";
+        parent::__construct($attributes);
+        $this->table = self::tableName('attribute_lang');
     }
 }

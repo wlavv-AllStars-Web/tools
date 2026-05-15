@@ -3,17 +3,16 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class cart_product extends Model
-{
-    protected $connection = 'mysql2';
-    use HasFactory;
-    public $timestamps = false;
-
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."cart_product";
-    }
+class cart_product extends PrestashopModel{
     
+    use HasFactory;
+
+    protected $fillable = [];
+
+    public function __construct(array $attributes = []){
+        
+        parent::__construct($attributes);
+        $this->table = self::tableName('cart_product');
+    }
 }

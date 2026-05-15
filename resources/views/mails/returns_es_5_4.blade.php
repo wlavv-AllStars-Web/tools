@@ -16,7 +16,7 @@
                         <p>Hemos recibido su devolución y, tras la verificación correspondiente, nuestro departamento de calidad ha podido validar su aceptación. Por lo tanto, nuestro departamento financiero procesará su reembolso dentro de 48 a 72 horas (días hábiles) a través del método de pago utilizado para su pedido.</p>
                         <p>Tenga en cuenta que, de acuerdo con nuestras condiciones generales de venta, los gastos de envío generados para la devolución del paquete no son reembolsables, ya que siguen siendo a cargo del cliente en caso de cambio de opinión.</p>
                         <p>Puede consultar todos los detalles de nuestras condiciones de devolución haciendo clic en el siguiente enlace ( apartado 7 ):</p>
-                        <p><a href="https://www.all-stars-motorsport.com/es/content/3-condiciones-de-uso">Condiciones de uso</a></p>
+                        <p><a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/es/content/3-condiciones-de-uso">Condiciones de uso</a></p>
                         <p>Quedamos a su disposición para cualquier otra consulta.</p>
                 		<br>
                         <p>Atentamente,</p>

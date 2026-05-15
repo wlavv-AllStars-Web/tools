@@ -3,40 +3,53 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
-class product_comment extends Model{
-    
-    protected $connection = 'mysql2';
+class product_comment extends PrestashopModel
+{
     use HasFactory;
-    public $timestamps = false;
 
-    public function __construct(){
-        $this->table = env('DB2_prefix')."product_comment";
+    protected $primaryKey = 'id_product_comment';
+    protected $fillable = [];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->table = self::tableName('product_comment');
     }
 
-    public static function dashboard_reviews($type){
-
-        $data = array();
-
-        $bd_data = self::select( '*' )
-            ->where( 'deleted', 0 )
-            ->where( 'validate', 0 )
+    public static function dashboard_reviews($type)
+    {
+        $pendingReviews = self::where('deleted', 0)
+            ->where('validate', 0)
             ->count();
-            
-        $token = ( isset ( Config::get('token')->AdminProducts ) ) ? Config::get('token')->AdminModules : null;
-        
-        return [
-            'name'              => trans('dashboard.Reviews'),
-            'col'               => 4,
-            'item_id'           => $type . '_reviews',
-            'columns'           => [],
-            'counter'           => $bd_data,
-            'direct_link'       => 'https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminModules&token='. $token .'&configure=productcomments&tab_module=front_office_features&module_name=productcomments',
-            'data'              => [$bd_data]
-        ];        
-    }
 
+        $url = PrestashopAdminLinkService::legacyAdminUrl(
+            'AdminModulesSf',
+            [
+                'configure'   => 'productcomments',
+                'tab_module'  => 'front_office_features',
+                'module_name' => 'productcomments',
+            ],
+            'ASM'
+        );
+
+        $data = [];
+
+        if ($pendingReviews > 0) {
+            $data[] = [
+                'pending_reviews' => $pendingReviews,
+                'url'             => $url,
+            ];
+        }
+
+        return self::dashboardPanel(
+            trans('dashboard.Reviews'),
+            $type,
+            'reviews',
+            ['pending_reviews'],
+            $data
+        );
+    }
 }

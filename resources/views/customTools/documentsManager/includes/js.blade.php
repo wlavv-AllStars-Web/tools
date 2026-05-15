@@ -115,7 +115,7 @@
     
     function executeFunction(){
         setTimeout(function () {
-            $('#loadFile').replaceWith('<div id="loadFile"><div class="navbar navbar-light customPanel"><embed src="https://webtools.all-stars-motorsport.com/uploads/documents/upload.pdf?t={{rand()}}" width="850px" height="650px" type="application/pdf" ></div></div>');
+            $('#loadFile').replaceWith('<div id="loadFile"><div class="navbar navbar-light customPanel"><embed src="/uploads/documents/upload.pdf?t={{rand()}}" width="850px" height="650px" type="application/pdf" ></div></div>');
             $('#idSaveButton').css('display', 'grid');
         }, 1000)   
     }

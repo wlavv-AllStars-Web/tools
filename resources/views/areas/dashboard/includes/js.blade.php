@@ -200,7 +200,7 @@ function getDailyStats(){
 
     $.ajax({
         type: 'POST',
-        url: "{{route('dashboard.daily_stats')}}",
+        url: "{{route('stats.daily_stats')}}",
         dataType: "json",
         data: {
             _token: "{{ csrf_token() }}"

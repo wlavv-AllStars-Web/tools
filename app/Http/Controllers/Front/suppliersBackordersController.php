@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 
-use App\Models\prestashop\suppliers;
 
 use App\Models\modules\backorders_list\backorders_list;
 

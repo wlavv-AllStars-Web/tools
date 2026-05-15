@@ -4,7 +4,6 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Controller;
 
 use App\Models\prestashop\suppliers;
@@ -13,17 +12,23 @@ use App\Models\modules\supplier_delivery_issues\supplier_delivery_issues;
 use App\Models\modules\supplier_warranty_issues\supplier_warranty_issues;
 
 
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_reception_product;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_reception;
 
 class suppliersIssuesController extends Controller
 {
     public $actions;
-    public $breadcrumbs;
+    public $breadcrumbs = [];
     
     public function index($type){
+        $area = ((int) $type === 2)
+            ? ['name' => 'Logistics', 'url' => route('logistics.index')]
+            : ['name' => 'purchase', 'url' => route('purchase.index')];
+
+        $this->breadcrumbs[] = $area;
+        $this->breadcrumbs[] = [
+            'name' => ((int) $type === 2) ? 'Supplier delivery issues' : 'Supplier issues',
+            'url' => route('suppliersIssues.index', ['type' => $type]),
+            'no_translation' => 1,
+        ];
 
         $deliveryIssues = supplier_delivery_issues::getAllActive();
         $supplierIssues = supplier_issues::getAllActive();

@@ -4,13 +4,9 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
 use App\Http\Controllers\Controller;
 
 use App\Models\modules\carrierReturn\carrierReturn;
-use App\Models\prestashop\order_carrier;
 
 class carrierReturnController extends Controller
 {

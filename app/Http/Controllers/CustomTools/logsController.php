@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\modules\logs\logs;
 use Illuminate\Http\Request;
 
-use App\Services\Logs\LogService;
 
 class logsController extends Controller{
     

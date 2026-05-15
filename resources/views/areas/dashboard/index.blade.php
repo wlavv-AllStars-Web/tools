@@ -48,33 +48,21 @@
                         </a>
                     </div>
                     <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;margin-left: 20px;"> 
-                        <a href="{{ route('dashboard.kpi') }}">     
+                        <a href="{{ route('stats.kpi') }}">     
                             <div><i style="font-size: 40px;" class="fa-solid fa-chart-pie"></i></div>
                             <div>KPI</div>
+                        </a>
+                    </div>
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+                        <a href="{{ route('customTools.changesTracker.index') }}" title="Carrier Check">   
+                            <div><i class="fa-solid fa-code" style="font-size: 40px;"></i></div>
+                            <div style="line-height: 1.2;">CHANGES</div>
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-
         <div class="col-lg-12" id="daily_stats"> </div>
-        
     </div>
-</div>
-
-    </div>
-</div>
-
-<div class="row">
-    @foreach( $counters AS $counter)
-        @include("areas.dashboard.includes.counters", $counter)
-    @endforeach
-</div>
-
-<div class="row">
-    @foreach( $panels AS $panel)
-        @include("areas.dashboard.includes.panels", $panel)
-    @endforeach
-</div>
 
 @endsection

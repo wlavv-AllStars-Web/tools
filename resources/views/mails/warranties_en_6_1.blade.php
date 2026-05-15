@@ -20,7 +20,7 @@
 						<p>If the product is actually defective but the defect is not the result of normal wear and tear or an external factor, an exchange will be carried out, and the manufacturer will cover the transportation costs and any associated expenses.</p>
 						<p>Otherwise, if it is verified that the product is in good working order, all costs incurred will be the sole responsibility of the customer.</p>
 						<p>You can review our warranty conditions via the following link (section 8):<br>
-							<a href="https://www.all-stars-motorsport.com/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a>
 						</p>
 						<p>You will be notified by email whenever the status of your request is updated.</p>
 						<p>You can also find all information regarding your request in your customer account.</p>

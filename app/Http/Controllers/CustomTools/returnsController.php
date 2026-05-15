@@ -4,13 +4,9 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
-use Carbon\Carbon;
 
-use App\Models\modules\dashboard\dashboard;
 
 use App\Models\modules\refund\refund;
 use App\Models\prestashop\issues;
@@ -23,11 +19,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\CustomTools\mailsController;
 
 class returnsController extends Controller{
+    public $actions = [];
+    public $breadcrumbs = [];
     
     public function __construct(){
         
-        $this->breadcrumbs[] = [ 'name' =>  trans('sales'),  'url' => route('sales.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('returns'), 'url' => route('returns.index', ['type' => 1])];
+        $this->breadcrumbs[] = ['name' => 'sales', 'url' => route('sales.index')];
+        $this->breadcrumbs[] = ['name' => 'Returns', 'url' => route('returns.index', ['type' => 1]), 'no_translation' => 1];
         $this->actions[]     = [];
     }
     
@@ -42,7 +40,7 @@ class returnsController extends Controller{
             $returns = order_return::whereIn('state', [10, 11, 14])->where('process', 'return')->get();
             $list = 0;
         }
-        
+
         return view('customTools.returns.index', compact('breadcrumbs', 'returns', 'list'));
     }
     
@@ -83,14 +81,14 @@ class returnsController extends Controller{
         switch($id_associated){
             case 10:{
                 $template = 'returns_'.$iso.'_5_1';
-                $subject[1] = 'Return – request registered';
+                $subject[2] = 'Return – request registered';
                 $subject[4] = 'Devolución – solicitud registrada';
                 $subject[5] = 'Retour - demande enregistrée';
                 break;
             }
             case 11:{
                 $template = 'returns_'.$iso.'_5_2';
-                $subject[1] = 'Return - awaiting delivery';
+                $subject[2] = 'Return - awaiting delivery';
                 $subject[4] = 'Devolución - en espera de entrega';
                 $subject[5] = 'Retour - en attente livraison';
 
@@ -109,7 +107,7 @@ class returnsController extends Controller{
             }
             case 12:{
                 $template = 'returns_'.$iso.'_5_5';
-                $subject[1] = 'Return – not approved';
+                $subject[2] = 'Return – not approved';
                 $subject[4] = 'Devolución – no aprobada';
                 $subject[5] = 'Retour – non aprouve';
 
@@ -120,7 +118,7 @@ class returnsController extends Controller{
             }
             case 13:{
                 $template = 'returns_'.$iso.'_5_4';
-                $subject[1] = 'Return – approved';
+                $subject[2] = 'Return – approved';
                 $subject[4] = 'Devolución – aprobada';
                 $subject[5] = 'Retour – aprouvé';
 
@@ -148,7 +146,7 @@ class returnsController extends Controller{
             }
             case 14:{
                 $template = 'returns_'.$iso.'_5_3';
-                $subject[1] = 'Return - package received';
+                $subject[2] = 'Return - package received';
                 $subject[4] = 'Devolución - paquete recebido';
                 $subject[5] = 'Retour – colis reçu';
                 break;

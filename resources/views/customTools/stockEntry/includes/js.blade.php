@@ -135,7 +135,7 @@
                             $('#idProductMeasurementsForm').prop('value', object.product_id);
                             $('#idProductAttributeMeasurementsForm').prop('value', object.product_attribute_id);
                             $('#referenceMeasurementsForm').prop('value', object.sku);
-                            $('#id_bms_procurement_purchase_order_product').prop('value', object.id_bms_procurement_purchase_order_product);
+                            $('#oms_billed_order_line_id').prop('value', object.oms_billed_order_line_id);
                             
                             
                             document.getElementById('tag_ordered').innerHTML    = object.qty_ordered;
@@ -242,7 +242,7 @@
                     id_product: $('#idProductMeasurementsForm').val(),
                     id_product_attribute: $('#idProductAttributeMeasurementsForm').val(),
                     reference: $('#referenceMeasurementsForm').val(),
-                    id_bms_procurement_purchase_order_product: $('#id_bms_procurement_purchase_order_product').val(),
+                    oms_billed_order_line_id: $('#oms_billed_order_line_id').val(),
                     received: received,
                 },
                 success: function(response) {

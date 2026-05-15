@@ -33,10 +33,10 @@
                 @foreach($order_rows AS $row)
                     @if( ( $row->qty_ordered - $row->qty_received ) != 0 )
                        <?php $pending += ($row->qty_ordered - $row->qty_billed ) ?>
-                       <?$refs[$row->order_id] = $row->order_reference ?>
+                       <?php $refs[$row->order_id] = $row->order_reference ?>
                     @else
                        <?php $pending += ($row->qty_ordered - $row->qty_billed ) ?>
-                       <?$refs[$row->order_id] = $row->order_reference ?>
+                       <?php $refs[$row->order_id] = $row->order_reference ?>
                     @endif
                 @endforeach
             @endforeach

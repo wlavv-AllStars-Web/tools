@@ -1,42 +1,46 @@
 @extends('layouts.app')
+
 @section('content')
-    @include("customTools.stockEntry.includes.js")
     <div class="navbar navbar-light customPanel">
-        <div style="display: table;width: 100%;">
-            <table style="width: 100%;background-color: #ddd;border: 1px solid #ccc; text-align: center;">
-                <tr style="border-bottom: 1px solid #ccc;">
-                    <td class="hide_mobile">{{ __("messages.id_order")}}</td>
-                    <td>{{ __("messages.ORDER REFERENCE")}}</td>
-                    <td>{{ __("messages.SKU")}}</td>
-                    <td>{{ __("messages.QUANTITY")}}</td>
-                    <td class="hide_mobile">{{ __("messages.OPERATOR")}}</td>
-                    <td></td>
-                </tr>
-                @foreach ($entries as $entry)
-
-                    @if ($entry['deleted'] == 1 )
-                    <tr style="border-bottom: 1px solid #ccc;" class="alert alert-danger">
-                    @else
-                    <tr style="border-bottom: 1px solid #ccc;background-color: #fff;">
-                    @endif
-                        <td class="hide_mobile">{{$entry['po_id']}}</td>
-                        <td>{{$entry['reference']}}</td>
-                        <td>{{$entry['sku']}}</td>
-                        <td>{{$entry['qty']}}</td>
-                        <td class="hide_mobile">{{$entry['firstname']}} {{$entry['lastname']}}</td>
-                        <td style="padding: 5px;">
-                            <button type="button" class="btn btn-danger" onclick="destroyEntry({{$entry['id_bms_procurement_purchase_order_reception']}})">
-                                <i style="pointer-events: none;" class="f-left fa fa-trash"></i>
-                            </button>
-                        </td>
+        <div style="width: 100%; overflow-x: auto;">
+            <table class="table table-striped table-hover" style="width: 100%; margin-bottom: 0;">
+                <thead>
+                    <tr style="text-align: center;">
+                        <th>Reception</th>
+                        <th>Order</th>
+                        <th>Reference</th>
+                        <th>SKU</th>
+                        <th>Qty</th>
+                        <th>User</th>
+                        <th>Action</th>
                     </tr>
-                @endforeach
+                </thead>
+                <tbody>
+                    @forelse($entries as $entry)
+                        <tr style="text-align: center; vertical-align: middle;">
+                            <td>{{ $entry['oms_reception_id'] }}</td>
+                            <td>{{ $entry['po_id'] }}</td>
+                            <td>{{ $entry['reference'] }}</td>
+                            <td>{{ $entry['sku'] }}</td>
+                            <td>{{ $entry['qty'] }}</td>
+                            <td>{{ trim(($entry['firstname'] ?? '') . ' ' . ($entry['lastname'] ?? '')) }}</td>
+                            <td>
+                                <form method="POST" action="{{ route('stockEntry.destroy', $entry['oms_reception_id']) }}" onsubmit="return confirm('Remove this stock entry?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center">No stock entries found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
             </table>
-
-            <form id="destroyEntryForm" action="#" method="POST">
-                @csrf
-                @method("DELETE")
-            </form>
         </div>
     </div>
 @endsection

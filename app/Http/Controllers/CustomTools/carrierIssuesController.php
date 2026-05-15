@@ -4,7 +4,6 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
@@ -16,6 +15,7 @@ use App\Models\prestashop\order_carrier;
 
 class carrierIssuesController extends Controller
 {
+    public $breadcrumbs = [];
     
     private $carriers = [
             [
@@ -33,6 +33,8 @@ class carrierIssuesController extends Controller
         ];
         
     public function index() {
+        $this->breadcrumbs[] = ['name' => 'Logistics', 'url' => route('logistics.index')];
+        $this->breadcrumbs[] = ['name' => 'Carrier issues', 'url' => route('carrierIssues.index'), 'no_translation' => 1];
 
         carrierIssues::updateIssuesDelayDate();
 
@@ -45,7 +47,8 @@ class carrierIssuesController extends Controller
             'carrierIssuesArchived' => $carrierIssuesArchived,
             'carrierIssuesActive' => $carrierIssuesActive,
             'carrierIssuesRetention' => $carrierIssuesRetention,
-            'countries'     => country::with('lang_en')->get()
+            'countries'     => country::with('lang_en')->get(),
+            'breadcrumbs'   => $this->breadcrumbs
         ];
 
         return View::make('customTools/carrierIssues/index')->with($data);
@@ -124,7 +127,7 @@ class carrierIssuesController extends Controller
             fclose($handle);
         }
         
-        $asm = self::requestDataFromASM($rows);
+        $asm = self::requestDataFromShop($rows, '', 2, 'ASM');
         
         $asd = json_decode(json_encode(self::requestDataFromASD($rows)), true);
 
@@ -155,7 +158,7 @@ class carrierIssuesController extends Controller
             fclose($handle);
         }
 
-        $asm = self::requestDataFromASM($rows, 'NACEX');
+        $asm = self::requestDataFromShop($rows, 'NACEX', 2, 'ASM');
         
         $asd = json_decode(json_encode(self::requestDataFromASD($rows, 'NACEX')), true);
 
@@ -190,7 +193,7 @@ class carrierIssuesController extends Controller
             fclose($handle);
         }
 
-        $asm = self::requestDataFromASM($rows, 'UPS');
+        $asm = self::requestDataFromShop($rows, 'UPS', 2, 'ASM');
 
         $asd = json_decode(json_encode(self::requestDataFromASD($rows, 'UPS')), true);
 
@@ -220,10 +223,11 @@ class carrierIssuesController extends Controller
     }
 
 
-    private function requestDataFromASM($data, $by_id_order = '') {
+    private function requestDataFromShop($data, $by_id_order = '', int $shopId = 2, string $store = 'ASM') {
         
-        $asm_rows = array();
+        $shop_rows = array();
         $count = 0;
+        $prefix = env('DB2_DB_prefix');
             
         foreach($data AS $row){
         
@@ -231,31 +235,34 @@ class carrierIssuesController extends Controller
         
             if($by_id_order == ''){
                 
-                $shippment = DB::table(env('DB2_DB_prefix') . 'orders')
-                    ->join(       env('DB2_DB_prefix') . 'order_carrier',     env('DB2_DB_prefix') . 'orders.id_order', '=', env('DB2_DB_prefix') . 'order_carrier.id_order')
-                    ->where(      env('DB2_DB_prefix') . 'orders.reference', $row[1] )
-                    ->where(      env('DB2_DB_prefix') . 'order_carrier.tracking_number', $row[0] )
+                $shippment = DB::connection('mysql2')->table($prefix . 'orders')
+                    ->join(       $prefix . 'order_carrier',     $prefix . 'orders.id_order', '=', $prefix . 'order_carrier.id_order')
+                    ->where(      $prefix . 'orders.id_shop', $shopId )
+                    ->where(      $prefix . 'orders.reference', $row[1] )
+                    ->where(      $prefix . 'order_carrier.tracking_number', $row[0] )
                     ->first();
                     
             }elseif($by_id_order == 'NACEX'){
                 
-                $shippment = DB::table(env('DB2_DB_prefix') . 'orders')
-                    ->join(       env('DB2_DB_prefix') . 'order_carrier',     env('DB2_DB_prefix') . 'orders.id_order', '=', env('DB2_DB_prefix') . 'order_carrier.id_order')
-                    ->where(      env('DB2_DB_prefix') . 'orders.id_order', str_replace('pedido_', '', $row[6]) )
-                    ->where(      env('DB2_DB_prefix') . 'order_carrier.tracking_number', 'LIKE', "%" . str_replace('7490/', '', $row[4]) . '%' )
+                $shippment = DB::connection('mysql2')->table($prefix . 'orders')
+                    ->join(       $prefix . 'order_carrier',     $prefix . 'orders.id_order', '=', $prefix . 'order_carrier.id_order')
+                    ->where(      $prefix . 'orders.id_shop', $shopId )
+                    ->where(      $prefix . 'orders.id_order', str_replace('pedido_', '', $row[6]) )
+                    ->where(      $prefix . 'order_carrier.tracking_number', 'LIKE', "%" . str_replace('7490/', '', $row[4]) . '%' )
                     ->first();
 
             }elseif($by_id_order == 'UPS'){
-                $shippment = DB::table(env('DB2_DB_prefix') . 'orders')
-                    ->join(       env('DB2_DB_prefix') . 'order_carrier',     env('DB2_DB_prefix') . 'orders.id_order', '=', env('DB2_DB_prefix') . 'order_carrier.id_order')
-                    ->where(      env('DB2_DB_prefix') . 'order_carrier.tracking_number', 'LIKE', '%' . $row[4] . '%' )
+                $shippment = DB::connection('mysql2')->table($prefix . 'orders')
+                    ->join(       $prefix . 'order_carrier',     $prefix . 'orders.id_order', '=', $prefix . 'order_carrier.id_order')
+                    ->where(      $prefix . 'orders.id_shop', $shopId )
+                    ->where(      $prefix . 'order_carrier.tracking_number', 'LIKE', '%' . $row[4] . '%' )
                     ->first();
             }
             
             
             if(!is_null($shippment)){
                 if( isset($shippment->weight) ){
-                    $row['store'] = 'ASM';
+                    $row['store'] = $store;
                     $row['id_order'] = $shippment->id_order;
                     $row['weight'] = $shippment->weight + 0;
                     $row['width'] = $shippment->width + 0;
@@ -264,7 +271,7 @@ class carrierIssuesController extends Controller
                     $row['value'] = $shippment->ASM_shipping_info_value;                
                     
                 }else{
-                    $row['store'] = 'ASM';
+                    $row['store'] = $store;
                     $row['id_order'] = $shippment->id_order;
                     $row['weight'] = 0;
                     $row['width'] = 0;
@@ -274,36 +281,15 @@ class carrierIssuesController extends Controller
                     
                 }
     
-                $asm_rows[] =$row;
+                $shop_rows[] =$row;
             }
         }
 
-        return $asm_rows;
+        return $shop_rows;
     }
 
     private function requestDataFromASD($rows, $by_carrier = '') {
-
-        if($by_carrier == 'NACEX'){
-            $url = 'https://www.all-stars-distribution.com/custom/front/getOrdersShippingDetailsByIDorder.php';
-            }elseif($by_carrier == 'UPS'){
-            $url = 'https://www.all-stars-distribution.com/custom/front/getOrdersShippingDetailsByReferenceUPS.php';
-        }else{
-            $url = 'https://www.all-stars-distribution.com/custom/front/getOrdersShippingDetailsByReference.php';
-        }
-        
-        $ch = curl_init($url);
-
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HTTPGET, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true); 
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($rows));
-
-        $response = curl_exec($ch);
-
-        return json_decode($response);
+        return self::requestDataFromShop($rows, $by_carrier, 3, 'ASD');
 
     }
 

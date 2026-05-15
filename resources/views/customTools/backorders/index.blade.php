@@ -191,7 +191,7 @@
         });
                     
         $('#exampleModalLabel').text(reference).css('margin', '0 auto');
-        $('#myModal').modal('toggle');
+        $('#myModal').modal('show');
         
     }
 
@@ -242,7 +242,7 @@
         });
                     
         $('#exampleModalLabel').text('ORDER: ' + id_order).css('margin', '0 auto');
-        $('#myModal').modal('toggle');  
+        $('#myModal').modal('show');  
         
     }
 </script>
@@ -265,23 +265,7 @@
             </table>
         </div>
         
-        <div style="text-align: center;float: left; width: calc( 100% - 650px )"> </div>
-        
-        <div style="float: right;margin-bottom: 0;padding-bottom: 0;">
-            <table class="table table-bordered" border="1" style="text-align: center;margin-bottom: 0;">
-                <tr>
-                    <td colspan="2" style="width: 150px; background-color: #FFD580;">PARTIALS</td>
-                </tr>
-                <tr>
-                    <td style="width: 150px;color: red; font-weight: bolder;">ASM</td>
-                    <td style="width: 150px;color: dodgerblue; font-weight: bolder;">ASD</td>
-                </tr>
-                <tr style="vertical-align: middle;">
-                    <td> {{$counters['asm_partial']}} </td>
-                    <td> {{$counters['asd_partial']}} </td>
-                </tr>
-            </table>
-        </div>
+        <div style="text-align: center;float: left; width: calc( 100% - 330px )"> </div>
     </div>
     
     <div class="navbar navbar-light customPanel"><div id="sales_history">
@@ -308,14 +292,16 @@
                 </thead>
                 <tbody>
                     @foreach($backorders AS $backorder)
-                        @if($backorder->stock  < 0)
+                    
+                        @if($backorder->stock< 1)
+                        
                         <tr class="main_rows_orders tr_{{$backorder->id_order}}_{{$backorder->original_id_product}}_{{$backorder->original_id_product_attribute}}">
                             <td onclick="getOrderDetails({{ $backorder->id_order }})" style="@if($backorder->store == 'ASD') color: dodgerblue; @endif @if($backorder->color != '#FFF') background-color: {{$backorder->color}} @endif cursor: pointer;">
                                 <span> <i class="fa-solid fa-cubes"></i> </span><span style="cursor: pointer;">{{ $backorder->id_order }}</span>
                             </td>
                             <td style="@if($backorder->store == 'ASD') color: dodgerblue; @endif @if($backorder->color != '#FFF') background-color: {{$backorder->color}} @endif">
                                 @if( $backorder->id_country > 0)
-                                    <img title="{{$backorder->country}}" alt="{{$backorder->country}}" src="https://www.all-stars-motorsport.com/img/flags/Flags_{{$backorder->id_country}}.webp" style="height: 15px; width: 20px;">
+                                    <img title="{{$backorder->country}}" alt="{{$backorder->country}}" src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/flags/Flags_{{$backorder->id_country}}.webp" style="height: 15px; width: 20px;">
                                 @endif
                             </td>
                             <td style="@if($backorder->store == 'ASD') color: dodgerblue; @endif @if($backorder->color != '#FFF') background-color: {{$backorder->color}} @endif">{{ date_format(date_create($backorder->order_date), 'Y-m-d') }}</td>
@@ -323,7 +309,7 @@
                             <td style="@if($backorder->color != '#FFF') background-color: {{$backorder->color}} @endif">
                                 @if(isset($backorder->brand))
                                     <div style="text-align: left;float: left;">
-                                        <div style="padding: 2px 7px;width: 25px; height: 25px; border-radius: 25px; @if($backorder->type == 'partial') background-color: #FFD580; @else background-color: #ff7f7f; @endif ;float: left; margin-right: 10px;">
+                                        <div style="padding: 2px 7px;width: 25px; height: 25px; border-radius: 25px; background-color: #ff7f7f; float: left; margin-right: 10px;">
                                             {{ $backorder->sold}}
                                         </div> 
                                         <span>{{ $backorder->reference }}</span>

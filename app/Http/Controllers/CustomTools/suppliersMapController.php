@@ -4,13 +4,11 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Controller;
 
 use App\Models\prestashop\suppliers;
 use App\Models\prestashop\manufacturers;
 use App\Models\modules\supplier_map\supplier_map;
-use App\Models\modules\supplier_warranty_issues\supplier_warranty_issues;
 
 class suppliersMapController extends Controller
 {
@@ -19,8 +17,8 @@ class suppliersMapController extends Controller
     
     public function index(){
         
-        $this->breadcrumbs[] = [ 'name' =>  trans('Sales'), 'url' => route('sales.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans("Supplier's map"), 'url' => route('suppliersMap.index')];
+        $this->breadcrumbs[] = ['name' => 'purchase', 'url' => route('purchase.index')];
+        $this->breadcrumbs[] = ['name' => "Supplier's map", 'url' => route('suppliersMap.index'), 'no_translation' => 1];
         
         $supplierMap = supplier_map::getAll();
         

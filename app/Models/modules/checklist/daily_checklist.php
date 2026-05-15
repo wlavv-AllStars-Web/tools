@@ -23,4 +23,47 @@ class daily_checklist extends Model {
 	{
 		return $this->belongsTo(User::class, 'changed_by');
 	}
+
+	public static function ensureTasksForDate(array $departmentIds, $date = null): int
+	{
+		$date = $date ?: today();
+		$created = 0;
+
+		$templates = checklist_templates::query()
+			->whereIn('department_id', $departmentIds)
+			->where('active', 1)
+			->where(function ($query) {
+				$query->where('deleted', '!=', 1)
+					->orWhereNull('deleted');
+			})
+			->get();
+
+		foreach ($templates as $template) {
+			$exists = self::where('template_id', $template->id)
+				->where('department_id', $template->department_id)
+				->whereDate('for_date', $date)
+				->exists();
+
+			if ($exists) {
+				continue;
+			}
+
+			self::create([
+				'for_date' => $date,
+				'template_id' => $template->id,
+				'admin_id' => $template->admin_id,
+				'employee_id' => $template->employee_id,
+				'department_id' => $template->department_id,
+				'status' => 'pending',
+				'state_priority' => 3,
+				'main_task' => 1,
+				'created_at' => now(),
+				'updated_at' => now(),
+			]);
+
+			$created++;
+		}
+
+		return $created;
+	}
 }

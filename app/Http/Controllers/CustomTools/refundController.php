@@ -4,12 +4,10 @@ namespace App\Http\Controllers\CustomTools;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Http\File;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 
 use App\Models\prestashop\customer;
-use App\Models\prestashop\product;
 use App\Models\prestashop\orders;
 use App\Models\prestashop\orders_details;
 use App\Models\prestashop\order_payment;
@@ -23,13 +21,21 @@ class refundController extends Controller
     public $breadcrumbs;
 
     public function index(Request $request){
+        $indexRoute = request()->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.index' : 'refund.index';
         
-        $this->breadcrumbs[] = [ 'name' =>  trans('finance'), 'url' => route('finance.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('Refund'), 'url' => route('refund.index')];
+        $this->breadcrumbs[] = [ 'name' => 'finance', 'url' => route('finance.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Refunds', 'url' => route($indexRoute), 'no_translation' => 1];
         
         $data = [
             'actions'    => [],
             'breadcrumbs'=> $this->breadcrumbs,
+            'routes'     => [
+                'index' => $indexRoute,
+                'new' => request()->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.new' : 'refund.newRefund',
+                'get_info' => request()->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.get_info' : 'refund.getInfo',
+                'edit' => request()->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.edit' : 'refund.editRefund',
+                'update' => request()->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.update' : 'refund.updateRefund',
+            ],
             'refunds'    =>  Refund::getRefunds( $request->year, $request->month, $request->method ),
             'archived'    => Refund::getRefunds( $request->year, $request->month, $request->method, 'archived' )
         ];
@@ -66,13 +72,20 @@ class refundController extends Controller
     }
 
     public function editRefund(Request $request){
+        $updateRoute = $request->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.update' : 'refund.updateRefund';
+        $prefix = env('DB2_DB_prefix', 'ps_');
+        $prefix = str_contains($prefix, '.') ? $prefix : config('database.connections.mysql2.database') . '.' . $prefix;
+        $ordersTable = $prefix . 'orders';
+        $customerTable = $prefix . 'customer';
+        $orderStateLangTable = $prefix . 'order_state_lang';
+
         $refund = refund::
-        select('*', env('DB2_DB_prefix') . 'orders.date_add AS purchase_date')
-        ->leftjoin(env('DB2_DB_prefix') . 'orders', 'refunds.id_order', '=', env('DB2_DB_prefix') . 'orders.id_order')
-        ->leftjoin(env('DB2_DB_prefix') . 'customer', env('DB2_DB_prefix') . 'orders.id_customer', '=', env('DB2_DB_prefix') . 'customer.id_customer')
-        ->leftjoin(env('DB2_DB_prefix') . 'order_state_lang', env('DB2_DB_prefix') . 'orders.current_state', '=', env('DB2_DB_prefix') . 'order_state_lang.id_order_state')
+        select('*', $ordersTable . '.date_add AS purchase_date')
+        ->leftjoin($ordersTable, 'refunds.id_order', '=', $ordersTable . '.id_order')
+        ->leftjoin($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
+        ->leftjoin($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
         ->findOrFail($request->id);
-        return view('customTools.refund.includes.edit-form', compact('refund'));
+        return view('customTools.refund.includes.edit-form', compact('refund', 'updateRoute'));
     }
 
     
@@ -94,7 +107,7 @@ class refundController extends Controller
         $refund->eta = $data->eta;
         $refund->update();
     
-        return redirect()->route('refund.index')->with('success', 'Refund atualizado com sucesso.');
+        return redirect()->route($data->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.index' : 'refund.index')->with('success', 'Refund atualizado com sucesso.');
     }
 
 }

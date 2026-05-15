@@ -12,7 +12,7 @@
     <td><input style="max-width: 90px; padding: 5px;text-align: center;" type="text" name="searchNumber"      id="searchNumber"   @if(strlen($searchNumber) > 0)      value="{{$searchNumber}}"   @else value="" @endif></td>
     <td><input style="max-width: 90px; padding: 5px;text-align: center;" type="text" name="searchCategory"    id="searchCategory" @if(strlen($searchCategory) > 0)    value="{{$searchCategory}}" @else value="" @endif></td>
     <td><input style="max-width: 90px; padding: 5px;text-align: center;" type="text" name="searchDate"        id="searchDate"     @if(strlen($searchDate) > 0)        value="{{$searchDate}}"     @else value="" @endif></td>
-    <td> <button class="btn btn-light" style="border: 1px solid #999;" onclick="listSearch()"> <i style="color: orange;" class="fa-solid fa-magnifying-glass"></i> </button> </button> </td>
+    <td> <button class="btn btn-light" style="border: 1px solid #999;" onclick="listSearch()"> <i style="color: orange;" class="fa-solid fa-magnifying-glass"></i> </button> </td>
 </tr>    
 @if(count($documents) > 0)
     @foreach($documents AS $document)

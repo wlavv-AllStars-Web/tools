@@ -15,6 +15,7 @@ class taskController extends Controller
     public function index(Request $request)
     {
         $this->authorize('create', task::class);
+        $adminIndexRoute = $request->routeIs('admin.tools.tasks.admin.*') ? 'admin.tools.tasks.admin.index' : 'tasks.admin.index';
 
         $year   = (int) $request->input('year', now()->year);
         $month  = (int) $request->input('month', now()->month);
@@ -32,7 +33,12 @@ class taskController extends Controller
         $tasks = $q->orderByDesc('task_date')->get();
         $teams = team::orderBy('name')->get();
 
-        return view('customTools.tasks.admin.index', compact('tasks','teams','year','month','teamId'));
+        $breadcrumbs = [
+            ['name' => 'administration', 'url' => route('administration.index')],
+            ['name' => 'Tasks', 'url' => route($adminIndexRoute), 'no_translation' => 1],
+        ];
+
+        return view('customTools.tasks.admin.index', compact('tasks','teams','year','month','teamId', 'breadcrumbs'));
     }
 
     public function store(Request $request)
@@ -58,6 +64,7 @@ class taskController extends Controller
 
         // ✅ Excel UI usa AJAX
         if ($request->ajax()) {
+            $routePrefix = $request->routeIs('admin.tools.tasks.admin.*') ? 'admin.tools.tasks.admin.' : 'tasks.admin.';
             $task->load('team');
 
             return response()->json([
@@ -74,9 +81,9 @@ class taskController extends Controller
                     'status_admin' => $task->status_admin ?? 'new',
                     'observations_admin' => $task->observations_admin ?? '',
                     'description' => $task->description ?? '',
-                    'field_url' => route('tasks.admin.field', $task->id),
-                    'comments_url' => route('tasks.admin.comments', $task->id),
-                    'update_url' => route('tasks.admin.update', $task->id),
+                    'field_url' => route($routePrefix . 'field', $task->id),
+                    'comments_url' => route($routePrefix . 'comments', $task->id),
+                    'update_url' => route($routePrefix . 'update', $task->id),
                 ]
             ]);
         }
@@ -247,7 +254,7 @@ return response()->json([
     'files' => $task->files->map(fn($f) => [
         'filename' => $f->filename,
         'size' => $f->size,
-        'download_url' => route('tasks.files.download', $f->id),
+        'download_url' => route(request()->routeIs('admin.tools.tasks.admin.*') ? 'admin.tools.tasks.files.download' : 'tasks.files.download', $f->id),
     ])->values(),
 ]);
 

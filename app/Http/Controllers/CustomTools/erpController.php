@@ -4,25 +4,13 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\DB;
 
 use App\Http\Controllers\Controller;
 
 use App\Models\prestashop\suppliers;
 
 use App\Models\prestashop\product;
-use App\Models\prestashop\product_lang;
-use App\Models\prestashop\orders_details;
-use App\Models\prestashop\stock_available;
-use App\Models\prestashop\product_attribute;
-
-use App\Models\modules\auto_orders\auto_orders;
-use App\Models\modules\auto_orders\cross_auto_orders;
-use App\Models\modules\auto_orders\auto_orders_purchase_list;
-
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
+use App\Services\oms\OmsLegacyProcurementService;
 
 class erpController extends Controller
 {
@@ -40,27 +28,11 @@ class erpController extends Controller
         if($list == 3) $data = suppliers::with('address')->orderBy('name', 'ASC')->get();
         
         if($list == 2){
-            $table = (new bms_procurement_purchase_order)->getTable();
-            
-            $data = bms_procurement_purchase_order::query()
-                ->whereNotIn('status_id', [5, 6])
-                ->selectRaw('supplier_id, COUNT(*) AS total_orders')
-                ->groupBy('supplier_id')
-                ->join(env('DB2_prefix').'supplier as s', 's.id_supplier', '=', $table.'.supplier_id')
-                ->orderBy('s.name')
-                ->get();
+            $data = OmsLegacyProcurementService::supplierCounts(false);
         }
         
         if($list == 1){
-            $table = (new bms_procurement_purchase_order)->getTable();
-            
-            $data = bms_procurement_purchase_order::query()
-                ->whereIn('status_id', [5, 6])
-                ->selectRaw('supplier_id, COUNT(*) AS total_orders')
-                ->groupBy('supplier_id')
-                ->join(env('DB2_prefix').'supplier as s', 's.id_supplier', '=', $table.'.supplier_id')
-                ->orderBy('s.name')
-                ->get();
+            $data = OmsLegacyProcurementService::supplierCounts(true);
         }
         
         return view('customTools.erp.index', compact('data', 'list'));
@@ -69,19 +41,8 @@ class erpController extends Controller
 
     public function ordersOfSupplier( Request $request ){
 
-        $table = (new bms_procurement_purchase_order)->getTable();
-        
-        $orders = bms_procurement_purchase_order::where('supplier_id', $request->id_supplier);
-        
         $openOrders = $request->openOrders + 0;
-        
-        if($request->openOrders == 1){
-            $orders->whereIn('status_id', [5, 6]);
-        }else{
-            $orders->whereNotIn('status_id', [5, 6]);
-        }
-        
-        $orders = $orders->get();
+        $orders = OmsLegacyProcurementService::ordersOfSupplier((int) $request->id_supplier, $openOrders === 1);
         
         $supplier = suppliers::where('id_supplier', $request->id_supplier)->first();
         
@@ -91,7 +52,9 @@ class erpController extends Controller
     
     public function getOrderDetailsOf($po_id){
         
-        $order = bms_procurement_purchase_order::with('rows.product.stock', 'rows.attribute.stock')->where('id_bms_procurement_purchase_order', $po_id)->first();
+        $order = OmsLegacyProcurementService::orderDetails((int) $po_id);
+
+        abort_if(!$order, 404);
         
         $order_total = 0;
         
@@ -107,14 +70,7 @@ class erpController extends Controller
             
         }
         
-        $sums = bms_procurement_purchase_order_product::selectRaw('
-                COUNT(*) as number_of_rows,
-                SUM(qty_ordered) as total_qty_ordered,
-                SUM(qty_wmfaturado) as total_qty_faturado,
-                SUM(qty_received) as total_qty_received
-            ')
-            ->where('po_id', $po_id)
-            ->first();
+        $sums = OmsLegacyProcurementService::lineSums((int) $po_id);
         
         return view('customTools.erp.order', compact('order', 'sums', 'order_total'));
     }

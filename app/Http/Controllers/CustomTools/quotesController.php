@@ -8,8 +8,24 @@ use Illuminate\Http\Request;
 
 class quotesController extends Controller{
     
-    public function index(){
-        return view('customTools.quotes.index');
+    public function index(Request $request){
+        $from = (string) $request->query('from', '');
+        $referrer = (string) $request->headers->get('referer', '');
+        $routeName = (string) optional($request->route())->getName();
+
+        if ($from === 'backoffice' || str_starts_with($routeName, 'backoffice.') || str_starts_with($routeName, 'purchase.') || str_contains($referrer, '/admin')) {
+            $breadcrumbs = [
+                ['name' => 'purchase', 'url' => route('purchase.index')],
+                ['name' => 'Quotes', 'url' => url()->current(), 'no_translation' => 1],
+            ];
+        } else {
+            $breadcrumbs = [
+                ['name' => 'sales', 'url' => route('sales.index')],
+                ['name' => 'Quotes', 'url' => url()->current(), 'no_translation' => 1],
+            ];
+        }
+
+        return view('customTools.quotes.index', compact('breadcrumbs'));
     }
 
     public function data(){

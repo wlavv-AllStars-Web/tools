@@ -126,5 +126,8 @@ return [
     "PRODUCT ISSUES" => "PRODUCT ISSUES",
     "ORDER RETURN - PACKAGE RECEIVED" => "ORDER RETURN - PACKAGE RECEIVED",
     "ORDERS WITH VOUCHER" => "ORDERS WITH VOUCHER",
-    "Warranty – Request for Additional Information" => "Warranty – Request for Additional Information"
+    "Warranty – Request for Additional Information" => "Warranty – Request for Additional Information",
+    "INVOICE WITHOUT SHIPMENT" => "INVOICE WITHOUT SHIPMENT",
+    
+    "VAT verification - Failed" => "VAT verification - Failed"
 ];

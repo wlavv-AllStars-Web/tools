@@ -3,11 +3,8 @@
 namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\File;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Http;
 
 use App\Services\PurchasePriceSyncService;
 
@@ -17,7 +14,6 @@ class purchasePriceController extends Controller
 {
     public $actions;
     public $breadcrumbs;
-    private static $onlinePath = 'https://www.all-stars-distribution.com';
 
     public function index(){
         

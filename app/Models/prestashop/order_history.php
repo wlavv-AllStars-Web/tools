@@ -3,29 +3,50 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-class order_history extends Model
-{
-    protected $connection = 'mysql2';
+class order_history extends PrestashopModel{
+    
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."order_history";
+    protected $primaryKey = 'id_order_history';
+    protected $fillable = ['name'];
+
+    public function __construct(array $attributes = []){
+        
+        parent::__construct($attributes);
+        $this->table = self::tableName('order_history');
     }
     
     public static function getPanelInfo($array){
+        
+        $orderHistoryTable = self::tableName('order_history');
+        $ordersTable = self::tableName('orders');
+        $customerTable = self::tableName('customer');
 
-        return self::select('ps_order_history.id_order', 'ps_orders.reference',  DB::raw('count(id_order_state) AS total'), 'firstname', 'lastname')
-            ->join('ps_orders', 'ps_order_history.id_order', '=', 'ps_orders.id_order')
-            ->join('ps_customer', 'ps_orders.id_customer', '=', 'ps_customer.id_customer')
-            ->where('ps_order_history.id_order_state', 2)
-            ->whereNotIn('ps_order_history.id_order', $array)
-            ->groupBy('ps_order_history.id_order')
+        return self::select(
+                $orderHistoryTable . '.id_order',
+                $ordersTable . '.reference',
+                DB::raw('COUNT(' . $orderHistoryTable . '.id_order_state) AS total'),
+                $customerTable . '.firstname',
+                $customerTable . '.lastname'
+            )
+            ->join($ordersTable, $orderHistoryTable . '.id_order', '=', $ordersTable . '.id_order')
+            ->join($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
+            ->where($orderHistoryTable . '.id_order_state', 2)
+            ->when(!empty($array), function ($query) use ($array, $orderHistoryTable) {
+                $query->whereNotIn($orderHistoryTable . '.id_order', $array);
+            })
+            ->groupBy(
+                $orderHistoryTable . '.id_order',
+                $ordersTable . '.reference',
+                $customerTable . '.firstname',
+                $customerTable . '.lastname'
+            )
             ->get();
+    }
+
+    public function order(){
+        return $this->belongsTo(orders::class, 'id_order', 'id_order');
     }
 }

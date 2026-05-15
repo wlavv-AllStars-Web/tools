@@ -12,11 +12,18 @@ use App\Http\Controllers\Controller;
 class translationPhraseController extends Controller
 {
     protected string $filePath;
+    protected array $breadcrumbs = [];
 
     public function __construct()
     {
         // Adjust path as needed (e.g., public/js/phrases.js or resources/js/phrases.js)
         $this->filePath = public_path('trackingTranslations/phrases.js');
+        $indexUrl = request()->routeIs('web.tools.tracking.*')
+            ? route('web.tools.tracking.index')
+            : route('translation.index');
+
+        $this->breadcrumbs[] = ['name' => 'web', 'url' => route('web.index')];
+        $this->breadcrumbs[] = ['name' => 'Tracking', 'url' => $indexUrl, 'no_translation' => 1];
     }
 
     // Get current phrases as JSON (for frontend editing)
@@ -29,7 +36,9 @@ class translationPhraseController extends Controller
     public function create()
     {
         $phrases = $this->readPhrases();
-        return view('customTools.trackingTranslations.edit', compact('phrases'));
+        $breadcrumbs = $this->breadcrumbs;
+
+        return view('customTools.trackingTranslations.edit', compact('phrases', 'breadcrumbs'));
     }
 
     // Save updated phrases

@@ -1,4 +1,22 @@
 <script>
+document.addEventListener('click', function (event) {
+    const brandToggle = event.target.closest('.auto-order-brand-toggle');
+    if (brandToggle) {
+        getProductsInfo(brandToggle.dataset.manufacturer, brandToggle.dataset.idManufacturer);
+        return;
+    }
+
+    const cleanBrandButton = event.target.closest('.auto-order-clean-brand');
+    if (cleanBrandButton) {
+        cleanBrand(cleanBrandButton.dataset.manufacturer, cleanBrandButton.dataset.idManufacturer);
+        return;
+    }
+
+    const exportBrandButton = event.target.closest('.auto-order-export-brand');
+    if (exportBrandButton) {
+        createAndDownloadZip(exportBrandButton.dataset.manufacturer);
+    }
+});
 
 function setAsOrdered(id, brand, id_brand, index){
 
@@ -130,7 +148,14 @@ function getProductInfo(element, id_supplier){
 
 function getProductsInfo(manufacturer, id_manufacturer){
 
-    const waitingPopup = Swal.fire({
+    const target = $("#table_" + id_manufacturer);
+
+    if (target.data('loaded')) {
+        target.toggle();
+        return;
+    }
+
+    Swal.fire({
         title: '{{ __("messages.Waiting for response!")}}',
         html: '{{ __("messages.Please wait!")}}',
         allowOutsideClick: false,
@@ -146,10 +171,13 @@ function getProductsInfo(manufacturer, id_manufacturer){
         dataType: "json",
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
         success: function (data) {
-            $("#table_" + id_manufacturer).replaceWith(data.html);
-            $('#toggle_'+id_manufacturer).toggle();
-            Swal.hideLoading(false);
-            waitingPopup.close();
+            target.html(data.html).show().data('loaded', true);
+            Swal.close();
+        },
+        error: function (error) {
+            Swal.close();
+            Swal.fire('{{ __("messages.Fail to load products. Please verify!")}}', '', 'error');
+            console.log(error.responseText || error);
         }
     });
     
@@ -157,7 +185,7 @@ function getProductsInfo(manufacturer, id_manufacturer){
 
 function createAndDownloadZip(manufacturer){
 
-    const waitingPopup = Swal.fire({
+    Swal.fire({
         title: '{{ __("messages.Waiting for response!")}}',
         html: '{{ __("messages.Please wait!")}}',
         allowOutsideClick: false,
@@ -174,10 +202,14 @@ function createAndDownloadZip(manufacturer){
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
         success: function (data) {
 
-            Swal.hideLoading(false);
-            waitingPopup.close();
+            Swal.close();
 
             window.location = data.path;
+        },
+        error: function (error) {
+            Swal.close();
+            Swal.fire('{{ __("messages.Fail to export. Please verify!")}}', '', 'error');
+            console.log(error.responseText || error);
         }
     });
     
@@ -238,17 +270,28 @@ function saveOrder(id_supplier){
             success: function (success) {
                 
                 if(success.success){
-                    Swal.fire('{{ __("messages.Order")}}' + result.value +'{{ __("messages.created!")}}', '', 'success')
+                    Swal.fire({
+                        title: '{{ __("messages.Order")}}' + result.value +'{{ __("messages.created!")}}',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Open OMS',
+                        cancelButtonText: 'OK'
+                    }).then((result) => {
+                        if (result.isConfirmed && success.path) {
+                            window.location = success.path;
+                        }
+                    });
 
                     $('#panel_'+id_supplier).remove();
                     
                 }else{
-                    Swal.fire('{{ __("messages.Can not generate the order!")}}', '', 'error')
+                    Swal.fire(success.message || '{{ __("messages.Can not generate the order!")}}', '', 'error')
                 }
 
             }, 
             error: function (error) {
-                console.log(`Error ${error}`);
+                Swal.fire(error.responseJSON?.message || '{{ __("messages.Can not generate the order!")}}', '', 'error');
+                console.log(error.responseText || error);
             }
         });
     

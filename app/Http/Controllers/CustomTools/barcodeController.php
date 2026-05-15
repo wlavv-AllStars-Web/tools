@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\CustomTools;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,9 +12,8 @@ use App\Models\prestashop\orders_details;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_attribute;
 
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
+use App\Services\oms\OmsLegacyProcurementService;
 
-use Milon\Barcode\DNS1D;
 use Milon\Barcode\DNS2D;
 
 class barcodeController extends Controller
@@ -42,11 +40,9 @@ class barcodeController extends Controller
         if($id_product_attribute == 0){
             product::where('id_product',$id_product)->update( [ 'ean13'=>$barcode ] );
             orders_details::where('product_id',$id_product)->where('product_attribute_id',0)->update( [ 'product_ean13'=>$barcode ] );
-            bms_procurement_purchase_order_product::where('product_id',$id_product)->where('product_attribute_id',0)->update( [ 'wmean13'=>$barcode ] );
         }else{
             product_attribute::where('id_product',$id_product)->where('id_product_attribute', $id_product_attribute)->update( [ 'ean13'=>$barcode ] );
             orders_details::where('product_id',$id_product)->where('product_attribute_id',$id_product_attribute)->update( [ 'product_ean13'=>$barcode ] );
-            bms_procurement_purchase_order_product::where('product_id',$id_product)->where('product_attribute_id',$id_product_attribute)->update( [ 'wmean13'=>$barcode ] );
         }
     }
     
@@ -115,7 +111,7 @@ class barcodeController extends Controller
         
         $html = '';
         
-        $products = bms_procurement_purchase_order_product::where('po_id', $id_order)->get();
+        $products = OmsLegacyProcurementService::linesForOrders([(int) $id_order]);
         
         foreach($products AS $product){
             
@@ -156,37 +152,6 @@ class barcodeController extends Controller
         return $code;
     }
     
-    private function valideEAN($barcode){
-
-        $barcode = (string) $barcode;
-
-        if (!preg_match("/^[0-9]+$/", $barcode)) {
-            return false;
-        }
-
-        $l = strlen($barcode);
-        if(!in_array($l, [8,12,13,14,17,18]))
-            return false;
-
-        $check = substr($barcode, -1);
-        $barcode = substr($barcode, 0, -1);
-        $sum_even = $sum_odd = 0;
-        $even = true;
-        while(strlen($barcode)>0) {
-            $digit = substr($barcode, -1);
-            if($even)
-                $sum_even += 3 * $digit;
-            else 
-                $sum_odd += $digit;
-            $even = !$even;
-            $barcode = substr($barcode, 0, -1);
-        }
-        $sum = $sum_even + $sum_odd;
-        $sum_rounded_up = ceil($sum/10) * 10;
-        
-        return ($check == ($sum_rounded_up - $sum));
-    }
-
     public function generate1DImage($codeType, $elementType, $code, $id = 0){
         
         $valid = true;
@@ -201,11 +166,13 @@ class barcodeController extends Controller
         $image_code = '';
 
         if($valid){
-            //$barcode = new DNS1D();
 
             if($elementType == 'standCell'){
-                $item = orders::where('id_order', $id)->first();
-                $image_code = 'o_'.$id;
+                $item = (object) [
+                    'ean13' => $code,
+                    'reference' => $code,
+                ];
+                $image_code = 'stand_cell_' . md5($code);
             }
             
             if($elementType == 'order'){
@@ -251,7 +218,7 @@ class barcodeController extends Controller
         }
         
         $data = (object)[ 
-            'code' => $item->ean13,
+            'code' => $item->ean13 ?? $code,
             'item' => $item,
             'product' => $product,
             'reference'=> $reference,

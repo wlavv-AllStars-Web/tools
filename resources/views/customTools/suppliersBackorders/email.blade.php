@@ -16,7 +16,7 @@
             <table style="width: 100%;font-size: 18px">
                 <tr>
                     <td style="text-align: center;">
-                        <img src="https://www.all-stars-distribution.com/img/all-stars-distribution-logo-1611565520.png" style="padding: 20px;" >
+                        <img src="{{ config('allstars.stores.ASD.logo_url') }}" style="padding: 20px;" >
                     </td>
                 </tr>
                <tr>

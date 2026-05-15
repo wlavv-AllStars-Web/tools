@@ -3,22 +3,19 @@
 namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 
-use Illuminate\Support\Facades\Http;
 
 use App\Models\modules\compats\compats;
-use App\Models\modules\compats\compats_product;
 use App\Models\modules\compats\compats_newsletter;
 
 class myGarageController extends Controller
 {
-    private static $token = 'UMb85YcQcDKQK021JKLAMM5yJ9pCgt';
-
     private static function validateToken($token)
     {
-        if($token != self::$token){
+        $expectedToken = (string) config('allstars.api.tokens.my_garage');
+
+        if($expectedToken === '' || !hash_equals($expectedToken, (string) $token)){
             $data =[
                 'status' => 'FAIL',
                 'message' => 'API token invalid'

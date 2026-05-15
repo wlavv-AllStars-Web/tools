@@ -1,97 +1,95 @@
 @extends('layouts.app')
 
 @section('content')
-
-<div class="container">
-    <h1 class="my-3">Gestão de Checklist</h1>
-    <div class="d-flex justify-content-between align-items-center">
-        <a href="{{ route('checklist.create') }}" class="btn btn-primary mb-3">+ Nova Tarefa</a>
-        {{--
-        @if(auth()->id() === 43 || auth()->id() === 104 || auth()->id() === 105)
-            <a href="{{ route('checklist.assignEmployees') }}" class="btn btn-sm btn-secondary">
-                Assign to Admin
-            </a>
-        @endif
-        --}}
-    </div>
-
-    @foreach($grouped as $deptId => $deptTemplates)
-        <div class="mb-4">
-            <div class="d-flex gap-3 mb-2 align-items-center row">
-                <h5 class="fw-bold mb-0 col-md-2">
-                    {{ $deptTemplates->first()->department_id == 2 ? 'Logistica' : 'Permanência' }}
-                </h5>
-                <div class="d-flex col-md-3 gap-2 justify-content-start">
-                    <a href="{{ route('checklist.history', ['department' => $deptTemplates->first()->department_id]) }}" class="btn btn-sm btn-warning" title="History">
-                        <i class="fa-solid fa-clock-rotate-left text-dark"></i>
-                    </a>
-                    <a class="btn btn-sm btn-info" data-bs-toggle="collapse" 
-                       href="#checklist_dept_{{ $deptId }}" 
-                       role="button" aria-expanded="false" aria-controls="collapseExample">
-                        <i class="fa-solid fa-chevron-down"></i>
-                        Show Checklist
+    <div class="checklist-page">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="navbar navbar-light customPanel checklist-toolbar">
+                    <h1 class="checklist-title">CHECKLIST MANAGER</h1>
+                    <a href="{{ route('checklist.create') }}" class="checklist-action">
+                        <i class="fa-solid fa-plus"></i> NEW TASK
                     </a>
                 </div>
             </div>
-
-            <ul class="list-group collapse" id="checklist_dept_{{ $deptId }}">
-                @foreach($deptTemplates as $template)
-                    @php
-                        $todayTask = $template->dailyTasks->where('for_date', today())->first();
-                    @endphp
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div clas="d-flex">
-                            @if($template->active != 1)
-                            <span title="Checklist not active"><i class="fa-solid fa-triangle-exclamation text-danger"></i></span>
-                            @endif
-                            <span>{{ $template->title }}</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-center gap-2">
-                            @if($todayTask)
-                                <a href="{{ route('checklist.edit', ['id' => $todayTask->id, 'template' => $template->id]) }}" 
-                                   title="Editar" class="btn btn-sm btn-warning">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
-                            @endif
-
-                            <form action="{{ route('checklist.destroy', $template) }}" method="POST" class="d-inline">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-danger" title="Remover" onclick="return confirm('Remover?')">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-            <hr>
         </div>
-    @endforeach
 
-    {{ $templates->links() }}
-</div>
+        @foreach($grouped as $deptId => $deptTemplates)
+            @php
+                $departmentId = $deptTemplates->first()->department_id;
+                $departmentName = $departmentId == 2 ? 'LOGISTICA' : 'PERMANENCIA';
+            @endphp
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="navbar navbar-light customPanel checklist-panel">
+                        <div class="checklist-tabs">
+                            <a href="{{ route('checklist.history', ['department' => $departmentId]) }}" class="checklist-tab" title="History">
+                                <i class="fa-solid fa-clock-rotate-left"></i> HISTORY
+                            </a>
+                            <a class="checklist-tab is-active" data-bs-toggle="collapse"
+                               href="#checklist_dept_{{ $deptId }}"
+                               role="button" aria-expanded="true" aria-controls="checklist_dept_{{ $deptId }}">
+                                {{ $departmentName }}
+                            </a>
+                        </div>
 
-<style>
-    .ball-info-1{
-        display:flex;
-        width:18px;
-        height:18px;
-        background: var(--bs-danger);
-        border-radius: 50%;
-    }
-    .ball-info-2{
-        display:flex;
-        width:18px;
-        height:18px;
-        background: var(--bs-warning);
-        border-radius: 50%;
-    }
-    .ball-info-3{
-        display:flex;
-        width:18px;
-        height:18px;
-        background: var(--bs-success);
-        border-radius: 50%;
-    }
-</style>
+                        <div class="collapse show" id="checklist_dept_{{ $deptId }}">
+                            <table class="checklist-list">
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th style="width: 120px; text-align: center;">Status</th>
+                                        <th style="width: 120px; text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($deptTemplates as $template)
+                                        @php
+                                            $todayTask = $template->dailyTasks->where('for_date', today())->first();
+                                        @endphp
+                                        <tr class="{{ $template->active != 1 ? 'checklist-row-muted' : '' }}">
+                                            <td>
+                                                @if($template->active != 1)
+                                                    <i class="fa-solid fa-triangle-exclamation text-danger" title="Checklist not active"></i>
+                                                @endif
+                                                {{ $template->title }}
+                                            </td>
+                                            <td style="text-align: center;">
+                                                {{ $template->active == 1 ? 'ACTIVE' : 'INACTIVE' }}
+                                            </td>
+                                            <td style="text-align: center;">
+                                                @if($todayTask)
+                                                    <a href="{{ route('checklist.edit', ['id' => $todayTask->id, 'template' => $template->id]) }}"
+                                                       title="Edit" class="checklist-icon-link">
+                                                        <i class="fa-solid fa-pencil" style="color: orange;font-size: 18px; font-weight: bolder;"></i>
+                                                    </a>
+                                                @endif
+
+                                                <form action="{{ route('checklist.destroy', $template) }}" method="POST" style="display: inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="checklist-icon-button" title="Remove" onclick="return confirm('Remover?')">
+                                                        <i class="fa-solid fa-trash" style="color: #dc3545;font-size: 18px; font-weight: bolder;"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="navbar navbar-light customPanel checklist-panel">
+                    {{ $templates->links() }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('customTools.checklist.includes.css')
 @endsection

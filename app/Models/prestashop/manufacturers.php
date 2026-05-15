@@ -3,27 +3,28 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class manufacturers extends Model
-{
-    protected $connection = 'mysql2';
+class manufacturers extends PrestashopModel{
+    
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."manufacturer";
+    protected $primaryKey = 'id_manufacturer';
+    protected $fillable = ['name'];
+
+    public function __construct(array $attributes = []){
+        parent::__construct($attributes);
+        $this->table = self::tableName('manufacturer');
     }
     
-    public function lang()
-    {
-        return $this->hasMany(manufacturers_lang::class, "id_manufacturer", 'id_manufacturer');
+    public function lang(){
+        return $this->hasMany(manufacturers_lang::class, 'id_manufacturer', 'id_manufacturer');
+    }
+
+    public function products(){
+        return $this->hasMany(product::class, 'id_manufacturer', 'id_manufacturer');
     }
     
-    public static function getManufacturersForSelect()
-    {
-        return self::select('id_manufacturer', 'name')->get();
+    public static function getManufacturersForSelect(){
+        return self::select('id_manufacturer', 'name')->orderBy('name')->get();
     }
 }

@@ -1,33 +1,33 @@
 @extends('layouts.app')
 @section('content')
 
-    <div class="navbar navbar-light customPanel categorList">
+    <div class="navbar navbar-light customPanel categorList documents-manager-shell">
         @if( count( $filters ) > 0)
-            <div>
+            <div class="documents-manager-grid">
                 @foreach($filters AS $filter)
-                    <div style="margin: 10px; border-radius: 5px; width: 240px;float: left;">
-                        <div style="border-right: 1px solid #999;background-color: dodgerblue; width: 240px; text-align: center; padding: 10px; border-radius: 5px 5px 0 0; text-transform: uppercase;color: #fff;border: 1px solid #999;"> {{$filter['category']}} </div>
+                    <div class="documents-manager-card">
+                        <div class="documents-manager-card__header"> {{$filter['category']}} </div>
                         <div>
                             @if( ( count($filter['elements']) > 0 ) && ( $filter['category'] != 'manifest' ) )
-                                <select class="selectedElement" name="selectedElement" style="padding: 11px; width: 240px; background-color: #fff;border: 1px solid #999;border-radius: 0 0 5px 5px;text-align: center;">
+                                <select class="selectedElement documents-manager-card__control" name="selectedElement">
                                     <option value="" style="text-align: center;">Select an option</option>
                                     @foreach($filter['elements'] AS $element)
                                         <option style="text-align: center;" value="{{route('documentsManager.listDocuments', ['category' => $filter['category'], 'element' => $element])}}">{{str_replace('.', ' > ', $element)}}</option>
                                     @endforeach
                                 </select>    
                             @else
-                            <div style="text-align: center;padding: 10px;border: 1px solid #999;border-radius: 0 0 5px 5px;width: 240px;">
+                            <div class="documents-manager-card__link">
                                 <a class="aLink" href="{{route('documentsManager.listDocuments', ['category' => $filter['category'], 'element' => 'others'])}}" style="text-decoration: none;">Check documents</a>
                             </div>
                             @endif
                         </div>
                     </div>
                 @endforeach
-                <div style="margin: 10px; border-radius: 5px; width: 240px;float: right;">
-                    <div style="border-right: 1px solid #999;background-color: dodgerblue; width: 240px; text-align: center; padding: 10px; border-radius: 5px 5px 0 0; text-transform: uppercase;color: #fff;border: 1px solid #999;"> SEARCH </div>
-                    <div style="width: 240px; background-color: #fff;border: 1px solid #999;border-radius: 0 0 5px 5px;text-align: center;display: flex;">
-                        <input type="text" name="search_document" id="search_document" style="width: 100%;font-size: 18px;border: none;padding: 2px;height: 42px; border-radius: 0 0 0 5px;" onkeypress="handle(event)">
-                        <button onclick="searchDocuments()" class="btn btn-primary" style="border-radius: 0 0 5px 0;"> <i class="fa-solid fa-magnifying-glass"></i> </button>
+                <div class="documents-manager-card">
+                    <div class="documents-manager-card__header"> SEARCH </div>
+                    <div class="documents-manager-search">
+                        <input type="text" name="search_document" id="search_document" onkeypress="handle(event)">
+                        <button onclick="searchDocuments()" class="btn btn-primary"> <i class="fa-solid fa-magnifying-glass"></i> </button>
                     </div>
                 </div>
             </div>
@@ -43,5 +43,56 @@
     <style>
         a.aLink{ color: #000; }
         a.aLink:hover{ color: dodgerblue; }
+        .documents-manager-shell { display: block; }
+        .documents-manager-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            width: 100%;
+        }
+        .documents-manager-card {
+            border-radius: 5px;
+            min-width: 0;
+        }
+        .documents-manager-card__header {
+            background-color: dodgerblue;
+            border: 1px solid #999;
+            border-radius: 5px 5px 0 0;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .documents-manager-card__control,
+        .documents-manager-card__link {
+            background-color: #fff;
+            border: 1px solid #999;
+            border-radius: 0 0 5px 5px;
+            min-height: 43px;
+            text-align: center;
+            width: 100%;
+        }
+        .documents-manager-card__control { padding: 10px; }
+        .documents-manager-card__link { padding: 10px; }
+        .documents-manager-search {
+            align-items: stretch;
+            background-color: #fff;
+            border: 1px solid #999;
+            border-radius: 0 0 5px 5px;
+            display: flex;
+        }
+        .documents-manager-search input {
+            border: 0;
+            border-radius: 0 0 0 5px;
+            flex: 1;
+            font-size: 18px;
+            height: 42px;
+            min-width: 0;
+            padding: 2px 8px;
+        }
+        .documents-manager-search .btn {
+            border-radius: 0 0 5px 0;
+            min-width: 44px;
+        }
     </style>
 @endsection

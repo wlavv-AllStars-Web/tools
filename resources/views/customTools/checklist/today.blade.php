@@ -5,116 +5,95 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
-<div class="container">
-    <h1 class="my-3">Check Log</h1>
-    
+<div class="checklist-page">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="navbar navbar-light customPanel checklist-toolbar">
+                <h1 class="checklist-title">CHECK LOG</h1>
+                <a href="{{ route('checklist.index') }}" class="checklist-action">
+                    <i class="fa-solid fa-list-check"></i> MANAGER
+                </a>
+            </div>
+        </div>
+    </div>
+
     @forelse ($groupedTasks as $deptId => $deptTasks)
-        <div class="mb-4">
-            @if(auth()->user()->permanent == 1)
-            <h3 class="fw-bold border-bottom pb-2 mb-3">
-                {{ $deptTasks->first()->department_id == 2 ? 'Logistica' : 'Permanencia' }}
-            </h3>
-            @endif
-    
-            @foreach($deptTasks as $task)
-                @if($task->active)
-                    <div class="card mb-2" style="border-radius: 0;">
-                        <div class="card-body" style="{{$task->status === 'done' ? 'background: #ddd; border-radius: 0;' : 'background: #fff;'}}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span>{{ $task->template->title }}</span>
-                                    @if($task->employee)
-                                        <small class="d-block text-muted">Assigned to: {{ $task->employee->name }}</small>
-                                    @endif
-                                </div>
-                                <div class="form-check d-flex align-items-center">
-                                    <input 
-                                        class="form-check-input me-2 custom-checkbox task-status-toggle" 
-                                        type="checkbox" 
-                                        data-task-id="{{ $task->id }}"
-                                        onclick="changeStatusItem(this)"
-                                        {{ $task->status === 'done' ? 'checked' : '' }}
-                                        id="toggle_done_{{ $task->id }}"
-                                        
-                                    >
-                                </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="navbar navbar-light customPanel checklist-panel">
+                    @if(auth()->user()->permanent == 1)
+                        <div class="checklist-tabs">
+                            <div class="checklist-tab is-active">
+                                {{ $deptTasks->first()->department_id == 2 ? 'LOGISTICA' : 'PERMANENCIA' }}
                             </div>
                         </div>
-                    </div>
+                    @endif
 
-                @endif
-            @endforeach
-            
-            <div class="form-group mt-2">
-                <label for="note_dept_{{ $deptId }}">Department Notes:</label>
-                <textarea 
-                    class="form-control dept-note" 
-                    id="note_dept_{{ $deptId }}" 
-                    name="note" 
-                    rows="1"
-                    data-dept-id="{{ $deptId }}"
-                    onblur="saveDeptNote(this)"
-                >{{ $deptNotes[$deptId] ?? '' }}</textarea>
+                    <table class="checklist-list">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th style="width: 220px;">Assigned</th>
+                                <th style="width: 90px; text-align: center;">Done</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($deptTasks as $task)
+                                @if($task->active)
+                                    <tr class="{{ $task->status === 'done' ? 'checklist-row-done' : '' }}" data-task-row="{{ $task->id }}">
+                                        <td>{{ $task->template?->title ?? 'N/A' }}</td>
+                                        <td>{{ $task->employee?->name ?? '-' }}</td>
+                                        <td style="text-align: center;">
+                                            <input
+                                                class="checklist-checkbox task-status-toggle"
+                                                type="checkbox"
+                                                data-task-id="{{ $task->id }}"
+                                                onclick="changeStatusItem(this)"
+                                                {{ $task->status === 'done' ? 'checked' : '' }}
+                                                id="toggle_done_{{ $task->id }}"
+                                            >
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+
+                    <table class="checklist-form-table" style="margin-top: 12px;">
+                        <tr>
+                            <td class="left_column"><label for="note_dept_{{ $deptId }}">Department Notes</label></td>
+                            <td class="right_column">
+                                <textarea
+                                    id="note_dept_{{ $deptId }}"
+                                    name="note"
+                                    rows="1"
+                                    data-dept-id="{{ $deptId }}"
+                                    onblur="saveDeptNote(this)"
+                                >{{ $deptNotes[$deptId] ?? '' }}</textarea>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
         </div>
     @empty
-        <p>Ainda não tens tarefas para hoje 🎉</p>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="navbar navbar-light customPanel checklist-panel">
+                    No tasks for today.
+                </div>
+            </div>
+        </div>
     @endforelse
 </div>
-<style>
-    .radio-lg{
-        width: 30px;
-        height: 30px;
-    }
-    .ball-info-1{
-        display:flex;
-        width:18px;
-        height:18px;
-        background: var(--bs-danger);
-        border-radius: 50%;
-    }
-    .ball-info-2{
-        display:flex;
-        width:18px;
-        height:18px;
-        background: var(--bs-warning);
-        border-radius: 50%;
-    }
-    .ball-info-3{
-        display:flex;
-        width:18px;
-        height:18px;
-        background: var(--bs-success);
-        border-radius: 50%;
-    }
-    .custom-checkbox {
-    width: 26px;
-    height: 26px;
-    accent-color: #007bff;
-    transform: scale(1.1);
-    cursor: pointer;
-    }
-    .custom-checkbox:checked {
-        accent-color: #28a745;
-    }
-    
-    .form-check-input {
-        --bs-form-check-bg: #f266661c !important;
-        outline: 1px solid #f00 !important;
-    }
-    
-    .form-check-input:checked {
-        background-color: #28a745 !important;
-        border-color: #28a745 !important;
-        outline: 1px solid #28a745 !important;
-    }
-</style>
+
+@include('customTools.checklist.includes.css')
 
 <script>
     function saveDeptNote(textarea) {
         const deptId = textarea.dataset.deptId;
         const note = textarea.value;
-    
+
         fetch("{{ route('checklist.updateNote')}}", {
             method: 'PATCH',
             headers: {
@@ -126,15 +105,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Note saved for department ' + deptId);
                 textarea.style.backgroundColor = '#e8f5e8';
                 setTimeout(() => {
                     textarea.style.backgroundColor = '';
                 }, 1500);
-    
-                // Optional: Refresh metadata via AJAX or just reload page
-                // For now, let’s reload the page to show updated “saved by...”
-                // location.reload();
             }
         })
         .catch(error => {
@@ -142,14 +116,12 @@
             alert('Failed to save note. Please try again.');
         });
     }
-    
-    
+
     function changeStatusItem(checkbox) {
         const taskId = checkbox.dataset.taskId;
-        const newStatus = checkbox.checked ? 'done' : 'pending'; 
-        
-        const bodyItemList = checkbox.closest(".card-body") 
-    
+        const newStatus = checkbox.checked ? 'done' : 'pending';
+        const row = checkbox.closest('tr');
+
         fetch(`/customTools/checklist/${taskId}/status`, {
             method: 'PATCH',
             headers: {
@@ -176,16 +148,12 @@
                     position: "right",
                     backgroundColor: "#28a745",
                 }).showToast();
-                console.log('Status updated for task ' + taskId);
-                // Optional: add visual feedback here
-                console.log(data.status)
+
                 if(data.status == 'done'){
-                    bodyItemList.style.background = "#ddd"
-                    bodyItemList.style.borderRadius = 0
+                    row.classList.add('checklist-row-done');
                 }else{
-                    bodyItemList.style.background = "#fff"
+                    row.classList.remove('checklist-row-done');
                 }
-                
             } else {
                 throw new Error('Update not successful');
             }
@@ -199,7 +167,6 @@
                 backgroundColor: "#f50000",
             }).showToast();
             console.error('Error:', error);
-            // Revert checkbox state
             checkbox.checked = !checkbox.checked;
             alert('Failed to update status. Please try again.');
         });

@@ -2,361 +2,249 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
-
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
-use App\Models\modules\shipping_erp\shipping_erp;
 use App\Models\modules\shipping\shipping;
-use App\Models\modules\shipping\shipping_delay;
-
 use App\Models\prestashop\pack;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_attribute;
-
 use App\Models\prestashop\product_lang;
-
 use App\Models\prestashop\stock_available;
-
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
-class erpETAController extends Controller{
-    
-    public function getProductFromERP(Request $request){
-        
-        $idLang = (int)$request->id_lang;            
+class erpETAController extends Controller
+{
+    public function getProductFromERP(Request $request): JsonResponse
+    {
+        $idLang = (int) ($request->id_lang ?? 1);
 
-        if(isset($request->reference)){
+        [$idProduct, $idProductAttr, $product, $resolvedReference] = $this->resolveRequestedProduct($request);
 
-            $idProduct = product::where('reference', $request->reference)->value('id_product');
-            
-            if(isset( $idProduct )){
-                $idProduct = $idProduct;
-                $idProductAttr = 0;
-            }else{
-                $attr = product_attribute::where('reference', $request->reference)->first();
-                if ( !isset($attr)) {
-                    echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => 'Out of stock']);
-                    exit;
-                }else{
-                    $idProduct = $attr->id_product;
-                    $idProductAttr = $attr->id_product_attribute;
-                }                
-            }
-
-        }else{
-            $idProduct = (int)$request->id_product;
-            $idProductAttr = (int)$request->id_product_attribute;
-        }
-    
-        $product = product::where('id_product', $idProduct)->first();
         if (!$product) {
-            echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => 'Product not found!']);
-            exit;
+            return response()->json([
+                'waiting' => false,
+                'quantity' => 0,
+                'message' => 'Product not found!',
+            ]);
         }
-    
+
         $hasCombinations = product_attribute::where('id_product', $idProduct)->count() > 0;
-        if ($hasCombinations && $idProductAttr === 0) {
-            echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => '']);
-            exit;
+        if ($hasCombinations && $idProductAttr === 0 && (string) $product->reference === (string) $resolvedReference) {
+            return response()->json([
+                'waiting' => false,
+                'quantity' => 0,
+                'message' => '',
+            ]);
         }
-    
+
         $labels = [
             'in_stock' =>       [1 => 'In stock: ',         4 => 'En stock: ',          5 => 'En stock: '],
             'shipped_within' => [1 => 'Shipped within: ',   4 => 'Enviado dentro de: ', 5 => 'Expédié sous: '],
-            'available_on' =>   [1 => 'Availability: ',     4 => 'Disponibilidad: ',    5 => 'Disponibilité: ']
+            'available_on' =>   [1 => 'Availability: ',     4 => 'Disponibilidad: ',    5 => 'Disponibilité: '],
         ];
 
         $tooltips = [
             'out_of_stock_generic' => [
-                1 => "This product is currently out of stock or requires a specific order. Please check the lead time shown (working days) for an approximate shipping date.",
-                4 => "Este producto no está disponible en stock o requiere un pedido específico. Consulta el plazo indicado (días hábiles) para conocer una fecha aproximada de envío.",
-                5 => "Ce produit n’est actuellement pas en stock ou nécessite une commande spécifique. Veuillez consulter le délai indiqué (jours ouvrés) pour connaître une date d’expédition approximative."
+                1 => 'This product is currently out of stock and there are no pending OMS incoming quantities linked to an active shipment.',
+                4 => 'Este producto no está disponible en stock y no existen cantidades pendientes en el OMS vinculadas a un envío activo.',
+                5 => 'Ce produit n’est pas en stock et aucune quantité entrante OMS n’est liée à un envoi actif.',
             ],
             'in_stock_generic' => [
-                1 => "This product is in stock in our warehouses and will ship the same day if ordered before 12:30, or the next business day if ordered later.",
-                4 => "Este producto está en stock en nuestros almacenes y se enviará el mismo día si se pide antes de las 12:30, o el siguiente día hábil si se pide después.",
-                5 => "Ce produit est en stock sur l’une de nos plateformes et sera expédié dans la journée si commandé avant 12h30, ou le prochain jour ouvré si commandé après 12h30."
+                1 => 'This product is currently in stock in our warehouses.',
+                4 => 'Este producto está actualmente en stock en nuestros almacenes.',
+                5 => 'Ce produit est actuellement en stock dans nos entrepôts.',
             ],
             'incoming_with_eta' => [
-                1 => "This item is currently in transit to our warehouses. The indicated date is an estimate provided by the carrier and may be subject to delays.",
-                4 => "Este artículo está en tránsito hacia nuestros almacenes. La fecha indicada es una estimación del transportista y puede estar sujeta a retrasos.",
-                5 => "Article en cours d’acheminement vers nos entrepôts. La date indiquée correspond à l’estimation du transporteur et peut être sujette à des retards."
+                1 => 'This item has invoiced quantities in OMS that are still pending reception and already linked to a shipment. The displayed date is the latest ETA recorded for the shipment.',
+                4 => 'Este artículo tiene cantidades facturadas en el OMS aún pendientes de recepción y ya vinculadas a un envío. La fecha mostrada es la última ETA registrada para ese envío.',
+                5 => 'Cet article a des quantités facturées dans l’OMS encore en attente de réception et déjà liées à un envoi. La date affichée correspond à la dernière ETA enregistrée pour cet envoi.',
             ],
         ];
 
-        $packInfo = pack::availablePackQty($idProduct);
-        $isPack = (is_array($packInfo) && !empty($packInfo['is_pack']) && $packInfo['is_pack'] === true);
-    
-        $getProductInfoMessage = function ($messageText) {
+        $getProductInfoMessage = function (string $messageText): string {
             return '<label class="editable">' . $messageText . '</label>';
         };
 
-        $getTooltipIcon = function (string $tooltipText) {
+        $getTooltipIcon = function (string $tooltipText): string {
             $safe = htmlspecialchars($tooltipText, ENT_QUOTES, 'UTF-8');
-        
+
             return '<i class="fa fa-question-circle api-tip"
                         title="' . $safe . '"
                         data-tip="' . $safe . '"
                         aria-label="Info"
                         role="button"
                         tabindex="0"
-                        style="
-                            font-size:18px;
-                            line-height:24px;
-                            vertical-align:middle;
-                            margin:0 8px;
-                            cursor:pointer;
-                            color:#666;
-                        "></i>';
+                        style="font-size:18px;line-height:24px;vertical-align:middle;margin:0 8px;cursor:pointer;color:#666;"></i>';
         };
 
-
-        $formatEtaForTooltip = function (int $idLang, Carbon $date) {
-            if ($idLang === 1) return $date->format('d/m/Y');
-            if ($idLang === 4) return $date->format('d/m/Y');
-            if ($idLang === 5) return $date->format('d/m/Y');
-            return $date->format('Y-m-d');
+        $formatEtaForTooltip = function (int $lang, Carbon $date): string {
+            return in_array($lang, [1, 4, 5], true) ? $date->format('d/m/Y') : $date->format('Y-m-d');
         };
-    
+
+        $packInfo = pack::availablePackQty($idProduct);
+        $isPack = is_array($packInfo) && !empty($packInfo['is_pack']) && $packInfo['is_pack'] === true;
+
         if (!$isPack) {
-            $reference = $idProductAttr === 0
-                ? $product->reference
-                : optional(product_attribute::where('id_product', $idProduct)->where('id_product_attribute', $idProductAttr)->first())->reference;
-    
-            if (!$reference) {
-                echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => 'Product not found!']);
-                exit;
-            }
-    
-            $stock = stock_available::where('id_product', $idProduct)->where('id_product_attribute', $idProductAttr)->first();
-            $qty = $stock ? (int)$stock->quantity : 0;
-    
-            if ($qty > 0) {
-                // ✅ ALTERADO: inserir tooltip icon ENTRE label e badge
+            $stockQty = $this->getPrestashopStockQty($idProduct, $idProductAttr);
+            if ($stockQty > 0) {
                 $tooltip = $tooltips['in_stock_generic'][$idLang] ?? '';
                 $message = $getProductInfoMessage(
-                    $labels['in_stock'][$idLang] .
-                    $getTooltipIcon($tooltip) .
-                    ' <span class="label label-success" style="font-size:14px;font-weight:900">' . $qty . '</span>'
+                    ($labels['in_stock'][$idLang] ?? $labels['in_stock'][1])
+                    . $getTooltipIcon($tooltip)
+                    . ' <span class="label label-success" style="font-size:14px;font-weight:900">' . $stockQty . '</span>'
                 );
 
-                echo json_encode(['waiting' => false, 'quantity' => $qty, 'message' => $message]);
-                exit;
+                return response()->json([
+                    'waiting' => false,
+                    'quantity' => $stockQty,
+                    'message' => $message,
+                ]);
             }
-    
-            $waitingOrders = bms_procurement_purchase_order_product::checkIfWaitingQuantity($reference);
-            if (!empty($waitingOrders)) {
-                $expectedQuantity = 0;
-                $expectedEta = null;
-    
-                foreach ($waitingOrders as $order) {
-                    if ($order->qty_wmfaturado > 0 && $order->qty_received < $order->qty_wmfaturado) {
-    
-                        $shipping = shipping_erp::where('id_erp', $order->po_id)->orderBy('id', 'DESC')->first();
-                        if ($shipping) {
-                            $delay = shipping_delay::where('id_shipping', $shipping->id_shipping)->orderBy('id', 'DESC')->first();
-                            if ($delay) {
-                                $expectedQuantity += $order->qty_wmfaturado - $order->qty_received;
-                                if (!$expectedEta || $delay->date < $expectedEta) {
-                                    $expectedEta = $delay->date;
-                                }
-                            }
-                        }
-                    }
-                }
-    
-                if ($expectedEta) {
-                    $date = Carbon::createFromFormat('Y-m-d', $expectedEta);
 
-                    if ($idLang === 1) $dateMsg = $date->format('d/m/Y');
-                    if ($idLang === 4) $dateMsg = $date->format('d/m/Y');
-                    if ($idLang === 5) $dateMsg = $date->format('d/m/Y');
+            $incoming = $this->getOmsIncomingForProduct($idProduct, $idProductAttr);
+            if ($incoming['quantity'] > 0 && $incoming['eta']) {
+                $date = Carbon::createFromFormat('Y-m-d', $incoming['eta']);
+                $dateMsg = $date->format('d/m/Y');
+                $tooltip = $tooltips['incoming_with_eta'][$idLang] ?? '';
+                $tooltip = str_replace('{{ETA}}', $formatEtaForTooltip($idLang, $date), $tooltip);
 
-                    $etaTxt = $formatEtaForTooltip($idLang, $date);
-                    $tooltip = $tooltips['incoming_with_eta'][$idLang] ?? '';
-                    $tooltip = str_replace('{{ETA}}', $etaTxt, $tooltip);
+                $message = $getProductInfoMessage(
+                    ($labels['available_on'][$idLang] ?? $labels['available_on'][1])
+                    . $getTooltipIcon($tooltip)
+                    . ' <span class="label label-warning" style="color:#333;">' . $dateMsg . '</span>'
+                );
 
-                    $message = $getProductInfoMessage(
-                        $labels['available_on'][$idLang] .
-                        $getTooltipIcon($tooltip) .
-                        ' <span class="label label-warning" style="color: #333;">' . $dateMsg . '</span>'
-                    );
-
-                    echo json_encode(['waiting' => true, 'quantity' => $expectedQuantity, 'message' => $message]);
-                    exit;
-                } else {
-                    $productInfo = product_lang::where('id_lang', $idLang)->where('id_product', $idProduct)->first();
-
-                    $tooltip = $tooltips['out_of_stock_generic'][$idLang] ?? '';
-
-                    $message = $getProductInfoMessage(
-                        $labels['shipped_within'][$idLang] .
-                        $getTooltipIcon($tooltip) .
-                        ' <span class="label label-warning" style="color: #333;">' . ($productInfo ? $productInfo->available_later : '') . '</span>'
-                    );
-
-                    echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => $message]);
-                    exit;
-                }
+                return response()->json([
+                    'waiting' => true,
+                    'quantity' => $incoming['quantity'],
+                    'message' => $message,
+                    'eta' => $incoming['eta'],
+                    'shipment_id' => $incoming['shipment_id'],
+                ]);
             }
-    
+
             $productInfo = product_lang::where('id_lang', $idLang)->where('id_product', $idProduct)->first();
-
             $tooltip = $tooltips['out_of_stock_generic'][$idLang] ?? '';
+            $fallbackLabel = trim((string) optional($productInfo)->available_later);
+            $fallbackLabel = $fallbackLabel !== '' ? $fallbackLabel : 'OUT OF STOCK';
 
             $message = $getProductInfoMessage(
-                $labels['shipped_within'][$idLang] .
-                $getTooltipIcon($tooltip) .
-                ' <span class="label label-warning"  style="color: #333;">' . ($productInfo ? $productInfo->available_later : '') . '</span>'
+                ($labels['shipped_within'][$idLang] ?? $labels['shipped_within'][1])
+                . $getTooltipIcon($tooltip)
+                . ' <span class="label label-warning" style="color:#333;">' . $fallbackLabel . '</span>'
             );
 
-            echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => $message]);
-            exit;
+            return response()->json([
+                'waiting' => false,
+                'quantity' => 0,
+                'message' => $message,
+            ]);
         }
-    
-        $packQty = isset($packInfo['pack_qty']) ? (int)$packInfo['pack_qty'] : 0;
+
+        $packQty = isset($packInfo['pack_qty']) ? (int) $packInfo['pack_qty'] : 0;
         if ($packQty > 0) {
             $tooltip = $tooltips['in_stock_generic'][$idLang] ?? '';
-
             $message = $getProductInfoMessage(
-                $labels['in_stock'][$idLang] .
-                $getTooltipIcon($tooltip) .
-                ' <span class="label label-success" style="font-size:14px;font-weight:900">' . $packQty . '</span>'
+                ($labels['in_stock'][$idLang] ?? $labels['in_stock'][1])
+                . $getTooltipIcon($tooltip)
+                . ' <span class="label label-success" style="font-size:14px;font-weight:900">' . $packQty . '</span>'
             );
 
-            echo json_encode(['waiting' => false, 'quantity' => $packQty, 'message' => $message, 'is_pack' => true]);
-            exit;
+            return response()->json([
+                'waiting' => false,
+                'quantity' => $packQty,
+                'message' => $message,
+                'is_pack' => true,
+            ]);
         }
-    
+
         $components = $packInfo['components'] ?? [];
         if (empty($components)) {
-            $productInfo = product_lang::where('id_lang', $idLang)->where('id_product', $idProduct)->first();
-
-            $tooltip = $tooltips['out_of_stock_generic'][$idLang] ?? '';
-
-            $message = $getProductInfoMessage(
-                $labels['shipped_within'][$idLang] .
-                $getTooltipIcon($tooltip) .
-                ' <span class="label label-warning"  style="color: #333;">' . ($productInfo ? $productInfo->available_later : '') . '</span>'
-            );
-
-            echo json_encode(['waiting' => false, 'quantity' => 0, 'message' => $message, 'is_pack' => true]);
-            exit;
+            return response()->json([
+                'waiting' => false,
+                'quantity' => 0,
+                'message' => 'OUT OF STOCK',
+                'is_pack' => true,
+            ]);
         }
-    
+
         $expectedPacks = null;
         $etaCandidates = [];
-        $foundAnyWaiting = false;
-    
-        foreach ($components as $comp) {
-            $idCompProduct = (int)$comp['id_product'];
-            $idCompAttr = (int)($comp['id_product_attribute'] ?? 0);
-            $qtyInPack = max((int)($comp['qty_in_pack'] ?? 1), 1);
-    
-            $compStock = isset($comp['stock']) 
-                ? (int)$comp['stock']
-                : (int) optional(stock_available::where('id_product', $idCompProduct)->where('id_product_attribute', $idCompAttr)->first())->quantity;
-    
-            $compRef = $idCompAttr === 0
-                ? optional(product::where('id_product', $idCompProduct)->first())->reference
-                : optional(product_attribute::where('id_product', $idCompProduct)->where('id_product_attribute', $idCompAttr)->first())->reference;
-    
-            $incomingQty = 0;
-            $incomingEta = null;
-    
-            if ($compRef) {
-                $waitingOrders = bms_procurement_purchase_order_product::checkIfWaitingQuantity($compRef);
-                if (!empty($waitingOrders)) {
-                    $foundAnyWaiting = true;
-                    foreach ($waitingOrders as $order) {
-                        if ($order->qty_wmfaturado > 0 && $order->qty_received < $order->qty_wmfaturado) {
-                            $incomingQty += $order->qty_wmfaturado - $order->qty_received;
-                            $shipping = shipping_erp::where('id_erp', $order->po_id)->orderBy('id', 'DESC')->first();
-                            if ($shipping) {
-                                $delay = shipping_delay::where('id_shipping', $shipping->id_shipping)->orderBy('date', 'DESC')->first();
-                                if ($delay && (!$incomingEta || $delay->date < $incomingEta)) {
-                                    $incomingEta = $delay->date;
-                                }
-                            }
-                        }
-                    }
-                }
+        $foundIncoming = false;
+
+        foreach ($components as $component) {
+            $idCompProduct = (int) ($component['id_product'] ?? 0);
+            $idCompAttr = (int) ($component['id_product_attribute'] ?? 0);
+            $qtyInPack = max((int) ($component['qty_in_pack'] ?? 1), 1);
+
+            $compStock = array_key_exists('stock', $component)
+                ? (int) $component['stock']
+                : $this->getPrestashopStockQty($idCompProduct, $idCompAttr);
+
+            $incoming = $this->getOmsIncomingForProduct($idCompProduct, $idCompAttr);
+            $incomingQty = (int) ($incoming['quantity'] ?? 0);
+            if ($incomingQty > 0) {
+                $foundIncoming = true;
             }
-    
+            if (!empty($incoming['eta'])) {
+                $etaCandidates[] = $incoming['eta'];
+            }
+
             $possiblePacks = (int) floor(($compStock + $incomingQty) / $qtyInPack);
             $expectedPacks = is_null($expectedPacks) ? $possiblePacks : min($expectedPacks, $possiblePacks);
-    
-            if ($incomingEta) $etaCandidates[] = $incomingEta;
         }
-    
+
         $expectedPacks = $expectedPacks ?? 0;
-
-        $expectedEta = null;
-        if (!empty($etaCandidates)) {
-            rsort($etaCandidates);
-            $expectedEta = $etaCandidates[0];
-        }
-    
         if ($expectedPacks <= 0) {
-            $productInfo = product_lang::where('id_lang', $idLang)->where('id_product', $idProduct)->first();
-
-            $tooltip = $tooltips['out_of_stock_generic'][$idLang] ?? '';
-
-            $message = $getProductInfoMessage(
-                $labels['shipped_within'][$idLang] .
-                $getTooltipIcon($tooltip) .
-                ' <span class="label label-warning" style="color: #333;">' . ($productInfo ? $productInfo->available_later : '') . '</span>'
-            );
-
-            echo json_encode(['waiting' => $foundAnyWaiting, 'quantity' => 0, 'message' => $message, 'is_pack' => true]);
-            exit;
+            return response()->json([
+                'waiting' => false,
+                'quantity' => 0,
+                'message' => 'OUT OF STOCK',
+                'is_pack' => true,
+            ]);
         }
-    
-        if ($expectedEta) {
+
+        if (!empty($etaCandidates)) {
+            sort($etaCandidates);
+            $expectedEta = (string) $etaCandidates[0];
             $date = Carbon::createFromFormat('Y-m-d', $expectedEta);
-
-            if ($idLang === 1) $dateMessage = $date->format('d/m/Y');
-            if ($idLang === 4) $dateMessage = $date->format('d/m/Y');
-            if ($idLang === 5) $dateMessage = $date->format('d/m/Y');
-
-            $etaTxt = $formatEtaForTooltip($idLang, $date);
+            $dateMessage = $date->format('d/m/Y');
             $tooltip = $tooltips['incoming_with_eta'][$idLang] ?? '';
-            $tooltip = str_replace('{{ETA}}', $etaTxt, $tooltip);
+            $tooltip = str_replace('{{ETA}}', $formatEtaForTooltip($idLang, $date), $tooltip);
 
             $message = $getProductInfoMessage(
-                $labels['available_on'][$idLang] .
-                $getTooltipIcon($tooltip) .
-                ' <span class="label label-warning" style="color: #333;">' . $dateMessage . '</span>'
+                ($labels['available_on'][$idLang] ?? $labels['available_on'][1])
+                . $getTooltipIcon($tooltip)
+                . ' <span class="label label-warning" style="color:#333;">' . $dateMessage . '</span>'
             );
 
-            echo json_encode(['waiting' => true, 'quantity' => $expectedPacks, 'message' => $message, 'is_pack' => true]);
-            exit;
-        } else {
-            $productInfo = product_lang::where('id_lang', $idLang)->where('id_product', $idProduct)->first();
-
-            $tooltip = $tooltips['out_of_stock_generic'][$idLang] ?? '';
-
-            $message = $getProductInfoMessage(
-                $labels['shipped_within'][$idLang] .
-                $getTooltipIcon($tooltip) .
-                ' <span class="label label-warning" style="color: #333;">' . ($productInfo ? $productInfo->available_later : '') . '</span>'
-            );
-
-            echo json_encode(['waiting' => true, 'quantity' => $expectedPacks, 'message' => $message, 'is_pack' => true]);
-            exit;
+            return response()->json([
+                'waiting' => true,
+                'quantity' => $expectedPacks,
+                'message' => $message,
+                'is_pack' => true,
+                'eta' => $expectedEta,
+            ]);
         }
+
+        return response()->json([
+            'waiting' => $foundIncoming,
+            'quantity' => $expectedPacks,
+            'message' => 'OUT OF STOCK',
+            'is_pack' => true,
+        ]);
     }
 
-    public function getEtaBatch(Request $request)
+    public function getEtaBatch(Request $request): JsonResponse
     {
         $references = $request->input('references', []);
 
         if (!is_array($references) || empty($references)) {
             return response()->json([
                 'error' => true,
-                'message' => 'references must be a non-empty array'
+                'message' => 'references must be a non-empty array',
             ], 422);
         }
 
@@ -364,179 +252,223 @@ class erpETAController extends Controller{
 
         $results = [];
         foreach ($references as $ref) {
-            $ref = trim((string)$ref);
-            if ($ref === '') continue;
+            $ref = trim((string) $ref);
+            if ($ref === '') {
+                continue;
+            }
 
             $results[$ref] = $this->computeEtaOrOutOfStock($ref);
         }
 
         return response()->json([
-            'count'   => count($results),
+            'count' => count($results),
             'results' => $results,
         ]);
     }
 
-
     private function computeEtaOrOutOfStock(string $reference): array
     {
+        $product = product::where('reference', $reference)->first();
+        $attr = null;
 
-        $idProduct = product::where('reference', $reference)->value('id_product');
-        $idProductAttr = 0;
-
-        if ($idProduct) {
-            
-            $idProduct = (int)$idProduct;
+        if ($product) {
+            $idProduct = (int) $product->id_product;
             $idProductAttr = 0;
-            
         } else {
-            
             $attr = product_attribute::where('reference', $reference)->first();
-            if (!$attr) return ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
-            
-            $idProduct = (int)$attr->id_product;
-            $idProductAttr = (int)$attr->id_product_attribute;
+            if (!$attr) {
+                return ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
+            }
+
+            $idProduct = (int) $attr->id_product;
+            $idProductAttr = (int) $attr->id_product_attribute;
+            $product = product::where('id_product', $idProduct)->first();
         }
 
-        $product = product::where('id_product', $idProduct)->first();
-        if (!$product) return ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
+        if (!$product) {
+            return ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
+        }
 
         $hasCombinations = product_attribute::where('id_product', $idProduct)->count() > 0;
-        if ($hasCombinations && $idProductAttr === 0 && (string)$product->reference === $reference) return ['status' => 'not_found'];
-        
-        $stock = stock_available::where('id_product', $idProduct)->where('id_product_attribute', $idProductAttr)->first();
+        if ($hasCombinations && $idProductAttr === 0 && (string) $product->reference === $reference) {
+            return ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
+        }
 
-        $qty = $stock ? (int)$stock->quantity : 0;
-        if ($qty > 0) return ['status' => 'in_stock', 'quantity' => $qty];
-
+        $qty = $this->getPrestashopStockQty($idProduct, $idProductAttr);
+        if ($qty > 0) {
+            return ['status' => 'in_stock', 'quantity' => $qty];
+        }
 
         $packInfo = pack::availablePackQty($idProduct);
-        $isPack = (is_array($packInfo) && !empty($packInfo['is_pack']) && $packInfo['is_pack'] === true);
+        $isPack = is_array($packInfo) && !empty($packInfo['is_pack']) && $packInfo['is_pack'] === true;
 
         if (!$isPack) {
-
-            $refToCheck = $idProductAttr === 0
-                ? (string)$product->reference
-                : (string) optional(
-                    product_attribute::where('id_product', $idProduct)
-                        ->where('id_product_attribute', $idProductAttr)
-                        ->first()
-                )->reference;
-
-            if (!$refToCheck) return ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
-
-            $waitingOrders = bms_procurement_purchase_order_product::checkIfWaitingQuantity($refToCheck);
-            if (empty($waitingOrders)) {
-                return ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
-            }
-
-            $expectedQuantity = 0;
-            $expectedEta = null;
-
-            foreach ($waitingOrders as $order) {
-                if ($order->qty_wmfaturado > 0 && $order->qty_received < $order->qty_wmfaturado) {
-                    $expectedQuantity += ($order->qty_wmfaturado - $order->qty_received);
-
-                    $shipping = shipping_erp::where('id_erp', $order->po_id)->orderBy('id', 'DESC')->first();
-                    if ($shipping) {
-                        $delay = shipping_delay::where('id_shipping', $shipping->id_shipping)->orderBy('id', 'DESC')->first();
-                        if ($delay) {
-                            if (!$expectedEta || $delay->date < $expectedEta) {
-                                $expectedEta = $delay->date; // mais cedo
-                            }
-                        }
-                    }
-                }
-            }
-
-            if ($expectedEta) {
-
-                $eta = Carbon::createFromFormat('Y-m-d', $expectedEta)->format('Y-m-d');
-
+            $incoming = $this->getOmsIncomingForProduct($idProduct, $idProductAttr);
+            if ($incoming['quantity'] > 0 && $incoming['eta']) {
                 return [
-                    'status'   => 'eta',
-                    'eta'      => $eta,
-                    'quantity' => $expectedQuantity,
+                    'status' => 'eta',
+                    'eta' => $incoming['eta'],
+                    'quantity' => $incoming['quantity'],
+                    'shipment_id' => $incoming['shipment_id'],
                 ];
             }
 
             return ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
         }
-        
+
         $components = $packInfo['components'] ?? [];
-        if (empty($components)) return ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];return ['status' => 'out_of_stock'];
+        if (empty($components)) {
+            return ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
+        }
 
         $expectedPacks = null;
         $etaCandidates = [];
-        $foundAnyWaiting = false;
 
-        foreach ($components as $comp) {
-            $idCompProduct = (int)$comp['id_product'];
-            $idCompAttr    = (int)($comp['id_product_attribute'] ?? 0);
-            $qtyInPack     = max((int)($comp['qty_in_pack'] ?? 1), 1);
+        foreach ($components as $component) {
+            $idCompProduct = (int) ($component['id_product'] ?? 0);
+            $idCompAttr = (int) ($component['id_product_attribute'] ?? 0);
+            $qtyInPack = max((int) ($component['qty_in_pack'] ?? 1), 1);
 
-            $compStock = isset($comp['stock'])
-                ? (int)$comp['stock']
-                : (int) optional(
-                    stock_available::where('id_product', $idCompProduct)->where('id_product_attribute', $idCompAttr)->first()
-                )->quantity;
+            $compStock = array_key_exists('stock', $component)
+                ? (int) $component['stock']
+                : $this->getPrestashopStockQty($idCompProduct, $idCompAttr);
 
-            $compRef = $idCompAttr === 0
-                ? (string) optional(product::where('id_product', $idCompProduct)->first())->reference
-                : (string) optional(
-                    product_attribute::where('id_product', $idCompProduct)->where('id_product_attribute', $idCompAttr)->first()
-                )->reference;
-
-            $incomingQty = 0;
-            $incomingEta = null;
-
-            if ($compRef) {
-                $waitingOrders = bms_procurement_purchase_order_product::checkIfWaitingQuantity($compRef);
-                if (!empty($waitingOrders)) {
-                    $foundAnyWaiting = true;
-
-                    foreach ($waitingOrders as $order) {
-                        if ($order->qty_wmfaturado > 0 && $order->qty_received < $order->qty_wmfaturado) {
-                            $incomingQty += ($order->qty_wmfaturado - $order->qty_received);
-
-                            $shipping = shipping_erp::where('id_erp', $order->po_id)->orderBy('id', 'DESC')->first();
-                            if ($shipping) {
-                                $delay = shipping_delay::where('id_shipping', $shipping->id_shipping)->orderBy('date', 'DESC')->first();
-                                if ($delay && (!$incomingEta || $delay->date < $incomingEta)) {
-                                    $incomingEta = $delay->date;
-                                }
-                            }
-                        }
-                    }
-                }
+            $incoming = $this->getOmsIncomingForProduct($idCompProduct, $idCompAttr);
+            $incomingQty = (int) ($incoming['quantity'] ?? 0);
+            if (!empty($incoming['eta'])) {
+                $etaCandidates[] = $incoming['eta'];
             }
 
             $possiblePacks = (int) floor(($compStock + $incomingQty) / $qtyInPack);
             $expectedPacks = is_null($expectedPacks) ? $possiblePacks : min($expectedPacks, $possiblePacks);
-
-            if ($incomingEta) $etaCandidates[] = $incomingEta;
         }
 
         $expectedPacks = $expectedPacks ?? 0;
-
         if ($expectedPacks <= 0) {
-            return $foundAnyWaiting ? ['status' => 'out_of_stock'] : ['status' => 'out_of_stock'];
+            return ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
         }
 
         if (!empty($etaCandidates)) {
-            rsort($etaCandidates);             
-            $expectedEta = $etaCandidates[0];  
-
-            $eta = Carbon::createFromFormat('Y-m-d', $expectedEta)->format('Y-m-d');
-
+            sort($etaCandidates);
             return [
-                'status'   => 'eta',
-                'eta'      => $eta,
+                'status' => 'eta',
+                'eta' => (string) $etaCandidates[0],
                 'quantity' => $expectedPacks,
-                'is_pack'  => true,
+                'is_pack' => true,
             ];
         }
 
         return ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
     }
 
+    private function resolveRequestedProduct(Request $request): array
+    {
+        $idProduct = 0;
+        $idProductAttr = 0;
+        $product = null;
+        $reference = trim((string) $request->reference);
+
+        if ($reference !== '') {
+            $product = product::where('reference', $reference)->first();
+            if ($product) {
+                $idProduct = (int) $product->id_product;
+                $idProductAttr = 0;
+            } else {
+                $attr = product_attribute::where('reference', $reference)->first();
+                if ($attr) {
+                    $idProduct = (int) $attr->id_product;
+                    $idProductAttr = (int) $attr->id_product_attribute;
+                    $product = product::where('id_product', $idProduct)->first();
+                }
+            }
+        } else {
+            $idProduct = (int) $request->id_product;
+            $idProductAttr = (int) $request->id_product_attribute;
+            $product = product::where('id_product', $idProduct)->first();
+            if ($product && $reference === '') {
+                $reference = $idProductAttr > 0
+                    ? (string) optional(product_attribute::where('id_product_attribute', $idProductAttr)->first())->reference
+                    : (string) $product->reference;
+            }
+        }
+
+        return [$idProduct, $idProductAttr, $product, $reference];
+    }
+
+    private function getPrestashopStockQty(int $idProduct, int $idProductAttr = 0): int
+    {
+        $stock = stock_available::where('id_product', $idProduct)
+            ->where('id_product_attribute', $idProductAttr)
+            ->first();
+
+        return $stock ? (int) $stock->quantity : 0;
+    }
+
+    private function getOmsIncomingForProduct(int $idProduct, int $idProductAttr = 0): array
+    {
+        $rows = DB::table('oms_billed_order_lines as bol')
+            ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
+            ->join('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
+            ->leftJoin('shipping_erp as se', 'se.id_erp', '=', 'si.id')
+            ->leftJoin('shipping as s', 's.id', '=', 'se.id_shipping')
+            ->leftJoin(DB::raw('(
+                SELECT sd.id_shipping, MAX(sd.date) as eta_date
+                FROM shipping_delay sd
+                GROUP BY sd.id_shipping
+            ) as eta_map'), 'eta_map.id_shipping', '=', 's.id')
+            ->leftJoin(DB::raw('(
+                SELECT rl.billed_order_line_id, SUM(rl.qty_received) as qty_received_sum
+                FROM oms_reception_lines rl
+                GROUP BY rl.billed_order_line_id
+            ) as rl_sum'), 'rl_sum.billed_order_line_id', '=', 'bol.id')
+            ->where('bol.product_id', $idProduct)
+            ->where(function ($query) use ($idProductAttr) {
+                if ($idProductAttr > 0) {
+                    $query->where('bol.product_attribute_id', $idProductAttr);
+                } else {
+                    $query->where(function ($sub) {
+                        $sub->whereNull('bol.product_attribute_id')
+                            ->orWhere('bol.product_attribute_id', 0);
+                    });
+                }
+            })
+            ->where(function ($query) {
+                $query->whereNull('si.status')
+                    ->orWhere('si.status', '!=', 'cancelled');
+            })
+            ->selectRaw('
+                bol.id,
+                bol.qty_billed,
+                COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) as qty_received_real,
+                s.id as shipment_id,
+                eta_map.eta_date as eta_date
+            ')
+            ->get();
+
+        $quantity = 0;
+        $selectedShipmentId = null;
+        $selectedEta = null;
+
+        foreach ($rows as $row) {
+            $outstanding = max(0, (int) $row->qty_billed - (int) $row->qty_received_real);
+            if ($outstanding <= 0) {
+                continue;
+            }
+
+            $quantity += $outstanding;
+
+            if (!empty($row->shipment_id) && !empty($row->eta_date)) {
+                if ($selectedEta === null || $row->eta_date < $selectedEta) {
+                    $selectedEta = (string) $row->eta_date;
+                    $selectedShipmentId = (int) $row->shipment_id;
+                }
+            }
+        }
+
+        return [
+            'quantity' => $quantity,
+            'shipment_id' => $selectedShipmentId,
+            'eta' => $selectedEta,
+        ];
+    }
 }

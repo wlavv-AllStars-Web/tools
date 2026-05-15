@@ -22,7 +22,7 @@
                         <p>Dans ce cas, les conditions sont simples : le client devra envoyer le produit à notre centre de service à ses frais, et nous le transmettrons au fabricant pour évaluation.</p>
                         <p>Si le produit est effectivement incompatible avec votre véhicule, et que cette incompatibilité n’est pas due à une modification du véhicule, à un facteur externe ou à une usure normale, un remboursement sera effectué (valeur du produit + frais d’expédition). Pour éviter toute perte de temps ou frais inutiles, nous vous recommandons de consulter le professionnel qui a installé le produit afin d’obtenir un diagnostic précis sur le rôle du produit dans le problème rencontré. Ensuite, et uniquement à votre demande, nous vous fournirons les informations nécessaires pour lancer le processus de retour conformément à la procédure décrite ci-dessus.</p>
                         <p>Vous pouvez consulter nos conditions générales à l'adresse suivante :<br>
-                        <a href="https://www.all-stars-motorsport.com/fr/content/3-conditions-d-utilization">https://www.all-stars-motorsport.com/fr/content/3-conditions-d-utilization</a></p>
+                        <a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-d-utilization">{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-d-utilization</a></p>
                         <p>Nous restons à votre disposition pour toute information complémentaire.</p>
 						<br>
 						<p>Cordialement,</p>

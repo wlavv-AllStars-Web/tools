@@ -9,7 +9,7 @@
                 Team: {{ $task->team?->name }} | Status: {{ $task->status_user }}
             </div>
         </div>
-        <a class="btn btn-outline-secondary" href="{{ route('tasks.user.index') }}">
+        <a class="btn btn-outline-secondary" href="{{ route('admin.tools.tasks.user.index') }}">
             Back
         </a>
     </div>
@@ -20,7 +20,7 @@
 
         <div class="customPanel">
             <h5>Status</h5>
-            <form method="post" action="{{ route('tasks.user.status', $task->id) }}" class="d-flex gap-2">
+            <form method="post" action="{{ route('admin.tools.tasks.user.status', $task->id) }}" class="d-flex gap-2">
                 @csrf
                 <select class="form-select" name="status_user" required>
                     @foreach(\App\Models\modules\tasks\task::STATUS_USER as $s)
@@ -38,7 +38,7 @@
         <div class="customPanel">
             <h5>Comment / Notes</h5>
 
-            <form method="post" action="{{ route('tasks.user.comment', $task->id) }}">
+            <form method="post" action="{{ route('admin.tools.tasks.user.comment', $task->id) }}">
                 @csrf
                 <div class="mb-2">
                     <label class="form-label">
@@ -80,7 +80,7 @@
                 <form
                     method="post"
                     enctype="multipart/form-data"
-                    action="{{ route('tasks.user.upload', $task->id) }}"
+                    action="{{ route('admin.tools.tasks.user.upload', $task->id) }}"
                 >
                     @csrf
 
@@ -116,7 +116,7 @@
                 <ul class="mb-0" style="list-style-type: none; padding-left: 0;">
                     @foreach($task->files as $f)
                         <li>
-                            <a href="{{ route('tasks.files.download', $f->id) }}">
+                            <a href="{{ route('admin.tools.tasks.files.download', $f->id) }}">
                                 download
                             </a>
                             – {{ $f->filename }}

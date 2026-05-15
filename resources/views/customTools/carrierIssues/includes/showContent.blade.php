@@ -68,7 +68,7 @@
                     @if( count(glob(public_path('uploads/carriersIssues/' . $issue->id_issue . '/').'*.*', GLOB_BRACE)) > 0 )
                         @foreach(glob(public_path('uploads/carriersIssues/' . $issue->id_issue . '/').'*.*', GLOB_BRACE) as $file)
                             <div style="float: left; width: 120px; height: 60px;">
-                                <a href="https://webtools.all-stars-motorsport.com/uploads/carriersIssues/{{$issue->id_issue}}/{{basename($file)}}" target="_self" title="{{basename($file)}}" download style="padding: 10px;text-decoration: none;text-align: center;"> 
+                                <a href="{{ config('allstars.services.webtools.base_url') }}/uploads/carriersIssues/{{$issue->id_issue}}/{{basename($file)}}" target="_self" title="{{basename($file)}}" download style="padding: 10px;text-decoration: none;text-align: center;"> 
                                     @if(pathinfo($file, PATHINFO_EXTENSION) == 'csv')  
                                         <i class="fa-solid fa-file-csv" style="font-size: 34px;"></i>
                                     @elseif(pathinfo($file, PATHINFO_EXTENSION) == 'xlsx') 

@@ -16,7 +16,7 @@
                         <p>We have received your return and, after inspection, our quality department has been able to approve it. Our finance department will therefore process your refund within 48–72 business hours using the payment method originally used for your order.</p>
                         <p>Please note that, in accordance with our terms and conditions of sale, the shipping costs incurred for sending the package are not refunded, as they remain the customer’s responsibility in the case of a change of mind.</p>
                         <p>You can find all the details of our return policy by clicking on the link below <br>( section 7 ):</p>
-                        <p><a href="https://www.all-stars-motorsport.com/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a></p>
+                        <p><a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a></p>
                         <p>Should you have any further questions, we remain at your disposal.</p>
                 		<br>
                         <p>Best regards,</p>

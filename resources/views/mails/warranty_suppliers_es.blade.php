@@ -116,7 +116,7 @@
         <p style="font-size: 14px; line-height: 1.8; margin-top: 20px;">
             Atentamente,<br>
             <strong>All Stars Motorsport</strong><br>
-            <a href="https://www.all-stars-motorsport.com" style="color: #dd170e; text-decoration: none;">www.all-stars-motorsport.com</a>
+            <a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}" style="color: #dd170e; text-decoration: none;">{{ config('allstars.stores.ASM.domain') }}</a>
         </p>
     </td>
 </tr>

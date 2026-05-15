@@ -1,7 +1,7 @@
 <script>
 
     Dropzone.autoDiscover = true;
-
+(function() {
     let found = false;
     
     const observer = new MutationObserver((mutationsList, observer) => {
@@ -18,5 +18,5 @@
     });
     
     observer.observe(document.body, { childList: true, subtree: true });
-
+})();
 </script>

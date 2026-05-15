@@ -2,7 +2,6 @@
 
 namespace App\Models\modules\supplier_warranty_issues;
 
-use Auth;
 use App\Models\prestashop\suppliers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,9 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\modules\supplier_issues\supplier_issues;
 
 
+use App\Models\Concerns\BuildsDashboardPanels;
 class supplier_warranty_issues extends Model
 {
-    use HasFactory;
+    
+    use BuildsDashboardPanels;
+use HasFactory;
     protected $table = "supplier_warranty_issues";
 
     public function supplier(){
@@ -25,7 +27,12 @@ class supplier_warranty_issues extends Model
 **/
     public static function getAllActive( ){ 
         
-        $suppliers = supplier_warranty_issues::select('supplier_warranty_issues.id_supplier', 'name')->join('allstar1_s1t3.ps_supplier', 'allstar1_s1t3.ps_supplier.id_supplier', 'supplier_warranty_issues.id_supplier')->groupBy('supplier_warranty_issues.id_supplier')->orderBy('name', 'ASC')->get();
+        $supplierTable = env('DB2_DB_prefix', env('DB2_prefix', 'ps_')) . 'supplier';
+        $suppliers = supplier_warranty_issues::select('supplier_warranty_issues.id_supplier', 's.name')
+            ->join($supplierTable . ' as s', 's.id_supplier', '=', 'supplier_warranty_issues.id_supplier')
+            ->groupBy('supplier_warranty_issues.id_supplier', 's.name')
+            ->orderBy('s.name', 'ASC')
+            ->get();
         
         $suppliers_list = array();
         

@@ -151,36 +151,22 @@ class basePriceController extends Controller
 
     public static function updatePricing(Request $request)
     {
-
-        $client = new \GuzzleHttp\Client();
-        $response = $client->request('GET', 'https://www.all-stars-distribution.com/custom/front/getPricing.php?token=pricingData000&brand=' . $request->brand);
-
         if( $request->type == 'wholesale'){
-
-            $body = $response->getBody()->getContents();
-            $data = json_decode($body, true);
+            $data = self::getManufacturerPricingRows((int) $request->id_manufacturer);
             
             foreach($data AS $item){
 
-                $new_wholesale = ($item['wholesale_price']+0) * $request->wholesale_convertion;   
-                $products = product::where('reference', $item['reference'])->get();
-                
-                if(count($products) > 0){
-                    foreach($products AS $product){
-                        product::where('id_product', '=', $product['id_product'])->update(['wholesale_price' => $new_wholesale]);
-                        product_shop::where('id_product', '=', $product['id_product'])->update(['wholesale_price' => $new_wholesale]);
-                    }
-                }else{
+                $new_wholesale = ($item['wholesale_price'] + 0) * $request->wholesale_convertion;
 
-                    $attrs = product_attribute::where('reference', $item['reference'])->get();
-                    
-                    if(count($attrs) > 0){
-                        foreach($attrs AS $attr){
-                            product_attribute::where('id_product', '=', $product['id_product'])->where('id_product_attribute', '=', $product['id_product_attribute'])->update(['wholesale_price' => $new_wholesale]);
-                            product_attribute_shop::where('id_product', '=', $product['id_product'])->where('id_product_attribute', '=', $product['id_product_attribute'])->update(['wholesale_price' => $new_wholesale]);
-                        }
-                        
-                    }
+                if((int) $item['id_product_attribute'] === 0){
+                    product_shop::where('id_product', '=', $item['id_product'])
+                        ->where('id_shop', 3)
+                        ->update(['wholesale_price' => $new_wholesale]);
+                }else{
+                    product_attribute_shop::where('id_product', '=', $item['id_product'])
+                        ->where('id_product_attribute', '=', $item['id_product_attribute'])
+                        ->where('id_shop', 3)
+                        ->update(['wholesale_price' => $new_wholesale]);
                 }
             }
 
@@ -189,5 +175,45 @@ class basePriceController extends Controller
             exit;
         }
         return 1;
+    }
+
+    public static function pricingData(Request $request)
+    {
+        return response()->json(self::getManufacturerPricingRows((int) $request->id_manufacturer));
+    }
+
+    private static function getManufacturerPricingRows(int $idManufacturer): array
+    {
+        $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+
+        return DB::connection('mysql2')
+            ->table($prefix . 'product as p')
+            ->join($prefix . 'product_shop as ps', function ($join) {
+                $join->on('ps.id_product', '=', 'p.id_product')
+                    ->where('ps.id_shop', 3);
+            })
+            ->leftJoin($prefix . 'product_attribute as pa', 'pa.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'product_attribute_shop as pas', function ($join) {
+                $join->on('pas.id_product_attribute', '=', 'pa.id_product_attribute')
+                    ->where('pas.id_shop', 3);
+            })
+            ->where('p.id_manufacturer', $idManufacturer)
+            ->select([
+                'p.id_product',
+                DB::raw('COALESCE(pa.id_product_attribute, 0) as id_product_attribute'),
+                DB::raw('CASE WHEN COALESCE(pa.id_product_attribute, 0) > 0 THEN pa.reference ELSE p.reference END as reference'),
+                DB::raw('COALESCE(ps.price, p.price, 0) + CASE WHEN COALESCE(pa.id_product_attribute, 0) > 0 THEN COALESCE(pas.price, pa.price, 0) ELSE 0 END as price'),
+                DB::raw('CASE WHEN COALESCE(pa.id_product_attribute, 0) > 0 AND COALESCE(pas.wholesale_price, pa.wholesale_price, 0) > 0 THEN COALESCE(pas.wholesale_price, pa.wholesale_price, 0) ELSE COALESCE(ps.wholesale_price, p.wholesale_price, 0) END as wholesale_price'),
+            ])
+            ->orderBy('reference')
+            ->get()
+            ->map(fn ($item) => [
+                'id_product' => (int) $item->id_product,
+                'id_product_attribute' => (int) $item->id_product_attribute,
+                'reference' => (string) $item->reference,
+                'price' => (float) $item->price,
+                'wholesale_price' => (float) $item->wholesale_price,
+            ])
+            ->all();
     }
 }

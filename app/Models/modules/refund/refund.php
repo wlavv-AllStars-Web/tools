@@ -2,24 +2,32 @@
 
 namespace App\Models\modules\refund;
 
-use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class refund extends Model
 {
     use HasFactory;
     protected $table = "refunds";
 
+    private static function prestashopTable(string $table): string
+    {
+        $prefix = env('DB2_DB_prefix', 'ps_');
+
+        return (str_contains($prefix, '.') ? $prefix : config('database.connections.mysql2.database') . '.' . $prefix) . $table;
+    }
+
 public static function getRefunds($year = null, $month = null, $method = null, $refunds = 'active')
 {
+    $ordersTable = self::prestashopTable('orders');
+    $customerTable = self::prestashopTable('customer');
+    $orderStateLangTable = self::prestashopTable('order_state_lang');
+
     $refund_query = refund::query()
-        ->select('*', env('DB2_DB_prefix') . 'orders.date_add AS purchase_date')
-        ->leftjoin(env('DB2_DB_prefix') . 'orders', 'refunds.id_order', '=', env('DB2_DB_prefix') . 'orders.id_order')
-        ->leftjoin(env('DB2_DB_prefix') . 'customer', env('DB2_DB_prefix') . 'orders.id_customer', '=', env('DB2_DB_prefix') . 'customer.id_customer')
-        ->leftjoin(env('DB2_DB_prefix') . 'order_state_lang', env('DB2_DB_prefix') . 'orders.current_state', '=', env('DB2_DB_prefix') . 'order_state_lang.id_order_state')
+        ->select('*', $ordersTable . '.date_add AS purchase_date')
+        ->leftjoin($ordersTable, 'refunds.id_order', '=', $ordersTable . '.id_order')
+        ->leftjoin($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
+        ->leftjoin($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
         ->groupBy('refunds.id')
         ->where('refunds.id', '>', 0);
 

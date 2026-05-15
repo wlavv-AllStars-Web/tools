@@ -7,16 +7,13 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_reception_product;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_reception;
 use App\Models\prestashop\issues;
 use App\Models\prestashop\orders;
 use App\Models\prestashop\product;
 use App\Models\prestashop\stock_available;
 use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\orders_details;
+use App\Services\oms\OmsProcurementBridge;
 
 class stockEntryController extends Controller
 {
@@ -57,38 +54,18 @@ class stockEntryController extends Controller
             ], 200);
         }
 
-        $nr_open_orders = bms_procurement_purchase_order_product::where(function ($query) use ($request) {
-                $query->where('wmean13', $request->code)
-                      ->orWhere('sku', 'LIKE', $request->code);
-            })
-            ->whereColumn('qty_wmfaturado', '<>', 'qty_received')
-            ->groupBy('po_id')
-            ->count();
+        $openLines = OmsProcurementBridge::pendingLinesByCode((string) $request->code, (int) $request->po_id);
+        $nr_open_orders = $openLines->pluck('po_id')->unique()->count();
             
         if($nr_open_orders == 1){
 
-            $product = bms_procurement_purchase_order_product::where(function ($query) use ($request) {
-                    $query->where('wmean13', $request->code)
-                          ->orWhere('sku', 'LIKE', $request->code);
-                })
-                ->whereColumn('qty_wmfaturado', '<>', 'qty_received')
-                ->groupBy('po_id')
-                ->with('product', 'attribute')->first();
+            $product = $openLines->first();
             
-            //$product = bms_procurement_purchase_order_product::whereColumn('qty_wmfaturado', '<>', 'qty_received')->where('wmean13', $request->code)->with('product', 'attribute')->first();
             if(isset($product->product_id)) $message = "Product found";
         }elseif($request->po_id != 0){
 
-            $product = bms_procurement_purchase_order_product::where(function ($query) use ($request) {
-                    $query->where('wmean13', $request->code)
-                            ->where('po_id', $request->po_id)
-                            ->orWhere('sku', 'LIKE', $request->code);
-                })
-                ->whereColumn('qty_wmfaturado', '<>', 'qty_received')
-                ->groupBy('po_id')
-                ->with('product', 'attribute')->first();
+            $product = $openLines->first();
                 
-            //$product = bms_procurement_purchase_order_product::whereColumn('qty_wmfaturado', '<>', 'qty_received')->where('po_id', $request->po_id)->where('wmean13', $request->code)->orWhere('sku', $request->code)->with('product', 'attribute')->first();
             if(isset($product->product_id)) $message = "Product found";
             $nr_open_orders = 1;
         }
@@ -102,11 +79,9 @@ class stockEntryController extends Controller
                 $preparations = orders::getPreparations($product->sku);
                 $backorders   = orders::getBackorders($product->sku);
 
-                $openOrder = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $product->po_id)->first();
-
                 return response()->json([
                     'status' => 'success', 
-                    'order_reference' => $openOrder->reference, 
+                    'order_reference' => $product->order_reference, 
                     'product' => $product, 
                     'partials' => $partial, 
                     'preparations' => $preparations, 
@@ -135,18 +110,7 @@ class stockEntryController extends Controller
 
         }else{
             $message = "Product found";
-            
-            /**$openOrders = bms_procurement_purchase_order_product::where('wmean13', '=', $request->code)->orWhere('sku', '=', $request->code)->whereColumn('qty_wmfaturado', '<>', 'qty_received')->with('product', 'attribute')->get();**/
-            
-            /** updated 11-02-2025 **/
-            $openOrders = bms_procurement_purchase_order_product::where(function ($query) use ($request) {
-                    $query->where('wmean13', $request->code)
-                          ->orWhere('sku', 'LIKE', $request->code);
-                })
-                ->whereColumn('qty_wmfaturado', '<>', 'qty_received')
-                ->groupBy('po_id')
-                ->with('product', 'attribute')->get();
-            /** updated 11-02-2025 **/
+            $openOrders = $openLines->unique('po_id')->values();
             
             if(count( $openOrders ) < 1){
                 
@@ -175,8 +139,7 @@ class stockEntryController extends Controller
 
             foreach($openOrders AS $order){
 
-                $openOrder = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $order->po_id)->first();
-                $openOrderHTML.="<div style='margin-top: 10px;'><button style='width: 200px; margin: 0 auto;' class='btn btn-info' onclick='ajaxCall(\"" . $request->action . "\", " . $openOrder->id_bms_procurement_purchase_order . ", 1)'>" . $openOrder->reference . '</button></div>';
+                $openOrderHTML.="<div style='margin-top: 10px;'><button style='width: 200px; margin: 0 auto;' class='btn btn-info' onclick='ajaxCall(\"" . $request->action . "\", " . $order->po_id . ", 1)'>" . $order->order_reference . '</button></div>';
 
             }
 
@@ -220,60 +183,28 @@ class stockEntryController extends Controller
 
         }elseif($request->action == 'saveStockEntry'){
             
-            $current = bms_procurement_purchase_order_product::where('id_bms_procurement_purchase_order_product', $request->id_bms_procurement_purchase_order_product)->first();
+            $current = OmsProcurementBridge::pendingLineById((int) $request->oms_billed_order_line_id);
+
+            if (!$current) {
+                return response()->json([
+                    'status' => 'fail',
+                    'message' => 'Open OMS line not found.'
+                ], 200);
+            }
             
             $quantityToReceive = $request->received - $current->qty_received;
 
-            $date = date("Y-m-d h:i:s");
-            
             if($quantityToReceive > 0){
 
-                //product -> StockArrive ( Descontar QTD arrive )
-                product::where('reference', $request->get('reference'))->decrement( 'stock_arrive',  $quantityToReceive);
-    
-                //attribute -> StockArrive ( Descontar QTD arrive )
-                //product_attribute::where('reference', $request->get('reference'))->decrement( 'stock_arrivepa', $quantityToReceive );
-    
-                //attribute -> StockArrive ( Descontar QTD arrive )
-                product_attribute::where('reference', $request->get('reference'))->decrement( 'stock_arrivepa', $quantityToReceive );
-                
-                
-                $attr =product_attribute::where('reference', $request->get('reference'))->first();
-                
-                if(isset($attr->id_product)){
-                    $prod =product::where('id_product', $attr->id_product)->first();
-        
-                    product::where('reference', $prod->reference)->decrement( 'stock_arrive',  $quantityToReceive);
-                
-                }
-                
-                
-                //ps_bms_procurement_purchase_order_product ( atualizar qty_received | qty_expected  )
-                bms_procurement_purchase_order_product::where('id_bms_procurement_purchase_order_product', $request->get('id_bms_procurement_purchase_order_product'))->update( 
-                    [ 
-                        'qty_received' => $request->received,
-                        'qty_expected' => $current->qty_ordered - $request->received,
-                    ] 
-                );
-    
-                $bms_procurement_purchase_order_reception_data = new bms_procurement_purchase_order_reception;
-                $bms_procurement_purchase_order_reception_data->po_id= $current->po_id;
-                $bms_procurement_purchase_order_reception_data->date_add = $date;
-                $bms_procurement_purchase_order_reception_data->employee_id = 59;
-                $bms_procurement_purchase_order_reception_data->products_count = 0;
-                $bms_procurement_purchase_order_reception_data->save();
-                
-                $save_bms_procurement_purchase_order_reception_product = new bms_procurement_purchase_order_reception_product;
-                $save_bms_procurement_purchase_order_reception_product->reception_id= $bms_procurement_purchase_order_reception_data->id;
-                $save_bms_procurement_purchase_order_reception_product->product_id = $current->product_id;
-                $save_bms_procurement_purchase_order_reception_product->product_attribute_id = $current->product_attribute_id;
-                $save_bms_procurement_purchase_order_reception_product->sku = $current->sku;
-                $save_bms_procurement_purchase_order_reception_product->name = '';
-                $save_bms_procurement_purchase_order_reception_product->qty =$quantityToReceive;
-                $save_bms_procurement_purchase_order_reception_product->save();
+                OmsProcurementBridge::recordReception((int) $request->get('oms_billed_order_line_id'), (int) $request->received);
                 
                 if($current->product_attribute_id > 0){
                     
+                    DB::connection('mysql2')
+                        ->table(env('DB2_DB_prefix') . 'custom_product_attribute')
+                        ->where('id_product_attribute', $current->product_attribute_id)
+                        ->decrement('stock_arrive', $quantityToReceive);
+
                     $products_with_ref = product_attribute::where('reference', $request->get('reference'))->get();
         
                     foreach($products_with_ref AS $prod){
@@ -281,6 +212,11 @@ class stockEntryController extends Controller
                     }
     
                 }else{
+
+                    DB::connection('mysql2')
+                        ->table(env('DB2_DB_prefix') . 'custom_product')
+                        ->where('id_product', $current->product_id)
+                        ->decrement('stock_arrive', $quantityToReceive);
                     
                     $products_with_ref = product::where('reference', $request->get('reference'))->get();
         
@@ -292,35 +228,13 @@ class stockEntryController extends Controller
     
                 /** stock_available::where('id_product', $current->product_id )->where('id_product_attribute', $current->product_attribute_id )->increment( 'quantity', $quantityToReceive ); **/
     
-                $new_current = bms_procurement_purchase_order_product::select( DB::raw('SUM(qty_received) AS received, SUM(qty_ordered) AS ordered, SUM(qty_expected) AS expected, SUM(qty_wmfaturado) AS invoiced'))->where('po_id', $current->po_id)->first();
-    
-                $progress = ( $new_current->received / $new_current->ordered ) * 100;
-    
-                if($new_current->ordered == $new_current->received){
-                    //ps_bms_procurement_purchase_order ( atualizar date_upd | verificar atualização do status_id )
-                    $current_order = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $current->po_id)->update( 
-                        [ 
-                            'status_id' => 7,
-                            'date_upd' => date("Y-m-d- h:i:s"),
-                            'reception_progress' => $progress
-                        ] 
-                    );
-                }else{
-                    //ps_bms_procurement_purchase_order ( atualizar date_upd | verificar atualização do status_id )
-                    $current_order = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $current->po_id)->update( 
-                        [ 
-                            'status_id' => 6,
-                            'date_upd' => date("Y-m-d- h:i:s"),
-                            'reception_progress' => $progress
-                        ] 
-                    );
-                }
+                $progress = min(100, ((int) $request->received / max(1, (int) $current->qty_wmfaturado)) * 100);
     
                 $closeMessage = '';
                 if($progress == 100){
-                    $closeMessage= ' Order will close automatically. ' . $progress . ' ( (' . $new_current->received . ' / ' . $new_current->invoiced . ') * 100 )';
+                    $closeMessage= ' OMS line fully received.';
                 }else{
-                    $closeMessage= ' Order reception progress is at ' . number_format($progress) . "%" . $progress . ' ( (' . $new_current->received . ' / ' . $new_current->invoiced . ') * 100 )';
+                    $closeMessage= ' OMS line reception progress is at ' . number_format($progress) . "%";
                 }
     
                 return response()->json([
@@ -340,7 +254,6 @@ class stockEntryController extends Controller
             product::where('reference', $request->get('reference'))->update( [ 'ean13' => $request->get('ean13') ] );
             product_attribute::where('reference', $request->get('reference'))->update( [ 'ean13' => $request->get('ean13') ] );
             orders_details::where('product_reference', $request->get('reference'))->update( [ 'product_ean13' => $request->get('ean13') ] );
-            bms_procurement_purchase_order_product::where('sku', $request->get('reference'))->update( [ 'wmean13' => $request->get('ean13') ] );
 
             return response()->json([
                 'status' => 'success', 
@@ -362,12 +275,32 @@ class stockEntryController extends Controller
         }
     }
     
-
     public function listToRemove(){
 
         $this->breadcrumbs[] = [ 'name' =>  trans('Remove stock entry'), 'url' => route('stockEntry.listToRemove')];
 
-        $lastEntries = bms_procurement_purchase_order_reception::getLastEntries(1000);
+        $prefix = env('DB2_DB_prefix');
+        $lastEntries = DB::table('oms_receptions as r')
+            ->join('oms_reception_lines as rl', 'rl.reception_id', '=', 'r.id')
+            ->join('oms_billed_order_lines as bol', 'bol.id', '=', 'rl.billed_order_line_id')
+            ->join('oms_billed_orders as bo', 'bo.id', '=', 'r.billed_order_id')
+            ->leftJoin('users as u', 'u.id', '=', 'r.created_by')
+            ->leftJoin(DB::raw($prefix . 'product as p'), 'p.id_product', '=', 'bol.product_id')
+            ->leftJoin(DB::raw($prefix . 'product_attribute as pa'), 'pa.id_product_attribute', '=', 'bol.product_attribute_id')
+            ->select(
+                'r.id as oms_reception_id',
+                'bo.id as po_id',
+                'bo.reference',
+                DB::raw('COALESCE(pa.reference, p.reference) as sku'),
+                'rl.qty_received as qty',
+                DB::raw('0 as deleted'),
+                DB::raw('COALESCE(u.name, "") as firstname'),
+                DB::raw('"" as lastname')
+            )
+            ->orderByDesc('r.id')
+            ->limit(1000)
+            ->get()
+            ->map(fn ($row) => (array) $row);
 
         $data = [
             'actions'    => $this->actions,
@@ -379,73 +312,48 @@ class stockEntryController extends Controller
     }
 
     public function destroy(string $id){  
-     
-        $reception_product =bms_procurement_purchase_order_reception_product::where('reception_id', $id)->first();
-        $reception =bms_procurement_purchase_order_reception::where('id_bms_procurement_purchase_order_reception', $id)->first();
+        $reception = DB::table('oms_receptions as r')
+            ->join('oms_reception_lines as rl', 'rl.reception_id', '=', 'r.id')
+            ->join('oms_billed_order_lines as bol', 'bol.id', '=', 'rl.billed_order_line_id')
+            ->where('r.id', (int) $id)
+            ->select('r.id', 'rl.id as reception_line_id', 'rl.qty_received', 'bol.id as billed_order_line_id', 'bol.product_id', 'bol.product_attribute_id')
+            ->first();
 
-        $reference = $reception_product->sku;
-        $id_product = $reception_product->product_id;
-        $id_product_attribute = $reception_product->product_attribute_id;
-        $reception_id = $reception_product->reception_id;
-        $quantity = $reception_product->qty;
-        $po_id = $reception->po_id;
-
-        if($id_product_attribute > 0){
-            product_attribute::where('reference', $reference )->increment('stock_arrivepa', $quantity);
-
-            $attrs = product_attribute::where('reference', $reference)->get();
-
-            foreach($attrs AS $attr){
-                stock_available::where('id_product', $attr['id_product'] )->where('id_product_attribute', $attr['id_product_attribute'] )->decrement( 'quantity', $quantity );
-            }
-
-        }else{
-            product::where('reference', $reference)->increment( 'stock_arrive', $quantity );
-
-            $prods = product::where('reference', $reference)->get();
-
-            foreach($prods AS $prod){
-                stock_available::where('id_product', $prod['id_product'] )->where('id_product_attribute', 0 )->decrement( 'quantity', $quantity );
-            }
+        if (!$reception) {
+            return redirect()->route('stockEntry.listToRemove');
         }
 
-        bms_procurement_purchase_order_product::where('po_id', $po_id )
-                                                ->where('product_id', $id_product )
-                                                ->where('product_attribute_id', $id_product_attribute )
-                                                ->increment( 'qty_expected', $quantity );
+        $quantity = (int) $reception->qty_received;
+        $id_product = (int) $reception->product_id;
+        $id_product_attribute = (int) $reception->product_attribute_id;
 
-        bms_procurement_purchase_order_product::where('po_id', $po_id )
-                                                ->where('product_id', $id_product )
-                                                ->where('product_attribute_id', $id_product_attribute )
-                                                ->decrement( 'qty_received', $quantity );
+        DB::transaction(function () use ($reception, $quantity, $id_product, $id_product_attribute) {
+            stock_available::where('id_product', $id_product)
+                ->where('id_product_attribute', $id_product_attribute)
+                ->decrement('quantity', $quantity);
 
-        $new_current = bms_procurement_purchase_order_product::select( DB::raw('SUM(qty_received) AS received, SUM(qty_ordered) AS ordered, SUM(qty_expected) AS expected'))->where('po_id', $po_id)->first();
+            if ($id_product_attribute > 0) {
+                DB::connection('mysql2')
+                    ->table(env('DB2_DB_prefix') . 'custom_product_attribute')
+                    ->where('id_product_attribute', $id_product_attribute)
+                    ->increment('stock_arrive', $quantity);
+            } else {
+                DB::connection('mysql2')
+                    ->table(env('DB2_DB_prefix') . 'custom_product')
+                    ->where('id_product', $id_product)
+                    ->increment('stock_arrive', $quantity);
+            }
 
-        $progress = ( $new_current->received / $new_current->ordered ) * 100;
+            DB::table('oms_billed_order_lines')
+                ->where('id', (int) $reception->billed_order_line_id)
+                ->update([
+                    'qty_received' => DB::raw('GREATEST(COALESCE(qty_received, 0) - ' . $quantity . ', 0)'),
+                    'updated_at' => now(),
+                ]);
 
-        if($new_current->ordered == $new_current->expected){
-            $current_order = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $po_id)->update( 
-                [ 
-                    'status_id' => 7,
-                    'date_upd' => date("Y-m-d- h:i:s"),
-                    'reception_progress' => $progress
-                ] 
-            );
-        }else{
-            $current_order = bms_procurement_purchase_order::where('id_bms_procurement_purchase_order', $po_id)->update( 
-                [ 
-                    'status_id' => 6,
-                    'date_upd' => date("Y-m-d- h:i:s"),
-                    'reception_progress' => $progress
-                ] 
-            );
-        }
-
-        bms_procurement_purchase_order_reception_product::where('reception_id', $id)->update( 
-            [ 
-                'deleted' => 1
-            ] 
-        );
+            DB::table('oms_reception_lines')->where('id', (int) $reception->reception_line_id)->delete();
+            DB::table('oms_receptions')->where('id', (int) $reception->id)->delete();
+        });
 
         return redirect()->route('stockEntry.listToRemove');
     }

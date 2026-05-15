@@ -145,12 +145,7 @@
                 let requestedReference  = $('.requestedReference_' + id_order + '_' + barcodeToFind).val();
                 
                 scannedQuantity = parseInt(scannedQuantity) + parseInt(1);
-                
-                $('.scannedQuantity_' + id_order + '_' + barcodeToFind).prop('value', scannedQuantity);
-                
-                $('.productScannedQuantity_' + id_order + '_' + barcodeToFind).replaceWith('<span class="productScannedQuantity_' + id_order + '_' + barcodeToFind + '">' + scannedQuantity + '</span>');
-                
-                if( scannedQuantity < requestedQuantity) $('.product_' + id_order + '_' + barcodeToFind).css('background-color', '#ffeeba').css('color', '#856404').css('border:', '1px solid #856404');    
+                requestedQuantity = parseInt(requestedQuantity);
 
                 if( scannedQuantity > requestedQuantity){
                     
@@ -161,34 +156,45 @@
                         text: "The necessary quantity has been exceeded. Please check!",
                         icon: "error"
                     });
-                
+
+                    $('#scan').attr('value', '');
+                    $('#scan').prop('value', '');
+                    $('#barcodeToFind').attr('value', '');
+                    $('#scan').focus();
+
+                    return false;
                 }
+                
+                $('.scannedQuantity_' + id_order + '_' + barcodeToFind).prop('value', scannedQuantity);
+                
+                $('.productScannedQuantity_' + id_order + '_' + barcodeToFind).replaceWith('<span class="productScannedQuantity_' + id_order + '_' + barcodeToFind + '">' + scannedQuantity + '</span>');
+                
+                if( scannedQuantity < requestedQuantity) $('.product_' + id_order + '_' + barcodeToFind).css('background-color', '#ffeeba').css('color', '#856404').css('border:', '1px solid #856404');    
 
                 if( scannedQuantity == requestedQuantity){
-                    
                     $('.product_' + id_order + '_' + barcodeToFind).css('background-color', '#c3e6cb').css('color', '#155724').css('border:', '1px solid #155724');  
-                    
-                    id_product = $('.requestedProduct_' + id_order + '_' + barcodeToFind).val();  
-                    id_product_attribute = $('.requestedAttribute_' + id_order + '_' + barcodeToFind).val();  
-                    
-                    $.ajax({
-                        type: 'POST',
-                        url: "{{ route('picking.rowDone') }}",
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            id_order: id_order,
-                            barcode: barcodeToFind,
-                            id_product: id_product,
-                            id_product_attribute: id_product_attribute,
-                            quantityRequested: requestedQuantity,
-                            scannedQuantity: scannedQuantity,
-                            pickingContainer: pickingContainer     
-                        },
-                        success: function(response) {
-                            if( response == 1) location.reload();
-                        }       
-                    });
                 }
+
+                id_product = $('.requestedProduct_' + id_order + '_' + barcodeToFind).val();  
+                id_product_attribute = $('.requestedAttribute_' + id_order + '_' + barcodeToFind).val();  
+                
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ route('picking.rowDone') }}",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        id_order: id_order,
+                        barcode: barcodeToFind,
+                        id_product: id_product,
+                        id_product_attribute: id_product_attribute,
+                        quantityRequested: requestedQuantity,
+                        scannedQuantity: scannedQuantity,
+                        pickingContainer: pickingContainer     
+                    },
+                    success: function(response) {
+                        if( response == 1) location.reload();
+                    }       
+                });
 
                 $('#scan').attr('value', '');
                 $('#scan').prop('value', '');

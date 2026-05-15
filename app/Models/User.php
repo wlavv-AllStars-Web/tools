@@ -10,7 +10,6 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Models\modules\tasks\Task;
 use App\Models\modules\team\team;
 
-use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable
 {
@@ -50,44 +49,25 @@ class User extends Authenticatable
     return $this->hasMany(DailyTask::class, 'employee_id');
     }
     
-    public static function getTokens($id_user){
-        
-        $encripted_request = base64_encode( openssl_encrypt('all', "AES-256-CBC", hash('sha256', '!allStars@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16)) );
-        
-        $start = substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'),1,5);
-        $end   = substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'),1,6);
-
-        $client = new \GuzzleHttp\Client();
-        $response = $client->request('GET', 'https://www.all-stars-motorsport.com/custom/api/getAdminToken.php?section=' . $start . $encripted_request . $end . '&id_user=' . $id_user);
-
-        $token_encrypted = substr($response->getBody(), 5);
-        $token_encrypted = substr($token_encrypted, 0, -6);
-        
-        $token_encrypted_1 = openssl_decrypt( base64_decode($token_encrypted), "AES-256-CBC", hash('sha256', '!all@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16) );
-        $token_encrypted_2 = openssl_decrypt( base64_decode($token_encrypted_1), "AES-256-CBC", hash('sha256', '!2024@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16) );
-        $tokens =  openssl_decrypt( base64_decode($token_encrypted_2), "AES-256-CBC", hash('sha256', '!allStars@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16) );
-        
-        return json_decode($tokens);
+    /**
+     * Deprecated for PrestaShop 9.
+     *
+     * PrestaShop BO links are now generated through App\Services\Prestashop\PrestashopAdminLinkService
+     * and the lsgwebtoolsbridge module, instead of calling external getAdminToken.php endpoints.
+     *
+     * Kept only to avoid fatal errors in old code paths while the dashboards are migrated.
+     */
+    public static function getTokens($id_user)
+    {
+        return (object) [];
     }
-    
-    public static function getTokensASD($id_user){
-        
-        $encripted_request = base64_encode( openssl_encrypt('all', "AES-256-CBC", hash('sha256', '!allStars@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16)) );
-        
-        $start = substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'),1,5);
-        $end   = substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'),1,6);
 
-        $client = new \GuzzleHttp\Client();
-        $response = $client->request('GET', 'https://www.all-stars-distribution.com/custom/api/getAdminToken.php?section=' . $start . $encripted_request . $end . '&id_user=' . $id_user);
-
-        $token_encrypted = substr($response->getBody(), 5);
-        $token_encrypted = substr($token_encrypted, 0, -6);
-        
-        $token_encrypted_1 = openssl_decrypt( base64_decode($token_encrypted), "AES-256-CBC", hash('sha256', '!all@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16) );
-        $token_encrypted_2 = openssl_decrypt( base64_decode($token_encrypted_1), "AES-256-CBC", hash('sha256', '!2024@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16) );
-        $tokens =  openssl_decrypt( base64_decode($token_encrypted_2), "AES-256-CBC", hash('sha256', '!allStars@323'), 0, substr(hash('sha256', '1234567891011121'), 0, 16) );
-        
-        return json_decode($tokens);
+    /**
+     * Deprecated for PrestaShop 9. See getTokens().
+     */
+    public static function getTokensASD($id_user)
+    {
+        return (object) [];
     }
 
     public function getDepartmentNameAttribute()

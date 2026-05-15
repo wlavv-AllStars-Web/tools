@@ -6,11 +6,26 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\compatsController;
 use App\Http\Controllers\API\myGarageController;
 use App\Http\Controllers\API\erpETAController;
+use App\Http\Controllers\API\HomepageApiController;
+use App\Http\Controllers\CustomTools\checkVatController;
+use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 
 Route::group([
     'middleware' => ['api', 'cors'],
 ], function ($router) {
-        
+    
+    /** API for VAT validation **/
+    Route::post('/vat/add', [CheckVatController::class, 'apiAdd'])->name('api.vat.add');
+    Route::get('/vat/add/{id_customer}/{vat_number}/{country_iso}/{token}', [CheckVatController::class, 'apiAdd'])->whereNumber('id_customer')->name('api.vat.add.get');
+    
+    /** API to homepage **/
+    Route::get('/homepage', [HomepageApiController::class, 'index' ]);  
+    
+    /** ASD **/
+    
+    /** Homepage **/
+    Route::get('/asd/homepage', [HomepageASDAdminController::class, 'api']);   
+    
     /** COMPATS API **/
     
         /** FRONT **/

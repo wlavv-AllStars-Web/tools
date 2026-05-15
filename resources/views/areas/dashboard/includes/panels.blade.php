@@ -36,7 +36,7 @@
                                 @elseif($column == 'send_email') 
                                     <td id="send_email_{{$item['send_email']}}"> <i class="fa-solid fa-envelope" onclick="requestedProductSendEmail('{{$item['send_email']}}')" style="color: dodgerblue; font-size: 20px; cursor: pointer;"></i> </td>
                                 @else
-                                    <td class="{{$column}}" @if( isset($prestashop) ) onclick="window.open('https://all-stars-motorsport.com/admin77500/index.php?controller={{$prestashop['controller']}}&id_product={{$item[$prestashop['element']]}}&token={{$prestashop['token']}}{{$prestashop['extraParameters']}}', '_blank')" style="cursor: pointer;"@endif> 
+                                    <td class="{{$column}}" @if( isset($prestashop) ) onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller={{$prestashop['controller']}}&id_product={{$item[$prestashop['element']]}}&token={{$prestashop['token']}}{{$prestashop['extraParameters']}}', '_blank')" style="cursor: pointer;"@endif> 
                                         {!! $item[$column] !!}    
                                     </td>
                                 @endif

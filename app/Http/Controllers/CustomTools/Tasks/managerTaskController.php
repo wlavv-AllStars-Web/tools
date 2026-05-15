@@ -29,7 +29,12 @@ class managerTaskController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('customTools.tasks.manager.index', compact('tasks', 'year', 'month'));
+        $breadcrumbs = [
+            ['name' => 'administration', 'url' => route('administration.index')],
+            ['name' => 'Tasks', 'url' => route($request->routeIs('admin.tools.tasks.manager.*') ? 'admin.tools.tasks.manager.index' : 'tasks.manager.index'), 'no_translation' => 1],
+        ];
+
+        return view('customTools.tasks.manager.index', compact('tasks', 'year', 'month', 'breadcrumbs'));
     }
 
     public function show(int $id, Request $request)
@@ -54,6 +59,11 @@ class managerTaskController extends Controller
             'task' => $task,
             'logs' => $logs,
             'teamUsers' => $teamUsers,
+            'breadcrumbs' => [
+                ['name' => 'administration', 'url' => route('administration.index')],
+                ['name' => 'Tasks', 'url' => route($request->routeIs('admin.tools.tasks.manager.*') ? 'admin.tools.tasks.manager.index' : 'tasks.manager.index'), 'no_translation' => 1],
+                ['name' => 'Task #' . $task->id, 'url' => route($request->routeIs('admin.tools.tasks.manager.*') ? 'admin.tools.tasks.manager.show' : 'tasks.manager.show', $task->id), 'no_translation' => 1],
+            ],
         ]);
     }
 

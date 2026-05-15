@@ -7,8 +7,8 @@
         <div class="text-muted">Equipa: {{ $task->team?->name }} | Atribuído: {{ $task->assignedUser?->name ?? '-' }}</div>
     </div>
     <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" href="{{ route('tasks.admin.edit', $task->id) }}">Editar</a>
-        <a class="btn btn-outline-secondary" href="{{ route('tasks.admin.index') }}">Voltar</a>
+        <a class="btn btn-outline-secondary" href="{{ route('admin.tools.tasks.admin.edit', $task->id) }}">Editar</a>
+        <a class="btn btn-outline-secondary" href="{{ route('admin.tools.tasks.admin.index') }}">Voltar</a>
     </div>
 </div>
 
@@ -42,7 +42,7 @@
                     @foreach($task->files as $f)
                         <li>
                             {{ $f->filename }} ({{ round($f->size/1024, 1) }} KB)
-                            — <a href="{{ route('tasks.files.download', $f->id) }}">download</a>
+                            — <a href="{{ route('admin.tools.tasks.files.download', $f->id) }}">download</a>
                         </li>
                     @endforeach
                 </ul>

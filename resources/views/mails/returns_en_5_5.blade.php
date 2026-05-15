@@ -27,7 +27,7 @@
                         
 						<p>You can find full details of our return policy by clicking the link below <br>( paragraph 7 ):</p>
 						<p>
-							<a href="https://www.all-stars-motorsport.com/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a><br>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a><br>
 						</p>
 						<p>Should you have any further questions, please do not hesitate to contact us.</p>
 						<br>

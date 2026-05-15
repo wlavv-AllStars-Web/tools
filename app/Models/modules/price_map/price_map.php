@@ -2,8 +2,6 @@
 
 namespace App\Models\modules\price_map;
 
-use Auth;
-use App\Models\prestashop\manufacturers;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

@@ -7,7 +7,7 @@
         <table style="padding: 10px 20px;width: 100%;text-align: center;">
             <tr> <td> <p style="margin: 10px 0;"> {!! __('mails.asm.requestedProduct.text_2') !!} <b>{{$data['product_info']->lang->name}}</b> {!! __('mails.asm.requestedProduct.text_3') !!} </p> </td> </tr>
             <tr> <td> <p style="margin: 10px 0;"></p> </td> </tr>
-            <tr> <td> <p style="margin: 10px 0;"> {!! __('mails.asm.requestedProduct.text_4') !!} <a  style="color: red;text-decoration: none;" href="https://www.all-stars-motorsport.com/en/search?orderby=position&orderway=desc&search_query={{$data['product_info']->reference}}&submit_search="> <b style="color: red;">{{$data['product_info']->reference}}</b> </a>.</p> </td> </tr>
+            <tr> <td> <p style="margin: 10px 0;"> {!! __('mails.asm.requestedProduct.text_4') !!} <a  style="color: red;text-decoration: none;" href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/en/search?orderby=position&orderway=desc&search_query={{$data['product_info']->reference}}&submit_search="> <b style="color: red;">{{$data['product_info']->reference}}</b> </a>.</p> </td> </tr>
             <tr> <td> <p style="margin: 10px 0;"></p> </td> </tr>
             <tr> <td> <p style="margin: 10px 0;"> {!! __('mails.asm.requestedProduct.text_5') !!} </p> </td> </tr>
             <tr> <td> <p style="margin: 10px 0;"></p> </td> </tr>

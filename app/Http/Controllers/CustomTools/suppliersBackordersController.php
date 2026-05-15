@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\prestashop\suppliers;
 
 use App\Models\modules\backorders_list\backorders_list;
-
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
+use App\Services\oms\OmsLegacyProcurementService;
 
 class suppliersBackordersController extends Controller
 {
@@ -21,7 +19,12 @@ class suppliersBackordersController extends Controller
     
     public function __construct()
     {
-        $this->breadcrumbs[] = [ 'name' =>  trans('messages.suppliersBackorders'), 'url' => route('suppliersBackorders.index')];
+        $indexRoute = request()->routeIs('purchase.tools.suppliersBackorders.*')
+            ? 'purchase.tools.suppliersBackorders.index'
+            : (request()->routeIs('backoffice.tools.suppliersBackorders.*') ? 'backoffice.tools.suppliersBackorders.index' : 'suppliersBackorders.index');
+
+        $this->breadcrumbs[] = ['name' => 'purchase', 'url' => route('purchase.index')];
+        $this->breadcrumbs[] = ['name' => trans('messages.suppliersBackorders'), 'url' => route($indexRoute), 'no_translation' => 1];
     }
 
     public function index(){
@@ -87,47 +90,39 @@ class suppliersBackordersController extends Controller
 
     public function insertData(){ 
         
-        $openOrders = bms_procurement_purchase_order::select('supplier_id')->where('date_add', '<', date("Y-m-d", strtotime("-1 months")))->whereIn('status_id', [5, 6])->groupBy('supplier_id')->get();
+        $openOrderLines = OmsLegacyProcurementService::openBackorderLinesOlderThan(date("Y-m-d", strtotime("-1 months")));
 
-        foreach($openOrders AS $key => $order){
-            
-            $openOrdersOfSupplier = bms_procurement_purchase_order::getOpenOrdersWithRows($order->supplier_id);
+        foreach($openOrderLines->groupBy('supplier_id') AS $supplierId => $openOrdersOfSupplier){
 
             $num1 = rand(10000,99999);
             $num2 = rand(1000,9999);
             $num3 = rand(100,999);
             $token = $num1.$num2.$num3;
 
-            $supplier_id = $order->supplier_id;
-            $supplier_name = suppliers::where('id_supplier', $order->supplier_id)->value('name');
+            $supplier_id = (int) $supplierId;
+            $supplier_name = suppliers::where('id_supplier', $supplier_id)->value('name');
 
             foreach($openOrdersOfSupplier AS $order_supplier){
                 
-                $order_reference = $order_supplier->reference;
-                $order_id = $order_supplier->id_bms_procurement_purchase_order;
-                $order_date = $order_supplier->date_add;
-                $order_month = date("M",strtotime($order_supplier->date_add));
-                
-                foreach($order_supplier->rows AS $row){
+                $order_date = $order_supplier->order_date;
 
-                    $data = [
-                        'id_supplier' => $supplier_id,
-                        'supplier' => $supplier_name,
-                        'report_month' => date('M'),
-                        'report_year' => date('Y'),
-                        'order_id' => $order_id,
-                        'order_reference' => $order_reference,
-                        'order_date' => $order_date,
-                        'order_month' => $order_month,
-                        'product_reference' => $row->sku,
-                        'qty_ordered' => $row->qty_ordered,
-                        'qty_billed' => $row->qty_wmfaturado,
-                        'qty_received' => $row->qty_received,
-                        'token' => $token
-                    ];
-                    
-                    backorders_list::saveBackordersReport($data);
-                }
+                $data = [
+                    'id_supplier' => $supplier_id,
+                    'supplier' => $supplier_name,
+                    'report_month' => date('M'),
+                    'report_year' => date('Y'),
+                    'order_id' => $order_supplier->order_id,
+                    'order_reference' => $order_supplier->order_reference,
+                    'order_date' => $order_date,
+                    'order_month' => date("M", strtotime($order_date)),
+                    'product_reference' => $order_supplier->product_reference,
+                    'qty_ordered' => $order_supplier->qty_ordered,
+                    'qty_billed' => $order_supplier->qty_billed,
+                    'qty_received' => $order_supplier->qty_received,
+                    'token' => $token
+                ];
+                
+                backorders_list::saveBackordersReport($data);
             }
         }
     }
@@ -148,10 +143,12 @@ class suppliersBackordersController extends Controller
         $email = suppliers::where('id_supplier', $supplier->id_supplier)->value('email');
         $subject = "ALL STARS BACK ORDERS OVERVIEW - " . $supplier->supplier . ' ( ' . date('m-Y') . ' )' . ' - ' . $email;        
 
-        config(['mail.mailers.smtp.username' => 'suppliers@all-stars-distribution.com']);
-        config(['mail.mailers.smtp.password' => 'D*223080261789ab']);
-        config(['mail.from.address' => 'suppliers@all-stars-distribution.com']);
-        config(['mail.from.name' => 'ALL STARS']);
+        config(['mail.mailers.smtp.username' => config('allstars.mailers.suppliers.username')]);
+        if (config('allstars.mailers.suppliers.password')) {
+            config(['mail.mailers.smtp.password' => config('allstars.mailers.suppliers.password')]);
+        }
+        config(['mail.from.address' => config('allstars.mailers.suppliers.from_address')]);
+        config(['mail.from.name' => config('allstars.mailers.suppliers.from_name')]);
 
         Mail::html($html, function ($message) use ($email, $subject) {
             $message->to($email)->subject($subject);

@@ -3,20 +3,28 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use App\Models\prestashop\stock_available;
 
-use Illuminate\Support\Facades\Config;
-
-class product_attribute_image extends Model
+class product_attribute_image extends PrestashopModel
 {
-    protected $connection = 'mysql2';
     use HasFactory;
-    public $timestamps = false;
 
-    public function __construct()
+    protected $primaryKey = null;
+    public $incrementing = false;
+    protected $fillable = [];
+
+    public function __construct(array $attributes = [])
     {
-        $this->table = env('DB2_prefix')."product_attribute_image";
+        parent::__construct($attributes);
+        $this->table = self::tableName('product_attribute_image');
+    }
+
+    public function productAttribute()
+    {
+        return $this->belongsTo(product_attribute::class, 'id_product_attribute', 'id_product_attribute');
+    }
+
+    public function image()
+    {
+        return $this->belongsTo(image::class, 'id_image', 'id_image');
     }
 }

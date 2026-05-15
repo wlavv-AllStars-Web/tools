@@ -1,5 +1,5 @@
 <div class="navbar navbar-light" id="editFormContainer" style="margin: 10px 15px;">
-    <form id="refundFormEdit" action="{{ route('refund.updateRefund') }}" method="POST" class="row g-3">
+    <form id="refundFormEdit" action="{{ route($updateRoute ?? 'refund.updateRefund') }}" method="POST" class="row g-3">
         @csrf
         <meta name="csrf-token" content="{{ csrf_token() }}">
 

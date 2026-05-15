@@ -3,144 +3,143 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
-use App\Models\prestashop\orders;
-
-use Illuminate\Support\Facades\Config;
-
-class orders_details extends Model
-{   
-    protected $connection = 'mysql2';
+class orders_details extends PrestashopModel
+{
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
+    protected $primaryKey = 'id_order_detail';
+    protected $fillable = [];
+
+    public function __construct(array $attributes = [])
     {
-        $this->table = env('DB2_prefix')."order_detail";
+        parent::__construct($attributes);
+        $this->table = self::tableName('order_detail');
     }
 
-    public function product(){
-        return $this->hasOne(product::class, "id_product", 'product_id');
+    public function product()
+    {
+        return $this->hasOne(product::class, 'id_product', 'product_id');
     }
 
-    public function product_attribute(){
-        return $this->hasMany(product_attribute::class, "id_product_attribute", 'product_attribute_id');
+    public function product_attribute()
+    {
+        return $this->hasMany(product_attribute::class, 'id_product_attribute', 'product_attribute_id');
     }
 
+    protected static function soldBaseQuery()
+    {
+        $orderDetailTable = self::tableName('order_detail');
+        $ordersTable = self::tableName('orders');
 
-    public static function getSoldOf($product_reference, $attr_reference = ''){
-
-        $reference = (strlen($attr_reference) > 0) ? $attr_reference : $product_reference;
-
-        return DB::table(env('DB2_DB_prefix') . 'order_detail')
-        ->join(       env('DB2_DB_prefix') . 'orders',     env('DB2_DB_prefix') . 'orders.id_order', '=', env('DB2_DB_prefix') . 'order_detail.id_order')
-        ->where(      env('DB2_DB_prefix') . 'orders.date_add', '>', date('Y-m-d', strtotime('-1 year')) )
-        ->where(      env('DB2_DB_prefix') . 'order_detail.product_reference', $reference )
-        ->whereIn(      env('DB2_DB_prefix') . 'orders.current_state', [2, 3, 4, 5, 15, 16, 28] )
-        ->sum('product_quantity');
-
+        return DB::connection('mysql2')
+            ->table($orderDetailTable)
+            ->join($ordersTable, $ordersTable . '.id_order', '=', $orderDetailTable . '.id_order')
+            ->where($ordersTable . '.date_add', '>', date('Y-m-d', strtotime('-1 year')))
+            ->whereIn($ordersTable . '.current_state', [2, 3, 4, 5, 15, 16, 28]);
     }
 
-    public static function getSoldByIDOf($id_product, $id_product_attribute = 0){
+    public static function getSoldOf($product_reference, $attr_reference = '')
+    {
+        $reference = strlen($attr_reference) > 0 ? $attr_reference : $product_reference;
+        $orderDetailTable = self::tableName('order_detail');
 
-        return DB::table(env('DB2_DB_prefix') . 'order_detail')
-        ->join(       env('DB2_DB_prefix') . 'orders',     env('DB2_DB_prefix') . 'orders.id_order', '=', env('DB2_DB_prefix') . 'order_detail.id_order')
-        ->where(      env('DB2_DB_prefix') . 'orders.date_add', '>', date('Y-m-d', strtotime('-1 year')) )
-        ->where(      env('DB2_DB_prefix') . 'order_detail.product_id', $id_product )
-        ->where(      env('DB2_DB_prefix') . 'order_detail.product_attribute_id', $id_product_attribute )
-        ->whereIn(      env('DB2_DB_prefix') . 'orders.current_state', [2, 3, 4, 5, 15, 16, 28] )
-        ->sum('product_quantity');
-
+        return self::soldBaseQuery()
+            ->where($orderDetailTable . '.product_reference', $reference)
+            ->sum($orderDetailTable . '.product_quantity');
     }
 
-    public static function getSoldByRefOf($reference){
+    public static function getSoldByIDOf($id_product, $id_product_attribute = 0)
+    {
+        $orderDetailTable = self::tableName('order_detail');
 
-        return DB::table(env('DB2_DB_prefix') . 'order_detail')
-        ->join(       env('DB2_DB_prefix') . 'orders',     env('DB2_DB_prefix') . 'orders.id_order', '=', env('DB2_DB_prefix') . 'order_detail.id_order')
-        ->where(      env('DB2_DB_prefix') . 'orders.date_add', '>', date('Y-m-d', strtotime('-1 year')) )
-        ->where(      env('DB2_DB_prefix') . 'order_detail.product_reference', $reference )
-        ->whereIn(      env('DB2_DB_prefix') . 'orders.current_state', [2, 3, 4, 5, 15, 16, 28] )
-        ->sum('product_quantity');
-
+        return self::soldBaseQuery()
+            ->where($orderDetailTable . '.product_id', $id_product)
+            ->where($orderDetailTable . '.product_attribute_id', $id_product_attribute)
+            ->sum($orderDetailTable . '.product_quantity');
     }
 
-    public static function getProductsOfOrder($id_order){
-        
-        $list = '';
-        $products = self::select('product_reference')->where('id_order', $id_order)->get();
-        
-        foreach($products AS $product) $list .= $product->product_reference . ', ';
-        
-        return substr($list, 0, -2);
+    public static function getSoldByRefOf($reference)
+    {
+        $orderDetailTable = self::tableName('order_detail');
+
+        return self::soldBaseQuery()
+            ->where($orderDetailTable . '.product_reference', $reference)
+            ->sum($orderDetailTable . '.product_quantity');
     }
 
-    public static function dashboard_order_with_voucher($type){
+    public static function getProductsOfOrder($id_order)
+    {
+        $products = self::select('product_reference')
+            ->where('id_order', $id_order)
+            ->pluck('product_reference')
+            ->toArray();
 
-        $data = array();
+        return implode(', ', $products);
+    }
 
-        $prefix = env('DB2_DB_prefix');
+    protected static function dashboardVoucherBase($type, $board, $suffix)
+    {
+        $data = [];
 
-        $array = asm_dashboard::getExceptions('order_with_voucher');
-        
-        $bd_data = self::select(
-                "{$prefix}orders.id_order",
-                "{$prefix}orders.reference",
-                "{$prefix}order_detail.product_reference"
+        $ordersTable = self::tableName('orders');
+        $orderDetailTable = self::tableName('order_detail');
+
+        $excludedOrderIds = asm_dashboard::getExceptions($board)
+            ->pluck('id_product')
+            ->toArray();
+
+        $query = self::select(
+                $ordersTable . '.id_order',
+                $ordersTable . '.reference',
+                $orderDetailTable . '.product_reference'
             )
-            ->join("{$prefix}orders", "{$prefix}orders.id_order", '=', "{$prefix}order_detail.id_order")
-            ->where("{$prefix}order_detail.product_reference", 'LIKE', '%voucher%')
-            ->whereNotIn('ps_orders.id_order', $array)
-            ->get();
+            ->join($ordersTable, $ordersTable . '.id_order', '=', $orderDetailTable . '.id_order')
+            ->where($orderDetailTable . '.product_reference', 'LIKE', '%voucher%');
 
+        if (!empty($excludedOrderIds)) {
+            $query->whereNotIn($ordersTable . '.id_order', $excludedOrderIds);
+        }
 
-        foreach($bd_data AS $item) $data[] = ['clean' => $item->id_order, 'id_order' => $item->id_order, 'reference' => $item->reference, 'product_reference' => $item->product_reference];
-        
+        $bd_data = $query->get();
+
+        foreach ($bd_data as $item) {
+            $data[] = [
+                'clean' => $item->id_order,
+                'id_order' => $item->id_order,
+                'reference' => $item->reference,
+                'product_reference' => $item->product_reference,
+            ];
+        }
+
         return [
-            'name'              => trans('dashboard.ORDERS - WAITING INFO'),
-            'col'               => 4,
-            'item_id'           => $type . '_order_with_voucher',
-            'prestashop'        => ( isset ( Config::get('token')->AdminProducts ) ) ? [ 'token' => Config::get('token')->AdminOrders, 'controller' => 'AdminOrders', 'element' => 'id_order', 'extraParameters' => '&vieworder' ] : [],
-            'columns'           => ['clean', 'id_order', 'reference', 'product_reference'],
-            'counter'           => count($data),
-            'exception_fields'  => ['order_with_voucher', 'id_order', 'reference', 'product_reference'],
-            'data'              => $data
-        ];        
-    } 
+            'name' => trans('dashboard.ORDERS - WAITING INFO'),
+            'col' => 4,
+            'item_id' => $type . '_' . $suffix,
+            'prestashop' => (isset(Config::get('token')->AdminOrders))
+                ? [
+                    'token' => Config::get('token')->AdminOrders,
+                    'controller' => 'AdminOrders',
+                    'element' => 'id_order',
+                    'extraParameters' => '&vieworder'
+                ]
+                : [],
+            'columns' => ['clean', 'id_order', 'reference', 'product_reference'],
+            'counter' => count($data),
+            'exception_fields' => [$board, 'id_order', 'reference', 'product_reference'],
+            'data' => $data
+        ];
+    }
 
-    public static function dashboard_order_with_voucher_sales($type){
+    public static function dashboard_order_with_voucher($type)
+    {
+        return self::dashboardVoucherBase($type, 'order_with_voucher', 'order_with_voucher');
+    }
 
-        $data = array();
-
-        $prefix = env('DB2_DB_prefix');
-
-        $array = asm_dashboard::getExceptions('order_with_voucher_sales');
-        
-        $bd_data = self::select(
-                "{$prefix}orders.id_order",
-                "{$prefix}orders.reference",
-                "{$prefix}order_detail.product_reference"
-            )
-            ->join("{$prefix}orders", "{$prefix}orders.id_order", '=', "{$prefix}order_detail.id_order")
-            ->where("{$prefix}order_detail.product_reference", 'LIKE', '%voucher%')
-            ->whereNotIn('ps_orders.id_order', $array)
-            ->get();
-
-
-        foreach($bd_data AS $item) $data[] = ['clean' => $item->id_order, 'id_order' => $item->id_order, 'reference' => $item->reference, 'product_reference' => $item->product_reference];
-        
-        return [
-            'name'              => trans('dashboard.ORDERS - WAITING INFO'),
-            'col'               => 4,
-            'item_id'           => $type . '_order_with_voucher',
-            'prestashop'        => ( isset ( Config::get('token')->AdminProducts ) ) ? [ 'token' => Config::get('token')->AdminOrders, 'controller' => 'AdminOrders', 'element' => 'id_order', 'extraParameters' => '&vieworder' ] : [],
-            'columns'           => ['clean', 'id_order', 'reference', 'product_reference'],
-            'counter'           => count($data),
-            'exception_fields'  => ['order_with_voucher_sales', 'id_order', 'reference', 'product_reference'],
-            'data'              => $data
-        ];        
-    } 
-    
+    public static function dashboard_order_with_voucher_sales($type)
+    {
+        return self::dashboardVoucherBase($type, 'order_with_voucher_sales', 'order_with_voucher');
+    }
 }

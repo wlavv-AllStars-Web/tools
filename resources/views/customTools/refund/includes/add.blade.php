@@ -1,5 +1,5 @@
 <div class="navbar navbar-light" id="newRefundContainer" style="margin: 0 10px;display: none;">
-    <form id="refundForm" action="{{route('refund.newRefund')}}" method="POST" class="row g-3">
+    <form id="refundForm" action="{{ route($routes['new'] ?? 'refund.newRefund') }}" method="POST" class="row g-3">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         {{-- ORDER DETAILS --}}
         <div class="card" style="padding: 0">

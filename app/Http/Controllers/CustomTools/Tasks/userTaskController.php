@@ -25,17 +25,28 @@ class userTaskController extends Controller
             ->orderByDesc('id')
             ->get();
     
-        return view('customTools.tasks.user.index', compact('tasks', 'year', 'month'));
+        $breadcrumbs = [
+            ['name' => 'administration', 'url' => route('administration.index')],
+            ['name' => 'Tasks', 'url' => route($request->routeIs('admin.tools.tasks.user.*') ? 'admin.tools.tasks.user.index' : 'tasks.user.index'), 'no_translation' => 1],
+        ];
+
+        return view('customTools.tasks.user.index', compact('tasks', 'year', 'month', 'breadcrumbs'));
         
     }
 
-    public function show(int $id)
+    public function show(int $id, Request $request)
     {
         $task = task::with(['team','assignedUser','files.user','logs.user'])->findOrFail($id);
         $this->authorize('view', $task);
         $logs = $task->logs;
 
-        return view('customTools.tasks.user.show', compact('task','logs'));
+        $breadcrumbs = [
+            ['name' => 'administration', 'url' => route('administration.index')],
+            ['name' => 'Tasks', 'url' => route($request->routeIs('admin.tools.tasks.user.*') ? 'admin.tools.tasks.user.index' : 'tasks.user.index'), 'no_translation' => 1],
+            ['name' => 'Task #' . $task->id, 'url' => route($request->routeIs('admin.tools.tasks.user.*') ? 'admin.tools.tasks.user.show' : 'tasks.user.show', $task->id), 'no_translation' => 1],
+        ];
+
+        return view('customTools.tasks.user.show', compact('task','logs', 'breadcrumbs'));
     }
 
     public function updateStatus(Request $request, int $id)

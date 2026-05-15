@@ -3,19 +3,28 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Support\Facades\Config;
-
-class product_attribute_shop extends Model
+class product_attribute_shop extends PrestashopModel
 {
-    protected $connection = 'mysql2';
     use HasFactory;
-    public $timestamps = false;
+
+    protected $primaryKey = null;
+    public $incrementing = false;
     protected $fillable = ['wholesale_price'];
-    
-    public function __construct()
+
+    public function __construct(array $attributes = [])
     {
-        $this->table = env('DB2_prefix')."product_attribute_shop";
+        parent::__construct($attributes);
+        $this->table = self::tableName('product_attribute_shop');
+    }
+
+    public function productAttribute()
+    {
+        return $this->belongsTo(product_attribute::class, 'id_product_attribute', 'id_product_attribute');
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(shop::class, 'id_shop', 'id_shop');
     }
 }

@@ -22,8 +22,8 @@
 						<p>
 						    <br>
 						    Puede consultar nuestras condiciones de devolución y vídeos informativos a través de los siguientes enlaces:<br>
-							<a href="https://www.all-stars-motorsport.com/es/content/3-condiciones-de-uso">Condiciones de uso</a><br>
-							<a href="https://www.all-stars-motorsport.com/es/content/370-service-client-faq">FAQ Servicio al cliente</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/es/content/3-condiciones-de-uso">Condiciones de uso</a><br>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/es/content/370-service-client-faq">FAQ Servicio al cliente</a>
 						</p>
 						<p>Será informado por correo electrónico cada vez que el estado de su solicitud sea actualizado.</p>
 						<p>También puede encontrar toda la información relativa a su solicitud en su área de cliente.</p>

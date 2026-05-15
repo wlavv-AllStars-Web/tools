@@ -136,7 +136,7 @@
 
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-primary"
-                               href="{{ route('tasks.manager.show', $task->id) }}">
+                               href="{{ route('admin.tools.tasks.manager.show', $task->id) }}">
                                 OPEN
                             </a>
                         </td>

@@ -26,8 +26,8 @@
                     </tr>
                     @foreach( $erpOpenOrders AS $order)
                         @if($order->status_id != 7)
-                            <tr onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminProcurementPurchaseOrder&home=1&token={{Config::get('token')->AdminProcurementPurchaseOrder}}&id_bms_procurement_purchase_order={{$order->id_bms_procurement_purchase_order}}&updatebms_procurement_purchase_order#tabActive=product', '_blank')" style="cursor: pointer;">
-                                <td>{{$order->id_bms_procurement_purchase_order}}</td>
+                            <tr onclick="window.open('{{ route('erp.oms.dashboard', ['center_tab' => 'open_receptions', 'document_type' => 'billed_order', 'document_id' => $order->po_id, 'supplier_id' => $order->supplier_id]) }}', '_blank')" style="cursor: pointer;">
+                                <td>{{$order->po_id}}</td>
                                 <td>{{$order->reference}}</td>
                                 <td>{{$order->supplier_name}}</td>
                                 <td>{{$order->sku}}</td>
@@ -58,7 +58,7 @@
                         <td style="width: 20%">DATE</td>
                     </tr>
                     @foreach( $receivedProducts AS $receivedProduct)
-                        <tr onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminProcurementPurchaseOrder&home=1&token={{Config::get('token')->AdminProcurementPurchaseOrder}}&id_bms_procurement_purchase_order={{$receivedProduct->po_id}}&updatebms_procurement_purchase_order#tabActive=product', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ route('erp.oms.dashboard', ['center_tab' => 'receptions_history', 'document_type' => 'billed_order', 'document_id' => $receivedProduct->po_id]) }}', '_blank')" style="cursor: pointer;">
                             <td>{{$receivedProduct->po_id}}</td>
                             <td>{{$receivedProduct->product_id}}</td>
                             <td>@if( $receivedProduct->product_attribute_id == 0 ) - @else {{$receivedProduct->product_attribute_id}} @endif</td>
@@ -87,7 +87,7 @@
                         <td style="width: 25%">STATE</td>
                     </tr>
                     @foreach( $orders AS $order)
-                        <tr onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminOrders&id_order={{$order->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminOrders&id_order={{$order->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')" style="cursor: pointer;">
                             <td>{{$order->id_order}}</td>
                             <td>{{$order->reference}}</td>
                             <td>{{$order->tracking_number}}</td>
@@ -113,7 +113,7 @@
                         <td style="width: 25%">STATE</td>
                     </tr>
                     @foreach( $tracking AS $tracking_row)
-                        <tr onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminOrders&id_order={{$tracking_row->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminOrders&id_order={{$tracking_row->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')" style="cursor: pointer;">
                             <td>{{$tracking_row->id_order}}</td>
                             <td>{{$tracking_row->reference}}</td>
                             <td>{{$tracking_row->tracking_number}}</td>
@@ -140,7 +140,7 @@
                         <td style="width: 25%">HOUSING</td>
                     </tr>
                     @foreach( $products AS $product)
-                        <tr onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminProducts&id_product={{$product->id_product}}&updateproduct&token={{Config::get('token')->AdminProducts}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminProducts&id_product={{$product->id_product}}&updateproduct&token={{Config::get('token')->AdminProducts}}', '_blank')" style="cursor: pointer;">
                             <td>@if($product->active == 1) <i style="color: green" class="fa-solid fa-check"></i> @else <i style="color: red;" class="fa-solid fa-xmark"></i> @endif</td>
                             <td>{{$product->id_product}}</td>
                             <td>{{$product->reference}}</td>
@@ -169,7 +169,7 @@
                         <td style="width: 20%">HOUSING</td>
                     </tr>
                     @foreach( $product_attributes AS $product_attribute)
-                        <tr onclick="window.open('https://www.all-stars-motorsport.com/admin77500/index.php?controller=AdminProducts&id_product={{$product_attribute->id_product}}&updateproduct&token={{Config::get('token')->AdminProducts}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminProducts&id_product={{$product_attribute->id_product}}&updateproduct&token={{Config::get('token')->AdminProducts}}', '_blank')" style="cursor: pointer;">
                             <td>@if($product_attribute->active == 1) <i style="color: green" class="fa-solid fa-check"></i> @else <i style="color: red;" class="fa-solid fa-xmark"></i> @endif</td>
                             <td>{{$product_attribute->id_product}}</td>
                             <td>{{$product_attribute->id_product_attribute}}</td>
@@ -391,11 +391,11 @@
                     <tr style="display: none;" id="documentHolder_{{$document->id_document}}">
                         <td colspan="6">
                             @if( ( strlen( $document->element) > 0 ) && ( $document->element != 'others' ))
-                                <embed src="https://webtools.all-stars-motorsport.com/uploads/documents/{{$document->category}}/{{str_replace('.', '/', str_replace(' ', '', $document->element))}}/{{str_replace('/', '|', $document->document)}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/{{$document->category}}/{{str_replace('.', '/', str_replace(' ', '', $document->element))}}/{{str_replace('/', '|', $document->document)}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
                             @elseif( ( $document->category == 'manifest' ) && ( strlen( $document->element) > 0 ) && ( $document->element == 'others' ))
-                                <embed src="https://webtools.all-stars-motorsport.com/uploads/documents/manifest/manifest{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/manifest/manifest{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
                             @else
-                                <embed src="https://webtools.all-stars-motorsport.com/uploads/documents/{{str_replace('.', '/', $document->category)}}/{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/{{str_replace('.', '/', $document->category)}}/{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
                             @endif
                         </td>
                     </tr>

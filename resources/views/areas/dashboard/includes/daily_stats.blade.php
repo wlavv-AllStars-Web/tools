@@ -35,8 +35,6 @@
                 			</table>
                         </div>
                     </div>
-                    
-                    
                     <div class="panel" style="padding: 5px 10px;margin: 20px 0;border: 1px solid #aaa;border-radius: 5px;background-color: #eee;">
                     		<div style="height: 30px;color: dodgerblue; padding: 0px;font-size: 24px;text-transform: uppercase;font-weight: bold;text-align: center;">
                             {{ __('tags.Monthly goal')}} ( {{date('Y')}}-{{date('m')}} )
@@ -101,27 +99,9 @@
                 	
                 	<div class="panel" style="padding: 30px 10px;margin: 0 20px 20px 0;border: 1px solid #ddd;border-radius: 5px;background-color: #eee;">
                 	    <div style="height: 30px;color: dodgerblue;font-size: 20px;display: inline-table;">Missing to month goal</div>
-                	    
-                	    {{--
-                	    
-                	    @php
-                           $percent_reached = ( ( ( $goals->totalMonthFacturadoValue * 100 ) / $goals->totalMonthObjectivoValue ) - 100);
-                        @endphp
 
-                	    @if( $percent_reached < 0 )
-                    	    <div style="height: 30px;color:  red ; margin: 20px 0; font-size: 28px"> {{number_format( $percent_reached , 2, ',', ' ') }} % </div>
-                	    @else
-                    	    <div style="height: 30px;color:  darkgreen ; margin: 20px 0; font-size: 28px"> {{number_format( $percent_reached , 2, ',', ' ') }} % </div>
-                	    @endif
-                	    
-                	    @if( ( $percent_reached < 0 ) && ( $percent_reached > -5 )  ) <div style="height: 30px;color: orange ; margin: 20px 0; font-size: 22px"> 1º TIER REACHED! </div> @endif
-                	    @if( $percent_reached > 0 )  <div style="height: 30px;color:  darkgreen ; margin: 20px 0; font-size: 22px"> GOAL REACHED! </div> @endif
-                	    
-                	    --}}
-                	    
-                	    
-                	    @php
-                           $percent_reached = ( ( ( $goals->totalMonthFacturadoValue * 100 ) / $goals->totalMonthObjectivoValue ) - 100 );
+                        @php
+                            $percent_reached = $goals->totalMonthObjectivoValue > 0 ? ((($goals->totalMonthFacturadoValue * 100) / $goals->totalMonthObjectivoValue) - 100) : 0;
                         @endphp
 
                         @if( $percent_reached < 0 ) <div style="height: 30px;color:  red ; margin: 20px 0; font-size: 28px"> {{number_format( $percent_reached , 2, ',', ' ') }} % </div> @endif

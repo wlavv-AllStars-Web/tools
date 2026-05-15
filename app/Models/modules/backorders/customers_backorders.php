@@ -5,15 +5,12 @@ namespace App\Models\modules\backorders;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-use Illuminate\Support\Facades\Config;
 
 use App\Models\prestashop\orders;
-use App\Models\prestashop\product;
 use App\Models\prestashop\product_lang;
-use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\stock_available;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
 
 class customers_backorders extends Model
 {   
@@ -22,13 +19,14 @@ class customers_backorders extends Model
     public $primaryKey = 'id';
     
     public static function checkBackorder($id_order, $id_product, $id_product_attribute, $store){
+        $store = self::normalizeStore($store);
         return self::where('id_order', $id_order)->where('id_product', $id_product)->where('id_product_attribute', $id_product_attribute)->where('store', $store)->first();
     }
     
     public static function insertBackorder($data){
-        
+
         $exists = self::checkBackorder($data['id_order'], $data['id_product'], $data['id_product_attribute'], $data['store']);
-        
+
         if( !isset($exists->id) ){
             
             $backorder = new customers_backorders();
@@ -36,7 +34,7 @@ class customers_backorders extends Model
             $backorder->id_order = $data['id_order'];
             $backorder->id_product = $data['id_product'];
             $backorder->id_product_attribute = $data['id_product_attribute'];
-            $backorder->store = $data['store'];
+            $backorder->store = self::normalizeStore($data['store']);
             $backorder->type = $data['type'];
             $backorder->brand = $data['brand'];
             $backorder->supplier = $data['supplier'];
@@ -60,20 +58,14 @@ class customers_backorders extends Model
         
         foreach($data AS $item){
 
-            $product = product_attribute::where('reference', $item->reference)->first();
+            $id_product = (int) $item->id_product;
+            $id_product_attribute = (int) $item->id_product_attribute;
+            $stock_available = stock_available::where('id_product', $id_product)
+                ->where('id_product_attribute', $id_product_attribute)
+                ->when(self::normalizeStore($item->store) === 'ASM', fn ($query) => $query->where('id_shop', 2))
+                ->when(self::normalizeStore($item->store) === 'ASD', fn ($query) => $query->where('id_shop', 3))
+                ->first();
 
-            if( !isset( $product->id_product)) $product = product::where('reference', $item->reference)->first();
-            
-            if(isset($product->id_product)){
-                $id_product = $product->id_product;
-                $id_product_attribute = ( isset($product->id_product_attribute)) ? $product->id_product_attribute : 0;
-                $stock_available = stock_available::where('id_product', $id_product)->where('id_product_attribute', $id_product_attribute)->first();
-            }else{
-                $id_product = 0;
-                $id_product_attribute = 0;
-                $stock_available = 'N/D';
-            }
-            
             $expected_days = product_lang::where('id_product', $id_product)->where('id_lang', 1)->value('available_later');
 
             $date1 = strtotime($item->order_date);
@@ -81,7 +73,7 @@ class customers_backorders extends Model
             $diff = $date2 - $date1;
             $days = floor($diff / (60 * 60 * 24)) + 1;
             
-            preg_match_all('/\d+/', $expected_days, $matches);
+            preg_match_all('/\d+/', (string) $expected_days, $matches);
             
             if (!empty($matches[0])) {
                 if (count($matches[0]) == 2) {
@@ -93,13 +85,26 @@ class customers_backorders extends Model
                 $expected = 0;
             }
 
-            $erp_ordered = bms_procurement_purchase_order_product::select( DB::raw('sum(qty_wmfaturado) AS invoiced'), DB::raw('sum(qty_received) AS qty_received'), DB::raw('sum(qty_expected) AS expected') )
-            ->where('sku', $item->reference)
-            ->where('qty_expected', '>', 0)
-            ->groupBy('sku')
-            ->first();
+            $erp_ordered = null;
+            if (Schema::hasTable('oms_billed_order_lines')) {
+                $erp_ordered = DB::table('oms_billed_order_lines as bol')
+                    ->where('bol.product_id', $id_product)
+                    ->where(function ($query) use ($id_product_attribute) {
+                        if ($id_product_attribute > 0) {
+                            $query->where('bol.product_attribute_id', $id_product_attribute);
+                        } else {
+                            $query->whereNull('bol.product_attribute_id')
+                                ->orWhere('bol.product_attribute_id', 0);
+                        }
+                    })
+                    ->selectRaw('SUM(COALESCE(bol.qty_billed, 0)) AS invoiced, SUM(COALESCE(bol.qty_received, 0)) AS qty_received, SUM(GREATEST(COALESCE(bol.qty_billed, 0) - COALESCE(bol.qty_received, 0), 0)) AS expected')
+                    ->first();
+            }
+            
+            $erp_ordered = ( is_null($erp_ordered) ) ? null : $erp_ordered;
             
             $country_order = orders::with('delivery', 'delivery.country.lang_en')->where('id_order', $item->id_order)->first();
+            $isShipPick = ((int) $item->id_product === 0 && (int) $item->id_product_attribute === 0);
             
             $rows[] = (object)[
                     'id'                    => $item->id,
@@ -109,10 +114,11 @@ class customers_backorders extends Model
                     'original_id_product'            => $item->id_product,
                     'original_id_product_attribute'  => $item->id_product_attribute,
                     'reference'             => $item->reference,
+                    'is_ship_pick'          => $isShipPick,
                     'supplier'              => $item->supplier,
                     'brand'                 => $item->brand,
                     'sold'                  => $item->sold,
-                    'store'                 => $item->store,
+                    'store'                 => self::normalizeStore($item->store),
                     'stock'                 => ( isset($stock_available->quantity) ) ? $stock_available->quantity : 'N/D',
                     'module'                => $item->module,
                     'type'                  => $item->type,
@@ -125,16 +131,14 @@ class customers_backorders extends Model
                     'expected_days'         => $expected_days,
                     'expected'              => $expected,
                     'color'                 => $item->rowColor,
-                    'erp_qty_received'      => (isset($erp_ordered->received)) ? $erp_ordered->received : 0,    
+                    'erp_qty_received'      => (isset($erp_ordered->qty_received)) ? $erp_ordered->qty_received : 0,    
                     'erp_qty_invoiced'      => (isset($erp_ordered->invoiced)) ? $erp_ordered->invoiced : 0,    
                     'erp_qty_expected'      => (isset($erp_ordered->expected)) ? $erp_ordered->expected : 0,
-                    'id_country'            => ($item->store == 'ASM') ? $country_order->delivery->id_country : 0,
-                    'country'               => ($item->store == 'ASM') ? $country_order->delivery->country->lang_en->name : 'ASD'
+                    'id_country'            => (self::normalizeStore($item->store) == 'ASM') ? ($country_order?->delivery?->id_country ?? 0) : 0,
+                    'country'               => (self::normalizeStore($item->store) == 'ASM') ? ($country_order?->delivery?->country?->lang_en?->name ?? 'N/D') : 'ASD'
                 ];
         }
-        
         return $rows;
-        
     }
     
     public static function getAllASM(){
@@ -154,8 +158,13 @@ class customers_backorders extends Model
 
             $order_info = orders::where('id_order', $order->id_order)->first();
             
-            if( in_array($order_info->current_state , [16, 7, 6, 5, 4] ) ){
-                self::where('id', $order->id)->whereNot('reference', 'SHIP-PICK')->update(['done' => 1]);
+            if( !is_null($order_info) && in_array($order_info->current_state , [16, 7, 6, 5, 4] ) ){
+                self::where('id', $order->id)
+                    ->where(function ($query) {
+                        $query->where('id_product', '!=', 0)
+                            ->orWhere('id_product_attribute', '!=', 0);
+                    })
+                    ->update(['done' => 1]);
             }
             /**
             else{
@@ -172,9 +181,13 @@ class customers_backorders extends Model
         
         if(isset( $asd_ids ) && ( count($asd_ids) > 0 ) ){
             
-            $asd_ids = self::getASDStatusOrders($asd_ids);
+            try {
+                $asd_ids = self::getASDStatusOrders($asd_ids);
+            } catch (\Throwable $exception) {
+                $asd_ids = [];
+            }
         
-            foreach($asd_ids as $id_order => $status){
+            foreach(($asd_ids ?? []) as $id_order => $status){
                 
                 self::where('id_order', $id_order)->where('store', 'ASD')->update(['done' => $status]);
                 
@@ -184,18 +197,12 @@ class customers_backorders extends Model
     
     public static function getCounters(){
         
-        $asm_backorders = self::where('store', 'ASM')->where('type', 'backorder')->count();
-        $asd_backorders = self::where('store', 'ASD')->where('type', 'backorder')->count();
-        
-        $asm_partials = self::where('store', 'ASM')->where('type', 'partial')->count();
-        $asd_partials = self::where('store', 'ASD')->where('type', 'partial')->count();
+        $asm_backorders = self::where('done', 0)->where('store', 'ASM')->where('type', 'backorder')->count();
+        $asd_backorders = self::where('done', 0)->where('store', 'ASD')->where('type', 'backorder')->count();
         
         return [
             'asm_backorder' => $asm_backorders,
-            'asm_partial'   => $asm_partials,
-            
             'asd_backorder' => $asd_backorders,
-            'asd_partial'   => $asd_partials,
         ];
     }
     
@@ -203,29 +210,58 @@ class customers_backorders extends Model
         
         $column = substr($data->column, 10, -1);
 
-        self::where('id_order', $data->id_order)->where('reference', $data->reference)->whereNot('reference', 'SHIP-PICK')->update([$column => $data->value]);
+        self::where('id_order', $data->id_order)
+            ->where('id_product', $data->id_product)
+            ->where('id_product_attribute', $data->id_product_attribute)
+            ->where(function ($query) {
+                $query->where('id_product', '!=', 0)
+                    ->orWhere('id_product_attribute', '!=', 0);
+            })
+            ->update([$column => $data->value]);
         
         return 1;
 
     }
 
     public static function getASDStatusOrders($data){
+        $ids = collect((array) $data)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
 
-        $client = new \GuzzleHttp\Client();
-        
-        $response = $client->request('POST', 'https://www.all-stars-distribution.com/custom/api/orders/checkStatus.php', [
-            'json' => $data,
-            'headers' => [
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json'
-            ]
-        ]);
-        
-        return json_decode($response->getBody(), true);
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+        $doneStates = [16, 7, 6, 5, 4];
+
+        $orders = DB::connection('mysql2')
+            ->table($prefix . 'orders')
+            ->whereIn('id_order', $ids->all())
+            ->where('id_shop', 3)
+            ->pluck('current_state', 'id_order');
+
+        $statuses = [];
+        foreach ($ids as $id) {
+            $statuses[$id] = in_array((int) ($orders[$id] ?? 0), $doneStates, true) ? 1 : 0;
+        }
+
+        return $statuses;
     }
 
     public static function getBackorderDetail($id_order){
         return self::where('id_order', $id_order)->first();
+    }
+
+    private static function normalizeStore($store): string
+    {
+        return match ((string) $store) {
+            '2' => 'ASM',
+            '3' => 'ASD',
+            default => (string) $store,
+        };
     }
     
 }

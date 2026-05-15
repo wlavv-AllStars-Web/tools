@@ -7,7 +7,7 @@
     }
     
     function drawMenu(){
-        window.location.href = "{{ route('compats.updateMenu') }}";
+        window.location.href = "{{ route('admin.tools.compats.update_menu') }}";
     }
 
     function createOption(){
@@ -53,7 +53,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: "{{ route('compats.removeCompat') }}",
+                    url: "{{ route('admin.tools.compats.remove_compat') }}",
                     data: {
                         _token: "{{ csrf_token() }}",
                         id: id_compat,
@@ -74,7 +74,7 @@
         
         $.ajax({
             type: 'POST',
-            url: "{{ route('compats.editImage') }}",
+            url: "{{ route('admin.tools.compats.edit_image') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 id: id,
@@ -99,7 +99,7 @@
             if (result.value) {
                 $.ajax({
                     type: 'POST',
-                    url: '{{route("compats.updateTag")}}',
+                    url: '{{route("admin.tools.compats.update_tag")}}',
                     data: {
                         _token: "{{ csrf_token() }}",
                         id_lang: id_lang,
@@ -122,7 +122,7 @@
 
         $.ajax({
             type: 'POST',
-            url: '{{route("compats.setData")}}',
+            url: '{{route("admin.tools.compats.set_data")}}',
             data: {
                 _token: "{{ csrf_token() }}",
                 type: type,
@@ -151,7 +151,7 @@
 
         $.ajax({
             type: 'POST',
-            url: "{{ route('compats.saveNewRelationship') }}",
+            url: "{{ route('admin.tools.compats.save_new_relationship') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 type: type,
@@ -170,7 +170,8 @@
     function loadParent(element){
         
         $('.dropzoneImageUpdate').remove();
-
+        
+        
         let type = element.val();
 
         if( ( type == 0 ) || ( type == 3) ){
@@ -188,7 +189,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: "{{ route('compats.getOptionsForModal') }}",
+                url: "{{ route('admin.tools.compats.get_options_for_modal') }}",
                 data: {
                     _token: "{{ csrf_token() }}",
                     type: type
@@ -205,7 +206,7 @@
         next_type = type + 1;
         $.ajax({
             type: 'POST',
-            url: "{{ route('compats.getOptions') }}",
+            url: "{{ route('admin.tools.compats.get_options') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 type: next_type, 
@@ -231,7 +232,7 @@
         
         $.ajax({
             type: 'POST',
-            url: "{{ route('compats.createCompatibilities') }}",
+            url: "{{ route('admin.tools.compats.create_compatibilities') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 id_brand:   $('#option_select_1').val(),

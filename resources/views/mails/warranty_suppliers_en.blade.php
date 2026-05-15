@@ -97,7 +97,7 @@
         @foreach($data['issue_photos'] as $photo)
             @if(Str::endsWith($photo->url, ['.mp4', '.mov', '.webm']))
                 <a href="{{ $photo->url }}" target="_blank">
-                    <img src="https://www.all-stars-motorsport.com/upload/return_warranty/video.png"  alt="Video" style="max-width: 80px; border-radius: 4px;margin: 20px;">
+                    <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/upload/return_warranty/video.png"  alt="Video" style="max-width: 80px; border-radius: 4px;margin: 20px;">
                 </a>
             @else
                 <img src="{{ $photo->url }}" alt="Issue photo" style="max-width:120px;border-radius:4px;margin: 5px;">
@@ -117,7 +117,7 @@
         <p style="font-size: 14px; line-height: 1.8; margin-top: 20px;">
             Kind regards,<br>
             <strong>All Stars Motorsport</strong><br>
-            <a href="https://www.all-stars-motorsport.com" style="color: #dd170e; text-decoration: none;">www.all-stars-motorsport.com</a>
+            <a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}" style="color: #dd170e; text-decoration: none;">{{ config('allstars.stores.ASM.domain') }}</a>
         </p>
     </td>
 </tr>

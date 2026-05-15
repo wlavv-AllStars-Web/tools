@@ -21,7 +21,7 @@
             <div class="text-muted"> Team: {{ $task->team?->name }} | Assigned: {{ $task->assignedUser?->name ?? '-' }} </div>
         </div>
 
-        <a class="btn btn-outline-secondary" href="{{ route('tasks.manager.index') }}">
+        <a class="btn btn-outline-secondary" href="{{ route('admin.tools.tasks.manager.index') }}">
             Back
         </a>
     </div>
@@ -35,7 +35,7 @@
         <div class="customPanel">
             <h5>Assign user</h5>
 
-            <form method="post" action="{{ route('tasks.manager.assign', $task->id) }}" class="d-flex gap-2">
+            <form method="post" action="{{ route('admin.tools.tasks.manager.assign', $task->id) }}" class="d-flex gap-2">
                 @csrf
                 <select class="form-select" name="assigned_user_id" required>
                     @foreach($teamUsers as $u)
@@ -49,7 +49,7 @@
         <div class="customPanel">
             <h5>Comment / Notes</h5>
 
-            <form method="post" action="{{ route('tasks.manager.observations', $task->id) }}">
+            <form method="post" action="{{ route('admin.tools.tasks.manager.observations', $task->id) }}">
                 @csrf
                 <div class="mb-2">
                     <label class="form-label">Notes (manager)</label>
@@ -79,7 +79,7 @@
         <div class="customPanel">
             <h5>Manager status</h5>
 
-            <form method="post" action="{{ route('tasks.manager.status', $task->id) }}" class="d-flex gap-2">
+            <form method="post" action="{{ route('admin.tools.tasks.manager.status', $task->id) }}" class="d-flex gap-2">
                 @csrf
                 <select class="form-select" name="status_manager" required>
                     @foreach(\App\Models\modules\tasks\task::STATUS_MANAGER as $s)
@@ -131,7 +131,7 @@
                 <ul class="mb-0" style="list-style-type: none; padding-left: 0;">
                     @foreach($task->files as $f)
                         <li class="mb-1">
-                            <a href="{{ route('tasks.files.download', $f->id) }}">download</a>
+                            <a href="{{ route('admin.tools.tasks.files.download', $f->id) }}">download</a>
                             — {{ $f->filename }}
                         </li>
                     @endforeach

@@ -20,6 +20,15 @@
         </thead>
         <tbody>
             @foreach($refunds as $key => $refund)
+            @php
+                $orderAdminUrl = \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $refund->id_order, 'ASM');
+                $newOrderAdminUrl = ((int) $refund->new_order_id > 0)
+                    ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $refund->new_order_id, 'ASM')
+                    : null;
+                $customerAdminUrl = ((int) ($refund->id_customer ?? 0) > 0)
+                    ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardCustomerAdminUrl((int) $refund->id_customer, 'ASM')
+                    : null;
+            @endphp
             <tr class="refund-row" data-toggle="details-{{$listType}}-{{ $key }}" style="cursor: pointer;">
                 <td>{{ \Carbon\Carbon::parse($refund->created_at)->format('Y-m-d') }}</td>
                 <td>{{ $refund->id_order }}</td>
@@ -37,13 +46,13 @@
                         <i class="fas fa-times text-danger"></i>
                     @endif
                 </td>
-                <td>{{ number_format($refund->amount_to_refund, 2, ',', '.') }} €</td>
+                <td>{{ number_format((float) $refund->amount_to_refund, 2, ',', '.') }} €</td>
                 <td>{{ $refund->refund_reason }}</td>
                 <td>{{ $refund->product_reference }}</td>
                 <td>{{ $refund->country }}</td>
                 <td>@if(isset($refund->refund_date)){{ \Carbon\Carbon::parse($refund->refund_date)->format('Y-m-d') }}@else -- @endif</td>
-                <td>{{ ucfirst($refund->refund_status) }}</td>
-                <td>{{ ucfirst($refund->name) }}</td>
+                <td>{{ ucfirst((string) $refund->refund_status) }}</td>
+                <td>{{ ucfirst((string) $refund->name) }}</td>
                 <td>
                     @if($refund->credit_note != '')
                         <i class="fas fa-check text-success"></i>
@@ -92,12 +101,12 @@
                 <div class="card mb-3">
                     <div class="card-header">Order Details</div>
                     <div class="card-body row g-3" style="margin: 0px 5px;">
-                        <div class="col-md-2"><strong>Order ID:</strong><br> <a href="https://all-stars-motorsport.com/admin77500/index.php?controller=AdminOrders&id_order={{ $refund->id_order }}&token={{Config::get('token')->AdminOrders}}&vieworder" target="_blank">{{ $refund->id_order }}</a></div>
-                        <div class="col-md-2"><strong>Purchase Date:</strong><br> {{ \Carbon\Carbon::parse($refund->purchase_date)->format('Y-m-d') }}</div>
+                        <div class="col-md-2"><strong>Order ID:</strong><br> <a href="{{ $orderAdminUrl }}" target="_blank">{{ $refund->id_order }}</a></div>
+                        <div class="col-md-2"><strong>Purchase Date:</strong><br> @if($refund->purchase_date){{ \Carbon\Carbon::parse($refund->purchase_date)->format('Y-m-d') }}@else -- @endif</div>
                         <div class="col-md-2"><strong>Country:</strong><br> {{ $refund->country }}</div>
                         <div class="col-md-2"><strong>Email:</strong><br> <span id="emailText" onclick="copyEmail()" style="cursor: pointer; color: blue;">{{ $refund->email }}</span></div>
-                        <div class="col-md-2"><strong>Name:</strong><br> <a href="https://all-stars-motorsport.com/admin77500/index.php?tab=AdminCustomers&id_customer={{ $refund->id_customer }}&viewcustomer&token={{Config::get('token')->AdminCustomers}}" target="_blank">{{ $refund->firstname }} {{ $refund->lastname }}</a> </div>
-                        <div class="col-md-2"><strong>Order Total:</strong><br> {{ number_format($refund->total_paid, 2, ',', '.') }} €</div>
+                        <div class="col-md-2"><strong>Name:</strong><br> @if($customerAdminUrl)<a href="{{ $customerAdminUrl }}" target="_blank">{{ $refund->firstname }} {{ $refund->lastname }}</a>@else{{ $refund->firstname }} {{ $refund->lastname }}@endif </div>
+                        <div class="col-md-2"><strong>Order Total:</strong><br> {{ number_format((float) $refund->total_paid, 2, ',', '.') }} €</div>
                     </div>
                 </div>
                 <div class="card mb-3">
@@ -127,9 +136,9 @@
                     <div class="card-header">Refund Information</div>
                     <div class="card-body row g-3" style="margin: 0px 5px;">
                         <div class="col-md-2"><strong>Refund Method:</strong><br> {{ $refund->refund_payment_method }}</div>
-                        <div class="col-md-2"><strong>Amount to Refund:</strong><br> {{ number_format($refund->amount_to_refund, 2, ',', '.') }} €</div>
-                        <div class="col-md-2"><strong>Amount Refunded:</strong><br> {{ number_format($refund->amount_refunded, 2, ',', '.') }} €</div>
-                        <div class="col-md-2"><strong>Refund Date:</strong><br> {{ \Carbon\Carbon::parse($refund->refund_date)->format('Y-m-d') }}</div>
+                        <div class="col-md-2"><strong>Amount to Refund:</strong><br> {{ number_format((float) $refund->amount_to_refund, 2, ',', '.') }} €</div>
+                        <div class="col-md-2"><strong>Amount Refunded:</strong><br> {{ number_format((float) $refund->amount_refunded, 2, ',', '.') }} €</div>
+                        <div class="col-md-2"><strong>Refund Date:</strong><br> @if($refund->refund_date){{ \Carbon\Carbon::parse($refund->refund_date)->format('Y-m-d') }}@else -- @endif</div>
                         <div class="col-md-2"><strong>Credit Note:</strong><br> {{ $refund->credit_note }}</div>
                         <div class="col-md-1"><strong>Refund:</strong><br> {{ $refund->refund_status }}</div>
                         <div class="col-md-1"><strong>Order:</strong><br> {{ $refund->name }}</div>
@@ -139,8 +148,8 @@
                 <div class="card mb-3">
                     <div class="card-header">New Order</div>
                     <div class="card-body row g-3" style="margin: 0px 5px;">
-                        <div class="col-md-4"><strong>New Order ID:</strong><br><a href="https://all-stars-motorsport.com/admin77500/index.php?controller=AdminOrders&id_order={{ $refund->new_order_id }}&token={{Config::get('token')->AdminOrders}}&vieworder" target="_blank">{{ $refund->new_order_id }}</a></div>
-                        <div class="col-md-4"><strong>New Order Value:</strong><br> {{ number_format($refund->new_order_amount, 2, ',', '.') }} €</div>
+                        <div class="col-md-4"><strong>New Order ID:</strong><br><a href="{{ $newOrderAdminUrl }}" target="_blank">{{ $refund->new_order_id }}</a></div>
+                        <div class="col-md-4"><strong>New Order Value:</strong><br> {{ number_format((float) $refund->new_order_amount, 2, ',', '.') }} €</div>
                         <div class="col-md-4"><strong>ETA:</strong><br> {{ $refund->eta }}</div>
                     </div>
                 </div>

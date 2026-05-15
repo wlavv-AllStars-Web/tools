@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="{{asset('admin/css/dropzone.min.css')}}"/>
     <link rel="stylesheet" href="{{asset('admin/css/app.css')}}">
 
+    @stack('styles')
+    
     <!-- Scripts -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -60,37 +62,39 @@
                             });
   
                         </script>
-                        <div id="headerBreadcrumbsContainer" class="navbar navbar-light shadow-sm" style="background-color: #ededed;border: 1px solid #ddd;padding-top: 0; margin-top: 0;">
-                            <div style="display: contents;">
-                                <div style="width: 100%; background-color: #ccc; border-bottom: 1px solid #999;display: none;" id="extraMenu">
-                                    <div class="text-center" style="height: auto; margin-bottom: 10px;height: 30px; float: right;display: none;"> 
-                                        <div id="languageSelector" style="text-transform: uppercase; text-align: center; width: 100%; height: 35px; float: right" onclick="$('#languageSelector').toggle();$('#languageSelectorContainer').toggle();">
-                                            <img style="width: 25px; border-radius: 25px; margin: 7px 5px; float: right; border: 1px solid #999;" src="/images/flags/{{app()->getLocale()}}.png">
+                        @if(isset($breadcrumbs[0]))
+                            <div id="headerBreadcrumbsContainer" class="navbar navbar-light shadow-sm" style="background-color: #ededed;border: 1px solid #ddd;padding-top: 0; margin-top: 0;">
+                                <div style="display: contents;">
+                                    <div style="width: 100%; background-color: #ccc; border-bottom: 1px solid #999;display: none;" id="extraMenu">
+                                        {{--
+                                        <div class="text-center" style="height: auto; margin-bottom: 10px;height: 30px; float: right;display: none;"> 
+                                            <div id="languageSelector" style="text-transform: uppercase; text-align: center; width: 100%; height: 35px; float: right" onclick="$('#languageSelector').toggle();$('#languageSelectorContainer').toggle();">
+                                                <img style="width: 25px; border-radius: 25px; margin: 7px 5px; float: right; border: 1px solid #999;" src="/images/flags/{{app()->getLocale()}}.png">
+                                            </div>
+                                            <div id="languageSelectorContainer" style="display: none;width: 100%; height: 35px;">
+                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/en"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/en.png"> </a>
+                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/es"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/es.png"> </a>
+                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/fr"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/fr.png"> </a>
+                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/pt"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/pt.png"> </a>
+                                            </div>
                                         </div>
-                                        <div id="languageSelectorContainer" style="display: none;width: 100%; height: 35px;">
-                                            <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/en"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/en.png"> </a>
-                                            <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/es"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/es.png"> </a>
-                                            <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/fr"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/fr.png"> </a>
-                                            <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/pt"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/pt.png"> </a>
+                                        --}}
+                                        <div>
+                                            <form action="{{route('search.globalSearch')}}" method="POST" id="formGlobalSearch" style="margin: 0px;">
+                                                @csrf
+                                                <input type="text" id="globalSearch" name="tag" value="" style="width: calc( 100% - 150px );float: left;" placeholder="SEARCH...">
+                                                <button style="width: 150px;float: right;padding: 2px;border-radius: 0px;" class="btn btn-success" type="submit">Pesquisar</button>
+                                            </form>
                                         </div>
                                     </div>
-                                    <div>
-                                        <form action="{{route('search.globalSearch')}}" method="POST" id="formGlobalSearch" style="margin: 0px;">
-                                            @csrf
-                                            <input type="text" id="globalSearch" name="tag" value="" style="width: calc( 100% - 150px );float: left;" placeholder="SEARCH...">
-                                            <button style="width: 150px;float: right;padding: 2px;border-radius: 0px;" class="btn btn-success" type="submit">Pesquisar</button>
-                                        </form>
+                                    
+                                    <div style="margin-top: 10px;width: 100%;">
+                                        <div style="width: 65%; float: left;"  id="breadcrumbs">  @include('includes.breadcrumbs') </div>
+                                        <div style="width: 35%; float: right;" id="desktopAction"> @include('includes.actions')    </div>                                    
                                     </div>
                                 </div>
-                                <div style="margin-top: 10px;width: 100%;">
-                                    <div style="width: 65%; float: left;"  id="breadcrumbs">  @include('includes.breadcrumbs') </div>
-                                    <div style="width: 35%; float: right;" id="desktopAction"> @include('includes.actions')    </div>                                    
-                                </div>
-
-
                             </div>
-                        </div>
-
+                        @endif
                         <div id="mainMenuMobile"> @include('includes.mobileMenu') </div>
                         <div id="mobileAction">   @include('includes.mobileAction') </div>
 
@@ -100,5 +104,6 @@
             @endguest
         </main>
     </div>
+    @stack('scripts')
 </body>
 </html>

@@ -22,8 +22,8 @@
 						<p>You can consult our return policy and informational videos via the following links:</p>
 						<p>
 						    <br>
-							<a href="https://www.all-stars-motorsport.com/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a><br>
-							<a href="https://www.all-stars-motorsport.com/en/content/370-customer-support-faq">Customer Support FAQ</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/en/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a><br>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/en/content/370-customer-support-faq">Customer Support FAQ</a>
 						</p>
 						<p>You will be notified by email whenever the status of your request is updated.</p>
 						<p>You can also find all information regarding your request in your customer account.</p>

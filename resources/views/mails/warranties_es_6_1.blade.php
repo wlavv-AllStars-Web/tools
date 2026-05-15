@@ -21,7 +21,7 @@
 						<p>Si el producto efectivamente está defectuoso pero el defecto no es el resultado de un desgaste normal o de un factor externo, se realizará un cambio del artículo y el fabricante asumirá los gastos de transporte y los gastos adicionales.</p>
 						<p>En caso contrario, si se comprueba que el producto se encuentra en buen estado de funcionamiento, todos los costes incurridos serán responsabilidad exclusiva del cliente.</p>
 						<p>Puede consultar nuestras condiciones de garantía a través del siguiente enlace (apartado 8): <br>
-							<a href="https://www.all-stars-motorsport.com/fr/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-terms-and-conditions-of-use">Terms and Conditions of Use</a>
 						</p>
 						<p>Será informado por correo electrónico cada vez que el estado de su solicitud sea actualizado.</p>
 						<p>También puede encontrar toda la información relativa a su solicitud en su área de cliente.</p>

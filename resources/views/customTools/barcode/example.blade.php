@@ -26,11 +26,11 @@
 
         url = '';
         
-        if( ( type == 'order' ) && ( action == 'generate') )    url = 'https://webtools.all-stars-motorsport.com/barcode/order/generate/' + order;
-        if( ( type == 'order' ) && ( action == 'print') )       url = 'https://webtools.all-stars-motorsport.com/barcode/order/print/' + order;
+        if( ( type == 'order' ) && ( action == 'generate') )    url = '{{ config('allstars.services.webtools.base_url') }}/barcode/order/generate/' + order;
+        if( ( type == 'order' ) && ( action == 'print') )       url = '{{ config('allstars.services.webtools.base_url') }}/barcode/order/print/' + order;
         
-        if( ( type == 'product' ) && ( action == 'generate') )  url = 'https://webtools.all-stars-motorsport.com/barcode/product/generate/' + product + '/' + (parseInt(attribute) + parseInt(0));
-        if( ( type == 'product' ) && ( action == 'print') )     url = 'https://webtools.all-stars-motorsport.com/barcode/product/print/' + product + '/' + (parseInt(attribute) + parseInt(0));
+        if( ( type == 'product' ) && ( action == 'generate') )  url = '{{ config('allstars.services.webtools.base_url') }}/barcode/product/generate/' + product + '/' + (parseInt(attribute) + parseInt(0));
+        if( ( type == 'product' ) && ( action == 'print') )     url = '{{ config('allstars.services.webtools.base_url') }}/barcode/product/print/' + product + '/' + (parseInt(attribute) + parseInt(0));
 
         $.ajax({
             type: 'GET',

@@ -5,9 +5,7 @@ namespace App\Models\modules\basePrice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config;
 
-use App\Models\prestashop\manufacturers;
 
 class basePrice extends Model{     
 
@@ -23,10 +21,12 @@ class basePrice extends Model{
     ];
     
     public static function getRows( ){
+        $manufacturerTable = env('DB2_DB_prefix', env('DB2_prefix', 'ps_')) . 'manufacturer';
+
         return BasePrice::select(
-                'ps_manufacturer.id_manufacturer',
-                'ps_manufacturer.name',
-                'ps_manufacturer.currency',
+                'm.id_manufacturer',
+                'm.name',
+                'm.currency',
                 DB::raw('COUNT(*) AS nr_products'),
                 DB::raw('COUNT(CASE WHEN eur IS NOT NULL AND eur != "" THEN 1 END) AS nr_eur'),
                 DB::raw('COUNT(CASE WHEN usd IS NOT NULL AND usd != "" THEN 1 END) AS nr_usd'),
@@ -35,9 +35,9 @@ class basePrice extends Model{
                 'created_at',
                 'updated_at'
             )
-            ->join('allstar1_s1t3.ps_manufacturer', 'allstar1_s1t3.ps_manufacturer.id_manufacturer', '=', 'basePrice.id_manufacturer')
-            ->groupBy('ps_manufacturer.id_manufacturer', 'ps_manufacturer.name')
-            ->orderBy('ps_manufacturer.name', 'ASC')
+            ->join($manufacturerTable . ' as m', 'm.id_manufacturer', '=', 'basePrice.id_manufacturer')
+            ->groupBy('m.id_manufacturer', 'm.name', 'm.currency', 'created_at', 'updated_at')
+            ->orderBy('m.name', 'ASC')
             ->get();
     }
     

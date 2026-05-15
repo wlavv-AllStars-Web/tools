@@ -11,22 +11,19 @@ use App\Http\Controllers\CustomTools\mailsController;
 
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_lang;
-use App\Models\prestashop\asm_youtube;
-use App\Models\prestashop\product_attribute;
-use App\Models\prestashop\ASM_ukoo_customer;
 use App\Models\prestashop\asm_dashboard;
 use App\Models\prestashop\asm_newsletter_email;
 use App\Models\prestashop\ASD_missing_images;
 
-use App\Models\modules\ukoocompat\ukoocompat_compat;
-use App\Models\modules\ukoocompat\ukoocompat_compat_criterion;
+use App\Models\modules\compats\compats_newsletter;
+use App\Models\modules\compats\compats_product;
 
 use App\Models\modules\dashboard\dashboard;
 
 class marketingController extends Controller{
     
-    public $actions;
-    public $breadcrumbs;
+    public $actions = [];
+    public $breadcrumbs = [];
     
     public function __construct(){
         $this->middleware('auth');
@@ -36,9 +33,9 @@ class marketingController extends Controller{
     public function index(){
         
         $data = [
-            'counters'      => dashboard::getCountersOFTab('marketing'),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing'),
             'panels'        => [],
-            'accessList'    => self::accessList(),
+            'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs
         ];
@@ -49,43 +46,45 @@ class marketingController extends Controller{
     private function accessList(){
         
         $accessList = array();
-        return $accessList;
-    }
-    
-    private function counters(){
-        
-        $counters = array();
-        $counters['no_real_photos'] = product::dashboard_no_real_photos('counter');
-        $counters['product_less_then_5'] = product::dashboard_product_less_then_5_pics('counter');
-        $counters['attribute_less_then_5'] = product_attribute::dashboard_attribute_less_then_5_pics('counter');
-        $counters['on_video'] = product::dashboard_no_video('counter');
-        $counters['youtube'] = asm_youtube::dashboard_broken_link('counter');
-        $counters['products_for_newsletter'] = product::dashboard_products_for_newsletter('counter');
-        $counters['newsletter_registration'] = ASM_ukoo_customer::dashboard_newsletter_registration ('counter');
-        $counters['ASD_missing_images'] = ASD_missing_images::dashboard_missing_images('counter');
+        $accessList[]                           = ['name' =>  trans('messages.TV'),         	    'url' => route('marketing.tools.tv.index'),      		       'icon' => '<i style="font-size: 40px;" class="fa-solid fa-tv"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.homepage'),         	'url' => route('marketing.tools.homepage.asm.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.homepage_asd'),       'url' => route('marketing.tools.homepage.asd.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.asm_resources'),      'url' => route('marketing.tools.resources.asm.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.resources'),         	'url' => route('marketing.tools.resources.asd.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.cars'),         	    'url' => route('marketing.tools.car_gallery.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-car"></i>'];
 
-        return $counters;
+        return $accessList;
     }
 
     public function post(Request $request){
 
         $sold = array();
-
+        
         if( $request->action == 'productForNewsletter' ){
             
-            $detail_compat = array();
-            $compats = ukoocompat_compat::getCompatsOfTheProduct($request->id_product);
-            
-            foreach( $compats AS $compat){
-                $detail_compat[] = ukoocompat_compat_criterion::getCompatDetails($compat->id_ukoocompat_compat);
-            }
-            
-            foreach( $detail_compat AS $detail){
-                $emails = [
-                    'en' => ASM_ukoo_customer::getEmailsOfTheCompats($detail, 'en'),
-                    'es' => ASM_ukoo_customer::getEmailsOfTheCompats($detail, 'es'),
-                    'fr' => ASM_ukoo_customer::getEmailsOfTheCompats($detail, 'fr')
-                ];
+            $store = (string) $request->input('store', 'ASM');
+            $compatStoreId = (int) config('allstars.stores.' . $store . '.compat_store_id', 2);
+            $compatIds = compats_product::where('id_product', (int) $request->id_product)
+                ->where('store', $compatStoreId)
+                ->pluck('id_compat');
+
+            $emails = [
+                'en' => collect(),
+                'es' => collect(),
+                'fr' => collect()
+            ];
+
+            if ($compatIds->isNotEmpty()) {
+                foreach (array_keys($emails) as $iso) {
+                    $emails[$iso] = compats_newsletter::whereIn('id_compat', $compatIds)
+                        ->where('store', $compatStoreId)
+                        ->where('iso_code', $iso)
+                        ->where('newsletter', 1)
+                        ->pluck('email')
+                        ->filter()
+                        ->unique()
+                        ->values();
+                }
             }
             
             foreach($emails  AS $iso => $array_emails_lang){
@@ -112,7 +111,9 @@ class marketingController extends Controller{
                 
             asm_dashboard::addException($data);
 
-            return response()->json([ 'result' => 'success' ]);
+            return response()->json([ 
+                'added'  => 'true',
+                'result' => 'success' ]);
             
         }elseif( $request->action == 'removeProductForNewsletter'){
             
@@ -125,7 +126,8 @@ class marketingController extends Controller{
                 
             asm_dashboard::addException($data);
             
-            return response()->json([ 'result' => 'success' ]);
+            return response()->json([ 
+                'added'  => false,'result' => 'success' ]);
 
         }
     }
@@ -168,4 +170,3 @@ class marketingController extends Controller{
         return ASD_missing_images::addMissingImages();
     }
 }
-

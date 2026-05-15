@@ -21,8 +21,8 @@
 						<p>Si l'emballage du produit n'est pas en parfait état, il sera déduit du montant remboursé des frais de reconditionnement, nous vous recommandons donc de vous assurer que l'article est bien éligible à un retour avant l’expédition dans nos locaux.</p>
 						<p>Vous pouvez consulter nos conditions de retour et vidéos d'informations via les liens suivants :</p>
 						<p>
-							<a href="https://www.all-stars-motorsport.com/fr/content/3-conditions-d-utilization">Conditions d'utilisation</a><br>
-							<a href="https://www.all-stars-motorsport.com/fr/content/370-service-client-faq">FAQ & Service client</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-d-utilization">Conditions d'utilisation</a><br>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/370-service-client-faq">FAQ & Service client</a>
 						</p>
 						<p>Vous serez informé par email à chaque fois que le statut de votre demande sera actualisé. Vous pouvez également retrouver toutes les informations concernant votre demande depuis votre espace client.</p>
 						<p>Nous restons à votre disposition pour toute autre question.</p>

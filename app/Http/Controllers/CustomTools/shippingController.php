@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Support\Facades\DB;
 
-use Illuminate\Support\Facades\Http;
 
 use App\Models\modules\shipping\shipping;
 use App\Models\modules\shipping\shipping_package;
@@ -19,10 +18,7 @@ use App\Models\modules\shipping_erp\shipping_erp;
 use App\Models\modules\supplier_map\supplier_map;
 
 use App\Models\prestashop\suppliers;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order_product;
-use App\Models\modules\bms_procurement\bms_procurement_purchase_order;
 
-use App\Exports\PackingListExport;
 
 class shippingController extends Controller
 {
@@ -186,9 +182,10 @@ class shippingController extends Controller
             return back()->with('error', 'Nenhum PO ID válido foi indicado.');
         }
         
-        $po = bms_procurement_purchase_order::query()
-            ->select('supplier_id')
-            ->where('id_bms_procurement_purchase_order', $oneOrderPOID)
+        $po = DB::table('oms_billed_orders as bo')
+            ->join('oms_order_notes as onote', 'onote.id', '=', 'bo.order_note_id')
+            ->select('onote.supplier_id')
+            ->where('bo.id', $oneOrderPOID)
             ->first();
         
         $supplier = null;
@@ -209,95 +206,54 @@ class shippingController extends Controller
             
         }
         
-        $rows = bms_procurement_purchase_order_product::query()
-            ->join('ps_product as p', 'p.id_product', '=', 'product_id')
-            ->leftJoin('ps_manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
-            ->leftJoin('ps_product_attribute as pa', function ($join) {
-                $join->on('pa.id_product_attribute', '=', 'ps_bms_procurement_purchase_order_product.product_attribute_id')
-                     ->where('ps_bms_procurement_purchase_order_product.product_attribute_id', '!=', 0);
+        $ps = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+
+        $receivedSubquery = DB::table('oms_reception_lines')
+            ->select('billed_order_line_id', DB::raw('SUM(qty_received) as qty_received_sum'))
+            ->groupBy('billed_order_line_id');
+
+        $rows = DB::table('oms_billed_order_lines as bol')
+            ->join($ps . 'product as p', 'p.id_product', '=', 'bol.product_id')
+            ->leftJoin($ps . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
+            ->leftJoin($ps . 'product_attribute as pa', 'pa.id_product_attribute', '=', 'bol.product_attribute_id')
+            ->leftJoin($ps . 'product_lang as pl', function ($join) {
+                $join->on('pl.id_product', '=', 'p.id_product')
+                    ->where('pl.id_lang', '=', 1)
+                    ->where('pl.id_shop', '=', 1);
             })
-            ->whereIn('po_id', $poIds)
-            ->whereColumn('qty_wmfaturado', '>', 'qty_received')
+            ->leftJoin($ps . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($ps . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+            ->leftJoinSub($receivedSubquery, 'rl_sum', 'rl_sum.billed_order_line_id', '=', 'bol.id')
+            ->whereIn('bol.billed_order_id', $poIds)
+            ->whereRaw('COALESCE(bol.qty_billed, 0) > COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)')
             ->groupBy(
-                'sku',
+                DB::raw('COALESCE(pa.reference, p.reference, "")'),
+                DB::raw('COALESCE(pl.name, "")'),
                 'p.nc',
                 'p.weight',
                 'p.depth',
                 'p.width',
                 'p.height',
                 'm.currency',
-                'ps_bms_procurement_purchase_order_product.product_attribute_id'
+                'bol.product_attribute_id',
+                'pa.wholesale_price',
+                'p.wholesale_price',
+                'cpa.wholesale_price_base_currency',
+                'cp.wholesale_price_base_currency'
             )
             ->select([
-                'sku as referencia',
-                'ps_bms_procurement_purchase_order_product.name as name',
+                DB::raw('COALESCE(pa.reference, p.reference, "") as referencia'),
+                DB::raw('COALESCE(pl.name, "") as name'),
                 DB::raw('p.nc as hs_code'),
-                DB::raw("
-                    CASE
-                        WHEN COALESCE(NULLIF(m.currency,''),'EUR') = 'USD' THEN
-                            CASE
-                                WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                    THEN COALESCE(pa.wholesale_price_dollar, p.wholesale_price_dollar)
-                                ELSE p.wholesale_price_dollar
-                            END
-                        WHEN COALESCE(NULLIF(m.currency,''),'EUR') = 'GBP' THEN
-                            CASE
-                                WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                    THEN COALESCE(pa.wholesale_price_pound, p.wholesale_price_pound)
-                                ELSE p.wholesale_price_pound
-                            END
-                        WHEN COALESCE(NULLIF(m.currency,''),'EUR') = 'YEN' THEN
-                            CASE
-                                WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                    THEN COALESCE(pa.wholesale_price_yen, p.wholesale_price_yen)
-                                ELSE p.wholesale_price_yen
-                            END
-                        ELSE
-                            CASE
-                                WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                    THEN COALESCE(pa.wholesale_price, p.wholesale_price)
-                                ELSE p.wholesale_price
-                            END
-                    END AS wholesale_price
-                "),
+                DB::raw("COALESCE(cpa.wholesale_price_base_currency, pa.wholesale_price, cp.wholesale_price_base_currency, p.wholesale_price, 0) AS wholesale_price"),
                 'p.weight',
                 DB::raw('p.depth as comprimento'),
                 'p.width as largura',
                 'p.height as altura',
-                DB::raw('SUM(qty_wmfaturado - qty_received) as quantidade'),
-                DB::raw("
-                    SUM(qty_wmfaturado - qty_received) *
-                    (
-                        CASE
-                            WHEN COALESCE(NULLIF(m.currency,''),'EUR') = 'USD' THEN
-                                CASE
-                                    WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                        THEN COALESCE(pa.wholesale_price_dollar, p.wholesale_price_dollar)
-                                    ELSE p.wholesale_price_dollar
-                                END
-                            WHEN COALESCE(NULLIF(m.currency,''),'EUR') = 'GBP' THEN
-                                CASE
-                                    WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                        THEN COALESCE(pa.wholesale_price_pound, p.wholesale_price_pound)
-                                    ELSE p.wholesale_price_pound
-                                END
-                            WHEN COALESCE(NULLIF(m.currency,''),'EUR') = 'YEN' THEN
-                                CASE
-                                    WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                        THEN COALESCE(pa.wholesale_price_yen, p.wholesale_price_yen)
-                                    ELSE p.wholesale_price_yen
-                                END
-                            ELSE
-                                CASE
-                                    WHEN ps_bms_procurement_purchase_order_product.product_attribute_id <> 0
-                                        THEN COALESCE(pa.wholesale_price, p.wholesale_price)
-                                    ELSE p.wholesale_price
-                                END
-                        END
-                    ) AS row_price
-                "),
+                DB::raw('SUM(COALESCE(bol.qty_billed, 0) - COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)) as quantidade'),
+                DB::raw('SUM(COALESCE(bol.qty_billed, 0) - COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)) * COALESCE(cpa.wholesale_price_base_currency, pa.wholesale_price, cp.wholesale_price_base_currency, p.wholesale_price, 0) AS row_price'),
             ])
-            ->orderBy('sku')
+            ->orderBy('referencia')
             ->get();
 
             $data = $request->all();

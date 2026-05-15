@@ -5,8 +5,6 @@ namespace App\Models\modules\picking;
 use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\product;
@@ -33,6 +31,7 @@ class picking extends Model
             $array_order[] = (object)[
                 'id_order' => $order->id_order,
                 'carrier' => $order->carrier,
+                'order_main' => orders::where('id_order', $order->id_order)->first(),
                 'order' => self::where('id_order', $order->id_order)->where('row_done', 0)->get(),
             ];
         }
@@ -41,9 +40,7 @@ class picking extends Model
     }
         
     public static function add(){
-        
         self::addData(3, 'preparation');
-        
     }
         
     public static function addData($id_status, $status){
@@ -146,22 +143,39 @@ class picking extends Model
     public static function rowDone($data) {
 
         $user = Auth::id() . ' - ' . Auth::user()->name;
+
+        $scannedQuantity = max(0, (int) ($data->scannedQuantity ?? 0));
+        $quantityRequested = max(0, (int) ($data->quantityRequested ?? 0));
+
+        $row = picking::where('id_order', (int) $data->id_order)
+                ->where('id_product', (int) $data->id_product)
+                ->where('id_product_attribute', (int) $data->id_product_attribute)
+                ->where(function ($query) use ($data) {
+                    $query->where('product_barcode', $data->barcode)
+                          ->orWhere('reference', $data->barcode);
+                })
+                ->first();
+
+        if (!$row) {
+            return 0;
+        }
+
+        $targetQuantity = $quantityRequested > 0 ? $quantityRequested : (int) $row->quantity;
+
+        if ($scannedQuantity > $targetQuantity) {
+            return 3;
+        }
+
+        $row->quantity_picked = $scannedQuantity;
+        $row->barcode = $data->pickingContainer;
+        $row->operator = $user;
+        $row->row_done = ($scannedQuantity >= $targetQuantity) ? 1 : 0;
+        $row->save();
         
-        picking::where('id_order', $data->id_order)
-                ->where('id_product', $data->id_product)
-                ->where('id_product_attribute', $data->id_product_attribute)
-                ->where('quantity', $data->scannedQuantity)
-                ->where('product_barcode', $data->barcode)
-                ->orWhere('reference', $data->barcode)
-                ->update(
-                    [
-                        'quantity_picked' => $data->scannedQuantity, 
-                        'barcode' => $data->pickingContainer, 
-                        'row_done' => 1
-                    ]
-                );
-        
-        picking::where('id_order', $data->id_order)->update( ['operator' => $user, 'barcode' => $data->pickingContainer ] );
+        picking::where('id_order', (int) $data->id_order)->update([
+            'operator' => $user,
+            'barcode' => $data->pickingContainer,
+        ]);
         
         return self::orderDone($data->id_order);
 

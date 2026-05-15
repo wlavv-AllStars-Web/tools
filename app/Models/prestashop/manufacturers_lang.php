@@ -3,16 +3,26 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class manufacturers_lang extends Model
-{
-    protected $connection = 'mysql2';
+class manufacturers_lang extends PrestashopModel{
+    
     use HasFactory;
-    public $timestamps = false;
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."manufacturer_lang";
+    protected $primaryKey = null; // tabela sem PK simples
+    public $incrementing = false;
+
+    protected $fillable = [];
+
+    public function __construct(array $attributes = []){
+        parent::__construct($attributes);
+        $this->table = self::tableName('manufacturer_lang');
+    }
+
+    public function manufacturer(){
+        return $this->belongsTo(manufacturers::class, 'id_manufacturer', 'id_manufacturer');
+    }
+
+    public function language(){
+        return $this->belongsTo(language::class, 'id_lang', 'id_lang');
     }
 }

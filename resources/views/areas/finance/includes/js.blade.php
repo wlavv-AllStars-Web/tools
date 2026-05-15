@@ -21,7 +21,7 @@
             success: function (filename) {
 
                 var hiddenElement = document.createElement('a');
-                hiddenElement.href = 'https://{{$_SERVER['SERVER_NAME']}}' + '/admin/download/' + filename;
+                hiddenElement.href = '{{ request()->getSchemeAndHttpHost() }}' + '/admin/download/' + filename;
                 hiddenElement.className = "import";
                 hiddenElement.target = '_blank';
                 hiddenElement.download = filename;
@@ -49,7 +49,7 @@
                 
                 setTimeout(function() {        
                     var hiddenElement = document.createElement('a');
-                    hiddenElement.href = 'https://{{$_SERVER['SERVER_NAME']}}' + '/admin/download/' + filename;
+                    hiddenElement.href = '{{ request()->getSchemeAndHttpHost() }}' + '/admin/download/' + filename;
                     hiddenElement.className = "export";
                     hiddenElement.target = '_blank';
                     hiddenElement.download = filename;
@@ -68,12 +68,12 @@
     function saveCurrencyRate(){
         
         $.ajax({
-            url: "{{ route('finance.save_currency_rate') }}",
+            url: "{{ route('currency_variation.store') }}",
             type: "POST",
             data: { 
                 yuan: $('#yuan').val(),
                 pound: $('#pound').val(),
-                dollar: $('#dollar').val(),
+                usd: $('#dollar').val(),
                 yen: $('#yen').val(),
             },    
             dataType: "json",

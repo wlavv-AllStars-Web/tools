@@ -81,7 +81,7 @@
                             {{ strlen((string) $task->time_allowed) > 0 ? $task->time_allowed : '-' }}
                         </td>
                         <td class="text-end">
-                            <a class="btn btn-sm btn-outline-primary" href="{{ route('tasks.user.show', $task->id) }}">OPEN</a>
+                            <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.tools.tasks.user.show', $task->id) }}">OPEN</a>
                         </td>
                     </tr>
                 @endforeach

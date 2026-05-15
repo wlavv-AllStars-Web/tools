@@ -3,9 +3,17 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class permissions extends Model
+class permissions extends PrestashopModel
 {
     use HasFactory;
+
+    protected $primaryKey = 'id_permission';
+    protected $fillable = [];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = self::tableName('permission');
+    }
 }

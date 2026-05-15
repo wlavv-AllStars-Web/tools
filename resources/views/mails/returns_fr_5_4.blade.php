@@ -16,7 +16,7 @@
                         <p>Nous avons bien réceptionné votre retour et, après vérification, notre département qualité a été en mesure de valider son acceptation. Notre département financier va donc procéder sous 48h-72h (jours ouvrés) à son remboursement via le mode de paiement utilisé lors de votre commande.</p>
                         <p>Notez que, conformément à nos conditions générales de vente, les frais d’envoi engagés dans l’expédition du colis ne sont pas remboursés car restent à la charge du client dans le cadre d’un changement d’avis.</p>
                         <p>Vous pouvez retrouver tous les détails sur nos conditions de retour en cliquant sur le lien ci-dessous <br>( paragraphe 7 ) :</p>
-                        <p><a href="https://www.all-stars-motorsport.com/fr/content/3-conditions-d-utilization">Conditions d'utilisation</a></p>
+                        <p><a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-conditions-d-utilization">Conditions d'utilisation</a></p>
                         <p>Nous restons à votre disposition pour toute autre question.</p>
                 		<br>
                         <p>Cordialement,</p>

@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers\CustomTools;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\App;
 use App\Http\Controllers\Controller;

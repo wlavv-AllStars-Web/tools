@@ -52,7 +52,7 @@
                         <td>
                             @if(count($issue->files) > 0)
                                 @foreach($issue->files AS $file)
-                                    <a href="https://webtools.all-stars-motorsport.com/uploads/{{$file}}" download="{{$issue->reference}}">
+                                    <a href="{{ config('allstars.services.webtools.base_url') }}/uploads/{{$file}}" download="{{$issue->reference}}">
                                         <i class="fa-solid fa-image" style="font-size: 22px; padding: 7px; color: dodgerblue;"></i>
                                     </a>
                                 @endforeach

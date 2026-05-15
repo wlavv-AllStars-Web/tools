@@ -160,4 +160,9 @@ return [
     
     'soma_excl' => "SUM ex/VAT",
     'soma_incl' => "SUM w/VAT",
+    'supplier'  => "Supplier",
+    'country_iso' => 'ISO CODE',
+    'vat_number' => "VAT NUMBER",
+    'id_shop'   => 'SHOP',
+    'discounts_count' => 'Counter'
 ];

@@ -27,7 +27,7 @@
                     <span style="padding: 5px 0; font-size: 18px;">{{ __("messages.PRODUCT REFERENCE:")}} </span> 
                     <span id="tag_product_reference" style="padding: 5px; font-size: 18px;font-weight: bold;color: red;"></span>
                 </div>
-                <input type="hidden" id="id_bms_procurement_purchase_order_product" name="id_bms_procurement_purchase_order_product" value="0">
+                <input type="hidden" id="oms_billed_order_line_id" name="oms_billed_order_line_id" value="0">
                     
                 <div style="width: 100%;margin-top: 10px;">
                     <a class="btn btn-grey" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample" style="width: 100%;font-weight: bolder; font-size: 18px;background-color: #ddd;border: 1px solid #bbb;color: #666">

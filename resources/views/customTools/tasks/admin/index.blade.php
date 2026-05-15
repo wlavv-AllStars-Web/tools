@@ -43,14 +43,14 @@
                 {{-- Monthly stats (month=YYYY-MM, team=<id>) --}}
                 <a class="btn btn-outline-secondary"
                    title="Productivity (month)"
-                   href="{{ route('tasks.reports.monthly', ['month' => $monthParam, 'team' => $teamId]) }}">
+                   href="{{ route('admin.tools.tasks.reports.monthly', ['month' => $monthParam, 'team' => $teamId]) }}">
                     <i class="fa-solid fa-calendar-days"></i>
                 </a>
         
                 {{-- Annual stats (year=YYYY, team=<id>) --}}
                 <a class="btn btn-outline-secondary"
                    title="Productivity (year)"
-                   href="{{ route('tasks.reports.annual', ['year' => $year, 'team' => $teamId]) }}">
+                   href="{{ route('admin.tools.tasks.reports.annual', ['year' => $year, 'team' => $teamId]) }}">
                     <i class="fa-solid fa-chart-line"></i>
                 </a>
             </div>
@@ -135,8 +135,8 @@
 
                     <tr class="{{ $rowClass }}"
                         data-id="{{ $task->id }}"
-                        data-field-url="{{ route('tasks.admin.field', $task->id) }}"
-                        data-comments-url="{{ route('tasks.admin.comments', $task->id) }}"
+                        data-field-url="{{ route('admin.tools.tasks.admin.field', $task->id) }}"
+                        data-comments-url="{{ route('admin.tools.tasks.admin.comments', $task->id) }}"
                     >
                         <td data-field="task_date" data-type="date" data-value="{{ $task->task_date?->format('Y-m-d') ?? '' }}"> {{ $task->task_date?->format('d/m/Y') ?? '' }} </td>
                         <td data-field="title" data-type="text">{{ $task->title }}</td>
@@ -167,7 +167,7 @@
 $(function(){
 
     const CSRF = @json(csrf_token());
-    const STORE_URL = @json(route('tasks.admin.store'));
+    const STORE_URL = @json(route('admin.tools.tasks.admin.store'));
 
     const TEAMS = @json($teams->map(fn($t)=>['id'=>$t->id,'name'=>$t->name])->values());
     const STATUS = @json(\App\Models\modules\tasks\task::STATUS_ADMIN);

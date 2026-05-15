@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers\CustomTools;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Mail;
 
-use App\Models\prestashop\product;
 
 class pricingConvertionController extends Controller
 {

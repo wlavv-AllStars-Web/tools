@@ -19,9 +19,9 @@
         <div class="navbar navbar-light customPanel categorList" style="width: calc( ( 100% / 2) - 10px );float:left;display: flex;margin: 5px;">
             <div style="width: 120px; background-color: #eee;float:left;border-radius: 5px;border: 1px solid #888;cursor: pointer;" onclick="$('.details_panel').css('display', 'none');$('#details_{{$supplier['id_manufacturer']}}').css('display', 'block');">
                @if($supplier['id_manufacturer'] > 0)
-                   <img src="https://www.all-stars-motorsport.com/img/m/{{$supplier['id_manufacturer']}}.jpg" style="width: 117px;border-radius: 5px;">
+                   <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/m/{{$supplier['id_manufacturer']}}.jpg" style="width: 117px;border-radius: 5px;">
                @else
-                   <img src="https://www.all-stars-motorsport.com/img/tmp/supplier_{{$supplier['supplier_map']->supplier->id_supplier}}.jpg" style="width: 117px;border-radius: 5px;">
+                   <img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/tmp/supplier_{{$supplier['supplier_map']->supplier->id_supplier}}.jpg" style="width: 117px;border-radius: 5px;">
                @endif
             </div>
             <div style="width: calc( 100% - 200px); float: left;padding: 0 10px;">
@@ -41,6 +41,9 @@
             </div>
             <div style="width: 80px; float: left;padding: 0 10px;">
                 <button class="btn btn-warning" style="margin-top: 10px;color: #FFF;" onclick="getModelContentAndShow({{$supplier['supplier_map']->id}})"><i class="fa-solid fa-pen"></i></button>
+                <a href="{{route('admin.tools.oms.supplier_terms.index', $supplier['supplier_map']->supplier->id_supplier)}}" class="btn btn-primary" style="margin-top: 10px;color: #FFF;"><i class="fa-solid fa-industry"></i></A>
+                
+                
             </div>
             <div id="details_{{$supplier['id_manufacturer']}}" class="details_panel" style="display: none; width: 100%;margin-top: 10px;">
                 <div style="width:100%; float: left;padding: 0;">

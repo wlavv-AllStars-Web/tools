@@ -3,18 +3,14 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use App\Models\prestashop\country;
 
-class accessory extends Model
-{
-    protected $connection = 'mysql2';
+class accessory extends PrestashopModel{
     use HasFactory;
-    protected $fillable = ['name'];
-    public $timestamps = false;
 
-    public function __construct()
-    {
-        $this->table = env('DB2_prefix')."accessory";
+    protected $fillable = ['name'];
+
+    public function __construct(array $attributes = []){
+        parent::__construct($attributes);
+        $this->table = self::tableName('accessory');
     }
 }

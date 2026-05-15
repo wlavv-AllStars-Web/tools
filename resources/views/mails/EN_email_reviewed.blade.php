@@ -71,8 +71,8 @@
 				<td class="space">&nbsp;</td>
 				<td align="center">
 					<!-- Logo -->
-					<a href="https://www.all-stars-motorsport.com" style="display: block; margin: 20px 0;">
-					<img src="https://www.all-stars-motorsport.com/img/all-stars-motorsport-logo_mail-1632499801.png" alt="All Stars Motorsport" style="max-width:200px; height:auto;">
+					<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}" style="display: block; margin: 20px 0;">
+					<img src="{{ config('allstars.stores.ASM.logo_url') }}" alt="All Stars Motorsport" style="max-width:200px; height:auto;">
 					</a>
 					
 					<p style="border-bottom: 4px solid #dd170e;  margin:3px 0 15px; text-transform:uppercase; font-weight:500; font-size:18px; padding-bottom:10px;">
@@ -86,13 +86,13 @@
 						<p>Share your experience and, if you wish, photos or videos of your setup!</p>
 						<p style="margin:15px 0;">
 							<a href="https://www.yourvoicehub.com?id_lang=1" target="_blank">
-							<img src="https://www.all-stars-motorsport.com/img/trustpilot.png?t=4" alt="Leave your review on Trustpilot" style="max-width:220px; height:auto; border:0;">
+							<img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/trustpilot.png?t=4" alt="Leave your review on Trustpilot" style="max-width:220px; height:auto; border:0;">
 							</a>
 						</p>
 						<p>Your feedback and images help us improve continuously.</p>
 						<p style="margin:25px 0;">
 							<a href="https://www.yourvoicehub.com?id_lang=1" target="_blank">
-							<img src="https://www.all-stars-motorsport.com/img/image.png?t=4" alt="All Stars Motorsport" style="max-width:180px; height:auto; border:0;">
+							<img src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/image.png?t=4" alt="All Stars Motorsport" style="max-width:180px; height:auto; border:0;">
 							</a>
 						</p>
 						<p>Thank you in advance for your feedback.</p>
@@ -104,7 +104,7 @@
 					<table class="footer-block" cellpadding="0" cellspacing="0" style="margin-top:20px; border-top:4px solid #dd170e; padding-top:15px; width:100%;">
 						<tr>
 							<td style="text-align:center;" class="social-icons">
-							    <img alt="Social medias" src="https://www.all-stars-motorsport.com/img/app_icons/full_icons.png?t=2" border="0" style="display:inline-block;width: 300px  !important;"  />
+							    <img alt="Social medias" src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/app_icons/full_icons.png?t=2" border="0" style="display:inline-block;width: 300px  !important;"  />
 						    </td>
 						</tr>
 					</table>

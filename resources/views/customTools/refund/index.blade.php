@@ -8,7 +8,7 @@
 <div class="navbar navbar-light customPanel" id="filterHeader">
     <button class="btn" onclick="openNewRefund()">ADD NEW REFUND</button>
     <div style="float: right;">
-        <form method="GET" action="{{ route('refund.index') }}" class="row g-3" style="margin-bottom: 0;">
+        <form method="GET" action="{{ route($routes['index'] ?? 'refund.index') }}" class="row g-3" style="margin-bottom: 0;">
             <div class="col-md-3"> <input type="number" name="year" id="year" class="form-control" value="{{ request('year') ?? date('Y') }}"> </div>
             <div class="col-md-3">
                 <select name="month" id="month" class="form-select">
@@ -88,7 +88,7 @@
 
 
         $.ajax({
-            url: "{{route('refund.editRefund')}}",
+            url: "{{ route($routes['edit'] ?? 'refund.editRefund') }}",
             type: 'POST',
             data: { id: id },
             success: function(response) {
@@ -110,7 +110,7 @@
             if (orderId === '') return;
     
             $.ajax({
-                url: '{{route("refund.getInfo")}}',
+                url: '{{ route($routes["get_info"] ?? "refund.getInfo") }}',
                 method: 'POST',
                 data: { id_order: orderId },
                 success: function(response) {

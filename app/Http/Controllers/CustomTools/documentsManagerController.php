@@ -4,7 +4,6 @@ namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Storage;
 
 use App\Http\Controllers\Controller;
 
@@ -43,7 +42,7 @@ class documentsManagerController extends Controller
             'actions'    => $this->actions, 
             'breadcrumbs'=> $this->breadcrumbs, 
             'searchCategory' => $searchCategory,
-            'documents'  => documents_manager::all($category, $element) 
+            'documents'  => documents_manager::forCategoryElement($category, $element) 
         ];
         
         return View::make('customTools/documentsManager/list')->with( $data );
@@ -175,6 +174,9 @@ class documentsManagerController extends Controller
 
     public function loadFile(Request $request){ 
         $document = documents_manager::loadDocumentData( $request->id_document);
+        if (!$document) {
+            return '<div id="loadFile"><div class="navbar navbar-light customPanel" style="text-align: left;"><div class="alert alert-danger" role="alert"> DOCUMENT NOT FOUND</div></div></div>';
+        }
         return view('customTools/documentsManager/showDocumentData', compact('document'))->render();
     }
 

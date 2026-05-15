@@ -76,19 +76,19 @@
                                 <div class="col-lg-3">
                                     <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="brandLogo_{{$compat->id_compat}}" onclick="openModelUpload('logo', {{$compat->brand->id_option}})">
                                         <h5 style="margin-top: 20px;color: #FFF;">BRAND LOGO</h5>
-                                        <img style="max-width: 150px;" src="https://webtools.all-stars-motorsport.com/uploads/compats/brand/{{$compat->brand->id_option}}.png?t={{rand()}}">                                            
+                                        <img style="max-width: 150px;" src="/uploads/compats/brand/{{$compat->brand->id_option}}.png?t={{rand()}}">                                            
                                     </div>
                                 </div> 
                                 <div class="col-lg-6">
                                     <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="carCartoon_{{$compat->id_compat}}" onclick="openModelUpload('cartoon', {{$compat->id_compat}})">
                                         <h5 style="margin-top: 20px;color: #FFF;">CAR CARTOON</h5>
-                                        <img style="max-width: 250px;" src="https://webtools.all-stars-motorsport.com/uploads/compats/compat/{{$compat->id_compat}}.png?t={{rand()}}">                                            
+                                        <img style="max-width: 250px;" src="/uploads/compats/compat/{{$compat->id_compat}}.png?t={{rand()}}">                                            
                                     </div>
                                 </div>
                                 <div class="col-lg-3">
                                     <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="brandLogoHover_{{$compat->id_compat}}" onclick="openModelUpload('hover', {{$compat->brand->id_option}})">
                                         <h5 style="margin-top: 20px;color: #FFF;">BRAND LOGO ( HOVER )</h5>
-                                        <img style="max-width: 150px;" src="https://webtools.all-stars-motorsport.com/uploads/compats/brand_hover/{{$compat->brand->id_option}}.png?t={{rand()}}">                                            
+                                        <img style="max-width: 150px;" src="/uploads/compats/brand_hover/{{$compat->brand->id_option}}.png?t={{rand()}}">                                            
                                     </div>
                                 </div>
                                 <div class="col-lg-2"></div>

@@ -21,7 +21,7 @@
 						<p>Dans le cas où le produit est bien défectueux et ce défaut ne provient ni d'une usure normale, ni d'un facteur externe, un échange sera effectué et le fabricant prendra à sa charge les frais de transport et frais annexes.</p>
 						<p>Dans le cas contraire, si le produit est en bon état de fonctionnement, l'intégralité des frais engagés sera à la charge exclusive du client.</p>
 						<p>Vous pouvez consulter nos conditions de garantie via le lien suivant (paragraphe 8) :<br>
-							<a href="https://www.all-stars-motorsport.com/fr/content/3-terms-and-conditions-of-use">Conditions d'utilisation</a>
+							<a href="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/fr/content/3-terms-and-conditions-of-use">Conditions d'utilisation</a>
 						</p>
 						<p>Vous serez informé par email à chaque fois que le statut de votre demande sera actualisé.</p>
 						<p>Vous pouvez également retrouver toutes les informations concernant votre demande depuis votre espace client.</p>

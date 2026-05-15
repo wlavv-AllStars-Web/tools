@@ -22,7 +22,7 @@
                         if (!empty($week)) $qs['week'] = (int) $week;
                     @endphp
 
-                    <a href="{{ route('asg_tasks.index', $qs) }}" class="dept-pill {{ (int)$id === (int)$teamId ? 'dept-pill-active' : '' }}" title="{{ $label }}">
+                    <a href="{{ route($tasksIndexRouteName ?? 'asg_tasks.index', $qs) }}" class="dept-pill {{ (int)$id === (int)$teamId ? 'dept-pill-active' : '' }}" title="{{ $label }}">
                         <div class="dept-icon"> <i class="{{ $icons[$id] ?? 'fa-solid fa-circle' }}"></i> </div>
                         <div class="dept-label"> {{ $label }} </div>
                     </a>

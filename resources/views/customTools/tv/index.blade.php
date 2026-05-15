@@ -15,7 +15,7 @@
     <div onclick="$('#newTv').toggle();" style="text-transform: uppercase;cursor:pointer;">Add New TV Item? </div>
     <div id="newTv" style="display: none;">
         <div style="width: 100%; border-top: 1px solid #ddd; margin: 10px 0;padding: 10px 0;">
-            <form action="{{ route('tv.store') }}" method="POST" enctype="multipart/form-data" class="row g-3 align-items-center">
+            <form action="{{ route('marketing.tools.tv.store') }}" method="POST" enctype="multipart/form-data" class="row g-3 align-items-center">
                 @csrf
             
                 <div class="col-md-2">
@@ -33,15 +33,35 @@
                     @enderror
                 </div>
             
-                <div class="col-md-3">
-                    <label for="src" class="form-label">Upload Image:</label>
-                    <input type="file" name="src" id="src" required class="form-control">
+                <div class="col-md-2">
+                    <label for="media_type" class="form-label">Media:</label>
+                    <select name="media_type" id="media_type" required class="form-select" onchange="toggleTvMediaInputs()">
+                        <option value="image" {{ old('media_type') === 'image' ? 'selected' : '' }}>Image upload</option>
+                        <option value="video_upload" {{ old('media_type') === 'video_upload' ? 'selected' : '' }}>Video upload</option>
+                        <option value="youtube" {{ old('media_type') === 'youtube' ? 'selected' : '' }}>YouTube code</option>
+                    </select>
+                    @error('media_type')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-3 tv-media-source" id="tvUploadSource">
+                    <label for="src" class="form-label">Upload file:</label>
+                    <input type="file" name="src" id="src" class="form-control">
                     @error('src')
                         <div class="text-danger small">{{ $message }}</div>
                     @enderror
                 </div>
+
+                <div class="col-md-3 tv-media-source" id="tvYoutubeSource" style="display: none;">
+                    <label for="youtube_code" class="form-label">YouTube code:</label>
+                    <input type="text" name="youtube_code" id="youtube_code" value="{{ old('youtube_code') }}" class="form-control" placeholder="Ex: dQw4w9WgXcQ">
+                    @error('youtube_code')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
+                </div>
             
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="text" class="form-label">Text:</label>
                     <input type="text" name="text" id="text" value="{{ old('text') }}" class="form-control">
                     @error('text')
@@ -73,7 +93,8 @@
         <table id="dashboardWelcomeTv" class="table table-bordered table-striped text-center">
             <thead class="thead-dark">
                 <tr>
-                    <th>Image</th>
+                    <th>Media</th>
+                    <th>Type</th>
                     <th>Manufacturer</th>
                     <th>Text</th>
                     <th>Toggle Active</th>
@@ -82,11 +103,25 @@
             <tbody>
                 @foreach($items as $item)
                 <tr data-id="{{ $item->id }}">
-                    <td><img src="{{$item->src}}" class="img-thumbnail" style="max-width: 200px;" alt="Image"></td>
+                    <td>
+                        @if($item->mediaType() === 'youtube')
+                            <iframe
+                                src="https://www.youtube.com/embed/{{ $item->youtubeCode() }}"
+                                title="YouTube video"
+                                style="width: 220px; aspect-ratio: 16 / 9; border: 0;"
+                                allowfullscreen>
+                            </iframe>
+                        @elseif($item->mediaType() === 'video')
+                            <video src="{{ $item->src }}" class="img-thumbnail" style="max-width: 220px; max-height: 120px;" muted controls></video>
+                        @else
+                            <img src="{{ $item->src }}" class="img-thumbnail" style="max-width: 200px;" alt="Image">
+                        @endif
+                    </td>
+                    <td>{{ ucfirst($item->mediaType()) }}</td>
                     <td>{{ optional($manufacturers->firstWhere('id_manufacturer', $item->id_manufacturer))->name ?? '--' }}</td>
                     <td class="editable-text" style="cursor: pointer;" data-id="{{ $item->id }}" data-text="{{ $item->text }}">{{ $item->text ? $item->text : '--' }}</td>
                     <td>
-                        <form action="{{ route('tv.toggleActive', $item->id) }}" method="POST" class="d-inline">
+                        <form action="{{ route('marketing.tools.tv.toggle_active', $item->id) }}" method="POST" class="d-inline">
                             @csrf
                             <div class="form-check form-switch">
                                 <input 
@@ -146,7 +181,7 @@
                             return; // no change
                         }
     
-                        fetch("{{ route('tv.changeText') }}", {
+                        fetch("{{ route('marketing.tools.tv.change_text') }}", {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -176,6 +211,22 @@
             });
         });
     });
+
+    function toggleTvMediaInputs() {
+        const mediaType = document.getElementById('media_type').value;
+        const uploadSource = document.getElementById('tvUploadSource');
+        const youtubeSource = document.getElementById('tvYoutubeSource');
+        const fileInput = document.getElementById('src');
+
+        uploadSource.style.display = mediaType === 'youtube' ? 'none' : '';
+        youtubeSource.style.display = mediaType === 'youtube' ? '' : 'none';
+
+        fileInput.accept = mediaType === 'video_upload'
+            ? 'video/mp4,video/webm,video/ogg'
+            : 'image/jpeg,image/png,image/webp,image/gif';
+    }
+
+    toggleTvMediaInputs();
 
 </script>
 

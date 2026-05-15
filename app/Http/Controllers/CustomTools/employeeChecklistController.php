@@ -8,7 +8,6 @@ use App\Models\modules\checklist\checklist_statusChange;
 use App\Models\modules\checklist\daily_checklist_notes;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class employeeChecklistController extends Controller
 {
@@ -24,13 +23,18 @@ class employeeChecklistController extends Controller
         if ($user->permanent) {
             $allowedDepartments[] = 0;
         }
+
+        daily_checklist::ensureTasksForDate($allowedDepartments);
         
         
         $tasks = daily_checklist::query()
             ->select('daily_checklist.*', 'checklist_templates.active')
             ->leftJoin('checklist_templates', 'daily_checklist.template_id', '=', 'checklist_templates.id')
             ->whereIn('daily_checklist.department_id', $allowedDepartments)
-            ->where('checklist_templates.deleted', '!=', 1)
+            ->where(function ($query) {
+                $query->where('checklist_templates.deleted', '!=', 1)
+                    ->orWhereNull('checklist_templates.deleted');
+            })
             ->whereDate('daily_checklist.for_date', today())
             /**
             ->orderByRaw("CASE WHEN daily_checklist.status = 'done' THEN 1 ELSE 0 END ASC") // non-done first
@@ -112,7 +116,10 @@ class employeeChecklistController extends Controller
     
             if ($isToday) {
                 $query->whereHas('template', function ($q) {
-                    $q->where('deleted', 0);
+                    $q->where(function ($deletedQuery) {
+                        $deletedQuery->where('deleted', '!=', 1)
+                            ->orWhereNull('deleted');
+                    });
                 });
             }
     

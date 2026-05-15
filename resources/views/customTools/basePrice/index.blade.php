@@ -14,11 +14,13 @@
             const brand = select.options[select.selectedIndex].text;
 
             $.ajax({
-                url: 'https://www.all-stars-distribution.com/custom/front/getPricing.php?token=pricingData000&brand='+brand, 
+                url: "{{ route('basePrice.pricingData') }}",
                 type: 'POST',
                 dataType: 'json',
                 data: {
-                    brand: brand
+                    id_manufacturer: idManufacturer,
+                    brand: brand,
+                    _token: $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
                     if (response.erro) {

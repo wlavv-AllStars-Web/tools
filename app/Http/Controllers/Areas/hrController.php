@@ -8,8 +8,8 @@ use App\Http\Controllers\Controller;
 
 class hrController extends Controller
 {
-    public $actions;
-    public $breadcrumbs;
+    public $actions = [];
+    public $breadcrumbs = [];
 
     public function __construct()
     {

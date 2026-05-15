@@ -2,7 +2,6 @@
 
 namespace App\Models\modules\supplier_map;
 
-use Auth;
 use App\Models\prestashop\suppliers;
 use App\Models\prestashop\manufacturers;
 

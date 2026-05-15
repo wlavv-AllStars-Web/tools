@@ -1,24 +1,20 @@
-<div id="loadFile" style="display: flex;position: fixed;">
-    <div class="row">
-        <div class="col-lg-8">        
-            <div class="navbar navbar-light customPanel" style="text-align: left; width: 100%;">
-                
-                @if( ( strlen( $document->element) > 0 ) && ( $document->element != 'others' ))
-                    <embed src="https://webtools.all-stars-motorsport.com/uploads/documents/{{$document->category}}/{{str_replace('.', '/', str_replace(' ', '', $document->element))}}/{{str_replace('/', '|', $document->document)}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
-                @elseif( ( $document->category == 'manifest' ) && ( strlen( $document->element) > 0 ) && ( $document->element == 'others' ))
-                    <embed src="https://webtools.all-stars-motorsport.com/uploads/documents/manifest/manifest{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
-                @else
-                    <embed src="https://webtools.all-stars-motorsport.com/uploads/documents/{{str_replace('.', '/', $document->category)}}/{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
-                @endif
+<div id="loadFile" class="document-viewer">
+    @php
+        $documentPath = \App\Models\modules\documents_manager\documents_manager::documentPublicPath($document);
+    @endphp
+    <div class="document-viewer__grid">
+        <div class="document-viewer__pdf-panel">        
+            <div class="navbar navbar-light customPanel document-viewer__pdf-wrap">
+                <embed src="{{ $documentPath }}?t={{rand()}}" class="document-viewer__pdf" type="application/pdf">
             </div>
         </div>
-        <div class="col-lg-4">     
-            <div class="navbar navbar-light customPanel" style="text-align: left; width: 100%;">
+        <div class="document-viewer__details-panel">     
+            <div class="navbar navbar-light customPanel document-viewer__details">
                 <div style="text-align: center; border-bottom: 1px solid #ccc;margin-bottom: 10px;">
                     <h3>DOCUMENT DETAILS</h3>
                 </div>
                 <table id="documentDetailsTable" style="width: 100%;text-align: left;">
-                    @if(strlen($document->name) > 0)
+                    @if(strlen((string) $document->name) > 0)
                     <tr>
                         <td colspan="1"><label class="documentLabel">NAME:</label></td>
                         <td colspan="4">{{$document->name}}</td>
@@ -41,7 +37,7 @@
                     </tr>
                     @endif
                     
-                    @if(strlen($document->document_number) > 0)
+                    @if(strlen((string) $document->document_number) > 0)
                     <tr>
                         <td colspan="1"><label class="documentLabel"># DOCUMENT:</label></td>
                         <td colspan="4" style="text-transform: uppercase;">{{$document->document_number}}</td>
@@ -69,14 +65,14 @@
                     </tr>
                     @endif
                     
-                    @if(strlen($document->notes) > 0)
+                    @if(strlen((string) $document->notes) > 0)
                     <tr>
                         <td colspan="1"><label class="documentLabel">NOTES:</label></td>
                         <td colspan="4">{{$document->notes}}</td>
                     </tr>
                     @endif
 
-                    @if(strlen($document->document_type) > 0)
+                    @if(strlen((string) $document->document_type) > 0)
                     <tr>
                         <td colspan="1"><label class="documentLabel">DOC. TYPE:</label></td>
                         <td colspan="4" style="text-transform: uppercase;">{{$document->document_type}}</td>
@@ -122,7 +118,41 @@
 </div> 
 
 <style>
+    .document-viewer {
+        width: 100%;
+    }
+    .document-viewer__grid {
+        align-items: start;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        width: 100%;
+    }
+    .document-viewer__pdf-panel,
+    .document-viewer__details-panel {
+        min-width: 0;
+    }
+    .document-viewer__pdf-wrap,
+    .document-viewer__details {
+        text-align: left;
+        width: 100%;
+    }
+    .document-viewer__pdf {
+        display: block;
+        height: min(78vh, 820px);
+        min-height: 620px;
+        width: 100%;
+    }
     .documentLabel{ font-weight: bolder; text-transform: uppercase; line-height: 2; text-align: right; float: right; margin-right: 10px; }
     .documentLabelManifest{ font-weight: bolder; text-transform: uppercase; line-height: 2; text-align: right; float: right; margin-right: 10px; }
     #documentDetailsTable{ line-height: 2; }
+    @media (max-width: 1199px) {
+        .document-viewer__grid {
+            grid-template-columns: 1fr;
+        }
+        .document-viewer__pdf {
+            height: 70vh;
+            min-height: 520px;
+        }
+    }
 </style>

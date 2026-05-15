@@ -2,7 +2,6 @@
 
 namespace App\Models\modules\supplier_delivery_issues;
 
-use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,7 +16,12 @@ class supplier_delivery_issues extends Model
 
     public static function getAllActive( ){ 
         
-        $suppliers = supplier_delivery_issues::select('supplier_delivery_issues.id_supplier', 'name')->join('allstar1_s1t3.ps_supplier', 'allstar1_s1t3.ps_supplier.id_supplier', 'supplier_delivery_issues.id_supplier')->groupBy('supplier_delivery_issues.id_supplier')->orderBy('name', 'ASC')->get();
+        $supplierTable = env('DB2_DB_prefix', env('DB2_prefix', 'ps_')) . 'supplier';
+        $suppliers = supplier_delivery_issues::select('supplier_delivery_issues.id_supplier', 's.name')
+            ->join($supplierTable . ' as s', 's.id_supplier', '=', 'supplier_delivery_issues.id_supplier')
+            ->groupBy('supplier_delivery_issues.id_supplier', 's.name')
+            ->orderBy('s.name', 'ASC')
+            ->get();
         
         $suppliers_list = array();
         

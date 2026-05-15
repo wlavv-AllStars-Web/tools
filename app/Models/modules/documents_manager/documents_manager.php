@@ -5,7 +5,6 @@ namespace App\Models\modules\documents_manager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class documents_manager extends Model
 {
@@ -14,13 +13,13 @@ class documents_manager extends Model
     public $timestamps = false;
     public $primaryKey = 'id_document';
         
-    public static function all($id_category = null, $id_element = null){
+    public static function forCategoryElement($id_category = null, $id_element = null){
         
         if( (!is_null($id_category)) && ( is_null($id_element) ))  return self::where('category', $id_category)->orderBy('id_document', 'DESC')->get();
         if( (is_null($id_category)) && ( !is_null($id_element) ))  return self::where('element', $id_element)->orderBy('id_document', 'DESC')->get();
         if( (!is_null($id_category)) && ( !is_null($id_element) )) return self::where('element', $id_element)->where('category', $id_category)->orderBy('id_document', 'DESC')->get();
         
-        return self::take(30)->get();
+        return self::orderBy('id_document', 'DESC')->take(30)->get();
     }
         
     public static function saveData($data){
@@ -35,39 +34,42 @@ class documents_manager extends Model
             $number = $data['category'];
         }
         
-        if ( isset($data[$data['category']]) ){
-            $to = base_path('public/uploads/documents/' . $data['category'] . '/' . str_replace('.', '/', str_replace(' ', '', $data[$data['category']])) . '/' . $number . '_' . $data['year'] . '_' . $data['month'] . '_' . $data['day'] . '.pdf');
-        }else{
-            $to = base_path('public/uploads/documents/' . $data['category'] . '/' . $number . '_' . $data['year'] . '_' . $data['month'] . '_' . $data['day'] . '.pdf');
-        }
-        self::mycopy($from, $to);    
-
         $element = '';
         if( $data['category'] == 'manifest'){
             $element = 'others';
         }else{
             $element = (isset($data[$data['category']])) ? $data[$data['category']] : '';
         }
-        
+
+        $storedDocumentName = $data['number'] . '_' . $data['year'] . '_' . $data['month'] . '_' . $data['day'] . '.pdf';
+        $to = self::documentAbsolutePath((object) [
+            'category' => $data['category'],
+            'element' => $element,
+            'document' => $storedDocumentName,
+        ]);
+
+        self::mycopy($from, $to);    
+
         $document = new documents_manager();
         $document->name = $data['name'];
         $document->document_number = $data['number'];
         $document->year = $data['year'];
         $document->month = $data['month'];
         $document->day = $data['day'];
-        $document->total_ex_vat = str_replace(' ', '', $data['totalExVAT']);
-        $document->total_vat = str_replace(' ', '', $data['vat']);
-        $document->total = str_replace(' ', '', $data['total']);
+        $document->total_ex_vat = str_replace(' ', '', $data['totalExVAT'] ?? 0);
+        $document->total_vat = str_replace(' ', '', $data['vat'] ?? 0);
+        $document->total = str_replace(' ', '', $data['total'] ?? 0);
         $document->category = $data['category'];
         $document->element = addslashes( str_replace( ['č'], 'c', $element));
         $document->document_type = $data['document_type'];
-        $document->document = $data['number'] . '_' . $data['year'] . '_' . $data['month'] . '_' . $data['day'] . '.pdf';
-        $document->notes = $data['notes'];
-        $document->dpd = $data['dpd'] + 0;
-        $document->tnt = $data['tnt'] + 0;
-        $document->gls = $data['gls'] + 0;
-        $document->ups = $data['ups'] + 0;
-        $document->nacex = $data['nacex'] + 0;
+        $document->document = $storedDocumentName;
+        $document->notes = $data['notes'] ?? '';
+        $document->DPD = ($data['dpd'] ?? 0) + 0;
+        $document->TNT = ($data['tnt'] ?? 0) + 0;
+        $document->GLS = ($data['gls'] ?? 0) + 0;
+        $document->UPS = ($data['ups'] ?? 0) + 0;
+        $document->NACEX = ($data['nacex'] ?? 0) + 0;
+        $document->date_add = now();
         $document->save();
         
         if (file_exists($from)) unlink($from);
@@ -88,19 +90,22 @@ class documents_manager extends Model
         
         $filters = array();
         
-        $categories = self::select('category')->groupBy('category')->orderBy('category', 'ASC')->get();
+        $rows = self::query()
+            ->select('category', 'element')
+            ->groupBy('category', 'element')
+            ->orderBy('category', 'ASC')
+            ->orderBy('element', 'ASC')
+            ->get();
         
-        foreach( $categories AS $category){
-
-            $elements = self::select('element')->where('category', $category->category)->groupBy('element')->orderBy('element', 'ASC')->get();
-            
-            $element_array = array();
-            foreach($elements AS $element){
-                if( ( strlen( $element->element ) > 0)) $element_array[] = $element->element;
-            }
+        foreach($rows->groupBy('category') AS $category => $elements){
+            $element_array = $elements
+                ->pluck('element')
+                ->filter(fn ($element) => strlen((string) $element) > 0)
+                ->values()
+                ->all();
             
             $filters[] = [
-                'category' => $category->category,
+                'category' => $category,
                 'elements' => $element_array
             ];
             
@@ -110,7 +115,20 @@ class documents_manager extends Model
     }
     
     public static function search($data){
-        return self::where('name', 'LIKE', '%' . $data['tag'] . '%')->orWhere('notes', 'LIKE', '%' . $data['tag'] . '%')->orWhere('document_number', $data['tag'])->orWhere('element', $data['tag'])->orWhere(DB::raw('CONCAT(year, "-", month,"-", day)'), $data['tag'])->take(30)->get();
+        $tag = trim((string) ($data['tag'] ?? ''));
+
+        if ($tag === '') {
+            return collect();
+        }
+
+        return self::where('name', 'LIKE', '%' . $tag . '%')
+            ->orWhere('notes', 'LIKE', '%' . $tag . '%')
+            ->orWhere('document_number', 'LIKE', '%' . $tag . '%')
+            ->orWhere('element', 'LIKE', '%' . $tag . '%')
+            ->orWhere(DB::raw('CONCAT(year, "-", month,"-", day)'), 'LIKE', '%' . $tag . '%')
+            ->orderBy('id_document', 'DESC')
+            ->take(30)
+            ->get();
     }
     
     public static function listSearchData($data){
@@ -122,7 +140,7 @@ class documents_manager extends Model
         if( isset($data['category']) && ( strlen($data['category']) > 0) ) $search->where('category', 'LIKE', '%' . $data['category'] . '%');
         if( isset($data['date']) && ( strlen($data['date']) > 0) ) $search->where(DB::raw('CONCAT(year, "-", month,"-", day)'), 'LIKE', '%' . $data['date'] . '%');
 
-        return $search->take(30)->get();
+        return $search->orderBy('id_document', 'DESC')->take(30)->get();
     }
 
     public static function loadDocumentData($id_document){
@@ -132,18 +150,54 @@ class documents_manager extends Model
     public static function destroyData($data){
         
         $document = self::where('id_document', $data['id_document'])->first();
-        
-        if ( ( strlen($document->element) > 0 ) && ( $document->element != 'others' ) ){
-            $from = base_path('public/uploads/documents/' . $document->category . '/' . str_replace('.', '/', str_replace(' ', '', $document->element)) . '/' . $document->number . '_' . $document->year . '_' . $document->month . '_' . $document->day . '.pdf');
-        }else{
-            $from = base_path('public/uploads/documents/' . $document->category . '/' . $document->number . '_' . $document->year . '_' . $document->month . '_' . $document->day . '.pdf');
+
+        if (!$document) {
+            return 0;
         }
+
+        $from = self::documentAbsolutePath($document);
          
         if (file_exists($from)) unlink($from); 
         
         $document->delete();
         
         return 1;
+    }
+
+    public static function documentPublicPath($document): string
+    {
+        $category = trim((string) $document->category, '/');
+        $element = (string) $document->element;
+        $filename = self::sanitizePathSegment((string) $document->document);
+
+        if ($category === 'manifest' && $element === 'others') {
+            $manifestFilename = str_starts_with($filename, 'manifest') ? $filename : 'manifest' . $filename;
+            return '/uploads/documents/manifest/' . $manifestFilename;
+        }
+
+        if (strlen($element) > 0 && $element !== 'others') {
+            return '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . $filename;
+        }
+
+        return '/uploads/documents/' . str_replace('.', '/', $category) . '/' . $filename;
+    }
+
+    public static function documentAbsolutePath($document): string
+    {
+        return public_path(ltrim(self::documentPublicPath($document), '/'));
+    }
+
+    private static function sanitizePathSegment(string $value): string
+    {
+        return str_replace(['/', '\\', '|'], '_', $value);
+    }
+
+    private static function sanitizeElementPath(string $value): string
+    {
+        $value = str_replace(' ', '', $value);
+        $value = str_replace(['\\', '|'], ['/', '_'], $value);
+
+        return str_replace('.', '/', $value);
     }
     
     

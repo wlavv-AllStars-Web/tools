@@ -47,7 +47,7 @@
 
     </form>
 
-    <a style="float: right;width:100px;" class="btn btn-outline-secondary" href="{{ route('tasks.admin.index') }}"> Back </a>
+    <a style="float: right;width:100px;" class="btn btn-outline-secondary" href="{{ route('admin.tools.tasks.admin.index') }}"> Back </a>
 </div>
 
 @php

@@ -38,6 +38,9 @@ class AsgTasksController extends Controller{
         
     public function index(Request $request)
     {
+        $indexRoute = $request->routeIs('admin.tools.asg_tasks.*') ? 'admin.tools.asg_tasks.index' : 'asg_tasks.index';
+        $storeRoute = $request->routeIs('admin.tools.asg_tasks.*') ? 'admin.tools.asg_tasks.store' : 'asg_tasks.store';
+        $inlineRoute = $request->routeIs('admin.tools.asg_tasks.*') ? 'admin.tools.asg_tasks.inline' : 'asg_tasks.inline';
         $user    = $request->user();
         $isAdmin = $this->isAdmin($user);
     
@@ -113,6 +116,13 @@ class AsgTasksController extends Controller{
         }
     
         return view('customTools.asg_tasks.index', [
+            'breadcrumbs'     => [
+                ['name' => 'administration', 'url' => route('administration.index')],
+                ['name' => 'Tasks', 'url' => route($indexRoute), 'no_translation' => 1],
+            ],
+            'tasksIndexRouteName' => $indexRoute,
+            'tasksStoreRouteName' => $storeRoute,
+            'tasksInlineRouteName' => $inlineRoute,
             'isAdmin'        => $isAdmin,
             'teamId'         => $teamId,
             'departments'    => self::DEPARTMENTS,

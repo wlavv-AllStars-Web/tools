@@ -117,8 +117,14 @@ class productivityController extends Controller
             // $doneShareByUser['Unassigned'] = (int)($userStats['Unassigned']['done'] ?? 0);
         }
 
+        $breadcrumbs = [
+            ['name' => 'administration', 'url' => route('administration.index')],
+            ['name' => 'Tasks', 'url' => route($request->routeIs('admin.tools.tasks.reports.*') ? 'admin.tools.tasks.admin.index' : 'tasks.admin.index'), 'no_translation' => 1],
+            ['name' => 'Monthly report', 'url' => route($request->routeIs('admin.tools.tasks.reports.*') ? 'admin.tools.tasks.reports.monthly' : 'tasks.reports.monthly'), 'no_translation' => 1],
+        ];
+
         return view('customTools.tasks.reports.monthly', compact(
-            'month', 'teams', 'teamId', 'stats', 'tasks', 'userStats', 'doneShareByUser'
+            'month', 'teams', 'teamId', 'stats', 'tasks', 'userStats', 'doneShareByUser', 'breadcrumbs'
         ));
     }
     
@@ -261,9 +267,15 @@ class productivityController extends Controller
             // $doneShareByUser['Unassigned'] = (int)($userStats['Unassigned']['done'] ?? 0);
         }
     
+        $breadcrumbs = [
+            ['name' => 'administration', 'url' => route('administration.index')],
+            ['name' => 'Tasks', 'url' => route($request->routeIs('admin.tools.tasks.reports.*') ? 'admin.tools.tasks.admin.index' : 'tasks.admin.index'), 'no_translation' => 1],
+            ['name' => 'Annual report', 'url' => route($request->routeIs('admin.tools.tasks.reports.*') ? 'admin.tools.tasks.reports.annual' : 'tasks.reports.annual'), 'no_translation' => 1],
+        ];
+
         return view('customTools.tasks.reports.annual', compact(
             'year', 'teams', 'teamId', 'monthly', 'avg',
-            'stats', 'tasks', 'userStats', 'doneShareByUser'
+            'stats', 'tasks', 'userStats', 'doneShareByUser', 'breadcrumbs'
         ));
     }
 

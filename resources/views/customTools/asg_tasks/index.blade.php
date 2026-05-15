@@ -9,7 +9,7 @@
             @include('customTools.asg_tasks.team_selector')
             
             <hr style="margin: 2px;">
-            <form method="GET" action="{{ route('asg_tasks.index') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;margin-top: 10px;">
+            <form method="GET" action="{{ route($tasksIndexRouteName ?? 'asg_tasks.index') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;margin-top: 10px;">
                 <input type="hidden" name="team" value="{{ $teamId }}">
                 
                 <div style="width: 450px; margin: 0 auto;">
@@ -40,14 +40,14 @@
                     </div>
             
                     <div style="margin-left:auto;gap:8px;display: none;M">
-                        <a class="icon-btn" title="Mês atual" href="{{ route('asg_tasks.index', ['team'=>$teamId,'year'=>now()->format('Y'),'month'=>now()->format('n')]) }}">
+                        <a class="icon-btn" title="Mês atual" href="{{ route($tasksIndexRouteName ?? 'asg_tasks.index', ['team'=>$teamId,'year'=>now()->format('Y'),'month'=>now()->format('n')]) }}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
                                 <path stroke="currentColor" stroke-width="2" d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/>
                                 <path stroke="currentColor" stroke-width="2" d="M8 3v4M16 3v4M4 11h16"/>
                             </svg>
                         </a>
             
-                        <a class="icon-btn" title="Limpar semana" href="{{ route('asg_tasks.index', ['team'=>$teamId,'year'=>$year,'month'=>$month]) }}">
+                        <a class="icon-btn" title="Limpar semana" href="{{ route($tasksIndexRouteName ?? 'asg_tasks.index', ['team'=>$teamId,'year'=>$year,'month'=>$month]) }}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
                                 <path stroke="currentColor" stroke-width="2" d="M6 6l12 12M18 6 6 18"/>
                             </svg>
@@ -164,8 +164,8 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 <script>
-    window.__ASG_TASKS_INLINE_URL = @json(route('asg_tasks.inline', ['task' => 0]));
-    window.__ASG_TASKS_STORE_URL  = @json(route('asg_tasks.store'));
+    window.__ASG_TASKS_INLINE_URL = @json(route($tasksInlineRouteName ?? 'asg_tasks.inline', ['task' => 0]));
+    window.__ASG_TASKS_STORE_URL  = @json(route($tasksStoreRouteName ?? 'asg_tasks.store'));
     window.__ASG_TASKS_TEAM_ID    = @json($teamId);
 </script>
 

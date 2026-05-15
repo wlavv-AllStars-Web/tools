@@ -5,7 +5,17 @@
         @if(isset($breadcrumbs[0]))<li> <span> <i class="fa fa-chevron-right" style="color: dodgerblue; margin: 0 10px;"></i> </span> </li> @endif
         @if(isset($breadcrumbs) && (count($breadcrumbs) > 0) )
             @foreach ($breadcrumbs as $key => $breadcrumb)
-                <li> <a href="{{$breadcrumb['url']}}" style="text-transform: uppercase;color: #666;text-decoration: none;">{{ __('messages.' . $breadcrumb['name']) }} </a> </li>
+                @php
+                    $breadcrumbLabel = !empty($breadcrumb['no_translation']) ? $breadcrumb['name'] : __('messages.' . $breadcrumb['name']);
+                    $breadcrumbUrl = $breadcrumb['url'] ?? null;
+                @endphp
+                <li>
+                    @if($breadcrumbUrl)
+                        <a href="{{$breadcrumbUrl}}" style="text-transform: uppercase;color: #666;text-decoration: none;">{{ $breadcrumbLabel }} </a>
+                    @else
+                        <span style="text-transform: uppercase;color: #666;text-decoration: none;">{{ $breadcrumbLabel }} </span>
+                    @endif
+                </li>
                 @if(isset($breadcrumbs[$key+1]))<li> <span> <i class="fa fa-chevron-right" style="color: dodgerblue; margin: 0 10px;"></i> </span> </li>@endif
             @endforeach
         @endif

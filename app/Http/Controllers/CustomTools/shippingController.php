@@ -189,6 +189,7 @@ class shippingController extends Controller
             ->first();
         
         $supplier = null;
+        $supplier_map = null;
         
         if (isset($po->supplier_id)) {
 
@@ -207,6 +208,7 @@ class shippingController extends Controller
         }
         
         $ps = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+        $ps = str_contains($ps, '.') ? $ps : config('database.connections.mysql2.database') . '.' . $ps;
 
         $receivedSubquery = DB::table('oms_reception_lines')
             ->select('billed_order_line_id', DB::raw('SUM(qty_received) as qty_received_sum'))

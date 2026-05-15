@@ -65,6 +65,13 @@ class financeController extends Controller
         return $accessList;
     }
 
+    private function prestashopMysql2Prefix(): string
+    {
+        $prefix = (string) (env('DB2_DB_prefix') ?: env('DB2_prefix') ?: 'ps_');
+
+        return str_contains($prefix, '.') ? substr($prefix, strrpos($prefix, '.') + 1) : $prefix;
+    }
+
     public function createInventoryCSV($array, $rates){ 
         
         $total = 0;
@@ -106,25 +113,26 @@ class financeController extends Controller
 
         $currency = 'EUR';
         $field = 'wholesale_price';
+        $ps = $this->prestashopMysql2Prefix();
 
-        $fathers = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+        $fathers = DB::connection('mysql2')->table($ps . 'stock_available')
             ->select(
-                env('DB2_DB_prefix') . 'manufacturer.*',
-                env('DB2_DB_prefix') . 'stock_available.id_product',
-                env('DB2_DB_prefix') . 'stock_available.id_product_attribute',
-                env('DB2_DB_prefix') . 'product.reference',
-                env('DB2_DB_prefix') . 'product.wholesale_price',
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
-                env('DB2_DB_prefix') . 'stock_available.quantity'
+                $ps . 'manufacturer.*',
+                $ps . 'stock_available.id_product',
+                $ps . 'stock_available.id_product_attribute',
+                $ps . 'product.reference',
+                $ps . 'product.wholesale_price',
+                DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                $ps . 'stock_available.quantity'
             )
-            ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-            ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-            ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
-            ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
-            ->where( env('DB2_DB_prefix') . 'stock_available.id_product_attribute', 0 )
-            ->groupBy(  env('DB2_DB_prefix') . 'product.reference' )
+            ->join(  $ps . 'product', $ps . 'stock_available.id_product', '=', $ps . 'product.id_product')
+            ->leftJoin($ps . 'custom_product', $ps . 'custom_product.id_product', '=', $ps . 'product.id_product')
+            ->join(  $ps . 'manufacturer', $ps . 'product.id_manufacturer', '=', $ps . 'manufacturer.id_manufacturer')
+            ->where( $ps . 'stock_available.quantity', '>', 0 )
+            ->where( $ps . 'stock_available.id_product_attribute', 0 )
+            ->groupBy(  $ps . 'product.reference' )
             ->get();
             
         foreach ($fathers as $item){
@@ -148,25 +156,25 @@ class financeController extends Controller
                         
                         if($product->id_product_attribute_item == 0){
                             
-                            $pack_father = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+                            $pack_father = DB::connection('mysql2')->table($ps . 'stock_available')
                                 ->select(
-                                    env('DB2_DB_prefix') . 'manufacturer.*',
-                                    env('DB2_DB_prefix') . 'stock_available.id_product',
-                                    env('DB2_DB_prefix') . 'stock_available.id_product_attribute',
-                                    env('DB2_DB_prefix') . 'product.reference',
-                                    env('DB2_DB_prefix') . 'product.wholesale_price',
-                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
-                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
-                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
-                                    env('DB2_DB_prefix') . 'stock_available.quantity'
+                                    $ps . 'manufacturer.*',
+                                    $ps . 'stock_available.id_product',
+                                    $ps . 'stock_available.id_product_attribute',
+                                    $ps . 'product.reference',
+                                    $ps . 'product.wholesale_price',
+                                    DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                                    DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                                    DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                                    $ps . 'stock_available.quantity'
                                 )
-                                ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-                                ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-                                ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
-                                ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
-                                ->where( env('DB2_DB_prefix') . 'stock_available.id_product', $product->id_product_item )
-                                ->where( env('DB2_DB_prefix') . 'stock_available.id_product_attribute', 0 )
-                                ->groupBy(  env('DB2_DB_prefix') . 'product.reference' )
+                                ->join(  $ps . 'product', $ps . 'stock_available.id_product', '=', $ps . 'product.id_product')
+                                ->leftJoin($ps . 'custom_product', $ps . 'custom_product.id_product', '=', $ps . 'product.id_product')
+                                ->join(  $ps . 'manufacturer', $ps . 'product.id_manufacturer', '=', $ps . 'manufacturer.id_manufacturer')
+                                ->where( $ps . 'stock_available.quantity', '>', 0 )
+                                ->where( $ps . 'stock_available.id_product', $product->id_product_item )
+                                ->where( $ps . 'stock_available.id_product_attribute', 0 )
+                                ->groupBy(  $ps . 'product.reference' )
                                 ->get();
                                     
                             foreach ($pack_father as $item){
@@ -201,26 +209,26 @@ class financeController extends Controller
                             if($item->currency == 'YEN') { $field = 'wholesale_price_yen';      $currency = 'YEN'; }
                             if($item->currency == 'EUR') { $field = 'wholesale_price';          $currency = 'EUR'; }
             
-                            $pack_son = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+                            $pack_son = DB::connection('mysql2')->table($ps . 'stock_available')
                                 ->select(
-                                    env('DB2_DB_prefix') . 'manufacturer.*',
-                                    env('DB2_DB_prefix') . 'stock_available.id_product',
-                                    env('DB2_DB_prefix') . 'stock_available.id_product_attribute',
-                                    env('DB2_DB_prefix') . 'product.reference',
-                                    env('DB2_DB_prefix') . 'product.wholesale_price',
-                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, ' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
-                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, ' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
-                                    DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, ' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
-                                    env('DB2_DB_prefix') . 'stock_available.quantity'
+                                    $ps . 'manufacturer.*',
+                                    $ps . 'stock_available.id_product',
+                                    $ps . 'stock_available.id_product_attribute',
+                                    $ps . 'product.reference',
+                                    $ps . 'product.wholesale_price',
+                                    DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, ' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                                    DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, ' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                                    DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, ' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                                    $ps . 'stock_available.quantity'
                                 )
-                                ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-                                ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-                                ->leftJoin(env('DB2_DB_prefix') . 'custom_product_attribute', env('DB2_DB_prefix') . 'custom_product_attribute.id_product_attribute', '=', env('DB2_DB_prefix') . 'stock_available.id_product_attribute')
-                                ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
-                                ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
-                                ->where( env('DB2_DB_prefix') . 'stock_available.id_product', $product->id_product_item )
-                                ->where( env('DB2_DB_prefix') . 'stock_available.id_product_attribute', $product->id_product_attribute_item )
-                                ->groupBy(  env('DB2_DB_prefix') . 'product.reference' )
+                                ->join(  $ps . 'product', $ps . 'stock_available.id_product', '=', $ps . 'product.id_product')
+                                ->leftJoin($ps . 'custom_product', $ps . 'custom_product.id_product', '=', $ps . 'product.id_product')
+                                ->leftJoin($ps . 'custom_product_attribute', $ps . 'custom_product_attribute.id_product_attribute', '=', $ps . 'stock_available.id_product_attribute')
+                                ->join(  $ps . 'manufacturer', $ps . 'product.id_manufacturer', '=', $ps . 'manufacturer.id_manufacturer')
+                                ->where( $ps . 'stock_available.quantity', '>', 0 )
+                                ->where( $ps . 'stock_available.id_product', $product->id_product_item )
+                                ->where( $ps . 'stock_available.id_product_attribute', $product->id_product_attribute_item )
+                                ->groupBy(  $ps . 'product.reference' )
                                 ->get();
                                     
                             foreach ($pack_son as $item){
@@ -240,13 +248,13 @@ class financeController extends Controller
                                     ];
                                 }else{
                                     $attr = product_attribute::select(
-                                        env('DB2_DB_prefix') . 'product_attribute.*',
-                                        DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
-                                        DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
-                                        DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_yen')
+                                        $ps . 'product_attribute.*',
+                                        DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                                        DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                                        DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, 0) AS wholesale_price_yen')
                                     )
-                                        ->leftJoin(env('DB2_DB_prefix') . 'custom_product_attribute', env('DB2_DB_prefix') . 'custom_product_attribute.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
-                                        ->where(env('DB2_DB_prefix') . 'product_attribute.id_product_attribute', $item->id_product_attribute)
+                                        ->leftJoin($ps . 'custom_product_attribute', $ps . 'custom_product_attribute.id_product_attribute', '=', $ps . 'product_attribute.id_product_attribute')
+                                        ->where($ps . 'product_attribute.id_product_attribute', $item->id_product_attribute)
                                         ->first();
 
                                     $wholesale = $attr->$field;
@@ -288,31 +296,32 @@ class financeController extends Controller
         
         $array = array();
         $currency = 'EUR';
+        $ps = $this->prestashopMysql2Prefix();
  
-        $sons = DB::connection('mysql2')->table(env('DB2_DB_prefix') . 'stock_available')
+        $sons = DB::connection('mysql2')->table($ps . 'stock_available')
             ->select( 
-                env('DB2_DB_prefix') . 'manufacturer.*', 
-                env('DB2_DB_prefix') . 'stock_available.id_product', 
-                env('DB2_DB_prefix') . 'stock_available.id_product_attribute', 
-                env('DB2_DB_prefix') . 'product_attribute.reference', 
-                env('DB2_DB_prefix') . 'product.wholesale_price', 
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
-                env('DB2_DB_prefix') . 'stock_available.quantity',
-                env('DB2_DB_prefix') . 'product_attribute.wholesale_price AS attr_wholesale_price', 
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_pound'),
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_dollar'),
-                DB::raw('COALESCE(' . env('DB2_DB_prefix') . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_yen')
+                $ps . 'manufacturer.*', 
+                $ps . 'stock_available.id_product', 
+                $ps . 'stock_available.id_product_attribute', 
+                $ps . 'product_attribute.reference', 
+                $ps . 'product.wholesale_price', 
+                DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_pound'),
+                DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_dollar'),
+                DB::raw('COALESCE(' . $ps . 'custom_product.wholesale_price_base_currency, 0) AS wholesale_price_yen'),
+                $ps . 'stock_available.quantity',
+                $ps . 'product_attribute.wholesale_price AS attr_wholesale_price', 
+                DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_pound'),
+                DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_dollar'),
+                DB::raw('COALESCE(' . $ps . 'custom_product_attribute.wholesale_price_base_currency, 0) AS attr_wholesale_price_yen')
             )
-            ->join(  env('DB2_DB_prefix') . 'product_attribute', env('DB2_DB_prefix') . 'stock_available.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
-            ->join(  env('DB2_DB_prefix') . 'product', env('DB2_DB_prefix') . 'stock_available.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-            ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-            ->leftJoin(env('DB2_DB_prefix') . 'custom_product_attribute', env('DB2_DB_prefix') . 'custom_product_attribute.id_product_attribute', '=', env('DB2_DB_prefix') . 'product_attribute.id_product_attribute')
-            ->join(  env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'product.id_manufacturer', '=', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer')
-            ->where( env('DB2_DB_prefix') . 'stock_available.quantity', '>', 0 )
-            ->where( env('DB2_DB_prefix') . 'stock_available.id_product_attribute', '<>', 0 )
-            ->groupBy(  env('DB2_DB_prefix') . 'product_attribute.reference' )
+            ->join(  $ps . 'product_attribute', $ps . 'stock_available.id_product_attribute', '=', $ps . 'product_attribute.id_product_attribute')
+            ->join(  $ps . 'product', $ps . 'stock_available.id_product', '=', $ps . 'product.id_product')
+            ->leftJoin($ps . 'custom_product', $ps . 'custom_product.id_product', '=', $ps . 'product.id_product')
+            ->leftJoin($ps . 'custom_product_attribute', $ps . 'custom_product_attribute.id_product_attribute', '=', $ps . 'product_attribute.id_product_attribute')
+            ->join(  $ps . 'manufacturer', $ps . 'product.id_manufacturer', '=', $ps . 'manufacturer.id_manufacturer')
+            ->where( $ps . 'stock_available.quantity', '>', 0 )
+            ->where( $ps . 'stock_available.id_product_attribute', '<>', 0 )
+            ->groupBy(  $ps . 'product_attribute.reference' )
             ->get();
                 
         foreach ($sons as $item){

@@ -22,3 +22,5 @@ error_log
 /public/admin/download/*.csv
 
 /public/uploads/
+/docs/
+/scripts/

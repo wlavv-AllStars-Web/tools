@@ -10,23 +10,12 @@
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
             @endphp
         
-            @if($counter->panel == 'reviews')
-    
-                @php
-                    $reviewsUrl = \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl('ASM');
-                @endphp
-    
-            @endif
             <div class="col-lg-4">
                 <div class="navbar navbar-light customPanel">
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
-                                @if(!empty($counter->direct_link))
-                                    onclick="window.open(@js($counter->direct_link), '_blank')"
-                                @elseif($counter->panel == 'reviews')
-                                    onclick="window.open(@js($reviewsUrl), '_blank')"
-                                @elseif(($counter->counter > 0) && ($counter->panel != 'reviews'))
+                                @if($counter->counter > 0)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $panelDomId }}')"
                                 @endif
                                 style="
@@ -79,9 +68,7 @@
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
-                                @if(!empty($counter->direct_link))
-                                    onclick="window.open(@js($counter->direct_link), '_blank')"
-                                @elseif(($counter->counter > 0) && ($counter->panel != 'reviews'))
+                                @if($counter->counter > 0)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $panelDomId }}')"
                                 @endif
                                 style="

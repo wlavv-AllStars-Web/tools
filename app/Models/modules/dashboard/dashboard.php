@@ -303,18 +303,11 @@ class dashboard extends Model
             'panelDomId' => 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $panel->tab . '_' . $panel->store . '_' . $panel->panel),
         ];
         
-        if( in_array($panel_name, ['reviews'])){
-            return [
-                'redirect' => true,
-                'data' => $data
-            ];
-        }else{
-            return [
-                'counter' => $dataCount,
-                'update_tag' => ($dataCount > $panel->counter) ? 1 : 0,
-                'html' => view('areas/dashboard/includes/counters_content')->with($data)->render()
-            ];
-        }
+        return [
+            'counter' => $dataCount,
+            'update_tag' => ($dataCount > $panel->counter) ? 1 : 0,
+            'html' => view('areas/dashboard/includes/counters_content')->with($data)->render()
+        ];
     }
 
     public static function externalOrderInvoiceExVat( $tab, $panel ){ 
@@ -356,7 +349,7 @@ class dashboard extends Model
         
         $data = [];
         $ids_exceptions = [];
-        $prefix = env('DB2_DB_prefix');
+        $prefix = self::prefix();
 
         $exceptions = asm_dashboard::getExceptions('asm_orders_exvat');
 
@@ -364,22 +357,17 @@ class dashboard extends Model
             $ids_exceptions[] = $exception->id_product;
         }
 
-        $bd_data = orders::select(
-                "{$prefix}orders.id_order",
-                "{$prefix}orders.reference",
-                "{$prefix}orders.current_state",
-                "{$prefix}orders.total_products",
-                "{$prefix}orders.total_products_wt"
-            )
-            ->leftJoin("{$prefix}customer", "{$prefix}customer.id_customer", "=", "{$prefix}orders.id_customer")
-            ->where("{$prefix}orders.date_add", '>', now()->subDays(5))
-            ->where("{$prefix}customer.id_default_group", 4)
-            ->whereNotIn("{$prefix}orders.id_order", $exceptions)
-            ->orderBy('id_order', 'DESC')
+        $bd_data = self::ordersBase('ASM')
+            ->leftJoin($prefix . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
+            ->where('o.date_add', '>', now()->subDays(5))
+            ->where('c.id_default_group', 4)
+            ->whereNotIn('o.id_order', $ids_exceptions)
+            ->select('o.id_order', 'o.reference', 'o.current_state', 'o.total_products', 'o.total_products_wt')
+            ->orderBy('o.id_order', 'DESC')
             ->get();
         
         foreach($bd_data AS $item){
-            $data[] = ['clean' => $item['id_order'], 'id_order' => $item['id_order'], 'reference' => $item['reference'], 'total_products' => $item['total_products'], 'total_products_wt' => $item['total_products_wt'] ];
+            $data[] = ['clean' => $item->id_order, 'id_order' => $item->id_order, 'reference' => $item->reference, 'total_products' => $item->total_products, 'total_products_wt' => $item->total_products_wt ];
         }
         
         return [
@@ -395,15 +383,6 @@ class dashboard extends Model
     }
     
 
-    protected static function externalApiUrl(string $store, string $path): string
-    {
-        return '';
-    }
-
-    public static function externalDataRequest( $url, $params = [] ){ 
-        return [];
-    }
-    
     public static function externalOrdersWithoutPaymentAccepted( $tab, $panel ){ 
 
         $data = [];
@@ -666,11 +645,31 @@ class dashboard extends Model
         return env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
     }
 
-    private static function asdOrdersBase()
+    private static function shopId(string $store): int
+    {
+        $store = strtoupper($store);
+
+        return (int) (
+            config("allstars.stores.{$store}.id_shop")
+            ?: config("shops.{$store}.id")
+            ?: match ($store) {
+                'ASD' => 3,
+                'ASM' => 2,
+                default => 0,
+            }
+        );
+    }
+
+    private static function ordersBase(string $store)
     {
         return DB::connection('mysql2')
             ->table(self::prefix() . 'orders as o')
-            ->where('o.id_shop', 3);
+            ->where('o.id_shop', self::shopId($store));
+    }
+
+    private static function asdOrdersBase()
+    {
+        return self::ordersBase('ASD');
     }
 
     private static function asdOrdersByStateName(string $pattern)
@@ -714,16 +713,17 @@ class dashboard extends Model
     private static function asdNoHousingWithStockRows()
     {
         $prefix = self::prefix();
+        $shopId = self::shopId('ASD');
 
         return DB::connection('mysql2')
             ->table($prefix . 'product as p')
-            ->join($prefix . 'product_shop as ps', function ($join) {
+            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
                 $join->on('ps.id_product', '=', 'p.id_product')
-                    ->where('ps.id_shop', 3);
+                    ->where('ps.id_shop', $shopId);
             })
-            ->join($prefix . 'stock_available as sa', function ($join) {
+            ->join($prefix . 'stock_available as sa', function ($join) use ($shopId) {
                 $join->on('sa.id_product', '=', 'p.id_product')
-                    ->where('sa.id_shop', 3);
+                    ->where('sa.id_shop', $shopId);
             })
             ->where('ps.active', 1)
             ->where('sa.quantity', '>', 0)
@@ -761,7 +761,7 @@ class dashboard extends Model
     public static function productsWithoutDiscounts($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = (int) config('shops.ASD.id', 3);
+        $shopId = self::shopId('ASD');
     
         $exceptions = asm_dashboard::getExceptions('asd_products_without_discounts')
             ->pluck('id_product')
@@ -812,7 +812,7 @@ class dashboard extends Model
     public static function ordersReferenceWithSpaces($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = (int) config('shops.ASD.id', 3);
+        $shopId = self::shopId('ASD');
     
         $exceptions = asm_dashboard::getExceptions('asd_product_reference_with_spaces')
             ->pluck('id_product')
@@ -853,7 +853,7 @@ class dashboard extends Model
     public static function productsNoImage($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = (int) config('shops.ASD.id', 3);
+        $shopId = self::shopId('ASD');
     
         $exceptions = asm_dashboard::getExceptions('asd_product_no_image')
             ->pluck('id_product')
@@ -905,7 +905,7 @@ class dashboard extends Model
     public static function productsPriceIssue($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = (int) config('shops.ASD.id', 3);
+        $shopId = self::shopId('ASD');
     
         $exceptions = asm_dashboard::getExceptions('asd_product_price_issues')
             ->pluck('id_product')

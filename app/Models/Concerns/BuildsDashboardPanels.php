@@ -2,6 +2,8 @@
 
 namespace App\Models\Concerns;
 
+use App\Support\Dashboard\DashboardPanelBuilder;
+
 trait BuildsDashboardPanels
 {
     protected static function dashboardPanel(
@@ -14,16 +16,15 @@ trait BuildsDashboardPanels
         $prestashop = null,
         int $col = 4
     ): array {
-        $data = is_array($data) ? $data : $data->toArray();
-
-        return array_merge([
-            'name' => $name,
-            'col' => $col,
-            'item_id' => $type . '_' . $suffix,
-            'prestashop' => $prestashop ?? [],
-            'columns' => $columns,
-            'counter' => count($data),
-            'data' => $data,
-        ], $extra);
+        return DashboardPanelBuilder::panel(
+            $name,
+            $type,
+            $suffix,
+            $columns,
+            $data,
+            $extra,
+            $prestashop ?? [],
+            $col
+        );
     }
 }

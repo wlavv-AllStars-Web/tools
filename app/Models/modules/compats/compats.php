@@ -106,7 +106,7 @@ class compats extends Model
 
     public static function getProductCompatDetails($id_product, $store = 0)
     {
-        $base = config('allstars.services.webtools.base_url');
+        $base = config('allstars.services.resources.base_url');
 
         $rows = self::query()
             ->join('compats_product', function ($join) use ($id_product, $store) {
@@ -164,9 +164,9 @@ class compats extends Model
             'model' => $compat->model->name,
             'type' => $compat->type->name,
             'version' => $compat->version->name,
-            'brand_logo' => config('allstars.services.webtools.base_url') . '/compats/brand/' . $compat->id_brand . '.png',
-            'brand_hover_logo' => config('allstars.services.webtools.base_url') . '/compats/brand_hover/' . $compat->id_brand . '.png',
-            'cartoon' => config('allstars.services.webtools.base_url') . '/compats/compat/' . $id_compat . '.png'
+            'brand_logo' => config('allstars.services.resources.base_url') . '/compats/brand/' . $compat->id_brand . '.png',
+            'brand_hover_logo' => config('allstars.services.resources.base_url') . '/compats/brand_hover/' . $compat->id_brand . '.png',
+            'cartoon' => config('allstars.services.resources.base_url') . '/compats/compat/' . $id_compat . '.png'
         ];
     }
 
@@ -217,7 +217,7 @@ class compats extends Model
                 'model' => $model->name ?? null,
                 'type' => $type->name ?? null,
                 'version' => $version->name ?? null,
-                'cartoon' => config('allstars.services.webtools.base_url') . '/compats/compat/' . $compat->id_compat . '.png',
+                'cartoon' => config('allstars.services.resources.base_url') . '/compats/compat/' . $compat->id_compat . '.png',
             ];
         }
 
@@ -345,8 +345,8 @@ class compats extends Model
             $brands[] = [
                 'id_brand' => $brand->id_brand,
                 'name' => $brand->name,
-                'brand_logo' => config('allstars.services.webtools.base_url') . '/compats/brand/' . $brand->id_brand . '.png',
-                'brand_hover_logo' => config('allstars.services.webtools.base_url') . '/compats/brand_hover/' . $brand->id_brand . '.png',
+                'brand_logo' => config('allstars.services.resources.base_url') . '/compats/brand/' . $brand->id_brand . '.png',
+                'brand_hover_logo' => config('allstars.services.resources.base_url') . '/compats/brand_hover/' . $brand->id_brand . '.png',
             ];
         }
 

@@ -235,16 +235,4 @@ protected $table = 'vat_validation_requests';
         );
     }
 
-    protected static function dashboardPanel($name, $type, $suffix, $columns, $data, $extra = [])
-    {
-        return array_merge([
-            'name' => $name,
-            'col' => 4,
-            'item_id' => $type . '_' . $suffix,
-            'prestashop' => null,
-            'columns' => $columns,
-            'counter' => count($data),
-            'data' => $data,
-        ], $extra);
-    }
 }

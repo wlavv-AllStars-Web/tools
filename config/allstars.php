@@ -29,6 +29,7 @@ $asdDomain = env('ASD_DOMAIN', $hostFromUrl($asdBaseUrl));
 return [
     'stores' => [
         'ASM' => [
+            'id_shop' => (int) env('ASM_SHOP_ID', 2),
             'base_url' => $asmBaseUrl,
             'domain' => $asmDomain,
             'email_domain' => env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com'),
@@ -39,6 +40,7 @@ return [
         ],
 
         'ASD' => [
+            'id_shop' => (int) env('ASD_SHOP_ID', 3),
             'base_url' => $asdBaseUrl,
             'domain' => $asdDomain,
             'email_domain' => env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com'),

@@ -107,23 +107,9 @@
                             @else
                                 @if($column == 'email')
                                 @else
-                                    @php
-                                        $cellUrl = $item['url'] ?? null;
-
-                                        /*
-                                         * Novo comportamento:
-                                         * Se a linha tem URL, todas as colunas normais são clicáveis.
-                                         * Só excluímos colunas de ação.
-                                         */
-                                        $isClickable = $cellUrl && !in_array($column, $nonClickableColumns, true);
-                                    @endphp
-
                                     <td
                                         class="{{ $column }}"
-                                        @if($isClickable)
-                                            onclick="window.open('{{ $cellUrl }}', '_blank')"
-                                            style="cursor: pointer;"
-                                        @elseif(isset($details->link))
+                                        @if(isset($details->link))
                                             onclick="window.location.replace('{{ $details->link }}');"
                                             style="cursor: pointer;"
                                         @endif

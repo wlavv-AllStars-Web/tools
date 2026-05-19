@@ -570,6 +570,10 @@ Route::middleware(['web', 'auth'])->prefix('data/asd/resources')->name('data.res
 });
 
 Route::get('/api/asd/resources', [AsdResourcesController::class, 'api'])->name('api.asd.resources');
+Route::get('/api/asm/resources', [asmResourcesController::class, 'api'])->name('api.asm.resources');
+Route::get('/api/gallery/cars', [asgCarsController::class, 'api'])->name('api.gallery.cars');
+Route::get('/api/gallery/cars/{lang}', [asgCarsController::class, 'apiList'])->where('lang', 'en|es|fr|pt|it')->name('api.gallery.cars.lang');
+Route::get('/api/gallery/cars/{lang}/{id}', [asgCarsController::class, 'apiShow'])->where('lang', 'en|es|fr|pt|it')->whereNumber('id')->name('api.gallery.cars.show');
 
 Route::middleware(['web', 'auth'])->prefix('marketing/asm/resources')->name('marketing.resources.')->group(function () {
     Route::get('/', [asmResourcesController::class, 'index'])->name('index');

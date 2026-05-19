@@ -56,6 +56,38 @@ class asgCarsController extends Controller
         return view('customTools.asg_cars.index', [ 'breadcrumbs' => $this->breadcrumbs, 'cars' => $cars ]);
     }
 
+    public function api(Request $request)
+    {
+        return $this->apiList($request, (string) $request->get('lang', 'en'));
+    }
+
+    public function apiList(Request $request, string $lang = 'en')
+    {
+        $lang = $this->normalizeLang($lang);
+        $query = $this->apiCarsQuery($request);
+
+        $data = $query->get()->map(fn ($car) => $this->carPayload($car, $lang, false));
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    public function apiShow(Request $request, string $lang, int $id)
+    {
+        $lang = $this->normalizeLang($lang);
+        $car = $this->apiCarsQuery($request)
+            ->with('products')
+            ->where('id_asg_car', $id)
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->carPayload($car, $lang, true),
+        ]);
+    }
+
     public function create()
     {
 
@@ -319,5 +351,66 @@ class asgCarsController extends Controller
         }
 
         return $empty;
+    }
+
+    private function apiCarsQuery(Request $request)
+    {
+        $query = asg_cars::query()
+            ->where('display', 1)
+            ->orderBy('position')
+            ->orderBy('id_asg_car');
+
+        if ($request->filled('id_shop')) {
+            $query->where('id_shop', (int) $request->get('id_shop'));
+        }
+
+        return $query;
+    }
+
+    private function carPayload(asg_cars $car, string $lang, bool $includeProducts): array
+    {
+        $payload = [
+            'id_asg_car' => (int) $car->id_asg_car,
+            'id_shop' => (int) $car->id_shop,
+            'name' => $car->name,
+            'gallery_name' => $car->car_name_galleries,
+            'youtube_code' => $car->youtube_code,
+            'description' => $car->{'description_' . $lang},
+            'budget' => $car->{'budget_' . $lang},
+            'cover_desktop' => $this->assetOrNull($car->cover_desktop),
+            'cover_mobile' => $this->assetOrNull($car->cover_mobile),
+            'images' => collect($car->images_array)
+                ->map(fn ($image) => $this->assetOrNull($image))
+                ->filter()
+                ->values()
+                ->all(),
+        ];
+
+        if ($includeProducts) {
+            $payload['products'] = $car->products
+                ->groupBy('category')
+                ->map(fn ($products) => $products->map(fn ($product) => [
+                    'id_product' => $product->id_product ? (int) $product->id_product : null,
+                    'name' => $product->name,
+                    'link' => $product->link,
+                    'id_lang' => (int) $product->id_lang,
+                    'position' => (int) $product->position,
+                ])->values())
+                ->all();
+        }
+
+        return $payload;
+    }
+
+    private function normalizeLang(string $lang): string
+    {
+        $lang = strtolower($lang);
+
+        return array_key_exists($lang, $this->languages) ? $lang : 'en';
+    }
+
+    private function assetOrNull(?string $path): ?string
+    {
+        return $path ? asset($path) : null;
     }
 }

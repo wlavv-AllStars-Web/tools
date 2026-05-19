@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use App\Services\Prestashop\PrestashopAdminLinkService;
 
 use App\Models\prestashop\asm_dashboard;
+use App\Models\prestashop\AsdImage;
 use App\Models\prestashop\orders;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_shop;
@@ -852,37 +853,12 @@ class dashboard extends Model
     
     public static function productsNoImage($tab, $panel)
     {
-        $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = self::shopId('ASD');
-    
         $exceptions = asm_dashboard::getExceptions('asd_product_no_image')
             ->pluck('id_product')
             ->map(fn ($id) => (int) $id)
             ->toArray();
-    
-        $rows = DB::connection('mysql2')
-            ->table($prefix . 'product as p')
-            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
-                $join->on('ps.id_product', '=', 'p.id_product')
-                    ->where('ps.id_shop', '=', $shopId);
-            })
-            ->leftJoin($prefix . 'image as i', 'i.id_product', '=', 'p.id_product')
-            ->leftJoin($prefix . 'image_shop as ish', function ($join) use ($shopId) {
-                $join->on('ish.id_image', '=', 'i.id_image')
-                    ->where('ish.id_shop', '=', $shopId);
-            })
-            ->leftJoin($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
-            ->whereNull('ish.id_image')
-            ->where('ps.active', 1)
-            ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('p.id_product', $exceptions))
-            ->select([
-                'p.id_product',
-                'p.reference',
-                DB::raw('COALESCE(m.name, "") as manufacturer'),
-            ])
-            ->groupBy('p.id_product', 'p.reference', 'm.name')
-            ->orderBy('p.id_product', 'ASC')
-            ->get();
+
+        $rows = AsdImage::missingRows($exceptions);
     
         return self::dashboardPanel(
             trans('dashboard.ASD - No images'),

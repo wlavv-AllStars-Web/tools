@@ -92,6 +92,43 @@ class PrestashopAdminLinkService
         ], $store);
     }
 
+    public static function bridgeAdminUrl(string $targetController, array $targetParams = [], string $store = 'ASM'): ?string
+    {
+        $store = static::normalizeStore($store);
+
+        $baseUrl = static::storeBaseUrl($store);
+        $adminFolder = static::adminFolder($store);
+        $bridgeToken = static::bridgeToken($store);
+
+        if (!$baseUrl || !$adminFolder || !$bridgeToken) {
+            return null;
+        }
+
+        $targetParams = base64_encode(http_build_query($targetParams));
+        $params = [
+            'controller' => 'AdminLsgwebtoolsbridgeRedirect',
+            static::bridgeTokenParameter($store) => $bridgeToken,
+            'target_controller' => $targetController,
+            'target_params' => $targetParams,
+        ];
+
+        if ($employeeId = static::employeeId()) {
+            $params['id_employee'] = $employeeId;
+        }
+
+        if (static::bridgeUsesHmac($store)) {
+            $timestamp = time();
+            $params['bridge_ts'] = $timestamp;
+            $params['bridge_signature'] = hash_hmac(
+                'sha256',
+                $targetController . '|' . $targetParams . '|' . $timestamp,
+                static::bridgeHmacSecret($store)
+            );
+        }
+
+        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/index.php?' . http_build_query($params);
+    }
+
     public static function legacyAdminUrl(string $controller, array $params = [], string $store = 'ASM'): ?string
     {
         $store = static::normalizeStore($store);
@@ -107,7 +144,7 @@ class PrestashopAdminLinkService
         return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/index.php?' . http_build_query(array_merge([
             'controller' => $controller,
             'token' => $token,
-        ], $params));
+        ], static::shopContextParams($store), $params));
     }
 
     public static function dashboardBridgeUrl(string $entity, int $id, string $store = 'ASM'): ?string
@@ -144,6 +181,21 @@ class PrestashopAdminLinkService
         return $configured ? rtrim((string) $configured, '/') : null;
     }
 
+    public static function shopId(string $store = 'ASM'): ?int
+    {
+        $store = static::normalizeStore($store);
+        $idShop = config("allstars.stores.{$store}.id_shop");
+
+        return $idShop ? (int) $idShop : null;
+    }
+
+    public static function shopContextParams(string $store = 'ASM'): array
+    {
+        $idShop = static::shopId($store);
+
+        return $idShop ? ['setShopContext' => 's-' . $idShop] : [];
+    }
+
     public static function adminFolder(string $store = 'ASM'): string
     {
         $store = static::normalizeStore($store);
@@ -152,6 +204,43 @@ class PrestashopAdminLinkService
             config("allstars.stores.{$store}.admin_folder")
             ?: env('PRESTASHOP_' . $store . '_ADMIN_FOLDER', 'admineuromus1')
         );
+    }
+
+    public static function bridgeToken(string $store = 'ASM'): ?string
+    {
+        $store = static::normalizeStore($store);
+        $token = config("prestashop.stores.{$store}.bridge_token");
+
+        return $token ? (string) $token : null;
+    }
+
+    public static function bridgeTokenParameter(string $store = 'ASM'): string
+    {
+        $store = static::normalizeStore($store);
+        $parameter = trim((string) config("prestashop.stores.{$store}.bridge_token_parameter", 'bridge_key'));
+
+        return $parameter !== '' ? $parameter : 'bridge_key';
+    }
+
+    public static function employeeId(): ?int
+    {
+        $id = auth()->id();
+
+        return $id ? (int) $id : null;
+    }
+
+    public static function bridgeUsesHmac(string $store = 'ASM'): bool
+    {
+        $store = static::normalizeStore($store);
+
+        return (bool) config("prestashop.stores.{$store}.bridge_use_hmac", false);
+    }
+
+    public static function bridgeHmacSecret(string $store = 'ASM'): string
+    {
+        $store = static::normalizeStore($store);
+
+        return (string) config("prestashop.stores.{$store}.bridge_hmac_secret", '');
     }
 
     public function product(int $idProduct, string $store = 'ASM'): ?string
@@ -185,5 +274,22 @@ class PrestashopAdminLinkService
             ],
             $store
         );
+    }
+
+    public static function moduleConfigureUrl(string $moduleName, string $store = 'ASM'): ?string
+    {
+        $store = static::normalizeStore($store);
+
+        $baseUrl = static::storeBaseUrl($store);
+        $adminFolder = static::adminFolder($store);
+
+        if (!$baseUrl || !$adminFolder) {
+            return null;
+        }
+
+        return rtrim($baseUrl, '/')
+            . '/' . trim($adminFolder, '/')
+            . '/index.php/improve/modules/manage/action/configure/'
+            . rawurlencode($moduleName);
     }
 }

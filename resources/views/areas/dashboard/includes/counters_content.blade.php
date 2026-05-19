@@ -52,6 +52,26 @@
                         'other',
                         'url',
                     ];
+
+                    $rowUrl = $item['url'] ?? null;
+
+                    if (!$rowUrl && isset($details->prestashop) && is_array($details->prestashop)) {
+                        $prestashop = $details->prestashop;
+
+                        if (($prestashop['mode'] ?? null) === 'url') {
+                            $field = $prestashop['field'] ?? null;
+                            $entity = $prestashop['entity'] ?? null;
+                            $store = $prestashop['store'] ?? ($panel->store ?? 'ASM');
+
+                            if ($field && $entity && isset($item[$field])) {
+                                $rowUrl = \App\Services\Prestashop\PrestashopAdminLinkService::dashboardUrl(
+                                    (string) $entity,
+                                    (int) $item[$field],
+                                    (string) $store
+                                );
+                            }
+                        }
+                    }
                 @endphp
 
                 <tr
@@ -76,7 +96,8 @@
                                                 '{{ $item[$details->exception_fields[1]] ?? '' }}',
                                                 '{{ $item[$details->exception_fields[2]] ?? '' }}',
                                                 '{{ addslashes($item[$details->exception_fields[3]] ?? '') }}',
-                                                '{{ $panel->panel }}'
+                                                '{{ $panelDomId ?? $panel->panel }}',
+                                                this
                                             )"
                                             style="cursor: pointer;"
                                         >
@@ -109,7 +130,10 @@
                                 @else
                                     <td
                                         class="{{ $column }}"
-                                        @if(isset($details->link))
+                                        @if($rowUrl && !in_array($column, $nonClickableColumns, true))
+                                            onclick="window.open('{{ $rowUrl }}', '_blank');"
+                                            style="cursor: pointer;"
+                                        @elseif(isset($details->link))
                                             onclick="window.location.replace('{{ $details->link }}');"
                                             style="cursor: pointer;"
                                         @endif

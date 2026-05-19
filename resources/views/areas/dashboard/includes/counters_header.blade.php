@@ -8,6 +8,9 @@
         @foreach($asm as $counter)
             @php
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
+                $headerUrl = $counter->panel === 'reviews'
+                    ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
+                    : null;
             @endphp
         
             <div class="col-lg-4">
@@ -15,7 +18,10 @@
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
-                                @if($counter->counter > 0)
+                                id="{{ $panelDomId }}_header"
+                                @if($counter->counter > 0 && $headerUrl)
+                                    onclick="window.open('{{ $headerUrl }}', '_blank')"
+                                @elseif($counter->counter > 0)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $panelDomId }}')"
                                 @endif
                                 style="
@@ -62,13 +68,19 @@
         @foreach($asd as $counter)
             @php
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
+                $headerUrl = $counter->panel === 'reviews'
+                    ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
+                    : null;
             @endphp
             <div class="col-lg-4">
                 <div class="navbar navbar-light customPanel">
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
-                                @if($counter->counter > 0)
+                                id="{{ $panelDomId }}_header"
+                                @if($counter->counter > 0 && $headerUrl)
+                                    onclick="window.open('{{ $headerUrl }}', '_blank')"
+                                @elseif($counter->counter > 0)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $panelDomId }}')"
                                 @endif
                                 style="

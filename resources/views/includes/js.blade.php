@@ -11,7 +11,7 @@
         }
     }
     
-	function setRowAsChecked(panel, var_1, var_2, var_3, var_4){
+	function setRowAsChecked(panel, var_1, var_2, var_3, panelDomId, trigger){
 
 	    $.ajax({
             type: 'POST',
@@ -27,11 +27,29 @@
             },
             success: function(data) {
                 
-                $('table tr#row_exception_' + var_1).remove();
-                
-                let quantity = $('#' + var_4 + '_quantity').text()
-                $('#' + var_4 + '_quantity').text( parseInt(quantity-1) );
-                
+                if (trigger) {
+                    $(trigger).closest('tr').remove();
+                } else {
+                    $('table tr#row_exception_' + var_1).remove();
+                }
+
+                let quantityTag = $('#' + panelDomId + '_quantity');
+                let quantity = parseInt(quantityTag.text(), 10);
+                let newQuantity = Math.max((isNaN(quantity) ? 1 : quantity) - 1, 0);
+
+                quantityTag.text(newQuantity);
+
+                if (newQuantity === 0) {
+                    let header = $('#' + panelDomId + '_header');
+
+                    header
+                        .css('background-color', '#0BDA51')
+                        .css('cursor', 'default')
+                        .removeAttr('onclick');
+
+                    $('#' + panelDomId).hide().attr('data-open', 0);
+                }
+                 
             }
         });
         

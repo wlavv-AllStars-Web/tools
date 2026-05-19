@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): void
     {
         $schedule->command('vat:validate-due --limit=25')->everyMinute()->withoutOverlapping();
+        $schedule->command('asd-images:sync')->dailyAt('03:00')->withoutOverlapping();
     }
 
     protected function commands(): void

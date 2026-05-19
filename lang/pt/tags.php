@@ -47,5 +47,5 @@ return [
     
     'search by:' => 'procurar por:',
 
-                
+    'pending_reviews' => 'Pending reviews',
 ];

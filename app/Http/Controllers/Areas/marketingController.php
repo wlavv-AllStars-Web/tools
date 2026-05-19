@@ -13,7 +13,7 @@ use App\Models\prestashop\product;
 use App\Models\prestashop\product_lang;
 use App\Models\prestashop\asm_dashboard;
 use App\Models\prestashop\asm_newsletter_email;
-use App\Models\prestashop\ASD_missing_images;
+use App\Models\prestashop\AsdImage;
 
 use App\Models\modules\compats\compats_newsletter;
 use App\Models\modules\compats\compats_product;
@@ -167,6 +167,6 @@ class marketingController extends Controller{
     }
     
     public function getASDMissingImages(){
-        return ASD_missing_images::addMissingImages();
+        return response()->json(AsdImage::sync());
     }
 }

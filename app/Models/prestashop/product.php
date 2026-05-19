@@ -156,12 +156,15 @@ class product extends PrestashopModel
 
     protected static function productDashboardResponse($name, $type, $suffix, $columns, $data, array $extra = [])
     {
+        $store = $extra['store'] ?? 'ASM';
+        unset($extra['store']);
+
         $data = collect($data)
-            ->map(function ($row) {
+            ->map(function ($row) use ($store) {
                 $row = (array) $row;
 
                 if (!empty($row['id_product']) && empty($row['url'])) {
-                    $row['url'] = PrestashopAdminLinkService::dashboardProductAdminUrl((int) $row['id_product'], 'ASD');
+                    $row['url'] = PrestashopAdminLinkService::dashboardProductAdminUrl((int) $row['id_product'], $store);
                 }
 
                 return $row;
@@ -176,7 +179,7 @@ class product extends PrestashopModel
             $columns,
             $data,
             $extra,
-            PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD')
+            PrestashopAdminLinkService::dashboardProductLink('id_product', $store)
         );
     }
 
@@ -998,7 +1001,7 @@ public static function dashboard_end_of_life($type)
             'name'       => $item->name,
             'housing'    => $housing,
             'quantity'   => $item->quantity,
-            'url'        => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, 'ASD'),
+            'url'        => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, 'ASM'),
         ];
     }
 
@@ -1186,7 +1189,7 @@ public static function dashboard_end_of_life($type)
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference'  => is_null($item->attr_reference) ? $item->reference : $item->attr_reference,
-                'url'        => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, 'ASD'),
+                'url'        => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, 'ASM'),
             ];
         }
         
@@ -1502,7 +1505,7 @@ public static function dashboard_end_of_life($type)
 
     public static function dashboard_no_purchase_price($type)
     {
-        $data = [];
+        $rows = [];
 
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');
@@ -1518,16 +1521,19 @@ public static function dashboard_end_of_life($type)
             ->get();
 
         foreach ($bd_data as $item) {
-            $data[] = [
+            $idProduct = (int) $item->id_product;
+
+            $rows[$idProduct] = [
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
-                'brand' => $item->brand
+                'brand' => $item->brand,
             ];
         }
 
         $bd_data_attr = product_attribute::select(
                 $productTable . '.id_product',
-                $productAttributeTable . '.reference',
+                DB::raw($productTable . '.reference AS product_reference'),
+                DB::raw($productAttributeTable . '.reference AS attribute_reference'),
                 DB::raw($manufacturerTable . '.name as brand')
             )
             ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
@@ -1536,11 +1542,15 @@ public static function dashboard_end_of_life($type)
             ->get();
 
         foreach ($bd_data_attr as $item) {
-            $data[] = [
-                'id_product' => $item->id_product,
-                'reference' => $item->reference,
-                'brand' => $item->brand
-            ];
+            $idProduct = (int) $item->id_product;
+
+            if (!isset($rows[$idProduct])) {
+                $rows[$idProduct] = [
+                    'id_product' => $item->id_product,
+                    'reference' => $item->product_reference ?: $item->attribute_reference,
+                    'brand' => $item->brand,
+                ];
+            }
         }
 
         return self::productDashboardResponse(
@@ -1548,7 +1558,7 @@ public static function dashboard_end_of_life($type)
             $type,
             'no_purchase_price',
             ['id_product', 'reference', 'brand'],
-            $data
+            array_values($rows)
         );
     }
 
@@ -2132,12 +2142,12 @@ public static function dashboard_end_of_life($type)
                 $productTable . '.id_manufacturer',
                 DB::raw($productTable . '.reference AS prod_ref'),
                 DB::raw('MAX(' . $productAttributeTable . '.reference) AS attr_ref'),
-                DB::raw('SUM(' . $stockTable . '.quantity) AS total_stock'),
+                DB::raw('MAX(' . $stockTable . '.quantity) AS total_stock'),
                 DB::raw('COUNT(DISTINCT ' . $productAttributeTable . '.id_product_attribute) AS combinations_count'),
                 DB::raw($manufacturerTable . '.name AS brand_name')
             )
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-    
+     
             ->leftJoin($productAttributeTable, function ($join) use ($productAttributeTable, $stockTable) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute');
             })

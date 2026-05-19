@@ -3,8 +3,8 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
 class pack extends PrestashopModel
 {
@@ -57,13 +57,19 @@ class pack extends PrestashopModel
                 $productTable . '.id_product',
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name AS brand'),
-                $stockTable . '.quantity'
+                DB::raw('MAX(' . $stockTable . '.quantity) AS quantity')
             )
             ->join($productTable, $packTable . '.id_product_pack', '=', $productTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-            ->where($stockTable . '.quantity', '<', 1)
             ->where($productTable . '.active', 1)
+            ->groupBy(
+                $packTable . '.id_product_pack',
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                $manufacturerTable . '.name'
+            )
+            ->havingRaw('MAX(' . $stockTable . '.quantity) < 1')
             ->orderBy('brand', 'ASC')
             ->get();
 
@@ -73,25 +79,19 @@ class pack extends PrestashopModel
                 'reference' => $item->reference,
                 'brand' => $item->brand,
                 'quantity' => $item->quantity,
+                'url' => PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASM'),
             ];
         }
 
-        return [
-            'name' => trans("dashboard.Products's Pack without stock"),
-            'col' => 4,
-            'item_id' => $type . '_packs_without_stock',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
-            'columns' => ['id_product', 'reference', 'brand', 'quantity'],
-            'counter' => count($data),
-            'data' => $data
-        ];
+        return self::dashboardPanel(
+            trans("dashboard.Products's Pack without stock"),
+            $type,
+            'packs_without_stock',
+            ['id_product', 'reference', 'brand', 'quantity'],
+            $data,
+            [],
+            PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM')
+        );
     }
 
     public static function availablePackQty(int $idProduct): array

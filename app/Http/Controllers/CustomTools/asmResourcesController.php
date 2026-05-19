@@ -39,6 +39,35 @@ class asmResourcesController extends Controller
         ]);
     }
 
+    public function api()
+    {
+        $brands = DB::connection('mysql2')
+            ->table('ps_manufacturer as m')
+            ->select('m.id_manufacturer', 'm.name', 'm.active')
+            ->join('ps_manufacturer_shop as ms', 'ms.id_manufacturer', '=', 'm.id_manufacturer')
+            ->where('ms.id_shop', $this->shopId)
+            ->where('m.active', 1)
+            ->orderBy('m.name')
+            ->get();
+
+        $data = $brands->map(function ($brand) {
+            return [
+                'id_manufacturer' => (int) $brand->id_manufacturer,
+                'name' => $brand->name,
+                'banners' => collect($this->languages)
+                    ->mapWithKeys(fn ($lang) => [
+                        strtolower($lang) => $this->bannerUrlOrNull((int) $brand->id_manufacturer, $lang),
+                    ])
+                    ->all(),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
     public function upload(Request $request, int $id_manufacturer, string $lang)
     {
         $lang = strtoupper($lang);
@@ -100,6 +129,13 @@ class asmResourcesController extends Controller
         imagewebp($sourceImage, $fullPath, 90);
 
         imagedestroy($sourceImage);
+    }
+
+    private function bannerUrlOrNull(int $idManufacturer, string $lang): ?string
+    {
+        $path = 'uploads/asm/product/' . $idManufacturer . '_' . strtoupper($lang) . '.webp';
+
+        return file_exists(public_path($path)) ? asset($path) : null;
     }
 
     private function createImageResourceFromUpload(string $sourcePath)

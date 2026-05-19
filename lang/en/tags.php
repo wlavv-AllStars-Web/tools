@@ -164,5 +164,6 @@ return [
     'country_iso' => 'ISO CODE',
     'vat_number' => "VAT NUMBER",
     'id_shop'   => 'SHOP',
-    'discounts_count' => 'Counter'
+    'discounts_count' => 'Counter',
+    'pending_reviews' => 'Pending reviews',
 ];

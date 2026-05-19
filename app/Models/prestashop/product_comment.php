@@ -3,6 +3,8 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\Prestashop\PrestashopAdminLinkService;
+
 class product_comment extends PrestashopModel
 {
     use HasFactory;
@@ -28,6 +30,7 @@ class product_comment extends PrestashopModel
         if ($pendingReviews > 0) {
             $data[] = [
                 'pending_reviews' => $pendingReviews,
+                'url' => PrestashopAdminLinkService::dashboardReviewsUrl('ASM'),
             ];
         }
 

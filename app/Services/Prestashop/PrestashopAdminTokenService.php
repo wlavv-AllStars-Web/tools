@@ -25,6 +25,23 @@ class PrestashopAdminTokenService
         return static::generate($controller, (int) $idTab, (int) $employeeId, $store);
     }
 
+    public static function tokenMd5(string $controller, string $store = 'ASD'): ?string
+    {
+        $employeeId = static::employeeId();
+
+        if (!$employeeId) {
+            return null;
+        }
+
+        $idTab = static::idTab($controller);
+
+        if (!$idTab) {
+            return null;
+        }
+
+        return static::generateMd5($controller, (int) $idTab, (int) $employeeId, $store);
+    }
+
     public static function employeeId(): ?int
     {
         $id = Auth::id();

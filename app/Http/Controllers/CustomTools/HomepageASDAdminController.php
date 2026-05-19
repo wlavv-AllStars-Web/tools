@@ -49,7 +49,8 @@ class HomepageASDAdminController extends Controller{
                 Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) .
                 '.' . $file->getClientOriginalExtension();
 
-            $destinationPath = public_path('uploads/asd/homepage');
+            $folder = $this->resourcesHomepageFolder();
+            $destinationPath = public_path($folder);
             
             if (!is_dir($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
@@ -57,7 +58,7 @@ class HomepageASDAdminController extends Controller{
             
             $file->move($destinationPath, $filename);
             
-            $imagePath = 'uploads/asd/homepage/' . $filename;
+            $imagePath = $folder . '/' . $filename;
         }
 
         $item->update([
@@ -78,7 +79,21 @@ class HomepageASDAdminController extends Controller{
 
         return response()->json([
             'success' => true,
-            'data' => [ 'url' => $item->link_url, 'image' => asset($item->image_path), 'title' => $item->title ]
+            'data' => [ 'url' => $item->link_url, 'image' => $this->resourcesUrl($item->image_path), 'title' => $item->title ]
         ]);
-    }    
+    }
+
+    private function resourcesHomepageFolder(): string
+    {
+        return trim((string) config('allstars.services.resources.homepage_asd_path', 'uploads/asd/homepage'), '/');
+    }
+
+    private function resourcesUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        return rtrim((string) config('allstars.services.resources.base_url'), '/') . '/' . ltrim($path, '/');
+    }
 }

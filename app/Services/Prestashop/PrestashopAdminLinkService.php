@@ -147,6 +147,24 @@ class PrestashopAdminLinkService
         ], static::shopContextParams($store), $params));
     }
 
+    public static function legacyMd5AdminUrl(string $controller, array $params = [], string $store = 'ASM'): ?string
+    {
+        $store = static::normalizeStore($store);
+
+        $baseUrl = static::storeBaseUrl($store);
+        $adminFolder = static::adminFolder($store);
+        $token = PrestashopAdminTokenService::tokenMd5($controller, $store);
+
+        if (!$baseUrl || !$adminFolder || !$token) {
+            return null;
+        }
+
+        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/index.php?' . http_build_query(array_merge([
+            'controller' => $controller,
+            'token' => $token,
+        ], static::shopContextParams($store), $params));
+    }
+
     public static function dashboardBridgeUrl(string $entity, int $id, string $store = 'ASM'): ?string
     {
         return match (strtolower($entity)) {

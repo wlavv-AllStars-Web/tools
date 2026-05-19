@@ -42,11 +42,11 @@ class cart_rules extends PrestashopModel{
                 'id_cart_rule' => $item->id_cart_rule,
                 'code'         => $item->code,
                 'description'  => $item->description,
-                'url'          => PrestashopAdminLinkService::legacyAdminUrl(
+                'url'          => PrestashopAdminLinkService::bridgeAdminUrl(
                     'AdminCartRules',
                     [
                         'id_cart_rule'    => $item->id_cart_rule,
-                        'updatecart_rule' => '',
+                        'updatecart_rule' => 1,
                     ],
                     'ASM'
                 ),

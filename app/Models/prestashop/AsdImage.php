@@ -14,6 +14,8 @@ class AsdImage extends PrestashopModel
         'id_product_attribute',
         'id_manufacturer',
         'reference',
+        'image_name',
+        'image_code',
         'manufacturer',
         'has_image',
         'verified',
@@ -29,6 +31,9 @@ class AsdImage extends PrestashopModel
 
     public static function ensureTable(): void
     {
+        self::ensureProductImageCodeColumn();
+        self::ensureProductAttributeImageCodeColumn();
+
         if (!self::hasCustomTable() && self::hasOldTable()) {
             DB::connection('mysql2')->statement(
                 'RENAME TABLE ' . self::quotedTable('asd_images') . ' TO ' . self::quotedTable('custom_asd_images')
@@ -38,7 +43,9 @@ class AsdImage extends PrestashopModel
         if (self::hasCustomTable()) {
             self::ensureColumn('id_product_attribute', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `id_product_attribute` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `id_product`');
             self::ensureColumn('id_manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `id_manufacturer` INT UNSIGNED NULL AFTER `id_product_attribute`');
-            self::ensureColumn('manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `manufacturer` VARCHAR(255) NULL AFTER `reference`');
+            self::ensureColumn('image_name', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_name` VARCHAR(255) NULL AFTER `reference`');
+            self::ensureColumn('image_code', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_code` VARCHAR(128) NULL AFTER `image_name`');
+            self::ensureColumn('manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `manufacturer` VARCHAR(255) NULL AFTER `image_code`');
             self::ensureColumn('has_image', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `has_image` TINYINT(1) NOT NULL DEFAULT 0 AFTER `manufacturer`');
             self::ensureColumn('verified', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `verified` TINYINT(1) NOT NULL DEFAULT 0 AFTER `has_image`');
             self::ensureColumn('image_path', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_path` VARCHAR(500) NULL AFTER `verified`');
@@ -56,6 +63,8 @@ class AsdImage extends PrestashopModel
                 `id_product_attribute` INT UNSIGNED NOT NULL DEFAULT 0,
                 `id_manufacturer` INT UNSIGNED NULL,
                 `reference` VARCHAR(128) NOT NULL,
+                `image_name` VARCHAR(255) NULL,
+                `image_code` VARCHAR(128) NULL,
                 `manufacturer` VARCHAR(255) NULL,
                 `has_image` TINYINT(1) NOT NULL DEFAULT 0,
                 `verified` TINYINT(1) NOT NULL DEFAULT 0,
@@ -104,7 +113,12 @@ class AsdImage extends PrestashopModel
         foreach (self::asdReferences() as $row) {
             $reference = trim((string) $row->reference);
 
-            if ($reference === '' || $existing->has($reference)) {
+            if ($reference === '') {
+                continue;
+            }
+
+            if ($existing->has($reference)) {
+                self::updateExistingReference($reference, $row);
                 continue;
             }
 
@@ -113,6 +127,8 @@ class AsdImage extends PrestashopModel
                 'id_product_attribute' => (int) $row->id_product_attribute,
                 'id_manufacturer' => $row->id_manufacturer ? (int) $row->id_manufacturer : null,
                 'reference' => $reference,
+                'image_name' => self::cleanImageName($row->image_name ?? null),
+                'image_code' => self::cleanImageCode($row->image_code ?? null),
                 'manufacturer' => $row->manufacturer ?: null,
                 'has_image' => 0,
                 'verified' => 0,
@@ -165,7 +181,13 @@ class AsdImage extends PrestashopModel
         $now = now()->format('Y-m-d H:i:s');
 
         foreach ($query->get() as $row) {
-            $imagePath = self::imagePathFor((int) $row->id_manufacturer, (string) $row->reference);
+            $imagePath = self::imagePathFor(
+                (int) $row->id_manufacturer,
+                (int) $row->id_product_attribute,
+                (string) $row->reference,
+                (string) ($row->image_name ?? ''),
+                (string) ($row->image_code ?? '')
+            );
             $hasImage = $imagePath !== null;
 
             self::query()
@@ -199,6 +221,18 @@ class AsdImage extends PrestashopModel
             ->get();
     }
 
+    public static function markManufacturerAsUnverified(int $idManufacturer): int
+    {
+        self::ensureTable();
+
+        return self::query()
+            ->where('id_manufacturer', $idManufacturer)
+            ->update([
+                'verified' => 0,
+                'updated_at' => now()->format('Y-m-d H:i:s'),
+            ]);
+    }
+
     private static function asdReferences()
     {
         $prefix = self::prefix();
@@ -216,11 +250,18 @@ class AsdImage extends PrestashopModel
                     ->where('ps.active', 1);
             })
             ->leftJoin($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
+                $join->on('pl.id_product', '=', 'p.id_product')
+                    ->where('pl.id_lang', 1);
+            })
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->select([
                 'p.id_product',
                 DB::raw('0 as id_product_attribute'),
                 'p.id_manufacturer',
                 'p.reference',
+                DB::raw('COALESCE(pl.description_short, "") as image_name'),
+                DB::raw('COALESCE(cp.image_code, "") as image_code'),
                 DB::raw('COALESCE(m.name, "") as manufacturer'),
             ])
             ->whereNotNull('p.reference')
@@ -235,11 +276,18 @@ class AsdImage extends PrestashopModel
                     ->where('ps.active', 1);
             })
             ->leftJoin($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
+                $join->on('pl.id_product', '=', 'p.id_product')
+                    ->where('pl.id_lang', 1);
+            })
+            ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
             ->select([
                 'p.id_product',
                 'pa.id_product_attribute',
                 'p.id_manufacturer',
                 'pa.reference',
+                DB::raw('COALESCE(pl.description_short, "") as image_name'),
+                DB::raw('COALESCE(cpa.image_code, "") as image_code'),
                 DB::raw('COALESCE(m.name, "") as manufacturer'),
             ])
             ->whereNotNull('pa.reference')
@@ -253,18 +301,57 @@ class AsdImage extends PrestashopModel
             ->values();
     }
 
-    private static function imagePathFor(int $idManufacturer, string $reference): ?string
+    private static function updateExistingReference(string $reference, $row): void
+    {
+        $current = self::query()->where('reference', $reference)->first();
+
+        if (!$current) {
+            return;
+        }
+
+        $imageName = self::cleanImageName($row->image_name ?? null);
+        $imageCode = self::cleanImageCode($row->image_code ?? null);
+        $updates = [
+            'id_product' => (int) $row->id_product,
+            'id_product_attribute' => (int) $row->id_product_attribute,
+            'id_manufacturer' => $row->id_manufacturer ? (int) $row->id_manufacturer : null,
+            'image_name' => $imageName,
+            'image_code' => $imageCode,
+            'manufacturer' => $row->manufacturer ?: null,
+            'updated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        if (
+            (string) ($current->image_name ?? '') !== (string) $imageName
+            || (string) ($current->image_code ?? '') !== (string) $imageCode
+        ) {
+            $updates['verified'] = 0;
+        }
+
+        self::query()->where('id', $current->id)->update($updates);
+    }
+
+    public static function resolveImagePathForRow(int $idManufacturer, int $idProductAttribute, string $reference, ?string $imageName, ?string $imageCode, ?string $lookupMode = null): ?string
+    {
+        return self::imagePathFor($idManufacturer, $idProductAttribute, $reference, (string) $imageName, (string) $imageCode);
+    }
+
+    private static function imagePathFor(int $idManufacturer, int $idProductAttribute, string $reference, string $imageName, string $imageCode): ?string
     {
         $reference = trim($reference);
+        $imageCode = trim($imageCode);
 
         if ($idManufacturer <= 0 || $reference === '') {
             return null;
         }
 
-        $filenames = collect([
-            $reference,
-            Str::slug($reference, '_'),
-        ])
+        $lookupValue = $imageCode !== '' ? $imageCode : $reference;
+
+        if ($lookupValue === '') {
+            return null;
+        }
+
+        $filenames = self::imageFilenameCandidates($lookupValue)
             ->map(fn ($filename) => trim((string) $filename))
             ->filter()
             ->unique()
@@ -281,6 +368,59 @@ class AsdImage extends PrestashopModel
         }
 
         return null;
+    }
+
+    private static function imageFilenameCandidates(string $value)
+    {
+        $value = trim(strip_tags(html_entity_decode($value)));
+        $withoutExtension = preg_replace('/\.(webp|jpg|jpeg|png)$/i', '', $value) ?: $value;
+
+        return collect([
+            $value,
+            $withoutExtension,
+            Str::slug($value, '_'),
+            Str::slug($withoutExtension, '_'),
+        ]);
+    }
+
+    private static function cleanImageName(?string $value): ?string
+    {
+        $value = trim(strip_tags(html_entity_decode((string) $value)));
+
+        return $value !== '' ? $value : null;
+    }
+
+    private static function cleanImageCode(?string $value): ?string
+    {
+        $value = trim(strip_tags(html_entity_decode((string) $value)));
+
+        return $value !== '' ? $value : null;
+    }
+
+    private static function ensureProductAttributeImageCodeColumn(): void
+    {
+        $table = self::unqualifiedTableName(self::tableName('custom_product_attribute'));
+
+        if (Schema::connection('mysql2')->hasColumn($table, 'image_code')) {
+            return;
+        }
+
+        DB::connection('mysql2')->statement(
+            'ALTER TABLE ' . self::quotedTable('custom_product_attribute') . ' ADD `image_code` VARCHAR(128) NULL AFTER `id_product_attribute`'
+        );
+    }
+
+    private static function ensureProductImageCodeColumn(): void
+    {
+        $table = self::unqualifiedTableName(self::tableName('custom_product'));
+
+        if (Schema::connection('mysql2')->hasColumn($table, 'image_code')) {
+            return;
+        }
+
+        DB::connection('mysql2')->statement(
+            'ALTER TABLE ' . self::quotedTable('custom_product') . ' ADD `image_code` VARCHAR(128) NULL AFTER `id_product`'
+        );
     }
 
     private static function ensureColumn(string $column, string $statement): void

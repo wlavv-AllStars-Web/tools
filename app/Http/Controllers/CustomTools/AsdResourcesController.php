@@ -5,6 +5,7 @@ namespace App\Http\Controllers\CustomTools;
 use App\Http\Controllers\Controller;
 use App\Models\modules\asdResources\ASDBrandResource;
 use App\Models\modules\asdResources\PrestashopManufacturer;
+use App\Models\prestashop\AsdImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -131,20 +132,28 @@ class ASDResourcesController extends Controller
 
         $references = $this->getBrandReferences($id_manufacturer);
 
-        $thumbFolder = $this->brandFolder($id_manufacturer) . '/thumb';
-
-        $rows = $references->map(function ($item) use ($thumbFolder) {
+        $rows = $references->map(function ($item) use ($id_manufacturer) {
             $reference = trim((string) $item->reference);
-            $imagePath = $thumbFolder . '/' . $reference . '.webp';
-            $exists = $reference !== '' && file_exists(public_path($imagePath));
+            $imageName = trim(strip_tags(html_entity_decode((string) ($item->image_name ?? ''))));
+            $imageCode = trim(strip_tags(html_entity_decode((string) ($item->image_code ?? ''))));
+            $imagePath = AsdImage::resolveImagePathForRow(
+                $id_manufacturer,
+                (int) $item->id_product_attribute,
+                $reference,
+                $imageName,
+                $imageCode
+            );
 
             return [
                 'reference' => $reference,
                 'product_name' => $item->product_name,
                 'id_product' => $item->id_product,
                 'id_product_attribute' => $item->id_product_attribute,
-                'image_path' => $exists ? $imagePath : null,
-                'has_image' => $exists,
+                'image_name' => $imageName,
+                'image_code' => $imageCode,
+                'lookup_value' => $this->imageLookupValue($reference, $imageCode),
+                'image_path' => $imagePath,
+                'has_image' => $imagePath !== null,
             ];
         });
 
@@ -218,10 +227,13 @@ class ASDResourcesController extends Controller
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1);
             })
+            ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->select(
                 'p.id_product',
                 DB::raw('0 as id_product_attribute'),
                 'p.reference',
+                DB::raw('COALESCE(pl.description_short, "") as image_name'),
+                DB::raw('COALESCE(cp.image_code, "") as image_code'),
                 DB::raw('COALESCE(pl.name, "") as product_name')
             )
             ->where('p.id_manufacturer', $idManufacturer)
@@ -235,10 +247,13 @@ class ASDResourcesController extends Controller
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1);
             })
+            ->leftJoin('ps_custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
             ->select(
                 'p.id_product',
                 'pa.id_product_attribute',
                 'pa.reference',
+                DB::raw('COALESCE(pl.description_short, "") as image_name'),
+                DB::raw('COALESCE(cpa.image_code, "") as image_code'),
                 DB::raw('COALESCE(pl.name, "") as product_name')
             )
             ->where('p.id_manufacturer', $idManufacturer)
@@ -251,6 +266,11 @@ class ASDResourcesController extends Controller
             ->get()
             ->unique('reference')
             ->values();
+    }
+
+    private function imageLookupValue(string $reference, string $imageCode): string
+    {
+        return $imageCode !== '' ? $imageCode : $reference;
     }
 
     private function uploadSingleFile($file, string $folder, string $baseName): string

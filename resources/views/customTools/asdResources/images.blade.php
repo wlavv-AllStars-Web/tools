@@ -109,6 +109,10 @@
 
     <div class="card">
         <div class="card-body">
+            <div class="mb-3 text-muted small">
+                Lookup rule: <strong>image_code when filled, otherwise product/variation reference</strong>
+            </div>
+
             @if($rows->isEmpty())
                 <div class="text-muted text-center p-4">
                     <i class="fa-solid fa-circle-info fa-2x mb-2"></i>
@@ -129,6 +133,19 @@
                                 @endif
                             </div>
                             <div class="asd-reference"> {{ $row['reference'] }} </div>
+                            @if(!empty($row['image_code']))
+                                <div class="asd-product-name">
+                                    Image code: {{ $row['image_code'] }}
+                                </div>
+                            @elseif(!empty($row['lookup_value']) && $row['lookup_value'] !== $row['reference'])
+                                <div class="asd-product-name">
+                                    Image: {{ $row['lookup_value'] }}
+                                </div>
+                            @elseif((int) $row['id_product_attribute'] > 0)
+                                <div class="asd-product-name">
+                                    Variation specific image
+                                </div>
+                            @endif
                         </div>
                     @endforeach
                 </div>

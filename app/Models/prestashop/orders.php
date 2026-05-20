@@ -179,8 +179,13 @@ class orders extends PrestashopModel
     {
         $data = [];
 
-        $orders = self::select('id_order', 'reference')
-            ->where('current_state', 29)
+        $ordersTable = self::tableName('orders');
+        $customerTable = self::tableName('customer');
+
+        $orders = self::select($ordersTable . '.id_order', $ordersTable . '.reference')
+            ->join($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
+            ->where($ordersTable . '.current_state', 29)
+            ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->get();
 
         foreach ($orders as $order) {
@@ -188,6 +193,7 @@ class orders extends PrestashopModel
                 'id_order' => $order->id_order,
                 'reference' => $order->reference,
                 'products' => orders_details::getProductsOfOrder($order->id_order),
+                'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $order->id_order, 'ASM'),
             ];
         }
 
@@ -196,7 +202,9 @@ class orders extends PrestashopModel
             $type,
             'returns_warranties',
             ['id_order', 'reference', 'products'],
-            $data
+            $data,
+            [],
+            PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM')
         );
     }
 
@@ -278,6 +286,8 @@ class orders extends PrestashopModel
             )
             ->join($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
             ->join($orderCarrierTable, $ordersTable . '.id_order', '=', $orderCarrierTable . '.id_order')
+            ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+            ->where($orderStateLangTable . '.id_lang', 1)
             ->where($orderCarrierTable . '.tracking_number', '')
             ->whereIn($ordersTable . '.current_state', [4, 28])
             ->groupBy($ordersTable . '.id_order', $ordersTable . '.reference', $orderStateLangTable . '.name');
@@ -292,6 +302,7 @@ class orders extends PrestashopModel
                 'id_order' => $item->id_order,
                 'reference' => $item->reference,
                 'state' => $item->state,
+                'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASM'),
             ];
         }
 
@@ -303,7 +314,8 @@ class orders extends PrestashopModel
             $data,
             [
                 'exception_fields' => ['orders_without_tracking', 'id_order', 'reference', 'state']
-            ]
+            ],
+            PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM')
         );
     }
 

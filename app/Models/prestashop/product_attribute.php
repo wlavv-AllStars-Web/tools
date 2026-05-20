@@ -131,17 +131,19 @@ class product_attribute extends PrestashopModel
         $query = self::select(
                 $productTable . '.id_product',
                 $productTable . '.id_category_default',
-                DB::raw('COUNT(*) AS nr_images'),
+                DB::raw('COUNT(DISTINCT ' . $productAttributeImageTable . '.id_image) AS nr_images'),
                 $productAttributeTable . '.reference',
                 DB::raw($customProductAttributeTable . '.location AS housing'),
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->leftJoin($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+            ->leftJoin($stockTable, function ($join) use ($productAttributeTable, $stockTable) {
+                $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+                    ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product');
+            })
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
-            ->where($stockTable . '.quantity', '>', 0)
             ->where($productTable . '.visibility', '<>', 'none')
             ->orderBy($productTable . '.id_product')
             ->groupBy(
@@ -150,7 +152,8 @@ class product_attribute extends PrestashopModel
                 $productAttributeTable . '.reference',
                 $customProductAttributeTable . '.location',
                 $manufacturerTable . '.name'
-            );
+            )
+            ->havingRaw('MAX(' . $stockTable . '.quantity) > 0');
 
         if (!empty($excludedProductIds)) {
             $query->whereNotIn($productTable . '.id_product', $excludedProductIds);

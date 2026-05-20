@@ -429,13 +429,24 @@ class dashboard extends Model
             $ids_exceptions[] = $exception->id_product;
         }    
         
+        $prefix = self::prefix();
+
         $bd_data = self::asdOrdersBase()
-            ->leftJoin(self::prefix() . 'order_carrier as oc', 'oc.id_order', '=', 'o.id_order')
+            ->join($prefix . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
+            ->join($prefix . 'address as ad', 'ad.id_address', '=', 'o.id_address_delivery')
+            ->join($prefix . 'address as ai', 'ai.id_address', '=', 'o.id_address_invoice')
             ->whereIn('o.current_state', array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16])))
-            ->where(function ($query) {
-                $query->whereNull('oc.id_order_carrier')
-                    ->orWhereNull('oc.tracking_number')
-                    ->orWhere('oc.tracking_number', '');
+            ->whereExists(function ($query) use ($prefix) {
+                $query->select(DB::raw(1))
+                    ->from($prefix . 'order_history as oh')
+                    ->whereColumn('oh.id_order', 'o.id_order')
+                    ->whereColumn('oh.id_order_state', 'o.current_state');
+            })
+            ->whereNotExists(function ($query) use ($prefix) {
+                $query->select(DB::raw(1))
+                    ->from($prefix . 'order_detail as od')
+                    ->whereColumn('od.id_order', 'o.id_order')
+                    ->where('od.product_reference', 'LIKE', 'shipping\_%');
             })
             ->whereNotIn('o.id_order', $ids_exceptions)
             ->select('o.id_order', 'o.reference')
@@ -500,7 +511,7 @@ class dashboard extends Model
 
         $data = [];
         $bd_data = self::asdOrdersBase()
-            ->where('o.current_state', 15)
+            ->where('o.current_state', 28)
             ->select('o.id_order', 'o.reference')
             ->orderBy('o.id_order', 'DESC')
             ->get();
@@ -548,14 +559,22 @@ class dashboard extends Model
         $bd_data = self::asdWarrantyRows();
 
         foreach($bd_data AS $item){
-            $data[] = ['brand' => $item->brand, 'products' => $item->products, 'warranty_order' => $item->warranty_order];
+            $data[] = [
+                'id_order' => (int) $item->id_order,
+                'reference' => $item->reference,
+                'products' => $item->products,
+                'url' => (int) $item->id_order > 0
+                    ? PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASD')
+                    : null,
+            ];
         }
 
         return [
             'name'              => trans('dashboard.ASD - WARRANTY ORDERS'),
             'col'               => 4,
             'item_id'           => 'counter_asd_warranty_orders',
-            'columns'           => ['brand', 'products', 'warranty_order'],
+            'prestashop'        => PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASD'),
+            'columns'           => ['id_order', 'reference', 'products'],
             'counter'           => count($data),
             'data'              => $data
         ];  
@@ -702,12 +721,12 @@ class dashboard extends Model
             ->leftJoin($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
             ->where('osl.name', 'LIKE', '%warranty%')
             ->select([
-                DB::raw('COALESCE(m.name, "") as brand'),
+                'o.id_order',
+                'o.reference',
                 DB::raw('GROUP_CONCAT(DISTINCT od.product_reference ORDER BY od.product_reference SEPARATOR ", ") as products'),
-                DB::raw('GROUP_CONCAT(DISTINCT o.id_order ORDER BY o.id_order SEPARATOR ", ") as warranty_order'),
             ])
-            ->groupBy('m.name')
-            ->orderBy('m.name')
+            ->groupBy('o.id_order', 'o.reference')
+            ->orderByDesc('o.id_order')
             ->get();
     }
 

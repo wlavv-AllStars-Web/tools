@@ -3,8 +3,8 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
 class orders_details extends PrestashopModel
 {
@@ -111,6 +111,7 @@ class orders_details extends PrestashopModel
                 'id_order' => $item->id_order,
                 'reference' => $item->reference,
                 'product_reference' => $item->product_reference,
+                'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASM'),
             ];
         }
 
@@ -118,14 +119,7 @@ class orders_details extends PrestashopModel
             'name' => trans('dashboard.ORDERS - WAITING INFO'),
             'col' => 4,
             'item_id' => $type . '_' . $suffix,
-            'prestashop' => (isset(Config::get('token')->AdminOrders))
-                ? [
-                    'token' => Config::get('token')->AdminOrders,
-                    'controller' => 'AdminOrders',
-                    'element' => 'id_order',
-                    'extraParameters' => '&vieworder'
-                ]
-                : [],
+            'prestashop' => PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM'),
             'columns' => ['clean', 'id_order', 'reference', 'product_reference'],
             'counter' => count($data),
             'exception_fields' => [$board, 'id_order', 'reference', 'product_reference'],

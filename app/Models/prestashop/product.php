@@ -608,12 +608,8 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin($imageTable, $productTable . '.id_product', '=', $imageTable . '.id_product')
-            ->leftJoin($stockTable, function ($join) use ($productTable, $stockTable) {
-                $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->where($stockTable . '.id_product_attribute', '=', 0);
-            })
+            ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->where($stockTable . '.quantity', '>', 0)
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.id_category_default', '<>', 526)
             ->groupBy(
@@ -623,6 +619,7 @@ class product extends PrestashopModel
                 $productTable . '.location',
                 $manufacturerTable . '.name'
             )
+            ->havingRaw('MAX(' . $stockTable . '.quantity) > 0')
             ->havingRaw('COUNT(' . $imageTable . '.id_image) < 5')
             ->orderByRaw('CAST(' . $productTable . '.id_product AS UNSIGNED) ASC')
             ->get()
@@ -1856,7 +1853,7 @@ public static function dashboard_end_of_life($type)
         $manufacturerTable = self::tableName('manufacturer');
 
         $query = self::select(
-                $productTable . '.id_product',
+                DB::raw('MIN(' . $productTable . '.id_product) as id_product'),
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name as brand'),
                 DB::raw('COUNT(reference) AS counter_reference'),
@@ -1868,7 +1865,6 @@ public static function dashboard_end_of_life($type)
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->groupBy(
                 $productTable . '.reference',
-                $productTable . '.id_product',
                 $manufacturerTable . '.name'
             );
 
@@ -2206,56 +2202,65 @@ public static function dashboard_end_of_life($type)
         $stockTable = self::tableName('stock_available');
         $productAttributeTable = self::tableName('product_attribute');
 
-        $refsProd = self::join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+        $productStockRows = self::join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->where($productTable . '.active', 1)
             ->where($stockTable . '.id_product_attribute', 0)
-            ->groupBy($productTable . '.reference')
-            ->havingRaw('COUNT(*) > 1')
-            ->havingRaw('MIN(' . $stockTable . '.quantity) <> MAX(' . $stockTable . '.quantity)')
-            ->pluck($productTable . '.reference');
-
-        $bd_prod = self::join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-            ->where($stockTable . '.id_product_attribute', 0)
-            ->whereIn($productTable . '.reference', $refsProd)
-            ->when(!empty($excluded), function ($query) use ($stockTable, $excluded) {
-                $query->whereNotIn($stockTable . '.id_stock_available', $excluded);
-            })
             ->select(
-                $stockTable . '.id_stock_available',
                 $productTable . '.id_product',
                 $productTable . '.reference',
-                $stockTable . '.quantity'
+                DB::raw('MAX(' . $stockTable . '.quantity) AS quantity')
             )
             ->orderBy($productTable . '.reference')
             ->groupBy(
-                $stockTable . '.id_stock_available',
                 $productTable . '.id_product',
-                $productTable . '.reference',
-                $stockTable . '.quantity'
+                $productTable . '.reference'
             )
             ->get();
 
-        $refsAttr = product_attribute::join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
-            ->select($productAttributeTable . '.reference')
-            ->groupBy($productAttributeTable . '.reference')
-            ->havingRaw('MIN(' . $stockTable . '.quantity) <> MAX(' . $stockTable . '.quantity)')
-            ->pluck('reference');
-
-        $bd_attr = product_attribute::join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
-            ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
-            ->whereIn($productAttributeTable . '.reference', $refsAttr->toArray())
-            ->where($stockTable . '.id_product_attribute', '>', 0)
-            ->when(!empty($excluded), function ($query) use ($stockTable, $excluded) {
-                $query->whereNotIn($stockTable . '.id_stock_available', $excluded);
+        $refsProd = $productStockRows
+            ->groupBy('reference')
+            ->filter(function ($items) {
+                return $items->pluck('id_product')->unique()->count() > 1
+                    && $items->min('quantity') != $items->max('quantity');
             })
+            ->keys();
+
+        $bd_prod = $productStockRows
+            ->whereIn('reference', $refsProd)
+            ->when(!empty($excluded), function ($items) use ($excluded) {
+                return $items->whereNotIn('id_product', $excluded);
+            });
+
+        $attributeStockRows = product_attribute::join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
+            ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+            ->where($stockTable . '.id_product_attribute', '>', 0)
             ->select(
-                $stockTable . '.id_stock_available',
                 $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
                 $productAttributeTable . '.reference',
-                $stockTable . '.quantity'
+                DB::raw('MAX(' . $stockTable . '.quantity) AS quantity')
             )
             ->orderBy($productAttributeTable . '.reference')
+            ->groupBy(
+                $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
+                $productAttributeTable . '.reference'
+            )
             ->get();
+
+        $refsAttr = $attributeStockRows
+            ->groupBy('reference')
+            ->filter(function ($items) {
+                return $items->pluck('id_product_attribute')->unique()->count() > 1
+                    && $items->min('quantity') != $items->max('quantity');
+            })
+            ->keys();
+
+        $bd_attr = $attributeStockRows
+            ->whereIn('reference', $refsAttr)
+            ->when(!empty($excluded), function ($items) use ($excluded) {
+                return $items->whereNotIn('id_product', $excluded);
+            });
 
         foreach ($bd_prod as $item) {
             $data[] = [

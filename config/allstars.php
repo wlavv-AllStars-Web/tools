@@ -60,7 +60,8 @@ return [
         'resources' => [
             'base_url' => $resourcesBaseUrl,
             'domain' => $hostFromUrl($resourcesBaseUrl),
-            'homepage_asd_path' => env('RESOURCES_ASD_HOMEPAGE_PATH', 'uploads/asd/homepage'),
+            'homepage_asd_path' => env('RESOURCES_ASD_HOMEPAGE_PATH', 'asd/homepage'),
+            'homepage_asd_storage_path' => env('RESOURCES_ASD_HOMEPAGE_STORAGE_PATH', 'uploads/asd/homepage'),
         ],
     ],
 

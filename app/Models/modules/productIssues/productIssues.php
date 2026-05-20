@@ -147,10 +147,11 @@ public static function getProductIssues()
                 'id_order' => $item->id_order,
                 'reference' => $item->reference,
                 'description' => $item->description,
-                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASM'),
             ]),
-            [],
-            \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM')
+            [
+                'link' => route('sales.tools.product_issues.index'),
+            ],
+            null
         );
     }
     

@@ -1,4 +1,19 @@
 <div id="{{ $panelDomId ?? $panel->panel }}" data-open="1" class="panel-body" style="overflow-x: scroll;">
+    @php
+        $panelDescription = trim((string) ($panel->description ?? ''));
+    @endphp
+
+    @if($panelDescription !== '')
+        <details class="dashboard-panel-description">
+            <summary class="dashboard-panel-description-button">
+                Description
+            </summary>
+            <div class="dashboard-panel-description-content">
+                {{ $panelDescription }}
+            </div>
+        </details>
+    @endif
+
     @if($details->name == 'ASD missing images')
         <div style="text-align: center; margin: 5px;">
             <a class="btn btn-info" style="margin: 5px; margin: 0 auto;" href="{{ route('marketing.asdMissingImages') }}">
@@ -160,6 +175,59 @@
 </div>
 
 <style>
+    details.dashboard-panel-description > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    details.dashboard-panel-description > summary::marker {
+        content: "";
+    }
+
+.dashboard-panel-description {
+    width: 100%;
+    margin: 0 0 5px;
+    padding-top: 5px;
+    text-align: center;
+}
+
+    .dashboard-panel-description-button {
+        display: block;
+        width: 100%;
+        padding: 9px 14px;
+        border: 1px solid #c9d3dc;
+        border-radius: 4px;
+        background: #f8fafc;
+        color: #2f3a45;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+    }
+
+    .dashboard-panel-description-button:hover {
+        background: #eef4f8;
+        border-color: #9fb0bf;
+    }
+
+    .dashboard-panel-description[open] .dashboard-panel-description-button {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        background: #eef4f8;
+    }
+
+    .dashboard-panel-description-content {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #c9d3dc;
+        border-top: 0;
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+        background: #ffffff;
+        color: #333;
+        text-align: center;
+    }
+
     tr.row_red > td {
         background-color: red;
         color: #FFF;

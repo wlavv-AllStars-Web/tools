@@ -111,6 +111,7 @@ use HasFactory;
             'name'          => trans('dashboard.WARRANTIES'),
             'col'           => 4,
             'item_id'       => $type . '_warranties',
+            'link'          => route('suppliersIssues.index', ['type' => 1]),
             'prestashop'    => null,
             'columns'       => ['date', 'reference', 'info', 'quantity'],
             'counter'       => count($data),

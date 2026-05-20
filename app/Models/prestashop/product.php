@@ -598,6 +598,7 @@ class product extends PrestashopModel
         $imageTable = self::tableName('image');
         $stockTable = self::tableName('stock_available');
         $manufacturerTable = self::tableName('manufacturer');
+        $productShopTable = self::tableName('product_shop');
 
         $products = self::select(
                 $productTable . '.id_product',
@@ -610,6 +611,11 @@ class product extends PrestashopModel
             ->leftJoin($imageTable, $productTable . '.id_product', '=', $imageTable . '.id_product')
             ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->join($productShopTable, function ($join) use ($productTable, $productShopTable) {
+                $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+                    ->where($productShopTable . '.active', 1);
+            })
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.id_category_default', '<>', 526)
             ->groupBy(
@@ -617,7 +623,8 @@ class product extends PrestashopModel
                 $productTable . '.id_category_default',
                 $productTable . '.reference',
                 $productTable . '.location',
-                $manufacturerTable . '.name'
+                $manufacturerTable . '.name',
+                $productShopTable . '.id_shop'
             )
             ->havingRaw('MAX(' . $stockTable . '.quantity) > 0')
             ->havingRaw('COUNT(' . $imageTable . '.id_image) < 5')
@@ -674,7 +681,10 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
-            ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+            ->join($stockTable, function ($join) use ($productAttributeTable, $stockTable) {
+                $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+                    ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product');
+            })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productAttributeTable . '.ean13', '')
             ->where($stockTable . '.quantity', '>', 0)
@@ -730,6 +740,11 @@ class product extends PrestashopModel
             ->where($productTable . '.location', '')
             ->where($productTable . '.active', 1)
             ->where($stockTable . '.quantity', '>', 0)
+            ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
+                $query->select(DB::raw(1))
+                    ->from($productAttributeTable)
+                    ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product');
+            })
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -845,7 +860,10 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->where($productTable . '.weight', 0)
+            ->where(function ($query) use ($productTable) {
+                $query->whereNull($productTable . '.weight')
+                    ->orWhere($productTable . '.weight', 0);
+            })
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -978,7 +996,7 @@ public static function dashboard_end_of_life($type)
             );
         })
         ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-        ->where($customProductTable . '.wmdeprecated', 1)
+        ->whereRaw('COALESCE(' . $customProductAttributeTable . '.wmdeprecated, ' . $customProductTable . '.wmdeprecated, 0) = 1')
         ->groupBy(
             $productTable . '.id_product',
             $manufacturerTable . '.name',
@@ -1037,7 +1055,7 @@ public static function dashboard_end_of_life($type)
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
-            ->where($customProductTable . '.wmdeprecated', 1)
+            ->whereRaw('COALESCE(' . $customProductAttributeTable . '.wmdeprecated, ' . $customProductTable . '.wmdeprecated, 0) = 1')
             ->where($productTable . '.active', 1)
             ->orderBy($stockTable . '.quantity');
 
@@ -1161,6 +1179,7 @@ public static function dashboard_end_of_life($type)
         $productAttributeTable = self::tableName('product_attribute');
         $stockTable = self::tableName('stock_available');
         $customProductTable = self::tableName('custom_product');
+        $customProductAttributeTable = self::tableName('custom_product_attribute');
     
         $bd_data = self::select(
                 $productTable . '.id_product',
@@ -1169,13 +1188,16 @@ public static function dashboard_end_of_life($type)
             )
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->leftJoin($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
+            ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-            ->where($customProductTable  . '.wmdeprecated', 1)
+            ->whereRaw('COALESCE(' . $customProductAttributeTable . '.wmdeprecated, ' . $customProductTable . '.wmdeprecated, 0) = 1')
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',
                 $productAttributeTable . '.reference',
-                $stockTable . '.id_product'
+                $stockTable . '.id_product',
+                $customProductAttributeTable . '.wmdeprecated',
+                $customProductTable . '.wmdeprecated'
             )
             ->orderBy($productTable . '.date_upd')
             ->havingRaw('SUM(' . $stockTable . '.quantity) < 1')
@@ -1515,6 +1537,11 @@ public static function dashboard_end_of_life($type)
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productTable . '.wholesale_price', 0)
+            ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
+                $query->select(DB::raw(1))
+                    ->from($productAttributeTable)
+                    ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product');
+            })
             ->get();
 
         foreach ($bd_data as $item) {
@@ -1614,10 +1641,17 @@ public static function dashboard_end_of_life($type)
     public static function dashboard_wholesale_price_exVAT($type)
     {
         $data = [];
+        $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
 
-        $bd_data = self::select('id_product', 'reference', 'wholesale_price', 'price')
-            ->whereColumn('wholesale_price', '>', 'price')
-            ->groupBy('id_product', 'reference', 'wholesale_price', 'price')
+        $bd_data = self::query()
+            ->join($productShopTable . ' as ps', function ($join) use ($productTable) {
+                $join->on('ps.id_product', '=', $productTable . '.id_product')
+                    ->where('ps.id_shop', PrestashopAdminLinkService::shopId('ASM'));
+            })
+            ->select($productTable . '.id_product', $productTable . '.reference', 'ps.wholesale_price', 'ps.price')
+            ->whereColumn('ps.wholesale_price', '>', 'ps.price')
+            ->groupBy($productTable . '.id_product', $productTable . '.reference', 'ps.wholesale_price', 'ps.price')
             ->get();
 
         foreach ($bd_data as $item) {
@@ -1857,10 +1891,10 @@ public static function dashboard_end_of_life($type)
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name as brand'),
                 DB::raw('COUNT(reference) AS counter_reference'),
-                DB::raw('COUNT(DISTINCT width) AS distinct_width'),
-                DB::raw('COUNT(DISTINCT height) AS distinct_height'),
-                DB::raw('COUNT(DISTINCT depth) AS distinct_depth'),
-                DB::raw('COUNT(DISTINCT weight) AS distinct_weight')
+                DB::raw('COUNT(DISTINCT COALESCE(width, -1)) AS distinct_width'),
+                DB::raw('COUNT(DISTINCT COALESCE(height, -1)) AS distinct_height'),
+                DB::raw('COUNT(DISTINCT COALESCE(depth, -1)) AS distinct_depth'),
+                DB::raw('COUNT(DISTINCT COALESCE(weight, -1)) AS distinct_weight')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->groupBy(

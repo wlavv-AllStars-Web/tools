@@ -123,6 +123,7 @@ class product_attribute extends PrestashopModel
         $stockTable = self::tableName('stock_available');
         $customProductAttributeTable = self::tableName('custom_product_attribute');
         $productAttributeImageTable = self::tableName('product_attribute_image');
+        $productShopTable = self::tableName('product_shop');
 
         $excludedProductIds = asm_dashboard::getExceptions('marketing_no_images')
             ->pluck('id_product')
@@ -137,6 +138,11 @@ class product_attribute extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
+            ->join($productShopTable, function ($join) use ($productAttributeTable, $productShopTable) {
+                $join->on($productShopTable . '.id_product', '=', $productAttributeTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+                    ->where($productShopTable . '.active', 1);
+            })
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($stockTable, function ($join) use ($productAttributeTable, $stockTable) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
@@ -151,7 +157,8 @@ class product_attribute extends PrestashopModel
                 $productTable . '.id_category_default',
                 $productAttributeTable . '.reference',
                 $customProductAttributeTable . '.location',
-                $manufacturerTable . '.name'
+                $manufacturerTable . '.name',
+                $productShopTable . '.id_shop'
             )
             ->havingRaw('MAX(' . $stockTable . '.quantity) > 0');
 
@@ -170,7 +177,7 @@ class product_attribute extends PrestashopModel
                     'reference' => $image->reference,
                     'housing' => $image->housing,
                     'brand' => $image->brand,
-                    'url' => PrestashopAdminLinkService::dashboardProductAdminUrl((int) $image->id_product, 'ASD')
+                    'url' => PrestashopAdminLinkService::dashboardProductAdminUrl((int) $image->id_product, 'ASM')
                 ];
             }
         }
@@ -179,7 +186,7 @@ class product_attribute extends PrestashopModel
             'name' => trans('dashboard.ATTRIBUTES - No 5 photos'),
             'col' => 4,
             'item_id' => $type . '_attributes_no_5_pics',
-            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD'),
+            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
             'columns' => ['id_product', 'reference', 'brand', 'housing', 'nr_images'],
             'counter' => count($products),
             'data' => $products

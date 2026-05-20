@@ -3,7 +3,6 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -34,14 +33,7 @@ class cart extends PrestashopModel
             'name' => trans('dashboard.DROP CART 3 DAYS'),
             'col' => 4,
             'item_id' => $type . '_dropcart_3_days',
-            'prestashop' => (isset(Config::get('token')->AdminCustomers))
-                ? [
-                    'token' => Config::get('token')->AdminCustomers,
-                    'controller' => 'AdminCustomers',
-                    'element' => 'id_customer',
-                    'extraParameters' => '&viewcustomer'
-                ]
-                : [],
+            'prestashop' => self::adminCustomerLink('ASM'),
             'columns' => ['clean', 'id_customer', 'customer_name', 'cart_total'],
             'counter' => count($data),
             'exception_fields' => ['dropcart_3_days', 'id_customer', 'customer_name', 'cart_total'],
@@ -63,14 +55,7 @@ class cart extends PrestashopModel
             'name' => trans('dashboard.DROP CART 7 DAYS'),
             'col' => 4,
             'item_id' => $type . '_dropcart_7_days',
-            'prestashop' => (isset(Config::get('token')->AdminCustomers))
-                ? [
-                    'token' => Config::get('token')->AdminCustomers,
-                    'controller' => 'AdminCustomers',
-                    'element' => 'id_customer',
-                    'extraParameters' => '&viewcustomer'
-                ]
-                : [],
+            'prestashop' => self::adminCustomerLink('ASM'),
             'columns' => ['clean', 'id_customer', 'customer_name', 'cart_total'],
             'counter' => count($data),
             'exception_fields' => ['dropcart_7_days', 'id_customer', 'customer_name', 'cart_total'],
@@ -92,14 +77,7 @@ class cart extends PrestashopModel
             'name' => trans('dashboard.DROP CART 3 DAYS'),
             'col' => 4,
             'item_id' => $type . '_dropcart_phone',
-            'prestashop' => (isset(Config::get('token')->AdminCustomers))
-                ? [
-                    'token' => Config::get('token')->AdminCustomers,
-                    'controller' => 'AdminCustomers',
-                    'element' => 'id_customer',
-                    'extraParameters' => '&viewcustomer'
-                ]
-                : [],
+            'prestashop' => self::adminCustomerLink('ASM'),
             'columns' => ['clean', 'id_customer', 'customer_name', 'cart_total'],
             'counter' => count($data),
             'exception_fields' => ['dropcart_phone', 'id_customer', 'customer_name', 'cart_total'],

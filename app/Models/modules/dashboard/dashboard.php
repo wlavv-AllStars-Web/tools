@@ -106,7 +106,7 @@ class dashboard extends Model
     }
 
     /** Calcula os contadores em tempo real **/
-    public static function calculateAndGetCountersOfTab($tab)
+    public static function calculateAndGetCountersOfTab($tab, array $deferredPanels = [])
     {
         $panels = dashboard::where('tab', $tab)
             ->orderBy('store')
@@ -116,8 +116,26 @@ class dashboard extends Model
         $asd = collect();
     
         foreach ($panels as $panel) {
-            $counter = 0;
+            $counter = (int) $panel->counter;
             $error = null;
+            $calculated = false;
+
+            if (in_array($panel->panel, $deferredPanels, true)) {
+                $item = clone $panel;
+                $item->counter = $counter;
+                $item->calculated = false;
+                $item->error = null;
+
+                if ($item->store === 'ASM') {
+                    $asm->push($item);
+                }
+
+                if ($item->store === 'ASD') {
+                    $asd->push($item);
+                }
+
+                continue;
+            }
     
             [$modelClass, $method] = self::resolveDashboardCallable($panel->function ?? null);
     
@@ -125,6 +143,7 @@ class dashboard extends Model
                 try {
                     $result = self::callDashboardMethod($modelClass, $method, $panel);
                     $counter = (int) ($result['counter'] ?? 0);
+                    $calculated = true;
                 } catch (\Throwable $e) {
                     $counter = 0;
                     $error = $e->getMessage();
@@ -153,7 +172,7 @@ class dashboard extends Model
     
             $item = clone $panel;
             $item->counter = $counter;
-            $item->calculated = true;
+            $item->calculated = $calculated;
             $item->error = $error;
     
             if ($item->store === 'ASM') {
@@ -306,7 +325,7 @@ class dashboard extends Model
         
         return [
             'counter' => $dataCount,
-            'update_tag' => ($dataCount > $panel->counter) ? 1 : 0,
+            'update_tag' => ($dataCount != $panel->counter) ? 1 : 0,
             'html' => view('areas/dashboard/includes/counters_content')->with($data)->render()
         ];
     }
@@ -346,8 +365,11 @@ class dashboard extends Model
         ];  
     }
     
-    public static function orderInvoiceExVat( ){ 
-        
+    public static function orderInvoiceExVat($tab = null, $panel = null){ 
+        if (isset($panel->store) && strtoupper((string) $panel->store) === 'ASD') {
+            return self::externalOrderInvoiceExVat($tab ?? 'finance', $panel);
+        }
+
         $data = [];
         $ids_exceptions = [];
         $prefix = self::prefix();
@@ -782,6 +804,7 @@ class dashboard extends Model
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
         $shopId = self::shopId('ASD');
+        $now = now()->format('Y-m-d H:i:s');
     
         $exceptions = asm_dashboard::getExceptions('asd_products_without_discounts')
             ->pluck('id_product')
@@ -794,7 +817,7 @@ class dashboard extends Model
                 $join->on('ps.id_product', '=', 'p.id_product')
                     ->where('ps.id_shop', '=', $shopId);
             })
-            ->leftJoin($prefix . 'specific_price as sp', function ($join) use ($shopId) {
+            ->leftJoin($prefix . 'specific_price as sp', function ($join) use ($shopId, $now) {
                 $join->on('sp.id_product', '=', 'p.id_product')
                     ->where(function ($query) use ($shopId) {
                         $query->where('sp.id_shop', '=', 0)
@@ -803,6 +826,16 @@ class dashboard extends Model
                     ->where(function ($query) {
                         $query->where('sp.reduction', '>', 0)
                             ->orWhere('sp.price', '>=', 0);
+                    })
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('sp.from')
+                            ->orWhere('sp.from', '0000-00-00 00:00:00')
+                            ->orWhere('sp.from', '<=', $now);
+                    })
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('sp.to')
+                            ->orWhere('sp.to', '0000-00-00 00:00:00')
+                            ->orWhere('sp.to', '>=', $now);
                     });
             })
             ->whereNull('sp.id_specific_price')
@@ -854,7 +887,7 @@ class dashboard extends Model
             ->get();
     
         return self::dashboardPanel(
-            trans('dashboard.ASD - REFERENCES WITH SPACES'),
+            trans('dashboard.ASD - PRODUCT REFERENCES WITH SPACES'),
             'counter',
             'asd_product_reference_with_spaces',
             ['clean', 'id_product', 'reference'],

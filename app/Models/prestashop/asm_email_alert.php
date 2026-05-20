@@ -3,7 +3,6 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 class asm_email_alert extends PrestashopModel{
@@ -95,14 +94,7 @@ class asm_email_alert extends PrestashopModel{
             'name' => trans('dashboard.Products requested'),
             'col' => 4,
             'item_id' => $type . '_products_requested',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
+            'prestashop' => self::adminProductLink('ASM'),
             'columns' => ['delete', 'reference', 'stock', 'cache_is_pack', 'pack_quantity', 'email', 'send_email'],
             'table' => 'asm_email_alert',
             'counter' => count($data),

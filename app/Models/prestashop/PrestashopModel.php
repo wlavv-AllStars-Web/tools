@@ -56,7 +56,6 @@ class PrestashopModel extends Model{
             ->all();
     }
 
-/**
     protected static function adminOrderLink(string $store = 'ASM'): array
     {
         return PrestashopAdminLinkService::dashboardOrderLink('id_order', $store);
@@ -71,5 +70,4 @@ class PrestashopModel extends Model{
     {
         return PrestashopAdminLinkService::fromLegacyController($controller, $element, $extraParameters, $store);
     }
-**/
 }

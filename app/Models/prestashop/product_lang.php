@@ -3,7 +3,6 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Facades\Config;
 
 class product_lang extends PrestashopModel
 {
@@ -74,14 +73,7 @@ class product_lang extends PrestashopModel
             'name' => trans('dashboard.No availability text'),
             'col' => 4,
             'item_id' => $type . '_no_availability_text',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
+            'prestashop' => self::adminProductLink('ASM'),
             'columns' => ['id_product', 'reference', 'name'],
             'counter' => count($data),
             'data' => $data
@@ -122,14 +114,7 @@ class product_lang extends PrestashopModel
             'name' => trans('dashboard.PRODUCTS TITLE DOUBLE 2 SPACES CHARACTER'),
             'col' => 4,
             'item_id' => $type . '_titles_double_spaces',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
+            'prestashop' => self::adminProductLink('ASM'),
             'columns' => ['id_product', 'reference', 'name'],
             'counter' => count($data),
             'data' => $data

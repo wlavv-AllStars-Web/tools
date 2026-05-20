@@ -70,12 +70,14 @@ class orders extends PrestashopModel
 
     protected static function dashboardPanel($name, $type, $suffix, array $columns, $data, array $extra = [], $prestashop = null, int $col = 4): array
     {
+        $store = $prestashop['store'] ?? 'ASD';
+
         $data = collect($data)
-            ->map(function ($row) {
+            ->map(function ($row) use ($store) {
                 $row = (array) $row;
 
                 if (!empty($row['id_order']) && empty($row['url'])) {
-                    $row['url'] = PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $row['id_order'], 'ASD');
+                    $row['url'] = PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $row['id_order'], $store);
                 }
 
                 return $row;
@@ -159,7 +161,10 @@ class orders extends PrestashopModel
     {
         $data = [];
 
-        foreach (self::select('id_order', 'reference')->where('current_state', 30)->get() as $item) {
+        foreach (self::select('id_order', 'reference')
+            ->where('current_state', 30)
+            ->where('id_shop', PrestashopAdminLinkService::shopId('ASM'))
+            ->get() as $item) {
             $data[] = [
                 'id_order' => $item->id_order,
                 'reference' => $item->reference,
@@ -171,7 +176,9 @@ class orders extends PrestashopModel
             $type,
             'waiting_info',
             ['id_order', 'reference'],
-            $data
+            $data,
+            [],
+            PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM')
         );
     }
 
@@ -592,6 +599,7 @@ class orders extends PrestashopModel
                 $query->leftJoin($customOrdersTable, $customOrdersTable . '.id_order', '=', $ordersTable . '.id_order');
             })
             ->where($ordersTable . '.id_order', '>', 100000)
+            ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->where($ordersTable . '.current_state', 4)
             ->where($ordersTable . '.date_add', '>', $afterOrder)
             ->when($hasCustomNotForReview, function ($query) use ($customOrdersTable) {
@@ -639,7 +647,8 @@ class orders extends PrestashopModel
             $data,
             [
                 'exception_fields' => [$board, 'id_order', 'date_shipped', 'email', 'send_email_reviewed']
-            ]
+            ],
+            PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASM')
         );
     }
 

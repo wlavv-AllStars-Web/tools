@@ -31,8 +31,20 @@ class salesController extends Controller
 
     public function index()
     {
+        $deferredPanels = [
+            'clients_request',
+            'dashboard_dropcart_3_days',
+            'dashboard_dropcart_7_days',
+            'dashboard_dropcart_phone',
+            'dashboard_order_reviewed',
+            'dashboard_order_reviewed_2',
+            'no_compatibilities',
+            'no_instructions',
+            'recommended_products',
+        ];
+
         $data = [
-            'counters'      => dashboard::calculateAndGetCountersOfTab('sales'),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('sales', $deferredPanels),
             'panels'        => [],
             'accessList'    => $this->accessList(),
             'actions'       => $this->actions,

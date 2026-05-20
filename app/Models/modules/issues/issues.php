@@ -5,8 +5,6 @@ namespace App\Models\modules\issues;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Support\Facades\Config;
-
 use App\Models\Concerns\BuildsDashboardPanels;
 class issues extends Model
 {
@@ -93,7 +91,8 @@ protected $connection = 'mysql';
             'name'          => trans('dashboard.WARRANTIES'),
             'col'           => 4,
             'item_id'       => $type . '_warranties',
-            'prestashop'    => ( isset ( Config::get('token')->AdminProducts ) ) ? [ 'token' => Config::get('token')->AdminWmModuleTable, 'controller' => 'AdminWmModuleTable', 'element' => 'type', 'extraParameters' => '' ] : [],
+            'link'          => route('sales.tools.warranties.index'),
+            'prestashop'    => null,
             'columns'       => ($type == 'panel') ? ['date', 'brand', 'reference', 'action'] : ['reference', 'action'],
             'counter'       => count($data),
             'data'          => $data
@@ -111,7 +110,8 @@ protected $connection = 'mysql';
             'name'          => trans('dashboard.RETURNS'),
             'col'           => 4,
             'item_id'       => $type . '_RETURNS',
-            'prestashop'    => ( isset ( Config::get('token')->AdminProducts ) ) ? [ 'token' => Config::get('token')->AdminWmModuleTable, 'controller' => 'AdminWmModuleTable', 'element' => 'type', 'extraParameters' => '' ] : [],
+            'link'          => route('sales.tools.returns.index'),
+            'prestashop'    => null,
             'columns'       => ($type == 'panel') ? ['date', 'order', 'status', 'operation'] : ['order', 'operation'],
             'counter'       => count($data),
             'data'          => $data

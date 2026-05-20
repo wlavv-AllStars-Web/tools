@@ -29,6 +29,7 @@ class specific_price extends PrestashopModel
         $productTable = self::tableName('product');
         $productShopTable = self::tableName('product_shop');
         $specificPriceTable = self::tableName('specific_price');
+        $now = now()->format('Y-m-d H:i:s');
     
         $bd_data = product::select(
                 $productShopTable . '.id_shop',
@@ -36,14 +37,24 @@ class specific_price extends PrestashopModel
                 DB::raw('MIN(' . $productTable . '.id_product) AS id_product'),
                 DB::raw('COUNT(DISTINCT ' . $productTable . '.id_product) AS products_count'),
                 DB::raw('COUNT(DISTINCT ' . $specificPriceTable . '.id_product) AS specific_price_count'),
-                DB::raw('COUNT(DISTINCT COALESCE(' . $specificPriceTable . '.reduction, 0)) AS discounts_count')
+                DB::raw('COUNT(DISTINCT CONCAT(COALESCE(' . $specificPriceTable . '.reduction_type, "none"), ":", COALESCE(' . $specificPriceTable . '.reduction, 0))) AS discounts_count')
             )
             ->join($productShopTable, $productShopTable . '.id_product', '=', $productTable . '.id_product')
-            ->leftJoin($specificPriceTable, function ($join) use ($productTable, $productShopTable, $specificPriceTable) {
+            ->leftJoin($specificPriceTable, function ($join) use ($productTable, $productShopTable, $specificPriceTable, $now) {
                 $join->on($specificPriceTable . '.id_product', '=', $productTable . '.id_product')
                     ->whereRaw($specificPriceTable . '.id_shop IN (0, ' . $productShopTable . '.id_shop)')
                     ->where($specificPriceTable . '.id_cart', 0)
-                    ->where($specificPriceTable . '.id_customer', 0);
+                    ->where($specificPriceTable . '.id_customer', 0)
+                    ->where(function ($query) use ($specificPriceTable, $now) {
+                        $query->whereNull($specificPriceTable . '.from')
+                            ->orWhere($specificPriceTable . '.from', '0000-00-00 00:00:00')
+                            ->orWhere($specificPriceTable . '.from', '<=', $now);
+                    })
+                    ->where(function ($query) use ($specificPriceTable, $now) {
+                        $query->whereNull($specificPriceTable . '.to')
+                            ->orWhere($specificPriceTable . '.to', '0000-00-00 00:00:00')
+                            ->orWhere($specificPriceTable . '.to', '>=', $now);
+                    });
             })
             ->whereIn($productShopTable . '.id_shop', [2, 3])
             ->where($productShopTable . '.active', 1)
@@ -54,7 +65,7 @@ class specific_price extends PrestashopModel
                 $productTable . '.reference'
             )
             ->havingRaw('COUNT(DISTINCT ' . $productTable . '.id_product) > 1')
-            ->havingRaw('COUNT(DISTINCT COALESCE(' . $specificPriceTable . '.reduction, 0)) > 1')
+            ->havingRaw('COUNT(DISTINCT CONCAT(COALESCE(' . $specificPriceTable . '.reduction_type, "none"), ":", COALESCE(' . $specificPriceTable . '.reduction, 0))) > 1')
             ->orderBy($productShopTable . '.id_shop')
             ->orderBy($productTable . '.reference')
             ->get();

@@ -35,25 +35,24 @@ class statsController extends Controller
 
     public function daily_stats()
     {
-        $byMonth    = order_payment::objectiveByMonth();
-        $byMonthASD = order_payment::objectiveByMonthASD();
+        $byMonth = order_payment::objectiveByMonth();
 
         $asdActual = order_payment::getASDActual();
 
         $months = [
-            0  => self::getMonthlyValue($byMonth[1],  'January',   $byMonthASD[1], 1),
-            1  => self::getMonthlyValue($byMonth[2],  'February',  $byMonthASD[2], 2),
-            2  => self::getMonthlyValue($byMonth[3],  'March',     $byMonthASD[3], 3),
-            3  => self::getMonthlyValue($byMonth[4],  'April',     $byMonthASD[4], 4),
-            4  => self::getMonthlyValue($byMonth[5],  'May',       $byMonthASD[5], 5),
-            5  => self::getMonthlyValue($byMonth[6],  'June',      $byMonthASD[6], 6),
-            6  => self::getMonthlyValue($byMonth[7],  'July',      $byMonthASD[7], 7),
-            7  => self::getMonthlyValue($byMonth[8],  'August',    $byMonthASD[8], 8),
-            8  => self::getMonthlyValue($byMonth[9],  'September', $byMonthASD[9], 9),
-            9  => self::getMonthlyValue($byMonth[10], 'October',   $byMonthASD[10], 10),
-            10 => self::getMonthlyValue($byMonth[11], 'November',  $byMonthASD[11], 11),
-            11 => self::getMonthlyValue($byMonth[12], 'December',  $byMonthASD[12], 12),
-            12 => self::getMonthlyValueTotal($byMonth, 'Total', $byMonthASD),
+            0  => self::getMonthlyValue($byMonth[1],  'January',   null, 1),
+            1  => self::getMonthlyValue($byMonth[2],  'February',  null, 2),
+            2  => self::getMonthlyValue($byMonth[3],  'March',     null, 3),
+            3  => self::getMonthlyValue($byMonth[4],  'April',     null, 4),
+            4  => self::getMonthlyValue($byMonth[5],  'May',       null, 5),
+            5  => self::getMonthlyValue($byMonth[6],  'June',      null, 6),
+            6  => self::getMonthlyValue($byMonth[7],  'July',      null, 7),
+            7  => self::getMonthlyValue($byMonth[8],  'August',    null, 8),
+            8  => self::getMonthlyValue($byMonth[9],  'September', null, 9),
+            9  => self::getMonthlyValue($byMonth[10], 'October',   null, 10),
+            10 => self::getMonthlyValue($byMonth[11], 'November',  null, 11),
+            11 => self::getMonthlyValue($byMonth[12], 'December',  null, 12),
+            12 => self::getMonthlyValueTotal($byMonth, 'Total'),
         ];
 
         $counters = order_payment::getCounters();
@@ -71,7 +70,7 @@ class statsController extends Controller
             'objective_until_today' => number_format($objectiveUntilTodayValue, 2, ',', ' ') . ' €',
             'difference_objective_until_today' => number_format(($actualUntilToday - $objectiveUntilTodayValue), 2, ',', ' ') . ' €',
             'objective' => number_format(self::$objective2026, 2, ',', ' ') . ' €',
-            'missing_to_objective' => number_format(($actualUntilToday - self::$objective2026), 2, ',', ' ') . ' €',
+            'missing_to_objective' => number_format((self::$objective2026 - $actualUntilToday), 2, ',', ' ') . ' €',
         ];
 
         return response()->json([
@@ -151,11 +150,10 @@ class statsController extends Controller
         $yesterday_forcast  = ($asm->yesterday_forcast  + $asd->yesterday_forcast  + $er->yesterday_forcast  + $em->yesterday_forcast);
         $yesterday_realized = ($asm->yesterday_realized + $asd->yesterday_realized + $er->yesterday_realized + $em->yesterday_realized);
     
+        $today_forcast = ($asm->today_forcast + $asd->today_forcast + $er->today_forcast + $em->today_forcast);
         $today_realized = ($asm->today_realized + $asd->today_realized + $er->today_realized + $em->today_realized);
     
         $currency_rates = CurrencyVariation::orderBy('id', 'DESC')->first();
-    
-        $counters = order_payment::getCounters();
     
         $currentMonth = (int) date('n');
         $currentDay   = (int) date('j');
@@ -170,7 +168,7 @@ class statsController extends Controller
     
         $objectiveUntilToday = $dailyGoal * $currentDay;
     
-        $realised_until_today = $counters->getActualCurrentMonth ?? 0;
+        $realised_until_today = order_payment::getActualCurrentMonthForShops([1, 2, 3, 4]);
     
         $status = $objectiveUntilToday > 0
             ? ($realised_until_today / $objectiveUntilToday) * 100
@@ -200,7 +198,6 @@ class statsController extends Controller
             'shipped' =>    ($asm->shipped     + $asd->shipped     + $er->shipped      + $em->shipped),
             'warranty' =>   ($asm->warranty    + $asd->warranty    + $er->warranty     + $em->warranty),
             'backorders' => ($asm->backorders  + $asd->backorders  + $er->backorders   + $em->backorders),
-            'partial' =>    ($asm->partial     + $asd->partial     + $er->partial      + $em->partial),
             'pending' =>    ($asm->pending     + $asd->pending     + $er->pending      + $em->pending),
     
             'group_result' => number_format($today_realized, 2, ',', ' ') . ' €',
@@ -223,10 +220,11 @@ class statsController extends Controller
             'annualGoalValue' => number_format($annualGoal, 2, ',', ' ') . ' €',
     
             'today' => (object)[
-                'forcast' => number_format($dailyGoal, 2, ',', ' ') . ' €',
+                'forcast' => number_format($today_forcast, 2, ',', ' ') . ' €',
+                'forcast_value' => $today_forcast,
                 'realized' => number_format($today_realized, 2, ',', ' ') . ' €',
                 'realized_value' => $today_realized,
-                'reached' => ($today_realized > $dailyGoal) ? 1 : 0,
+                'reached' => ($today_realized > $today_forcast) ? 1 : 0,
                 'goal_until_today' => $goal_until_today,
                 'goal_until_today_new' => $goal_until_today,
                 'percent' => $objectiveUntilToday > 0
@@ -235,10 +233,11 @@ class statsController extends Controller
             ],
     
             'yesterday' => (object)[
-                'forcast' => number_format($dailyGoal, 2, ',', ' ') . ' €',
+                'forcast' => number_format($yesterday_forcast, 2, ',', ' ') . ' €',
+                'forcast_value' => $yesterday_forcast,
                 'realized' => number_format($yesterday_realized, 2, ',', ' ') . ' €',
                 'realized_value' => $yesterday_realized,
-                'reached' => ($yesterday_realized > $dailyGoal) ? 1 : 0,
+                'reached' => ($yesterday_realized > $yesterday_forcast) ? 1 : 0,
             ],
     
             'realized_asm' => number_format($asm->today_realized, 2, ',', ' ') . ' €',
@@ -246,15 +245,15 @@ class statsController extends Controller
             'realized_er'  => number_format($er->today_realized,  2, ',', ' ') . ' €',
             'realized_em'  => number_format($em->today_realized,  2, ',', ' ') . ' €',
     
-            'forcast_asm' => number_format(0, 2, ',', ' ') . ' €',
-            'forcast_asd' => number_format(0, 2, ',', ' ') . ' €',
-            'forcast_er'  => number_format(0, 2, ',', ' ') . ' €',
-            'forcast_em'  => number_format(0, 2, ',', ' ') . ' €',
+            'forcast_asm' => number_format($asm->today_forcast, 2, ',', ' ') . ' €',
+            'forcast_asd' => number_format($asd->today_forcast, 2, ',', ' ') . ' €',
+            'forcast_er'  => number_format($er->today_forcast,  2, ',', ' ') . ' €',
+            'forcast_em'  => number_format($em->today_forcast,  2, ',', ' ') . ' €',
     
-            'reached_asm' => 0,
-            'reached_asd' => 0,
-            'reached_er'  => 0,
-            'reached_em'  => 0,
+            'reached_asm' => ($asm->today_realized > $asm->today_forcast) ? 1 : 0,
+            'reached_asd' => ($asd->today_realized > $asd->today_forcast) ? 1 : 0,
+            'reached_er'  => ($er->today_realized  > $er->today_forcast)  ? 1 : 0,
+            'reached_em'  => ($em->today_realized  > $em->today_forcast)  ? 1 : 0,
     
             'yuan'   => $currency_rates ? number_format($currency_rates->yuan, 4, ',', ' ') : '0,0000',
             'pound'  => $currency_rates ? number_format($currency_rates->pound, 4, ',', ' ') : '0,0000',

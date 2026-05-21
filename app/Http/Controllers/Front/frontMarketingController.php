@@ -28,7 +28,13 @@ class frontMarketingController extends Controller
         Config::set('mail.from.address', config('allstars.mailers.marketing.from_address'));
         Config::set('mail.from.name', config('allstars.mailers.marketing.from_name'));
 
-        $data = asm_newsletter_email::take(1)->get();
+        $query = asm_newsletter_email::query();
+
+        if (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp')) {
+            $query->where('email', 'bruno.fernandes.asm@gmail.com');
+        }
+
+        $data = $query->latest('id')->take(1)->get();
 
         $results = [];
 

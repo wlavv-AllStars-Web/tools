@@ -7,6 +7,7 @@
         @endif
         <div class="card mb-4">
             <div class="card-body">
+                <h1 style="margin:0 0 16px 0;">{{ $project->title }}</h1>
                 <div class="row g-3">
                     <div class="col-md-3"><strong>Área:</strong>            <span style="margin-left: 5px;">{{ ucfirst($project->area) }}</span></div>
                     <div class="col-md-3"><strong>Estado:</strong>          <span style="margin-left: 5px;">{{ $project->status }}</span></div>
@@ -213,7 +214,65 @@
                         @endforeach
                     </div>
                 @else
-                    <div>Sem erros registados para este projeto.</div>
+                    <details class="timeline-card">
+                        <summary>
+                            <div class="timeline-summary-left">
+                                <div class="timeline-title" style="float: left;color: orange;">Adicionar erro ao projeto</div>
+                                <div class="timeline-meta" style="float: left;margin-left: 10px;">
+                                    <span>( Clique para abrir o formulário )</span>
+                                </div>
+                            </div>
+                        </summary>
+
+                        <div class="timeline-content">
+                            <form method="post" action="{{ route('customTools.changesTracker.errors.store', $project->id) }}">
+                                @csrf
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Título do erro</label>
+                                        <input type="text" name="title" class="form-control" required>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label">Estado</label>
+                                        <select name="status" class="form-control" required>
+                                            <option value="open">Open</option>
+                                            <option value="in_analysis">In analysis</option>
+                                            <option value="resolved">Resolved</option>
+                                            <option value="closed">Closed</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label">Data deteção</label>
+                                        <input type="datetime-local" name="detected_at" class="form-control">
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label class="form-label">Descrição do erro</label>
+                                        <textarea name="description" class="form-control" rows="4" required></textarea>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label class="form-label">Resolução encontrada</label>
+                                        <textarea name="resolution" class="form-control" rows="4"></textarea>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label">Data resolução</label>
+                                        <input type="datetime-local" name="resolved_at" class="form-control">
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <button class="btn btn-primary">Registar erro</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+
+                    <div style="margin-top: 12px;">Sem erros registados para este projeto.</div>
                 @endif
             </div>
         </div>

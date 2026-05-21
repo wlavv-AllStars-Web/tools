@@ -210,7 +210,7 @@
                 <div class="section-title">FORCAST</div>
                 <div class="bigNumber">{{$today->forcast}}</div>
                 <div class="section-title" style="margin-top: 40px;">REALIZED</div>
-                <div class="bigNumber {{ $today->realized_value > $daillyGoal ? 'ok' : 'nok' }}"> {{$today->realized}} </div>
+                <div class="bigNumber {{ $today->reached ? 'ok' : 'nok' }}"> {{$today->realized}} </div>
             </div>
             <div class="card">
                 <div class="section-title">GROUP RESULT</div>
@@ -245,9 +245,9 @@
             <div class="card">
                 <div class="title">YESTERDAY</div>
                 <div class="section-title">FORCAST</div>
-                <div class="bigNumber">{{$today->forcast}}</div>
+                <div class="bigNumber">{{$yesterday->forcast}}</div>
                 <div class="section-title" style="margin-top: 40px;">REALIZED</div>
-                <div class="bigNumber {{ $yesterday->realized_value > $daillyGoal ? 'ok' : 'nok' }}"> {{$yesterday->realized}} </div>
+                <div class="bigNumber {{ $yesterday->reached ? 'ok' : 'nok' }}"> {{$yesterday->realized}} </div>
             </div>
         </div>
         <div class="panel bottom">

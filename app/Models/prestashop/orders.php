@@ -523,11 +523,6 @@ class orders extends PrestashopModel
             ->where('current_state', 15)
             ->count();
 
-        $data['partial'] = self::query()
-            ->where('id_shop', $id_shop)
-            ->where('current_state', 28)
-            ->count();
-
         $data['pending'] = self::query()
             ->where('id_shop', $id_shop)
             ->where('current_state', 30)

@@ -88,6 +88,9 @@ class marketingController extends Controller{
             }
             
             foreach($emails  AS $iso => $array_emails_lang){
+                if ((app()->environment('local') || str_contains(strtolower(base_path()), 'xampp')) && $array_emails_lang->isNotEmpty()) {
+                    $array_emails_lang = collect(['bruno.fernandes.asm@gmail.com']);
+                }
                 
                 $id_lang = self::getIDLangFromLocale($iso);
                 

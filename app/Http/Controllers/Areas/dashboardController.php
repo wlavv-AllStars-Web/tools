@@ -142,8 +142,12 @@ class dashboardController extends Controller{
                 $data,
                 $requested_product->id_lang
             );
+            $recipient = (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp'))
+                ? 'bruno.fernandes.asm@gmail.com'
+                : $requested_product->email;
+
             $email->send(
-                $requested_product->email,
+                $recipient,
                 $html,
                 trans('mails.Requested products notification')
             );

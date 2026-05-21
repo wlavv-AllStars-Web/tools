@@ -20,7 +20,7 @@ return [
     
     'asm_newsletter' => [
         'asm_newsletter' => [
-            'header_link' => rtrim(config('allstars.stores.ASM.base_url'), '/') . '/img/newsletter_images/newsletter_header_en.jpg',
+            'header_link' => rtrim(config('allstars.services.webtools.base_url'), '/') . '/img/newsletter_images/newsletter_header_en.jpg',
             'see_product' => 'See product',
             'Price: ' => 'Price: ',
             'Inc VAT' => 'Inc. VAT',

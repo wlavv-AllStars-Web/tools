@@ -24,5 +24,6 @@ error_log
 /public/uploads/
 /docs/
 /scripts/
+/reports/
 /public/_uploads/
 /public/homepage/

@@ -86,6 +86,14 @@ class order_payment extends PrestashopModel
         return self::getTotalsByShop($current_year, $current_day, self::SHOP_ASM);
     }
 
+    public static function getActualCurrentMonthForShops(array $shopIds)
+    {
+        $current_year = date('Y-m') . '-01';
+        $current_day = date('Y-m-d');
+
+        return self::getTotalsByShops($current_year, $current_day, $shopIds);
+    }
+
     private static function getASMActual()
     {
         $current_year = date('Y') . '-01-01';

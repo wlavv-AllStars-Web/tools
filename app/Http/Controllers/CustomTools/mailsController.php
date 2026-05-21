@@ -57,9 +57,12 @@ class mailsController extends Controller
     }
     
     public function send($email, $html, $subject){
+        $recipient = (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp'))
+            ? 'bruno.fernandes.asm@gmail.com'
+            : $email;
 
-        Mail::html($html, function ($message) use ($email, $subject) {
-            $message->to($email)->subject($subject);
+        Mail::html($html, function ($message) use ($recipient, $subject) {
+            $message->to($recipient)->subject($subject);
         });
     }
     

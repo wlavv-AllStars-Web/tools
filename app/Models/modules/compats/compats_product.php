@@ -71,6 +71,34 @@ class compats_product extends Model
             ->get();
     }
 
+    public static function createCompat($id_brand, $id_model, $id_type, $id_version, $id_product, $store = 0): int
+    {
+        $idCompat = compats::createCompat($id_brand, $id_model, $id_type, $id_version, $store);
+
+        if (!$idCompat) {
+            return 0;
+        }
+
+        $existing = self::where('id_compat', (int) $idCompat)
+            ->where('id_product', (int) $id_product)
+            ->where('store', (int) $store)
+            ->first();
+
+        if ($existing) {
+            return 1;
+        }
+
+        self::create([
+            'id_compat' => (int) $idCompat,
+            'id_product' => (int) $id_product,
+            'store' => (int) $store,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return 1;
+    }
+
     public static function removeCompat(int $id_compat, int $store): int
     {
         self::where('id_compat', $id_compat)

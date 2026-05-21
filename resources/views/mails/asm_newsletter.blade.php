@@ -1,9 +1,15 @@
+@php
+    $productUrl = __('mails.asm_newsletter.asm_newsletter.base_link') . $data->id_product . '-product.html';
+@endphp
+
 <tr>
-    <td class="newsletter_content" style="width: 740px; : inline-block;">
+    <td class="newsletter_content" style="width: 740px;">
         <table style="width: 740px;">
             <tr style="background-color: #ffffff;">
                 <td colspan="3" style="text-align: center; background-image: white;">
-                    <img id="main_image" onclick="window.open(\'{!! __('mails.asm_newsletter.asm_newsletter.base_link') !!}{{ $data->id_product}}-product.html\')" src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/{{ $data->id_image}}-tm_thickbox_default/main_product.jpg" style="width: 600px;margin: 0 auto;">
+                    <a href="{{ $productUrl }}" target="_blank" style="display: inline-block; text-decoration: none;">
+                        <img id="main_image" src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/{{ $data->id_image}}-tm_thickbox_default/main_product.jpg" style="width: 600px;margin: 0 auto;">
+                    </a>
                 </td>
             </tr>
         </table>
@@ -13,7 +19,7 @@
                     <table style="width: 740px;">
                         <tr>
                             <td>
-                                <div onclick="window.open(\'{!! __('mails.asm_newsletter.asm_newsletter.base_link') !!}{{ $data->id_product}}-product.html\')" id="product_name" style="text-align: center; font-size: 28px; color: #282828; padding: 20px 0;">{{ $data->product_name}}</div>
+                                <a href="{{ $productUrl }}" target="_blank" id="product_name" style="display: block; text-align: center; font-size: 28px; color: #282828; padding: 20px 0; text-decoration: none;">{{ $data->product_name}}</a>
                             </td>
                         </tr> 
                     </table>
@@ -42,7 +48,7 @@
             </tr>
             <tr>
                 <td style="text-align: center;padding: 30px 0;"> 
-                    <a href="{!! __('mails.asm_newsletter.asm_newsletter.base_link') !!}{{ $data->id_product }}-product.html" id="see_more" target="_blank" style="background-color: rgb(213, 5, 14); color: white; font-weight: bolder; text-transform: uppercase; font-size: 18px; border: medium none; padding: 20px; margin: 20px auto; text-decoration: none;">{!! __('mails.asm_newsletter.asm_newsletter.see_product') !!}</a>
+                    <a href="{{ $productUrl }}" id="see_more" target="_blank" style="background-color: rgb(213, 5, 14); color: white; font-weight: bolder; text-transform: uppercase; font-size: 18px; border: medium none; padding: 20px; margin: 20px auto; text-decoration: none;">{!! __('mails.asm_newsletter.asm_newsletter.see_product') !!}</a>
                 </td>
             </tr>
         </table>

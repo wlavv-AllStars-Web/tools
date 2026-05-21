@@ -78,7 +78,10 @@ class salesController extends Controller
             
             $email = NEW mailsController();
             $html = $email->createStructure('ASM', 'requestedProducts', trans('mails.Requested products notification'), $data, $requested_product->id_lang);
-            //$email->send($requested_product->email, $html, trans('mails.Requested products notification'));
+            $recipient = (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp'))
+                ? 'bruno.fernandes.asm@gmail.com'
+                : $requested_product->email;
+            //$email->send($recipient, $html, trans('mails.Requested products notification'));
             
             return response()->json([ 'result' => 'success' ]);
             

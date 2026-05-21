@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\prestashop\suppliers;
 
 use App\Models\modules\backorders_list\backorders_list;
+use App\Models\modules\supplier_map\supplier_map;
 use App\Services\oms\OmsLegacyProcurementService;
 
 class suppliersBackordersController extends Controller
@@ -140,18 +141,26 @@ class suppliersBackordersController extends Controller
         ];
         
         $html = view('customTools/suppliersBackorders/email', compact('dataView'))->render();
-        $email = suppliers::where('id_supplier', $supplier->id_supplier)->value('email');
+        $email = supplier_map::where('id_supplier', $supplier->id_supplier)->value('email') ?: '';
         $subject = "ALL STARS BACK ORDERS OVERVIEW - " . $supplier->supplier . ' ( ' . date('m-Y') . ' )' . ' - ' . $email;        
 
-        config(['mail.mailers.smtp.username' => config('allstars.mailers.suppliers.username')]);
-        if (config('allstars.mailers.suppliers.password')) {
-            config(['mail.mailers.smtp.password' => config('allstars.mailers.suppliers.password')]);
-        }
-        config(['mail.from.address' => config('allstars.mailers.suppliers.from_address')]);
-        config(['mail.from.name' => config('allstars.mailers.suppliers.from_name')]);
+        $isLocalTest = app()->environment('local') || str_contains(strtolower(base_path()), 'xampp');
 
-        Mail::html($html, function ($message) use ($email, $subject) {
-            $message->to($email)->subject($subject);
+        if (!$isLocalTest) {
+            config(['mail.mailers.smtp.username' => config('allstars.mailers.suppliers.username')]);
+            if (config('allstars.mailers.suppliers.password')) {
+                config(['mail.mailers.smtp.password' => config('allstars.mailers.suppliers.password')]);
+            }
+            config(['mail.from.address' => config('allstars.mailers.suppliers.from_address')]);
+            config(['mail.from.name' => config('allstars.mailers.suppliers.from_name')]);
+        }
+
+        $recipient = $isLocalTest
+            ? 'bruno.fernandes.asm@gmail.com'
+            : $email;
+
+        Mail::html($html, function ($message) use ($recipient, $subject) {
+            $message->to($recipient)->subject($subject);
         });
     }
 

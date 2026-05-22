@@ -34,6 +34,7 @@ class webController extends Controller{
         $accessList[]                           = ['name' =>  trans('messages.seoComparator'),      'url' => route('web.tools.seo.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-not-equal"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.rawText'),            'url' => route('web.tools.raw_text.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-not-equal"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.changesTracker'),     'url' => route('web.tools.changes.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-code"></i>'];
+        $accessList[]                           = ['name' =>  'Migration tool',                     'url' => route('web.tools.db_migration.index'),     'icon' => '<i style="font-size: 40px;" class="fa-solid fa-database"></i>'];
 
         /**
         $accessList[]                           = ['name' =>  trans('messages.purchasePrice'),      'url' => route('purchasePrice.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];

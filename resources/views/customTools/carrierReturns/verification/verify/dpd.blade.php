@@ -2,7 +2,7 @@
     <table class="table table-striped" style="text-align: center;width: 100%;margin-bottom: 0;">
         <tr>
             <td>
-                <img src="/images/logos/carriers/{{$carrier}}.png" style="width: 75px;">
+                <img src="/uploads/logos/carriers/{{$carrier}}.png" style="width: 75px;">
             </td>
             <td>
                 <div><h3>SHIPPEMENTS</h3></div> 

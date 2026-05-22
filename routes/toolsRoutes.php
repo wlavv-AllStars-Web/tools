@@ -48,6 +48,7 @@ use App\Http\Controllers\CustomTools\AsgTasksController;
 use App\Http\Controllers\CustomTools\purchasePriceController;
 use App\Http\Controllers\CustomTools\SafetyCheckController;
 use App\Http\Controllers\CustomTools\CarrierExpeditionCheckController;
+use App\Http\Controllers\CustomTools\CarrierEndOfDayDocumentController;
 use App\Http\Controllers\CustomTools\HomepageAdminController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\AsdResourcesController;
@@ -55,6 +56,7 @@ use App\Http\Controllers\CustomTools\asmResourcesController;
 use App\Http\Controllers\CustomTools\asgCarsController;
 use App\Http\Controllers\CustomTools\PaymentLinkRequestController;
 use App\Http\Controllers\CustomTools\AsdAlertController;
+use App\Http\Controllers\CustomTools\ToolsMigrationController;
 
 use App\Http\Controllers\CustomTools\CurrencyVariationController;
 use App\Http\Controllers\Modules\oms\DashboardController as OmsDashboardController;
@@ -104,6 +106,15 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/{projectId}/errors/store', [ChangeTrackerController::class, 'storeError'])->name('errors.store');
             Route::post('/{projectId}/errors/{errorId}/update', [ChangeTrackerController::class, 'updateError'])->name('errors.update');
             Route::post('/{projectId}/files/{fileId}/delete', [ChangeTrackerController::class, 'deleteFile'])->name('files.delete');
+        });
+
+        Route::prefix('db-migration')->name('db_migration.')->group(function () {
+            Route::get('/', [ToolsMigrationController::class, 'index'])->name('index');
+            Route::get('/table/{table}', [ToolsMigrationController::class, 'table'])->name('table')->where('table', '[A-Za-z0-9_]+');
+            Route::get('/table/{table}/row/{id}', [ToolsMigrationController::class, 'row'])->name('row')->where('table', '[A-Za-z0-9_]+');
+            Route::post('/table/{table}/sync', [ToolsMigrationController::class, 'sync'])->name('sync')->where('table', '[A-Za-z0-9_]+');
+            Route::post('/table/{table}/clear', [ToolsMigrationController::class, 'clear'])->name('clear')->where('table', '[A-Za-z0-9_]+');
+            Route::post('/table/{table}/row/{id}/sync', [ToolsMigrationController::class, 'syncRow'])->name('sync_row')->where('table', '[A-Za-z0-9_]+');
         });
     });
 
@@ -299,6 +310,14 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/store', [CarrierExpeditionCheckController::class, 'store'])->name('store');
             Route::get('/history', [CarrierExpeditionCheckController::class, 'history'])->name('history');
             Route::get('/export', [CarrierExpeditionCheckController::class, 'exportCsv'])->name('export');
+        });
+
+        Route::prefix('carrier-end-of-day')->name('carrier_end_of_day.')->group(function () {
+            Route::get('/', [CarrierEndOfDayDocumentController::class, 'index'])->name('index');
+            Route::post('/documents', [CarrierEndOfDayDocumentController::class, 'store'])->name('store');
+            Route::get('/documents/{document}', [CarrierEndOfDayDocumentController::class, 'show'])->name('show');
+            Route::get('/documents/{document}/print', [CarrierEndOfDayDocumentController::class, 'print'])->name('print');
+            Route::get('/documents/{document}/pdf', [CarrierEndOfDayDocumentController::class, 'pdf'])->name('pdf');
         });
 
         Route::get('/picking', [pickingController::class, 'index'])->name('picking.index');

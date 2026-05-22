@@ -20,15 +20,15 @@ class carrierIssuesController extends Controller
     private $carriers = [
             [
                 'name' => 'dpd',
-                'logo' => '/images/logos/carriers/dpd.png',
+                'logo' => '/uploads/logos/carriers/dpd.png',
             ],
             [
                 'name' => 'ups',
-                'logo' => '/images/logos/carriers/ups.png',
+                'logo' => '/uploads/logos/carriers/ups.png',
             ],
             [
                 'name' => 'nacex',
-                'logo' => '/images/logos/carriers/nacex.png',
+                'logo' => '/uploads/logos/carriers/nacex.png',
             ]
         ];
         

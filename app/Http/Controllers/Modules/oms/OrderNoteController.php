@@ -204,6 +204,12 @@ class OrderNoteController extends Controller
         $productAttributeId = !empty($data['product_attribute_id']) ? (int) $data['product_attribute_id'] : null;
         $qtyOrdered = (int) $data['qty_ordered'];
 
+        if ($this->isPrestashopPack($productId)) {
+            return $this->lineMutationBlockedResponse($request, 'Packs cannot be added to order notes. Add the individual component products instead.');
+        }
+
+        $endOfLifeWarning = $this->prestashopEndOfLifeWarning($productId, $productAttributeId);
+
         $this->ensurePrestashopCustomProductRows($productId, $productAttributeId);
 
         $existingLine = OrderNoteLine::query()
@@ -236,10 +242,13 @@ class OrderNoteController extends Controller
             return response()->json(array_merge([
                 'success' => true,
                 'message' => 'Product added successfully.',
+                'warning' => $endOfLifeWarning,
             ], $this->buildBuilderPayload($orderNote, $request)));
         }
 
-        return back()->with('success', 'Product line added successfully.');
+        $redirect = back()->with('success', 'Product line added successfully.');
+
+        return $endOfLifeWarning ? $redirect->with('warning', $endOfLifeWarning) : $redirect;
     }
 
     public function updateLine(Request $request, OrderNote $orderNote, OrderNoteLine $line)
@@ -415,9 +424,23 @@ class OrderNoteController extends Controller
 
         $created = 0;
         $updated = 0;
+        $endOfLifeWarnings = [];
 
-        DB::transaction(function () use ($orderNote, $aggregated, &$created, &$updated) {
+        DB::transaction(function () use ($orderNote, $aggregated, &$created, &$updated, &$endOfLifeWarnings) {
             foreach ($aggregated as $payload) {
+                if ($this->isPrestashopPack((int) $payload['product_id'])) {
+                    continue;
+                }
+
+                $warning = $this->prestashopEndOfLifeWarning(
+                    (int) $payload['product_id'],
+                    !empty($payload['product_attribute_id']) ? (int) $payload['product_attribute_id'] : null
+                );
+
+                if ($warning) {
+                    $endOfLifeWarnings[] = $warning;
+                }
+
                 $this->ensurePrestashopCustomProductRows(
                     (int) $payload['product_id'],
                     !empty($payload['product_attribute_id']) ? (int) $payload['product_attribute_id'] : null
@@ -459,8 +482,12 @@ class OrderNoteController extends Controller
 
         $request->session()->forget($this->getCsvImportSessionKey((int) $orderNote->id));
 
-        return redirect()->route('erp.oms.order_notes.show', $orderNote)
+        $redirect = redirect()->route('erp.oms.order_notes.show', $orderNote)
             ->with('success', 'CSV import completed successfully. Created lines: ' . $created . '. Updated lines: ' . $updated . '.');
+
+        return !empty($endOfLifeWarnings)
+            ? $redirect->with('warning', implode(' ', array_unique($endOfLifeWarnings)))
+            : $redirect;
     }
 
     protected function getCsvImportSessionKey(int $orderNoteId): string
@@ -572,46 +599,67 @@ class OrderNoteController extends Controller
             return $base;
         }
 
+        if (!empty($matched->is_pack)) {
+            $base['message'] = 'Packs cannot be added to order notes. Add the individual component products instead.';
+            return $base;
+        }
+
         $base['product_id'] = (int) $matched->product_id;
         $base['product_attribute_id'] = !empty($matched->product_attribute_id) ? (int) $matched->product_attribute_id : 0;
         $base['resolved_reference'] = (string) ($matched->resolved_reference ?? '');
         $base['resolved_name'] = (string) ($matched->display_name ?? ('Product #' . $matched->product_id));
+        $base['end_of_life'] = (int) ($matched->end_of_life ?? 0);
         $base['is_valid'] = true;
-        $base['message'] = $base['product_attribute_id'] > 0
+        $message = $base['product_attribute_id'] > 0
             ? 'Matched successfully to product attribute reference.'
             : 'Matched successfully to main product reference.';
+        $base['message'] = $base['end_of_life'] === 1
+            ? $message . ' Warning: this product is marked as end of life.'
+            : $message;
 
         return $base;
     }
 
     protected function findSupplierProductByProductId(int $supplierId, int $productId): ?object
     {
+        $prefix = $this->psPrefix();
+
         return DB::connection('mysql2')
-            ->table('ps_product as p')
-            ->leftJoin('ps_product_lang as pl', function ($join) {
+            ->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1)
                     ->where('pl.id_shop', '=', 1);
             })
+            ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->where('p.id_supplier', $supplierId)
             ->where('p.id_product', $productId)
-            ->selectRaw('p.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name')
+            ->selectRaw('p.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name, CASE WHEN COALESCE(p.cache_is_pack, 0) = 1 OR pack.id_product_pack IS NOT NULL THEN 1 ELSE 0 END as is_pack, COALESCE(cp.wmdeprecated, 0) as end_of_life')
             ->first();
     }
 
     protected function findSupplierProductByAttributeId(int $supplierId, int $productAttributeId): ?object
     {
+        $prefix = $this->psPrefix();
+
         return DB::connection('mysql2')
-            ->table('ps_product_attribute as pa')
-            ->join('ps_product as p', 'p.id_product', '=', 'pa.id_product')
-            ->leftJoin('ps_product_lang as pl', function ($join) {
+            ->table($prefix . 'product_attribute as pa')
+            ->join($prefix . 'product as p', 'p.id_product', '=', 'pa.id_product')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1)
                     ->where('pl.id_shop', '=', 1);
             })
+            ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
+                $join->on('cpa.id_product', '=', 'p.id_product')
+                    ->on('cpa.id_product_attribute', '=', 'pa.id_product_attribute');
+            })
             ->where('p.id_supplier', $supplierId)
             ->where('pa.id_product_attribute', $productAttributeId)
-            ->selectRaw('p.id_product as product_id, pa.id_product_attribute as product_attribute_id, COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name')
+            ->selectRaw('p.id_product as product_id, pa.id_product_attribute as product_attribute_id, COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name, CASE WHEN COALESCE(p.cache_is_pack, 0) = 1 OR pack.id_product_pack IS NOT NULL THEN 1 ELSE 0 END as is_pack, COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) as end_of_life')
             ->first();
     }
 
@@ -624,15 +672,23 @@ class OrderNoteController extends Controller
 
         $normalizedReference = mb_strtolower($reference);
 
+        $prefix = $this->psPrefix();
+
         $attributeMatch = DB::connection('mysql2')
-            ->table('ps_product_attribute as pa')
-            ->join('ps_product as p', 'p.id_product', '=', 'pa.id_product')
-            ->leftJoin('ps_product_lang as pl', function ($join) {
+            ->table($prefix . 'product_attribute as pa')
+            ->join($prefix . 'product as p', 'p.id_product', '=', 'pa.id_product')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1)
                     ->where('pl.id_shop', '=', 1);
             })
-            ->leftJoin('ps_product_supplier as ps_attr', function ($join) use ($supplierId) {
+            ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
+                $join->on('cpa.id_product', '=', 'p.id_product')
+                    ->on('cpa.id_product_attribute', '=', 'pa.id_product_attribute');
+            })
+            ->leftJoin($prefix . 'product_supplier as ps_attr', function ($join) use ($supplierId) {
                 $join->on('ps_attr.id_product', '=', 'pa.id_product')
                     ->on('ps_attr.id_product_attribute', '=', 'pa.id_product_attribute')
                     ->where('ps_attr.id_supplier', '=', $supplierId);
@@ -645,7 +701,7 @@ class OrderNoteController extends Controller
                 $query->whereRaw('LOWER(TRIM(COALESCE(pa.reference, ""))) = ?', [$normalizedReference])
                     ->orWhereRaw('LOWER(TRIM(COALESCE(ps_attr.product_supplier_reference, ""))) = ?', [$normalizedReference]);
             })
-            ->selectRaw('p.id_product as product_id, pa.id_product_attribute as product_attribute_id, COALESCE(NULLIF(pa.reference, ""), NULLIF(ps_attr.product_supplier_reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name')
+            ->selectRaw('p.id_product as product_id, pa.id_product_attribute as product_attribute_id, COALESCE(NULLIF(pa.reference, ""), NULLIF(ps_attr.product_supplier_reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name, CASE WHEN COALESCE(p.cache_is_pack, 0) = 1 OR pack.id_product_pack IS NOT NULL THEN 1 ELSE 0 END as is_pack, COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) as end_of_life')
             ->orderByRaw('CASE WHEN LOWER(TRIM(COALESCE(pa.reference, ""))) = ? THEN 0 WHEN LOWER(TRIM(COALESCE(ps_attr.product_supplier_reference, ""))) = ? THEN 1 ELSE 2 END', [$normalizedReference, $normalizedReference])
             ->first();
 
@@ -654,13 +710,15 @@ class OrderNoteController extends Controller
         }
 
         return DB::connection('mysql2')
-            ->table('ps_product as p')
-            ->leftJoin('ps_product_lang as pl', function ($join) {
+            ->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1)
                     ->where('pl.id_shop', '=', 1);
             })
-            ->leftJoin('ps_product_supplier as ps_main', function ($join) use ($supplierId) {
+            ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'product_supplier as ps_main', function ($join) use ($supplierId) {
                 $join->on('ps_main.id_product', '=', 'p.id_product')
                     ->where('ps_main.id_product_attribute', '=', 0)
                     ->where('ps_main.id_supplier', '=', $supplierId);
@@ -674,7 +732,7 @@ class OrderNoteController extends Controller
                     ->orWhereRaw('LOWER(TRIM(COALESCE(p.supplier_reference, ""))) = ?', [$normalizedReference])
                     ->orWhereRaw('LOWER(TRIM(COALESCE(ps_main.product_supplier_reference, ""))) = ?', [$normalizedReference]);
             })
-            ->selectRaw('p.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(p.reference, ""), NULLIF(ps_main.product_supplier_reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name')
+            ->selectRaw('p.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(p.reference, ""), NULLIF(ps_main.product_supplier_reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as resolved_reference, COALESCE(NULLIF(pl.name, ""), CONCAT("Product #", p.id_product)) as display_name, CASE WHEN COALESCE(p.cache_is_pack, 0) = 1 OR pack.id_product_pack IS NOT NULL THEN 1 ELSE 0 END as is_pack, COALESCE(cp.wmdeprecated, 0) as end_of_life')
             ->orderByRaw('CASE WHEN LOWER(TRIM(COALESCE(p.reference, ""))) = ? THEN 0 WHEN LOWER(TRIM(COALESCE(ps_main.product_supplier_reference, ""))) = ? THEN 1 WHEN LOWER(TRIM(COALESCE(p.supplier_reference, ""))) = ? THEN 2 ELSE 3 END', [$normalizedReference, $normalizedReference, $normalizedReference])
             ->first();
     }
@@ -864,6 +922,7 @@ class OrderNoteController extends Controller
 
     protected function getSupplierProductsForBuilder(int $supplierId, int $orderNoteId, string $search): Collection
     {
+        $prefix = $this->psPrefix();
         $searchLike = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
 
         $addedKeys = OrderNoteLine::query()
@@ -875,21 +934,33 @@ class OrderNoteController extends Controller
             });
 
         $products = DB::connection('mysql2')
-            ->table('ps_product as p')
-            ->leftJoin('ps_product_lang as pl', function ($join) {
+            ->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
                     ->where('pl.id_lang', '=', 1)
                     ->where('pl.id_shop', '=', 1);
             })
-            ->leftJoin('ps_product_attribute as pa', 'pa.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'product_attribute as pa', 'pa.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
+                $join->on('cpa.id_product', '=', 'p.id_product')
+                    ->on('cpa.id_product_attribute', '=', 'pa.id_product_attribute');
+            })
             ->selectRaw('
                 p.id_product as product_id,
                 pa.id_product_attribute as product_attribute_id,
                 COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,
                 COALESCE(NULLIF(pl.name, ""), NULLIF(p.reference, ""), CONCAT("Product #", p.id_product)) as display_name,
-                p.id_supplier as supplier_id
+                p.id_supplier as supplier_id,
+                COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) as end_of_life
             ')
             ->where('p.id_supplier', $supplierId)
+            ->where(function ($query) {
+                $query->whereNull('p.cache_is_pack')
+                    ->orWhere('p.cache_is_pack', 0);
+            })
+            ->whereNull('pack.id_product_pack')
             ->where(function ($query) use ($searchLike) {
                 $query->where('p.reference', 'like', $searchLike)
                     ->orWhere('p.supplier_reference', 'like', $searchLike)
@@ -908,6 +979,7 @@ class OrderNoteController extends Controller
             $row->product_attribute_id = $row->product_attribute_id ? (int) $row->product_attribute_id : 0;
             $row->already_added = $addedKeys->has($row->product_id . ':' . $row->product_attribute_id) ? 1 : 0;
             $row->is_new_candidate = $row->already_added ? 0 : 1;
+            $row->end_of_life = (int) ($row->end_of_life ?? 0);
             return $row;
         });
     }
@@ -1104,6 +1176,60 @@ class OrderNoteController extends Controller
                     'stock_arrive' => DB::raw('COALESCE(stock_arrive, 0) + ' . (int) $delta),
                 ]);
         }
+    }
+
+    protected function isPrestashopPack(int $productId): bool
+    {
+        if ($productId <= 0) {
+            return false;
+        }
+
+        $prefix = $this->psPrefix();
+
+        $cacheIsPack = DB::connection('mysql2')
+            ->table($prefix . 'product')
+            ->where('id_product', $productId)
+            ->value('cache_is_pack');
+
+        if ((int) $cacheIsPack === 1) {
+            return true;
+        }
+
+        return DB::connection('mysql2')
+            ->table($prefix . 'pack')
+            ->where('id_product_pack', $productId)
+            ->exists();
+    }
+
+    protected function prestashopEndOfLifeWarning(int $productId, ?int $productAttributeId = null): ?string
+    {
+        if ($productId <= 0) {
+            return null;
+        }
+
+        $prefix = $this->psPrefix();
+        $productAttributeId = (int) ($productAttributeId ?? 0);
+
+        $product = DB::connection('mysql2')
+            ->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'product_attribute as pa', function ($join) use ($productAttributeId) {
+                $join->on('pa.id_product', '=', 'p.id_product')
+                    ->where('pa.id_product_attribute', '=', $productAttributeId);
+            })
+            ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) use ($productAttributeId) {
+                $join->on('cpa.id_product', '=', 'p.id_product')
+                    ->where('cpa.id_product_attribute', '=', $productAttributeId);
+            })
+            ->where('p.id_product', $productId)
+            ->selectRaw('COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), CAST(p.id_product as CHAR)) as reference, COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) as end_of_life')
+            ->first();
+
+        if ((int) ($product->end_of_life ?? 0) !== 1) {
+            return null;
+        }
+
+        return 'Warning: product ' . (string) ($product->reference ?? ('#' . $productId)) . ' is marked as end of life.';
     }
 
     protected function psPrefix(): string

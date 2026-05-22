@@ -53,6 +53,8 @@ use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\AsdResourcesController;
 use App\Http\Controllers\CustomTools\asmResourcesController;
 use App\Http\Controllers\CustomTools\asgCarsController;
+use App\Http\Controllers\CustomTools\PaymentLinkRequestController;
+use App\Http\Controllers\CustomTools\AsdAlertController;
 
 use App\Http\Controllers\CustomTools\CurrencyVariationController;
 use App\Http\Controllers\Modules\oms\DashboardController as OmsDashboardController;
@@ -139,6 +141,15 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::middleware('role:admin,manager')->prefix('tasks/reports')->name('tasks.reports.')->group(function(){
             Route::get('/monthly', [productivityController::class,'monthly'])->name('monthly');
             Route::get('/annual', [productivityController::class,'annual'])->name('annual');
+        });
+
+        Route::prefix('asd-alerts')->name('asd_alerts.')->group(function () {
+            Route::get('/', [AsdAlertController::class, 'index'])->name('index');
+            Route::get('/create', [AsdAlertController::class, 'create'])->name('create');
+            Route::post('/', [AsdAlertController::class, 'store'])->name('store');
+            Route::get('/{asdAlert}/edit', [AsdAlertController::class, 'edit'])->name('edit');
+            Route::put('/{asdAlert}', [AsdAlertController::class, 'update'])->name('update');
+            Route::delete('/{asdAlert}', [AsdAlertController::class, 'destroy'])->name('destroy');
         });
 
         Route::redirect('/oms/logistic-containers', '/logistics/oms/logistic-containers');
@@ -254,6 +265,13 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/vat', fn () => redirect()->route('finance.tools.vat.check'))->name('vat.index');
         Route::get('/vat/check', [checkVatController::class, 'index'])->name('vat.check');
         Route::get('/vat/verify', [checkVatController::class, 'verify'])->name('vat.verify');
+
+        Route::prefix('payment-links')->name('payment_links.')->group(function () {
+            Route::get('/', [PaymentLinkRequestController::class, 'financeIndex'])->name('index');
+            Route::get('/archive', [PaymentLinkRequestController::class, 'financeArchive'])->name('archive');
+            Route::get('/{paymentLinkRequest}', [PaymentLinkRequestController::class, 'show'])->name('show');
+            Route::post('/{paymentLinkRequest}/approve', [PaymentLinkRequestController::class, 'approve'])->name('approve');
+        });
     });
 
     Route::prefix('logistics')->name('logistics.tools.')->group(function () {
@@ -471,6 +489,15 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::delete('/quotes/{id}', [quotesController::class, 'destroy'])->name('quotes.destroy');
         Route::get('/returns/{id?}', [returnsController::class, 'index'])->name('returns.index');
         Route::get('/warranties/{id?}', [warrantiesController::class, 'index'])->name('warranties.index');
+
+        Route::prefix('payment-links')->name('payment_links.')->group(function () {
+            Route::get('/', [PaymentLinkRequestController::class, 'salesIndex'])->name('index');
+            Route::get('/sent', [PaymentLinkRequestController::class, 'salesSent'])->name('sent');
+            Route::get('/create', [PaymentLinkRequestController::class, 'create'])->name('create');
+            Route::post('/', [PaymentLinkRequestController::class, 'store'])->name('store');
+            Route::get('/dashboard/{storeCode}', fn () => redirect()->route('sales.tools.payment_links.index'))->name('dashboard');
+            Route::post('/{paymentLinkRequest}/send-email', [PaymentLinkRequestController::class, 'sendEmail'])->name('send_email');
+        });
     });
 
     Route::prefix('documentManager')->name('documentsManager.clean.')->group(function () {

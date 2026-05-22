@@ -5,6 +5,7 @@ namespace App\Http\Controllers\CustomTools;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\prestashop\issues;
@@ -13,7 +14,9 @@ use App\Models\prestashop\product;
 use App\Models\prestashop\stock_available;
 use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\orders_details;
+use App\Models\modules\oms\OrderNote;
 use App\Services\oms\OmsProcurementBridge;
+use App\Services\oms\SupplierInvoiceWorkflowService;
 
 class stockEntryController extends Controller
 {
@@ -192,43 +195,99 @@ class stockEntryController extends Controller
                 ], 200);
             }
             
-            $quantityToReceive = $request->received - $current->qty_received;
+            $requestedReceived = (int) $request->received;
+            $alreadyReceived = (int) $current->qty_received;
+            $qtyBilled = (int) $current->qty_wmfaturado;
+            $quantityToReceive = $requestedReceived - $alreadyReceived;
 
             if($quantityToReceive > 0){
+                if($requestedReceived > $qtyBilled){
+                    return response()->json([
+                        'status' => 'fail',
+                        'message' => 'Failed! Trying to receive more than billed quantity.'
+                    ], 200);
+                }
 
-                OmsProcurementBridge::recordReception((int) $request->get('oms_billed_order_line_id'), (int) $request->received);
-                
-                if($current->product_attribute_id > 0){
-                    
-                    DB::connection('mysql2')
-                        ->table(env('DB2_DB_prefix') . 'custom_product_attribute')
-                        ->where('id_product_attribute', $current->product_attribute_id)
-                        ->decrement('stock_arrive', $quantityToReceive);
+                DB::beginTransaction();
+                DB::connection('mysql2')->beginTransaction();
 
-                    $products_with_ref = product_attribute::where('reference', $request->get('reference'))->get();
-        
-                    foreach($products_with_ref AS $prod){
-                        stock_available::where('id_product', $prod->id_product )->where('id_product_attribute', $prod->id_product_attribute )->increment( 'quantity', $quantityToReceive );
+                try {
+                    $recordedQuantity = OmsProcurementBridge::recordReception((int) $request->get('oms_billed_order_line_id'), $requestedReceived);
+
+                    if($recordedQuantity <= 0){
+                        DB::connection('mysql2')->rollBack();
+                        DB::rollBack();
+
+                        return response()->json([
+                            'status' => 'fail',
+                            'message' => 'Failed! Stock entry was not recorded.'
+                        ], 200);
                     }
-    
-                }else{
 
-                    DB::connection('mysql2')
-                        ->table(env('DB2_DB_prefix') . 'custom_product')
-                        ->where('id_product', $current->product_id)
-                        ->decrement('stock_arrive', $quantityToReceive);
-                    
-                    $products_with_ref = product::where('reference', $request->get('reference'))->get();
-        
-                    foreach($products_with_ref AS $prod){
-                        stock_available::where('id_product', $prod->id_product )->where('id_product_attribute', 0)->increment( 'quantity', $quantityToReceive );
+                    $receptionId = $this->latestReceptionIdForLine((int) $request->get('oms_billed_order_line_id'), $recordedQuantity);
+                    $targets = $this->stockTargetsForReference(
+                        (string) $request->get('reference'),
+                        (int) $current->product_attribute_id
+                    );
+
+                    $stockLogs = [];
+                    foreach($targets AS $target){
+                        $stockBefore = $this->prestashopStock((int) $target->id_product, (int) $target->id_product_attribute);
+                        stock_available::where('id_product', $target->id_product)
+                            ->where('id_product_attribute', $target->id_product_attribute)
+                            ->increment('quantity', $recordedQuantity);
+                        $stockAfter = $this->prestashopStock((int) $target->id_product, (int) $target->id_product_attribute);
+
+                        $stockLogs[] = [
+                            'target' => $target,
+                            'stock_before' => $stockBefore,
+                            'stock_after' => $stockAfter,
+                            'arrive_before' => $this->prestashopStockArrive((int) $target->id_product, (int) $target->id_product_attribute),
+                            'arrive_after' => $this->prestashopStockArrive((int) $target->id_product, (int) $target->id_product_attribute),
+                            'arrive_delta' => 0,
+                        ];
                     }
-                    
+
+                    $mainArriveBefore = $this->prestashopStockArrive((int) $current->product_id, (int) $current->product_attribute_id);
+                    $this->adjustPrestashopStockArrive((int) $current->product_id, (int) $current->product_attribute_id, -$recordedQuantity);
+                    $mainArriveAfter = $this->prestashopStockArrive((int) $current->product_id, (int) $current->product_attribute_id);
+
+                    foreach($stockLogs AS $stockLog){
+                        if ((int) $stockLog['target']->id_product === (int) $current->product_id
+                            && (int) $stockLog['target']->id_product_attribute === (int) $current->product_attribute_id) {
+                            $stockLog['arrive_before'] = $mainArriveBefore;
+                            $stockLog['arrive_after'] = $mainArriveAfter;
+                            $stockLog['arrive_delta'] = -$recordedQuantity;
+                        }
+
+                        $this->insertStockHistory(
+                            'reception_line',
+                            (int) $current->oms_billed_order_line_id,
+                            $receptionId,
+                            (int) $current->po_id,
+                            (int) $stockLog['target']->id_product,
+                            (int) $stockLog['target']->id_product_attribute,
+                            (int) $stockLog['stock_before'],
+                            $recordedQuantity,
+                            (int) $stockLog['stock_after'],
+                            (int) $stockLog['arrive_before'],
+                            (int) $stockLog['arrive_delta'],
+                            (int) $stockLog['arrive_after']
+                        );
+                    }
+
+                    DB::connection('mysql2')->commit();
+                    DB::commit();
+                } catch (\Throwable $exception) {
+                    DB::connection('mysql2')->rollBack();
+                    DB::rollBack();
+
+                    throw $exception;
                 }
     
                 /** stock_available::where('id_product', $current->product_id )->where('id_product_attribute', $current->product_attribute_id )->increment( 'quantity', $quantityToReceive ); **/
     
-                $progress = min(100, ((int) $request->received / max(1, (int) $current->qty_wmfaturado)) * 100);
+                $progress = min(100, ($requestedReceived / max(1, $qtyBilled)) * 100);
     
                 $closeMessage = '';
                 if($progress == 100){
@@ -239,7 +298,7 @@ class stockEntryController extends Controller
     
                 return response()->json([
                     'status' => 'success', 
-                    'message' => $quantityToReceive . ' X ' . $request->get('reference') . ', for order ' . $current->po_id . $closeMessage            
+                    'message' => $recordedQuantity . ' X ' . $request->get('reference') . ', for order ' . $current->po_id . $closeMessage
                 ], 200);
             }else{
     
@@ -316,7 +375,7 @@ class stockEntryController extends Controller
             ->join('oms_reception_lines as rl', 'rl.reception_id', '=', 'r.id')
             ->join('oms_billed_order_lines as bol', 'bol.id', '=', 'rl.billed_order_line_id')
             ->where('r.id', (int) $id)
-            ->select('r.id', 'rl.id as reception_line_id', 'rl.qty_received', 'bol.id as billed_order_line_id', 'bol.product_id', 'bol.product_attribute_id')
+            ->select('r.id', 'r.billed_order_id', 'rl.id as reception_line_id', 'rl.qty_received', 'bol.id as billed_order_line_id', 'bol.product_id', 'bol.product_attribute_id')
             ->first();
 
         if (!$reception) {
@@ -327,22 +386,34 @@ class stockEntryController extends Controller
         $id_product = (int) $reception->product_id;
         $id_product_attribute = (int) $reception->product_attribute_id;
 
-        DB::transaction(function () use ($reception, $quantity, $id_product, $id_product_attribute) {
-            stock_available::where('id_product', $id_product)
-                ->where('id_product_attribute', $id_product_attribute)
-                ->decrement('quantity', $quantity);
+        DB::beginTransaction();
+        DB::connection('mysql2')->beginTransaction();
 
-            if ($id_product_attribute > 0) {
-                DB::connection('mysql2')
-                    ->table(env('DB2_DB_prefix') . 'custom_product_attribute')
-                    ->where('id_product_attribute', $id_product_attribute)
-                    ->increment('stock_arrive', $quantity);
-            } else {
-                DB::connection('mysql2')
-                    ->table(env('DB2_DB_prefix') . 'custom_product')
-                    ->where('id_product', $id_product)
-                    ->increment('stock_arrive', $quantity);
+        try {
+            $reference = $this->displayReference($id_product, $id_product_attribute);
+            $targets = $this->stockTargetsForReference($reference, $id_product_attribute);
+
+            $stockLogs = [];
+            foreach($targets AS $target){
+                $stockBefore = $this->prestashopStock((int) $target->id_product, (int) $target->id_product_attribute);
+                stock_available::where('id_product', $target->id_product)
+                    ->where('id_product_attribute', $target->id_product_attribute)
+                    ->decrement('quantity', $quantity);
+                $stockAfter = $this->prestashopStock((int) $target->id_product, (int) $target->id_product_attribute);
+
+                $stockLogs[] = [
+                    'target' => $target,
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $stockAfter,
+                    'arrive_before' => $this->prestashopStockArrive((int) $target->id_product, (int) $target->id_product_attribute),
+                    'arrive_after' => $this->prestashopStockArrive((int) $target->id_product, (int) $target->id_product_attribute),
+                    'arrive_delta' => 0,
+                ];
             }
+
+            $mainArriveBefore = $this->prestashopStockArrive($id_product, $id_product_attribute);
+            $this->adjustPrestashopStockArrive($id_product, $id_product_attribute, $quantity);
+            $mainArriveAfter = $this->prestashopStockArrive($id_product, $id_product_attribute);
 
             DB::table('oms_billed_order_lines')
                 ->where('id', (int) $reception->billed_order_line_id)
@@ -351,11 +422,241 @@ class stockEntryController extends Controller
                     'updated_at' => now(),
                 ]);
 
+            foreach($stockLogs AS $stockLog){
+                if ((int) $stockLog['target']->id_product === $id_product
+                    && (int) $stockLog['target']->id_product_attribute === $id_product_attribute) {
+                    $stockLog['arrive_before'] = $mainArriveBefore;
+                    $stockLog['arrive_after'] = $mainArriveAfter;
+                    $stockLog['arrive_delta'] = $quantity;
+                }
+
+                $this->insertStockHistory(
+                    'stock_entry_removal',
+                    (int) $reception->billed_order_line_id,
+                    (int) $reception->id,
+                    (int) $reception->billed_order_id,
+                    (int) $stockLog['target']->id_product,
+                    (int) $stockLog['target']->id_product_attribute,
+                    (int) $stockLog['stock_before'],
+                    -$quantity,
+                    (int) $stockLog['stock_after'],
+                    (int) $stockLog['arrive_before'],
+                    (int) $stockLog['arrive_delta'],
+                    (int) $stockLog['arrive_after']
+                );
+            }
+
             DB::table('oms_reception_lines')->where('id', (int) $reception->reception_line_id)->delete();
             DB::table('oms_receptions')->where('id', (int) $reception->id)->delete();
-        });
+
+            $orderNoteId = DB::table('oms_billed_orders')
+                ->where('id', (int) $reception->billed_order_id)
+                ->value('order_note_id');
+
+            if ($orderNoteId) {
+                $orderNote = OrderNote::query()->find((int) $orderNoteId);
+
+                if ($orderNote) {
+                    app(SupplierInvoiceWorkflowService::class)->refreshOrderNoteStatus(
+                        $orderNote->fresh(['lines', 'billedOrders'])
+                    );
+                }
+            }
+
+            DB::connection('mysql2')->commit();
+            DB::commit();
+        } catch (\Throwable $exception) {
+            DB::connection('mysql2')->rollBack();
+            DB::rollBack();
+
+            throw $exception;
+        }
 
         return redirect()->route('stockEntry.listToRemove');
+    }
+
+    private function latestReceptionIdForLine(int $lineId, int $quantity): ?int
+    {
+        $receptionId = DB::table('oms_reception_lines')
+            ->where('billed_order_line_id', $lineId)
+            ->where('qty_received', $quantity)
+            ->orderByDesc('id')
+            ->value('reception_id');
+
+        return $receptionId ? (int) $receptionId : null;
+    }
+
+    private function stockTargetsForReference(string $reference, int $productAttributeId): \Illuminate\Support\Collection
+    {
+        $reference = trim($reference);
+
+        if ($reference === '') {
+            return collect();
+        }
+
+        if($productAttributeId > 0){
+            return product_attribute::where('reference', $reference)
+                ->get(['id_product', 'id_product_attribute'])
+                ->map(fn ($row) => (object) [
+                    'id_product' => (int) $row->id_product,
+                    'id_product_attribute' => (int) $row->id_product_attribute,
+                ])
+                ->unique(fn ($row) => $row->id_product . ':' . $row->id_product_attribute)
+                ->values();
+        }
+
+        return product::where('reference', $reference)
+            ->get(['id_product'])
+            ->map(fn ($row) => (object) [
+                'id_product' => (int) $row->id_product,
+                'id_product_attribute' => 0,
+            ])
+            ->unique(fn ($row) => $row->id_product . ':0')
+            ->values();
+    }
+
+    private function displayReference(int $productId, int $productAttributeId): string
+    {
+        if($productAttributeId > 0){
+            return (string) product_attribute::where('id_product_attribute', $productAttributeId)->value('reference');
+        }
+
+        return (string) product::where('id_product', $productId)->value('reference');
+    }
+
+    private function prestashopStock(int $productId, int $productAttributeId): int
+    {
+        return (int) stock_available::where('id_product', $productId)
+            ->where('id_product_attribute', $productAttributeId)
+            ->value('quantity');
+    }
+
+    private function prestashopStockArrive(int $productId, int $productAttributeId): int
+    {
+        $prefix = env('DB2_DB_prefix');
+
+        if($productAttributeId > 0){
+            return (int) DB::connection('mysql2')
+                ->table($prefix . 'custom_product_attribute')
+                ->where('id_product_attribute', $productAttributeId)
+                ->value('stock_arrive');
+        }
+
+        return (int) DB::connection('mysql2')
+            ->table($prefix . 'custom_product')
+            ->where('id_product', $productId)
+            ->value('stock_arrive');
+    }
+
+    private function adjustPrestashopStockArrive(int $productId, int $productAttributeId, int $delta): void
+    {
+        if($delta === 0){
+            return;
+        }
+
+        $prefix = env('DB2_DB_prefix');
+
+        if($productAttributeId > 0){
+            $exists = DB::connection('mysql2')
+                ->table($prefix . 'custom_product_attribute')
+                ->where('id_product_attribute', $productAttributeId)
+                ->exists();
+
+            if(!$exists){
+                DB::connection('mysql2')
+                    ->table($prefix . 'custom_product_attribute')
+                    ->insert([
+                        'id_product' => $productId,
+                        'id_product_attribute' => $productAttributeId,
+                        'stock_arrive' => 0,
+                    ]);
+            }
+
+            DB::connection('mysql2')
+                ->table($prefix . 'custom_product_attribute')
+                ->where('id_product_attribute', $productAttributeId)
+                ->increment('stock_arrive', $delta);
+
+            return;
+        }
+
+        $exists = DB::connection('mysql2')
+            ->table($prefix . 'custom_product')
+            ->where('id_product', $productId)
+            ->exists();
+
+        if(!$exists){
+            DB::connection('mysql2')
+                ->table($prefix . 'custom_product')
+                ->insert([
+                    'id_product' => $productId,
+                    'stock_arrive' => 0,
+                ]);
+        }
+
+        DB::connection('mysql2')
+            ->table($prefix . 'custom_product')
+            ->where('id_product', $productId)
+            ->increment('stock_arrive', $delta);
+    }
+
+    private function referenceSnapshots(int $productId, int $productAttributeId): array
+    {
+        $productReference = trim((string) product::where('id_product', $productId)->value('reference'));
+        $attributeReference = '';
+
+        if($productAttributeId > 0){
+            $attributeReference = trim((string) product_attribute::where('id_product_attribute', $productAttributeId)->value('reference'));
+        }
+
+        return [
+            'product_reference_snapshot' => $productReference !== '' ? $productReference : null,
+            'attribute_reference_snapshot' => $attributeReference !== '' ? $attributeReference : null,
+            'display_reference_snapshot' => $attributeReference !== '' ? $attributeReference : ($productReference !== '' ? $productReference : null),
+        ];
+    }
+
+    private function insertStockHistory(
+        string $sourceType,
+        int $sourceId,
+        ?int $receptionId,
+        int $billedOrderId,
+        int $productId,
+        int $productAttributeId,
+        int $stockBefore,
+        int $stockDelta,
+        int $stockAfter,
+        int $arriveBefore,
+        int $arriveDelta,
+        int $arriveAfter
+    ): void {
+        $billedOrder = DB::table('oms_billed_orders')->where('id', $billedOrderId)->first();
+        $snapshots = $this->referenceSnapshots($productId, $productAttributeId);
+        $user = Auth::user();
+
+        DB::table('oms_stock_history')->insert([
+            'source_type' => $sourceType,
+            'source_id' => $sourceId,
+            'order_note_id' => $billedOrder?->order_note_id,
+            'billed_order_id' => $billedOrderId,
+            'supplier_invoice_id' => $billedOrder?->supplier_invoice_id,
+            'reception_id' => $receptionId,
+            'product_id' => $productId,
+            'product_attribute_id' => $productAttributeId,
+            'product_reference_snapshot' => $snapshots['product_reference_snapshot'],
+            'attribute_reference_snapshot' => $snapshots['attribute_reference_snapshot'],
+            'display_reference_snapshot' => $snapshots['display_reference_snapshot'],
+            'ps_quantity_before' => $stockBefore,
+            'ps_quantity_delta' => $stockDelta,
+            'ps_quantity_after' => $stockAfter,
+            'ps_quantity_arrive_before' => $arriveBefore,
+            'ps_quantity_arrive_delta' => $arriveDelta,
+            'ps_quantity_arrive_after' => $arriveAfter,
+            'user_id' => $user?->id,
+            'user_name_snapshot' => $user?->name,
+            'user_email_snapshot' => $user?->email,
+            'created_at' => now(),
+        ]);
     }
 
     public function index() {                echo "stockEntryController INDEX";   exit; }

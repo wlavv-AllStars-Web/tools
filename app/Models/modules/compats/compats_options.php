@@ -4,6 +4,7 @@ namespace App\Models\modules\compats;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class compats_options extends Model
 {
@@ -136,5 +137,40 @@ class compats_options extends Model
         return self::where('type', $type)
             ->orderBy('name', 'asc')
             ->get();
+    }
+
+    public static function newOption($data): int
+    {
+        $uiType = (int) ($data->type ?? -1);
+        $type = $uiType + 1;
+        $name = trim((string) ($data->en ?? $data->name ?? ''));
+
+        if ($type < 1 || $type > 4 || $name === '') {
+            return 0;
+        }
+
+        $idParent = $type === 1 ? 0 : (int) ($data->id_parent ?? 0);
+        $slug = Str::slug($name);
+
+        $existing = self::where('type', $type)
+            ->where('id_parent', $idParent)
+            ->where(function ($query) use ($slug, $name) {
+                $query->where('slug', $slug)
+                    ->orWhere('name', $name);
+            })
+            ->first();
+
+        if ($existing) {
+            return (int) $existing->id_option;
+        }
+
+        return (int) self::create([
+            'id_parent' => $idParent,
+            'type' => $type,
+            'slug' => $slug,
+            'name' => $name,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->id_option;
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\API\compatsController;
 use App\Http\Controllers\API\myGarageController;
 use App\Http\Controllers\API\erpETAController;
 use App\Http\Controllers\API\HomepageApiController;
+use App\Http\Controllers\API\AsdAlertApiController;
 use App\Http\Controllers\CustomTools\checkVatController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 
@@ -25,6 +26,7 @@ Route::group([
     
     /** Homepage **/
     Route::get('/asd/homepage', [HomepageASDAdminController::class, 'api']);   
+    Route::get('/asd/alerts/{iso_code}/{token}', [AsdAlertApiController::class, 'index'])->name('api.asd.alerts');
     
     /** COMPATS API **/
     

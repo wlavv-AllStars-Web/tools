@@ -494,7 +494,9 @@ class financeController extends Controller
     public function createEXCSV(){ 
         
         $row = 0;
-        $fileName = 'INTRA-EX-' . $this->year . $this->month . '.csv';
+        $moloniPath = public_path() . "/uploads/finance/moloni/moloni.csv";
+        $period = $this->moloniPeriod($moloniPath) ?: ($this->year . $this->month);
+        $fileName = 'INTRA-EX-' . $period . '.csv';
         $filePath = public_path() . '/admin/download/' . $fileName;
 
         $headers = array(
@@ -513,11 +515,11 @@ class financeController extends Controller
         
         $iso_code_list = ['DE', 'AT', 'BE', 'BG', 'CY', 'HR', 'DK', 'SK', 'SI', 'ES', 'EE', 'FI', 'FR', 'GR', 'EL', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'CZ', 'RO', 'SE'];
 
-        if (($handle = fopen(public_path() . "/uploads/finance/moloni/moloni.csv", "r")) !== FALSE) {
+        if (($handle = fopen($moloniPath, "r")) !== FALSE) {
 
             while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
                 
-                $data = array_map("utf8_encode", $data);
+                $data = array_map(fn ($value) => $this->normalizeMoloniEncoding($value), $data);
                 $num = count($data);
                 $row++;
                 
@@ -525,7 +527,7 @@ class financeController extends Controller
 
                     if( (isset($data[12])) && ($data[12] != "") && ($data[0] == 'Fatura-Recibo')) {
                         
-                        if( ($data[12] != "Portes") && ( !self::startsWith($data[12], 'SHIPPING')) && ($data[12] != "ccFee") ) {
+                        if (!$this->isIntrastatExcludedReference($data[12], $data[14] ?? '')) {
 
                             $iso_code = substr($data[5], 0, 2);
 
@@ -570,7 +572,7 @@ class financeController extends Controller
                                 $weight = str_replace(".",",", $weight );
                                 
                                 
-                                $array = ['INTRA-EX', $this->year . $this->month, '513881387', $data[12], $nc, $iso_code, 'PT', '10', 'EXW', '11', '3', '', $weight, $data[15], intval($data[18]), '', $nif, ''];
+                                $array = ['INTRA-EX', $period, '513881387', $data[12], $nc, $iso_code, 'PT', '10', 'EXW', '11', '3', '', $weight, $data[15], (int) round($this->parseMoloniDecimal($data[18])), '', $nif, ''];
                                 
                                 fputcsv($file, $array, ';');
                             }
@@ -589,6 +591,86 @@ class financeController extends Controller
     public function startsWith ($string, $startString){
         $len = strlen($startString);
         return (substr($string, 0, $len) === $startString);
+    }
+
+    private function moloniPeriod(string $path): ?string
+    {
+        if (!file_exists($path)) {
+            return null;
+        }
+
+        if (($handle = fopen($path, 'r')) === false) {
+            return null;
+        }
+
+        $period = null;
+        $row = 0;
+
+        while (($data = fgetcsv($handle, 1000, ';')) !== false) {
+            $row++;
+
+            if ($row <= 2 || ($data[0] ?? '') !== 'Fatura-Recibo') {
+                continue;
+            }
+
+            $date = trim((string) ($data[3] ?? ''));
+            if (preg_match('/^(\d{4})-(\d{2})-\d{2}$/', $date, $matches)) {
+                $period = $matches[1] . (int) $matches[2];
+                break;
+            }
+        }
+
+        fclose($handle);
+
+        return $period;
+    }
+
+    private function isIntrastatExcludedReference(string $reference, string $description = ''): bool
+    {
+        $reference = trim($reference);
+        $description = trim($description);
+
+        if ($reference === '') {
+            return true;
+        }
+
+        $excludedReferences = ['Portes', 'ccFee'];
+        if (in_array($reference, $excludedReferences, true)) {
+            return true;
+        }
+
+        foreach (['SHIPPING', 'UPS', 'DPD', 'NAC', 'MON.REL'] as $prefix) {
+            if (self::startsWith($reference, $prefix)) {
+                return true;
+            }
+        }
+
+        return stripos($description, 'shipping') !== false
+            || stripos($description, 'portes') !== false
+            || stripos($description, 'transport') !== false;
+    }
+
+    private function parseMoloniDecimal(string $value): float
+    {
+        $value = str_replace([' ', '.'], ['', ''], trim($value));
+        $value = str_replace(',', '.', $value);
+
+        return is_numeric($value) ? (float) $value : 0.0;
+    }
+
+    private function normalizeMoloniEncoding($value): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+
+        if (function_exists('mb_convert_encoding')) {
+            return mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
+        }
+
+        $converted = @iconv('ISO-8859-1', 'UTF-8//IGNORE', $value);
+
+        return $converted !== false ? $converted : $value;
     }
     
     public function save_currency_rate(Request $request){

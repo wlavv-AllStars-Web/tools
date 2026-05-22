@@ -9,6 +9,7 @@ use App\Models\modules\oms\SupplierInvoice;
 use App\Services\oms\ExportService;
 use App\Services\oms\ReceptionHistoryService;
 use App\Services\oms\StockArriveService;
+use App\Services\oms\SupplierInvoiceWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,8 @@ class ReceptionController extends Controller
     public function __construct(
         protected ReceptionHistoryService $receptionHistoryService,
         protected ExportService $exportService,
-        protected StockArriveService $stockArriveService
+        protected StockArriveService $stockArriveService,
+        protected SupplierInvoiceWorkflowService $supplierInvoiceWorkflowService
     ) {
         $this->middleware('auth');
     }
@@ -272,6 +274,12 @@ class ReceptionController extends Controller
                     'created_at' => now(),
                 ]);
             }
+
+            if ($billedOrder->orderNote) {
+                $this->supplierInvoiceWorkflowService->refreshOrderNoteStatus(
+                    $billedOrder->orderNote->fresh(['lines', 'billedOrders'])
+                );
+            }
         });
 
         return redirect()->route('erp.oms.receptions.index', ['billed_order_id' => $billedOrder->id])->with('success', 'Reception registered successfully.');
@@ -373,13 +381,69 @@ class ReceptionController extends Controller
     protected function incrementPrestashopStock(int $productId, int $productAttributeId, int $qty): void
     {
         $prefix = $this->psPrefix();
-        $query = DB::connection('mysql2')->table($prefix . 'stock_available')
-            ->where('id_product', $productId)
-            ->where('id_product_attribute', $productAttributeId);
 
-        if ($query->exists()) {
-            $query->increment('quantity', $qty);
+        foreach ($this->stockTargetsForReference($productId, $productAttributeId) as $target) {
+            $query = DB::connection('mysql2')->table($prefix . 'stock_available')
+                ->where('id_product', (int) $target->id_product)
+                ->where('id_product_attribute', (int) $target->id_product_attribute);
+
+            if ($query->exists()) {
+                $query->increment('quantity', $qty);
+            }
         }
+    }
+
+    protected function stockTargetsForReference(int $productId, int $productAttributeId)
+    {
+        $prefix = $this->psPrefix();
+
+        if ($productAttributeId > 0) {
+            $reference = trim((string) DB::connection('mysql2')
+                ->table($prefix . 'product_attribute')
+                ->where('id_product_attribute', $productAttributeId)
+                ->value('reference'));
+
+            if ($reference === '') {
+                return collect([(object) [
+                    'id_product' => $productId,
+                    'id_product_attribute' => $productAttributeId,
+                ]]);
+            }
+
+            return DB::connection('mysql2')
+                ->table($prefix . 'product_attribute')
+                ->where('reference', $reference)
+                ->get(['id_product', 'id_product_attribute'])
+                ->map(fn ($row) => (object) [
+                    'id_product' => (int) $row->id_product,
+                    'id_product_attribute' => (int) $row->id_product_attribute,
+                ])
+                ->unique(fn ($row) => $row->id_product . ':' . $row->id_product_attribute)
+                ->values();
+        }
+
+        $reference = trim((string) DB::connection('mysql2')
+            ->table($prefix . 'product')
+            ->where('id_product', $productId)
+            ->value('reference'));
+
+        if ($reference === '') {
+            return collect([(object) [
+                'id_product' => $productId,
+                'id_product_attribute' => 0,
+            ]]);
+        }
+
+        return DB::connection('mysql2')
+            ->table($prefix . 'product')
+            ->where('reference', $reference)
+            ->get(['id_product'])
+            ->map(fn ($row) => (object) [
+                'id_product' => (int) $row->id_product,
+                'id_product_attribute' => 0,
+            ])
+            ->unique(fn ($row) => $row->id_product . ':0')
+            ->values();
     }
 
     protected function decreaseCustomStockArrive(int $productId, int $productAttributeId, int $qty): void

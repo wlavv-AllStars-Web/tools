@@ -15,6 +15,7 @@ class task extends Model
 
     protected $fillable = [
         'title','description','id_team','task_date','time_allowed',
+        'assigned_user_id',
         'status_user','status_manager','status_admin',
         'observations_user','observations_manager','observations_admin',
     ];

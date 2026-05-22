@@ -11,6 +11,7 @@
 .oms-builder-table .sku-code{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.18rem .42rem;border-radius:5px;background:#f8fafc;border:1px solid rgba(20,33,61,.08);}
 .oms-builder-table .qty-input{max-width:76px;margin:0 auto;text-align:center;}
 .oms-builder-table .new-flag{display:inline-flex;width:20px;height:20px;border-radius:5px;font-size:.72rem;align-items:center;justify-content:center;background:#dcfce7;color:#15803d;border:1px solid #86efac;}
+.oms-builder-table .eol-flag{display:inline-flex;width:20px;height:20px;border-radius:5px;font-size:.72rem;align-items:center;justify-content:center;background:#fef3c7;color:#b45309;border:1px solid #f59e0b;}
 .oms-builder-table .action-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:5px;border:1px solid rgba(37,99,235,.18);background:#eff6ff;color:#1d4ed8;}
 .oms-builder-table .action-btn[disabled]{cursor:not-allowed;pointer-events:all;opacity:.55;background:#f8fafc;color:#94a3b8;border-color:rgba(148,163,184,.16);}
 .oms-builder-table .name-code{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -53,6 +54,7 @@
                         $name = trim((string) ($product->display_name ?? $sku));
                         $alreadyAdded = (int) ($product->already_added ?? 0) === 1;
                         $isNew = (int) ($product->is_new_candidate ?? 0) === 1;
+                        $isEndOfLife = (int) ($product->end_of_life ?? 0) === 1;
                         $qtyDefault = max(1, (int) ($product->to_buy ?? 0));
                         $productAttributeId = (int) ($product->product_attribute_id ?? 0);
                         $formId = 'oms-add-product-form-' . (int) $product->product_id . '-' . $productAttributeId;
@@ -61,6 +63,9 @@
                         <td class="text-center">
                             @if($isNew && !$alreadyAdded)
                                 <span class="new-flag"><i class="fa-solid fa-check"></i></span>
+                            @endif
+                            @if($isEndOfLife)
+                                <span class="eol-flag" title="End of life"><i class="fa-solid fa-triangle-exclamation"></i></span>
                             @endif
                         </td>
                         <td class="sku-cell" title="{{ $name }}">

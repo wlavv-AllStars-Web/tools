@@ -390,6 +390,9 @@
                 }
 
                 await refreshBuilderFromResponse(payload);
+                if (payload.warning) {
+                    alert(payload.warning);
+                }
                 setSyncState('saved', payload.message || 'Updated');
                 return true;
             } catch (error) {

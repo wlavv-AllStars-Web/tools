@@ -50,18 +50,34 @@ class refundController extends Controller
     public function getInfo(Request $request){
         
         $order = orders::where('id_order', $request->id_order)->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.',
+            ], 404);
+        }
+
         $order_details = orders_details::where('id_order', $request->id_order)->pluck('product_reference');
         $order_payment = order_payment::where('order_reference', $order->reference)->value('payment_method');
 
         $refs = implode(', ',$order_details->toArray());
         $customer = customer::where('id_customer', $order->id_customer)->first();
+
+        if (!$customer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer not found for this order.',
+            ], 404);
+        }
         
         $data = [
+            'success' => true,
             'name'  => $customer->firstname . ' ' . $customer->lastname,
             'lang'  => $order->id_lang,
             'email' => $customer->email,
             'total' => $order->total_paid,
-            'country' => $order->invoice->country->lang_en->name,
+            'country' => $order->invoice?->country?->lang_en?->name,
             'purchase_date' => Carbon::parse($order->date_add)->format('Y-m-d'),
             'today' => Carbon::parse(date('Y-m-d'))->format('Y-m-d'),
             'payment' => $order_payment,

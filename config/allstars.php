@@ -73,6 +73,7 @@ return [
             'vat_validation' => env('ALLSTARS_VAT_VALIDATION_TOKEN', env('TOOLS_KEY')),
             'asd_pricing' => env('ASD_PRICING_TOKEN'),
             'purchase_price_sync' => env('ALLSTARS_PURCHASE_PRICE_SYNC_TOKEN'),
+            'asd_alerts' => env('ALLSTARS_ASD_ALERTS_API_TOKEN', env('ASD_ALERT_KEY')),
         ],
     ],
 
@@ -91,6 +92,16 @@ return [
     'emails' => [
         'suppliers' => env('ALLSTARS_SUPPLIERS_EMAIL', 'suppliers@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com')),
         'purchase' => env('ALLSTARS_PURCHASE_EMAIL', 'purchase@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com')),
+        'sales' => [
+            'ASM' => [
+                'address' => env('ALLSTARS_ASM_SALES_EMAIL', 'sales@' . env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com')),
+                'name' => env('ALLSTARS_ASM_SALES_FROM_NAME', 'All Stars Motorsport'),
+            ],
+            'ASD' => [
+                'address' => env('ALLSTARS_ASD_SALES_EMAIL', 'sales@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com')),
+                'name' => env('ALLSTARS_ASD_SALES_FROM_NAME', 'All Stars Distribution'),
+            ],
+        ],
         'excluded_domains' => [
             env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com'),
             env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com'),
@@ -113,6 +124,41 @@ return [
             'password' => env('ALLSTARS_MARKETING_SMTP_PASSWORD'),
             'from_address' => env('ALLSTARS_MARKETING_FROM_ADDRESS', env('ALLSTARS_MARKETING_SMTP_USERNAME')),
             'from_name' => env('ALLSTARS_MARKETING_FROM_NAME', 'AS Group'),
+        ],
+    ],
+
+    'payment_links' => [
+        'gateway_url' => env('ALLSTARS_PAYMENT_LINK_GATEWAY_URL', 'https://secure.ogone.com/ncol/PROD/orderstandard.asp'),
+        'stores' => [
+            'ASM' => [
+                'name' => 'All Stars Motorsport',
+                'payment_link_color' => '#dd170e',
+                'social_links' => [
+                    'facebook' => 'https://www.facebook.com/allstarsmotorsport',
+                    'flickr' => 'https://www.flickr.com/photos/allstarsmotorsport/',
+                    'instagram' => 'https://instagram.com/allstarsmotorsport',
+                    'youtube' => 'https://www.youtube.com/user/allstarsmotorsport',
+                ],
+                'pspid' => env('ALLSTARS_PAYMENT_LINK_ASM_PSPID', env('ALLSTARS_PAYMENT_LINK_PSPID', 'Allstarsmotorsport')),
+                'sha_in' => env('ALLSTARS_PAYMENT_LINK_ASM_SHA_IN', env('ALLSTARS_PAYMENT_LINK_SHA_IN', '2f47f9cb-f665-4b76-ba0d-80c0aacee604')),
+            ],
+            'ASD' => [
+                'name' => 'All Stars Distribution',
+                'payment_link_color' => 'dodgerblue',
+                'social_links' => [
+                    'facebook' => 'https://www.facebook.com/allstarsdistribution',
+                    'flickr' => 'https://www.flickr.com/photos/allstarsdistribution/',
+                    'instagram' => 'https://instagram.com/allstarsdistribution',
+                ],
+                'footer_social_image' => 'asd_email_logos.png',
+                'social_icons' => [
+                    'facebook' => 'asd_facebook_mail.png',
+                    'flickr' => 'asd_flickr_mail.png',
+                    'instagram' => 'asd_insta_mail.png',
+                ],
+                'pspid' => env('ALLSTARS_PAYMENT_LINK_ASD_PSPID', 'Allstarsdistribution'),
+                'sha_in' => env('ALLSTARS_PAYMENT_LINK_ASD_SHA_IN', env('ALLSTARS_PAYMENT_LINK_SHA_IN', '2f47f9cb-f665-4b76-ba0d-80c0aacee604')),
+            ],
         ],
     ],
 ];

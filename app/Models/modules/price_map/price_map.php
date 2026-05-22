@@ -39,7 +39,7 @@ class price_map extends Model
         $price_map->asm_active = $data['asm_active'];
         $price_map->asm_deprecated = $data['asm_deprecated'];
         $price_map->asm_discount = $data['asm_discount'];
-        $price_map->asm_racio = (!isset( $product_compare['asm_racio'] )) ? 0 : $data['asm_racio'];
+        $price_map->asm_racio = $data['asm_racio'] ?? 0;
         $price_map->asd_price = $data['asd_price'];
         $price_map->asd_wholesale_price = $data['asd_wholesale_price'];
         $price_map->asd_active = $data['asd_active'];

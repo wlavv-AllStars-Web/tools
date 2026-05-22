@@ -42,7 +42,7 @@ class shipping_delay extends Model
         
         $lastDelay = shipping_delay::where('id_shipping', $id_shipping)->orderBy('position', 'desc')->first();
         
-        $position = (isset($lastDelay->position)) ? $lastDelay->position : 0;
+        $position = (isset($lastDelay->position)) ? ((int) $lastDelay->position + 1) : 1;
         
         shipping_delay::newDelay( $id_shipping, $eta, $position );
         

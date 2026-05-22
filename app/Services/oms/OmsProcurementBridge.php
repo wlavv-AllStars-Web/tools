@@ -2,6 +2,7 @@
 
 namespace App\Services\oms;
 
+use App\Models\modules\oms\OrderNote;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +119,7 @@ class OmsProcurementBridge
 
         $quantityToReceive = $newReceivedTotal - (int) $line->qty_received;
 
-        if ($quantityToReceive <= 0) {
+        if ($quantityToReceive <= 0 || $newReceivedTotal > (int) $line->qty_wmfaturado) {
             return 0;
         }
 
@@ -144,9 +145,30 @@ class OmsProcurementBridge
                     'qty_received' => DB::raw('COALESCE(qty_received, 0) + ' . $quantityToReceive),
                     'updated_at' => now(),
                 ]);
+
+            self::refreshOrderNoteStatus((int) $line->po_id);
         });
 
         return $quantityToReceive;
+    }
+
+    private static function refreshOrderNoteStatus(int $billedOrderId): void
+    {
+        $orderNoteId = DB::table('oms_billed_orders')
+            ->where('id', $billedOrderId)
+            ->value('order_note_id');
+
+        if (!$orderNoteId) {
+            return;
+        }
+
+        $orderNote = OrderNote::query()->find((int) $orderNoteId);
+
+        if ($orderNote) {
+            app(SupplierInvoiceWorkflowService::class)->refreshOrderNoteStatus(
+                $orderNote->fresh(['lines', 'billedOrders'])
+            );
+        }
     }
 
     private static function prestashopCandidates(string $code): array
@@ -154,9 +176,17 @@ class OmsProcurementBridge
         $prefix = self::psPrefix();
 
         $products = DB::connection('mysql2')
-            ->table($prefix . 'product')
-            ->where('ean13', $code)
-            ->orWhere('reference', 'LIKE', $code)
+            ->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->where(function ($query) use ($code) {
+                $query->where('p.ean13', $code)
+                    ->orWhere('p.reference', 'LIKE', $code);
+            })
+            ->where(function ($query) {
+                $query->whereNull('p.cache_is_pack')
+                    ->orWhere('p.cache_is_pack', 0);
+            })
+            ->whereNull('pack.id_product_pack')
             ->pluck('id_product');
 
         $attributes = DB::connection('mysql2')
@@ -187,6 +217,7 @@ class OmsProcurementBridge
             ->whereIn('p.id_product', $productIds->all())
             ->select(
                 'p.id_product',
+                'p.cache_is_pack',
                 'p.reference',
                 'p.ean13',
                 'p.location as housing',
@@ -200,6 +231,16 @@ class OmsProcurementBridge
             )
             ->get()
             ->keyBy('id_product');
+
+        $packProductIds = $productIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table($prefix . 'pack')
+                ->whereIn('id_product_pack', $productIds->all())
+                ->pluck('id_product_pack')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
 
         $attributes = $attributeIds->isEmpty()
             ? collect()
@@ -217,10 +258,15 @@ class OmsProcurementBridge
                 ->get()
                 ->keyBy('id_product_attribute');
 
-        return $rows->map(function ($row) use ($products, $attributes) {
+        return $rows->map(function ($row) use ($products, $attributes, $packProductIds) {
             $productId = (int) $row->product_id;
             $attributeId = (int) ($row->product_attribute_id ?? 0);
             $product = clone ($products->get($productId) ?? (object) []);
+
+            if ((int) data_get($product, 'cache_is_pack', 0) === 1 || $packProductIds->contains($productId)) {
+                return null;
+            }
+
             $attribute = $attributeId > 0 ? $attributes->get($attributeId) : null;
             $sku = trim((string) data_get($attribute, 'reference', data_get($product, 'reference', '')));
             $ean13 = trim((string) data_get($attribute, 'ean13', data_get($product, 'ean13', '')));
@@ -244,7 +290,7 @@ class OmsProcurementBridge
                 'attribute' => $attribute,
                 'order_reference' => $row->order_reference ?: ($row->order_note_reference ?: ('OMS-' . $row->billed_order_id)),
             ];
-        });
+        })->filter()->values();
     }
 
     private static function psPrefix(): string

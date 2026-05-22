@@ -138,10 +138,14 @@ class housingController extends Controller
         $changes = [];
 
         if ($resolved['type'] === 'attribute') {
-            $oldHousing = (string) ($resolved['attribute']->housing ?? '');
+            $oldHousing = $this->getAttributeHousing((int) $resolved['attribute']->id_product_attribute);
             if ($oldHousing !== $newLocation) {
+                $this->setAttributeHousing(
+                    (int) $resolved['product']->id_product,
+                    (int) $resolved['attribute']->id_product_attribute,
+                    $newLocation
+                );
                 $resolved['attribute']->housing = $newLocation;
-                $resolved['attribute']->save();
 
                 $changes[] = [
                     'field_name' => 'housing',
@@ -397,7 +401,7 @@ class housingController extends Controller
 
         if ($this->isHousingCode($search)) {
             $matches = collect()
-                ->merge($this->queryAttributesBy('housing', $search))
+                ->merge($this->queryAttributeHousing($search))
                 ->merge($this->queryProductsBy('location', $search))
                 ->unique(fn ($item) => $item['row_key'])
                 ->values();
@@ -465,6 +469,45 @@ class housingController extends Controller
             ->limit(25)
             ->get()
             ->map(function ($attribute) {
+                $attribute->housing = $this->getAttributeHousing((int) $attribute->id_product_attribute);
+
+                return [
+                    'type' => 'attribute',
+                    'row_key' => 'a-' . $attribute->id_product . '-' . $attribute->id_product_attribute,
+                    'item' => $attribute,
+                ];
+            });
+    }
+
+    private function queryAttributeHousing(string $value): Collection
+    {
+        if ($this->prestashopColumnExists('product_attribute', 'housing')) {
+            return $this->queryAttributesBy('housing', $value);
+        }
+
+        $customTable = $this->psPrefix() . 'custom_product_attribute';
+        if (!Schema::connection('mysql2')->hasTable($customTable) || !Schema::connection('mysql2')->hasColumn($customTable, 'location')) {
+            return collect();
+        }
+
+        $attributeIds = DB::connection('mysql2')
+            ->table($customTable)
+            ->where('location', $value)
+            ->limit(25)
+            ->pluck('id_product_attribute')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (empty($attributeIds)) {
+            return collect();
+        }
+
+        return product_attribute::with(['product', 'stock'])
+            ->whereIn('id_product_attribute', $attributeIds)
+            ->get()
+            ->map(function ($attribute) {
+                $attribute->housing = $this->getAttributeHousing((int) $attribute->id_product_attribute);
+
                 return [
                     'type' => 'attribute',
                     'row_key' => 'a-' . $attribute->id_product . '-' . $attribute->id_product_attribute,
@@ -509,6 +552,8 @@ class housingController extends Controller
                 return null;
             }
 
+            $attributeModel->housing = $this->getAttributeHousing((int) $attributeModel->id_product_attribute);
+
             return [
                 'type' => 'attribute',
                 'product' => $productModel,
@@ -543,7 +588,7 @@ class housingController extends Controller
         $stockRow = optional($item->stock)->first();
 
         $productLocation = (string) ($baseProduct->location ?? '');
-        $attributeHousing = $isAttribute ? (string) ($item->housing ?? '') : '';
+        $attributeHousing = $isAttribute ? $this->getAttributeHousing((int) $item->id_product_attribute) : '';
 
         return (object) [
             'id_product' => (int) $baseProduct->id_product,
@@ -573,7 +618,7 @@ class housingController extends Controller
         $stockRow = optional($item->stock)->first();
 
         $productLocation = (string) ($baseProduct->location ?? '');
-        $attributeHousing = $isAttribute ? (string) ($item->housing ?? '') : '';
+        $attributeHousing = $isAttribute ? $this->getAttributeHousing((int) $item->id_product_attribute) : '';
 
         $decorated = [
             'id_product' => (int) $baseProduct->id_product,
@@ -816,6 +861,72 @@ class housingController extends Controller
         return Schema::connection('mysql2')->hasColumn($this->psPrefix() . $tableSuffix, $column);
     }
 
+    private function getAttributeHousing(int $idProductAttribute): string
+    {
+        if ($idProductAttribute <= 0) {
+            return '';
+        }
+
+        if ($this->prestashopColumnExists('product_attribute', 'housing')) {
+            return (string) (DB::connection('mysql2')
+                ->table($this->psPrefix() . 'product_attribute')
+                ->where('id_product_attribute', $idProductAttribute)
+                ->value('housing') ?? '');
+        }
+
+        $customTable = $this->psPrefix() . 'custom_product_attribute';
+        if (!Schema::connection('mysql2')->hasTable($customTable) || !Schema::connection('mysql2')->hasColumn($customTable, 'location')) {
+            return '';
+        }
+
+        return (string) (DB::connection('mysql2')
+            ->table($customTable)
+            ->where('id_product_attribute', $idProductAttribute)
+            ->value('location') ?? '');
+    }
+
+    private function setAttributeHousing(int $idProduct, int $idProductAttribute, string $housing): void
+    {
+        if ($this->prestashopColumnExists('product_attribute', 'housing')) {
+            DB::connection('mysql2')
+                ->table($this->psPrefix() . 'product_attribute')
+                ->where('id_product_attribute', $idProductAttribute)
+                ->update(['housing' => $housing]);
+
+            return;
+        }
+
+        $customTable = $this->psPrefix() . 'custom_product_attribute';
+        if (!Schema::connection('mysql2')->hasTable($customTable) || !Schema::connection('mysql2')->hasColumn($customTable, 'location')) {
+            throw new \RuntimeException('Attribute housing field is not available.');
+        }
+
+        $exists = DB::connection('mysql2')
+            ->table($customTable)
+            ->where('id_product_attribute', $idProductAttribute)
+            ->exists();
+
+        if ($exists) {
+            DB::connection('mysql2')
+                ->table($customTable)
+                ->where('id_product_attribute', $idProductAttribute)
+                ->update([
+                    'id_product' => $idProduct,
+                    'location' => $housing,
+                ]);
+
+            return;
+        }
+
+        DB::connection('mysql2')
+            ->table($customTable)
+            ->insert([
+                'id_product' => $idProduct,
+                'id_product_attribute' => $idProductAttribute,
+                'location' => $housing,
+            ]);
+    }
+
     private function psPrefix(): string
     {
         return (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
@@ -905,15 +1016,19 @@ class housingController extends Controller
                 }
 
                 if ($resolved['type'] === 'attribute') {
-                    $oldValue = (string) ($resolved['attribute']->housing ?? '');
+                    $oldValue = $this->getAttributeHousing((int) $resolved['attribute']->id_product_attribute);
 
                     if ($oldValue === $housing) {
                         $skipped++;
                         continue;
                     }
 
+                    $this->setAttributeHousing(
+                        (int) $resolved['product']->id_product,
+                        (int) $resolved['attribute']->id_product_attribute,
+                        $housing
+                    );
                     $resolved['attribute']->housing = $housing;
-                    $resolved['attribute']->save();
 
                     $this->storeHistoryBatch($resolved, 'bulk_update_housing', [[
                         'field_name' => 'housing',

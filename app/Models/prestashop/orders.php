@@ -124,7 +124,6 @@ class orders extends PrestashopModel
             )
             ->leftJoin($orderCartRuleTable, $orderCartRuleTable . '.id_order', '=', $ordersTable . '.id_order')
             ->leftJoin($orderDetailTable, $orderDetailTable . '.id_order', '=', $ordersTable . '.id_order')
-            ->where($ordersTable . '.id_order', '>', 90000)
             ->whereIn($ordersTable . '.current_state', $countableCurrentStates)
             ->where(function ($query) use ($ordersTable, $orderCartRuleTable, $orderDetailTable) {
                 $query->where($ordersTable . '.total_discounts', '>', 0)
@@ -624,7 +623,6 @@ class orders extends PrestashopModel
             ->when($hasCustomNotForReview, function ($query) use ($ordersTable, $customOrdersTable) {
                 $query->leftJoin($customOrdersTable, $customOrdersTable . '.id_order', '=', $ordersTable . '.id_order');
             })
-            ->where($ordersTable . '.id_order', '>', 100000)
             ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->where($ordersTable . '.current_state', 4)
             ->where($ordersTable . '.date_add', '>', $afterOrder)

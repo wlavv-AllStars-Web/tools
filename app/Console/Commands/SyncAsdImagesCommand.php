@@ -26,12 +26,14 @@ class SyncAsdImagesCommand extends Command
             return self::SUCCESS;
         }
 
+        $requeuedMissing = AsdImage::markMissingAsUnverified($limit);
         $verified = AsdImage::verifyPending($limit);
 
         $this->info(
             'ASD images sync completed. '
             . "Inserted: {$inserted}; "
             . "Removed: {$removed}; "
+            . "Missing rechecked: {$requeuedMissing}; "
             . "Verified: {$verified['verified']}; "
             . "Found: {$verified['found']}; "
             . "Missing: {$verified['missing']}."

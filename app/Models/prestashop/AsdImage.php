@@ -86,6 +86,7 @@ class AsdImage extends PrestashopModel
 
         $inserted = self::syncProductReferences();
         $removed = self::deleteStaleReferences();
+        self::markMissingAsUnverified($limit);
         $verified = self::verifyPending($limit);
 
         return [
@@ -194,7 +195,7 @@ class AsdImage extends PrestashopModel
                 ->where('id', $row->id)
                 ->update([
                     'has_image' => $hasImage ? 1 : 0,
-                    'verified' => 1,
+                    'verified' => $hasImage ? 1 : 0,
                     'image_path' => $imagePath,
                     'checked_at' => $now,
                     'updated_at' => $now,
@@ -207,12 +208,39 @@ class AsdImage extends PrestashopModel
         return compact('verified', 'missing', 'found');
     }
 
+    public static function markMissingAsUnverified(?int $limit = null): int
+    {
+        self::ensureTable();
+
+        $query = self::query()
+            ->where('verified', 1)
+            ->where('has_image', 0)
+            ->orderBy('id');
+
+        if ($limit !== null && $limit > 0) {
+            $query->limit($limit);
+        }
+
+        $ids = $query->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        return self::query()
+            ->whereIn('id', $ids)
+            ->update([
+                'verified' => 0,
+                'updated_at' => now()->format('Y-m-d H:i:s'),
+            ]);
+    }
+
     public static function missingRows(array $exceptions = [])
     {
         self::ensureTable();
 
         return self::query()
-            ->where('verified', 1)
+            ->where('verified', 0)
             ->where('has_image', 0)
             ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('id_product', $exceptions))
             ->select(['id_product', 'id_product_attribute', 'reference', 'manufacturer'])

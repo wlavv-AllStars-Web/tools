@@ -905,27 +905,21 @@ class dashboard extends Model
     
     public static function productsNoImage($tab, $panel)
     {
-        $exceptions = asm_dashboard::getExceptions('asd_product_no_image')
-            ->pluck('id_product')
-            ->map(fn ($id) => (int) $id)
-            ->toArray();
-
-        $rows = AsdImage::missingRows($exceptions);
+        $rows = AsdImage::missingRows();
     
         return self::dashboardPanel(
             trans('dashboard.ASD - No images'),
             'counter',
             'asd_product_no_image',
-            ['clean', 'id_product', 'reference', 'manufacturer'],
+            ['id_product', 'reference', 'manufacturer'],
             $rows->map(fn ($item) => [
-                'clean' => 'ASD_' . $item->id_product,
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
                 'manufacturer' => $item->manufacturer,
                 'extra' => 0,
                 'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASD'),
             ]),
-            ['exception_fields' => ['asd_product_no_image', 'id_product', 'reference', 'extra']],
+            [],
             \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD')
         );
     }

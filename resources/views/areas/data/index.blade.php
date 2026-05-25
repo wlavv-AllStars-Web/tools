@@ -2,6 +2,24 @@
 
 @section('content')
 
+    @if(session('success'))
+        <div class="alert alert-success" style="width: 100%;">{{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger" style="width: 100%;">{{ session('error') }}</div>
+    @endif
+
+    <div class="navbar navbar-light customPanel" style="margin-bottom: 10px;">
+        <form method="POST" action="{{ route('data.asd_images.sync') }}" style="margin: 0 auto;">
+            @csrf
+            <button type="submit" class="btn btn-info">
+                <i class="fa-solid fa-rotate me-1"></i>
+                Verify ASD images
+            </button>
+        </form>
+    </div>
+
     @if(count($accessList) > 0)
         <div class="navbar navbar-light customPanel">
             <div class="listUL" style="margin: 0 auto;display: table;">

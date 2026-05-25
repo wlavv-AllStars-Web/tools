@@ -28,6 +28,7 @@ Route::resources([ 'hr'             => hrController::class      ]);
 Route::get('finance', [financeController::class, 'index'])->name('finance.index');
 
 Route::get('data', [dataController::class, 'index'])->name('data.index');
+Route::post('data/asd-images/sync', [dataController::class, 'syncAsdImages'])->name('data.asd_images.sync');
 
 
 Route::get(  'finance/documents/inventory', [financeController::class, 'download_inventory'])->name('finance.download_inventory');

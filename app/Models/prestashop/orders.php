@@ -109,21 +109,28 @@ class orders extends PrestashopModel
         $excludedOrderIds = self::excludedIdsFromBoard('order_payed_with_voucher');
         $ordersTable = self::tableName('orders');
         $orderCartRuleTable = self::tableName('order_cart_rule');
+        $orderDetailTable = self::tableName('order_detail');
         $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
+        $countableCurrentStates = array_values(array_unique(array_merge($paidStates, [30, 31])));
 
         $query = self::select(
                 $ordersTable . '.id_order',
                 $ordersTable . '.reference',
                 $ordersTable . '.current_state',
                 $ordersTable . '.total_discounts',
-                DB::raw('GROUP_CONCAT(DISTINCT ' . $orderCartRuleTable . '.name SEPARATOR ", ") AS voucher')
+                DB::raw('GROUP_CONCAT(DISTINCT ' . $orderCartRuleTable . '.name SEPARATOR ", ") AS voucher'),
+                DB::raw('MAX(COALESCE(' . $orderDetailTable . '.reduction_percent, 0)) AS line_reduction_percent'),
+                DB::raw('MAX(COALESCE(' . $orderDetailTable . '.reduction_amount, 0)) AS line_reduction_amount')
             )
             ->leftJoin($orderCartRuleTable, $orderCartRuleTable . '.id_order', '=', $ordersTable . '.id_order')
+            ->leftJoin($orderDetailTable, $orderDetailTable . '.id_order', '=', $ordersTable . '.id_order')
             ->where($ordersTable . '.id_order', '>', 90000)
-            ->whereIn($ordersTable . '.current_state', $paidStates)
-            ->where(function ($query) use ($ordersTable, $orderCartRuleTable) {
+            ->whereIn($ordersTable . '.current_state', $countableCurrentStates)
+            ->where(function ($query) use ($ordersTable, $orderCartRuleTable, $orderDetailTable) {
                 $query->where($ordersTable . '.total_discounts', '>', 0)
-                    ->orWhereNotNull($orderCartRuleTable . '.id_order_cart_rule');
+                    ->orWhereNotNull($orderCartRuleTable . '.id_order_cart_rule')
+                    ->orWhere($orderDetailTable . '.reduction_percent', '>', 0)
+                    ->orWhere($orderDetailTable . '.reduction_amount', '>', 0);
             })
             ->groupBy(
                 $ordersTable . '.id_order',
@@ -144,6 +151,8 @@ class orders extends PrestashopModel
                 'current_state' => $item->current_state,
                 'voucher' => $item->voucher,
                 'total_discounts' => $item->total_discounts,
+                'line_reduction_percent' => $item->line_reduction_percent,
+                'line_reduction_amount' => $item->line_reduction_amount,
             ];
         }
 
@@ -151,7 +160,7 @@ class orders extends PrestashopModel
             trans('dashboard.ORDERS PAYED WITH VOUCHER'),
             $type,
             'order_payed_with_voucher',
-            ['clean', 'id_order', 'reference', 'current_state', 'voucher', 'total_discounts'],
+            ['clean', 'id_order', 'reference', 'current_state', 'voucher', 'total_discounts', 'line_reduction_percent', 'line_reduction_amount'],
             $data,
             [
                 'exception_fields' => ['order_payed_with_voucher', 'id_order', 'reference', 'total_discounts']

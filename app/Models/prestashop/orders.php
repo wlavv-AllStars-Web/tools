@@ -393,30 +393,30 @@ class orders extends PrestashopModel
     public static function dashboard_duplicated_status($type)
     {
         $data = [];
-        $excludedOrderIds = self::excludedIdsFromBoard('payment_accept');
+        $excludedOrderIds = self::excludedIdsFromBoard('duplicated_status');
 
         $bd_data = order_history::getPanelInfo($excludedOrderIds);
 
         foreach ($bd_data as $item) {
-            if ($item->total > 1) {
-                $data[] = [
-                    'clean' => $item->id_order,
-                    'id_order' => $item->id_order,
-                    'reference' => $item->reference,
-                    'client' => $item->firstname . ' ' . $item->lastname,
-                    'total' => $item->total,
-                ];
-            }
+            $data[] = [
+                'clean' => $item->id_order,
+                'id_order' => $item->id_order,
+                'reference' => $item->reference,
+                'id_order_state' => $item->id_order_state,
+                'status' => $item->status,
+                'client' => $item->firstname . ' ' . $item->lastname,
+                'total' => $item->total,
+            ];
         }
 
         return self::dashboardPanel(
             trans('dashboard.DUPLICATED STATUS'),
             $type,
             'duplicated_status',
-            ['clean', 'id_order', 'reference', 'client', 'total'],
+            ['clean', 'id_order', 'reference', 'id_order_state', 'status', 'client', 'total'],
             $data,
             [
-                'exception_fields' => ['payment_accept', 'id_order', 'reference', 'client']
+                'exception_fields' => ['duplicated_status', 'id_order', 'reference', 'client']
             ]
         );
     }

@@ -10,14 +10,16 @@
         <div class="alert alert-danger" style="width: 100%;">{{ session('error') }}</div>
     @endif
 
-    <div class="navbar navbar-light customPanel" style="margin-bottom: 10px;">
-        <form method="POST" action="{{ route('data.asd_images.sync') }}" style="margin: 0 auto;">
-            @csrf
-            <button type="submit" class="btn btn-info">
-                <i class="fa-solid fa-rotate me-1"></i>
-                Verify ASD images
-            </button>
-        </form>
+    <div class="navbar navbar-light customPanel">
+        <div class="listUL" style="margin: 0 auto;display: table;">
+            <form method="POST" action="{{ route('data.asd_images.sync') }}" style="margin: 0;">
+                @csrf
+                <button type="submit" class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left; border: 1px solid #ccc; padding: 20px 10px; background: transparent;">
+                    <div><i style="font-size: 40px;" class="fa-solid fa-rotate"></i></div>
+                    <div style="line-height: 18px; padding: 5px 0;">Verify</div>
+                </button>
+            </form>
+        </div>
     </div>
 
     @if(count($accessList) > 0)

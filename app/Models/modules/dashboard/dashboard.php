@@ -342,8 +342,15 @@ class dashboard extends Model
         
         $bd_data = self::asdOrdersBase()
             ->leftJoin(self::prefix() . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
+            ->leftJoin(self::prefix() . 'address as ai', 'ai.id_address', '=', 'o.id_address_invoice')
             ->where('o.date_add', '>', now()->subDays(5))
-            ->where('c.id_default_group', 4)
+            ->where(function ($query) {
+                $query->where('c.id_default_group', 4)
+                    ->orWhere(function ($missingVat) {
+                        $missingVat->whereNull('ai.vat_number')
+                            ->orWhere('ai.vat_number', '');
+                    });
+            })
             ->whereNotIn('o.id_order', $ids_exceptions)
             ->select('o.id_order', 'o.reference', 'o.total_products', 'o.total_products_wt')
             ->orderBy('o.id_order', 'DESC')
@@ -382,8 +389,19 @@ class dashboard extends Model
 
         $bd_data = self::ordersBase('ASM')
             ->leftJoin($prefix . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
+            ->leftJoin($prefix . 'address as ai', 'ai.id_address', '=', 'o.id_address_invoice')
             ->where('o.date_add', '>', now()->subDays(5))
-            ->where('c.id_default_group', 4)
+            ->where(function ($query) {
+                $query->where('c.id_default_group', 4)
+                    ->orWhere(function ($missingVat) {
+                        $missingVat->where(function ($vat) {
+                                $vat->whereNull('ai.vat_number')
+                                    ->orWhere('ai.vat_number', '');
+                            })
+                            ->whereNotNull('ai.company')
+                            ->where('ai.company', '<>', '');
+                    });
+            })
             ->whereNotIn('o.id_order', $ids_exceptions)
             ->select('o.id_order', 'o.reference', 'o.current_state', 'o.total_products', 'o.total_products_wt')
             ->orderBy('o.id_order', 'DESC')

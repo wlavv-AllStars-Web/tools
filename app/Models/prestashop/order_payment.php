@@ -137,14 +137,16 @@ class order_payment extends PrestashopModel
 
         $orderHistoryTable = self::tableName('order_history');
         $ordersTable = self::tableName('orders');
+        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
+        $countableCurrentStates = array_values(array_unique(array_merge($paidStates, [30, 31])));
 
         $ids_order = $db->table($orderHistoryTable . ' as oh')
             ->join($ordersTable . ' as o', 'o.id_order', '=', 'oh.id_order')
-            ->where('oh.date_add', '>', $start_date . ' 00:00:00')
-            ->where('oh.date_add', '<', $end_date . ' 23:59:59')
-            ->where('oh.id_order_state', 2)
+            ->whereIn('oh.id_order_state', $paidStates)
             ->whereIn('o.id_shop', $shopIds)
             ->groupBy('oh.id_order')
+            ->havingRaw('MIN(oh.date_add) > ?', [$start_date . ' 00:00:00'])
+            ->havingRaw('MIN(oh.date_add) < ?', [$end_date . ' 23:59:59'])
             ->pluck('oh.id_order')
             ->toArray();
 
@@ -168,7 +170,7 @@ class order_payment extends PrestashopModel
         if (!empty($ids_order)) {
             $total = $db->table($ordersTable . ' as o')
                 ->whereIn('o.id_order', $ids_order)
-                ->whereIn('o.current_state', [2, 3, 4, 5, 15, 16, 28, 30, 31])
+                ->whereIn('o.current_state', $countableCurrentStates)
                 ->sum('o.total_paid_tax_excl');
         }
 

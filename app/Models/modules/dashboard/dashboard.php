@@ -434,10 +434,17 @@ class dashboard extends Model
             $ids_exceptions[] = $exception->id_product;
         }    
         
-        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16]));
+        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
+        $paidStatesWithoutPaymentAccepted = array_values(array_diff($paidStates, [2]));
         $bd_data = self::asdOrdersBase()
             ->where('o.date_add', '>', now()->subDays(10))
-            ->whereNotIn('o.current_state', $paidStates)
+            ->whereIn('o.current_state', $paidStatesWithoutPaymentAccepted)
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from(self::prefix() . 'order_history as oh')
+                    ->whereColumn('oh.id_order', 'o.id_order')
+                    ->where('oh.id_order_state', 2);
+            })
             ->whereNotIn('o.id_order', $ids_exceptions)
             ->select('o.id_order', 'o.reference')
             ->orderBy('o.id_order', 'DESC')

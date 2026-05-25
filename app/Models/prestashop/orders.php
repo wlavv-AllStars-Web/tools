@@ -107,13 +107,33 @@ class orders extends PrestashopModel
     {
         $data = [];
         $excludedOrderIds = self::excludedIdsFromBoard('order_payed_with_voucher');
+        $ordersTable = self::tableName('orders');
+        $orderCartRuleTable = self::tableName('order_cart_rule');
+        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
 
-        $query = self::select('id_order', 'reference', 'total_discounts')
-            ->where('total_discounts', '>', 0)
-            ->where('id_order', '>', 90000);
+        $query = self::select(
+                $ordersTable . '.id_order',
+                $ordersTable . '.reference',
+                $ordersTable . '.current_state',
+                $ordersTable . '.total_discounts',
+                DB::raw('GROUP_CONCAT(DISTINCT ' . $orderCartRuleTable . '.name SEPARATOR ", ") AS voucher')
+            )
+            ->leftJoin($orderCartRuleTable, $orderCartRuleTable . '.id_order', '=', $ordersTable . '.id_order')
+            ->where($ordersTable . '.id_order', '>', 90000)
+            ->whereIn($ordersTable . '.current_state', $paidStates)
+            ->where(function ($query) use ($ordersTable, $orderCartRuleTable) {
+                $query->where($ordersTable . '.total_discounts', '>', 0)
+                    ->orWhereNotNull($orderCartRuleTable . '.id_order_cart_rule');
+            })
+            ->groupBy(
+                $ordersTable . '.id_order',
+                $ordersTable . '.reference',
+                $ordersTable . '.current_state',
+                $ordersTable . '.total_discounts'
+            );
 
         if (!empty($excludedOrderIds)) {
-            $query->whereNotIn('id_order', $excludedOrderIds);
+            $query->whereNotIn($ordersTable . '.id_order', $excludedOrderIds);
         }
 
         foreach ($query->get() as $item) {
@@ -121,6 +141,8 @@ class orders extends PrestashopModel
                 'clean' => $item->id_order,
                 'id_order' => $item->id_order,
                 'reference' => $item->reference,
+                'current_state' => $item->current_state,
+                'voucher' => $item->voucher,
                 'total_discounts' => $item->total_discounts,
             ];
         }
@@ -129,7 +151,7 @@ class orders extends PrestashopModel
             trans('dashboard.ORDERS PAYED WITH VOUCHER'),
             $type,
             'order_payed_with_voucher',
-            ['clean', 'id_order', 'reference', 'total_discounts'],
+            ['clean', 'id_order', 'reference', 'current_state', 'voucher', 'total_discounts'],
             $data,
             [
                 'exception_fields' => ['order_payed_with_voucher', 'id_order', 'reference', 'total_discounts']

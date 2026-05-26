@@ -3,6 +3,7 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
 class product_lang extends PrestashopModel
 {
@@ -41,6 +42,7 @@ class product_lang extends PrestashopModel
 
         $productLangTable = self::tableName('product_lang');
         $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
 
         $bd_data = self::select(
                 $productTable . '.id_product',
@@ -48,6 +50,10 @@ class product_lang extends PrestashopModel
                 $productLangTable . '.name'
             )
             ->leftJoin($productTable, $productLangTable . '.id_product', '=', $productTable . '.id_product')
+            ->join($productShopTable, function ($join) use ($productLangTable, $productShopTable) {
+                $join->on($productShopTable . '.id_product', '=', $productLangTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'));
+            })
             ->where(function ($query) use ($productLangTable) {
                 $query->where($productLangTable . '.available_now', '=', '')
                     ->orWhere($productLangTable . '.available_later', '=', '')
@@ -57,7 +63,8 @@ class product_lang extends PrestashopModel
                 $productLangTable . '.id_product',
                 $productTable . '.id_product',
                 $productTable . '.reference',
-                $productLangTable . '.name'
+                $productLangTable . '.name',
+                $productShopTable . '.id_shop'
             )
             ->get();
 

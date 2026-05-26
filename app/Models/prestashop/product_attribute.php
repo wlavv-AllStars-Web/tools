@@ -124,6 +124,7 @@ class product_attribute extends PrestashopModel
         $customProductAttributeTable = self::tableName('custom_product_attribute');
         $productAttributeImageTable = self::tableName('product_attribute_image');
         $productShopTable = self::tableName('product_shop');
+        $asmShopId = PrestashopAdminLinkService::shopId('ASM') ?: 2;
 
         $excludedProductIds = asm_dashboard::getExceptions('marketing_no_images')
             ->pluck('id_product')
@@ -138,9 +139,9 @@ class product_attribute extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
-            ->join($productShopTable, function ($join) use ($productAttributeTable, $productShopTable) {
+            ->join($productShopTable, function ($join) use ($productAttributeTable, $productShopTable, $asmShopId) {
                 $join->on($productShopTable . '.id_product', '=', $productAttributeTable . '.id_product')
-                    ->where($productShopTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+                    ->where($productShopTable . '.id_shop', $asmShopId)
                     ->where($productShopTable . '.active', 1);
             })
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')

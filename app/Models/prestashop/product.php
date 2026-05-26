@@ -599,6 +599,7 @@ class product extends PrestashopModel
         $stockTable = self::tableName('stock_available');
         $manufacturerTable = self::tableName('manufacturer');
         $productShopTable = self::tableName('product_shop');
+        $asmShopId = PrestashopAdminLinkService::shopId('ASM') ?: 2;
 
         $products = self::select(
                 $productTable . '.id_product',
@@ -611,9 +612,9 @@ class product extends PrestashopModel
             ->leftJoin($imageTable, $productTable . '.id_product', '=', $imageTable . '.id_product')
             ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->join($productShopTable, function ($join) use ($productTable, $productShopTable) {
+            ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $asmShopId) {
                 $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
-                    ->where($productShopTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+                    ->where($productShopTable . '.id_shop', $asmShopId)
                     ->where($productShopTable . '.active', 1);
             })
             ->where($productTable . '.visibility', '<>', 'none')

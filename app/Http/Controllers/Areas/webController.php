@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Areas;
 
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 use App\Models\modules\dashboard\dashboard;
+use Throwable;
 
 class webController extends Controller{
     
@@ -24,6 +27,25 @@ class webController extends Controller{
         ];
 
         return View::make('areas/web/index')->with($data);
+    }
+
+    public function sendPendingNewsletterEmails(): RedirectResponse
+    {
+        try {
+            Artisan::call('newsletter:send-pending', ['--limit' => 10]);
+
+            $output = trim(Artisan::output());
+
+            return redirect()
+                ->route('web.index')
+                ->with('success', $output !== '' ? $output : 'Newsletter emails processed.');
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('web.index')
+                ->with('error', 'Newsletter emails sending failed: ' . $e->getMessage());
+        }
     }
     
     private function accessList(){

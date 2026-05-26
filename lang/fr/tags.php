@@ -47,5 +47,7 @@ return [
     
     'search by:' => 'Search by:',
 
+    'source_type' => 'SOURCE TYPE',
+    'source_id' => 'SOURCE ID',
     'pending_reviews' => 'Pending reviews',
 ];

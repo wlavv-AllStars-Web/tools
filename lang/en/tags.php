@@ -65,6 +65,8 @@ return [
     'action' => 'ACTIONS',
     'operation' => 'OPERATION',
     'youtube_code' => 'YOUTUBE CODE',
+    'source_type' => 'SOURCE TYPE',
+    'source_id' => 'SOURCE ID',
     'total_paid' => "TOTAL",
     'repeated' => "REPEATED",
     'client' => "CLIENT",

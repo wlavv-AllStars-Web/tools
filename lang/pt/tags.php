@@ -47,5 +47,7 @@ return [
     
     'search by:' => 'procurar por:',
 
+    'source_type' => 'TIPO DE ORIGEM',
+    'source_id' => 'ID ORIGEM',
     'pending_reviews' => 'Pending reviews',
 ];

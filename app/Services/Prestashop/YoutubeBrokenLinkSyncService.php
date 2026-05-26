@@ -150,7 +150,7 @@ class YoutubeBrokenLinkSyncService
             return true;
         }
 
-        if (in_array($response->status(), [401, 403, 404], true)) {
+        if (in_array($response->status(), [400, 401, 403, 404], true)) {
             return false;
         }
 

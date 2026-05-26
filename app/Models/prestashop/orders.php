@@ -182,7 +182,6 @@ class orders extends PrestashopModel
 
         foreach (self::select('id_order', 'reference')
             ->where('current_state', 30)
-            ->where('id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->get() as $item) {
             $data[] = [
                 'id_order' => $item->id_order,

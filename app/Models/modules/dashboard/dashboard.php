@@ -760,7 +760,7 @@ class dashboard extends Model
         return self::asdOrdersBase()
             ->join($prefix . 'order_state_lang as osl', function ($join) {
                 $join->on('osl.id_order_state', '=', 'o.current_state')
-                    ->where('osl.id_lang', 1);
+                    ->where('osl.id_lang', 2);
             })
             ->join($prefix . 'order_detail as od', 'od.id_order', '=', 'o.id_order')
             ->leftJoin($prefix . 'product as p', 'p.id_product', '=', 'od.product_id')

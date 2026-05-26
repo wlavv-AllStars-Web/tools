@@ -10,6 +10,7 @@ class compats_product extends Model
 {
     use HasFactory;
 
+    protected $connection = 'mysql';
     protected $table = 'compats_product';
     protected $primaryKey = 'id_compat_product';
     public $incrementing = true;

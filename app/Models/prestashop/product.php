@@ -450,7 +450,7 @@ class product extends PrestashopModel
         $excluded = self::excludedProductIds('no_compatibilities');
         $compatStoreId = (int) config('allstars.stores.' . $store . '.compat_store_id', 2);
 
-        if (!Schema::hasTable('compats_product')) {
+        if (!Schema::connection('mysql')->hasTable('compats_product')) {
             return self::productDashboardResponse(
                 trans('dashboard.No compatibilities'),
                 $type,

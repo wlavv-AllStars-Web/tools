@@ -246,10 +246,13 @@ class product extends PrestashopModel
         $data = [];
         $excluded = self::excludedProductIds('ec_approved');
         $productTable = self::tableName('product');
+        $customProductTable = self::tableName('custom_product');
 
         $query = self::with('manufacturer')
-            ->where('upc', 0)
-            ->where('active', 1)
+            ->select($productTable . '.*')
+            ->join($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
+            ->where($customProductTable . '.ec_approved', 0)
+            ->where($productTable . '.active', 1)
             ->where($productTable . '.visibility', '<>', 'none');
 
         if (!empty($excluded)) {

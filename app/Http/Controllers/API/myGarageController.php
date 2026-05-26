@@ -30,14 +30,20 @@ class myGarageController extends Controller
     {
         self::validateToken($request->token);
         
-        $compat = compats::getCompatDetail( $request->id_compat );
+        $idCustomer = $request->input('id_customer', $request->route('id_customer'));
+        $idCompat = $request->input('id_compat', $request->route('id_compat'));
+        $isoCode = $request->input('iso_code', $request->route('iso_code'));
+        $store = $request->input('store', $request->route('store'));
+        $email = $request->input('email', $request->input('customer_email', $request->route('email')));
+
+        $compat = compats::getCompatDetail($idCompat);
 
         compats_newsletter::saveMyCar(
-            $request->id_customer,
-            $request->iso_code,
-            $request->store,
+            $idCustomer,
+            $isoCode,
+            $store,
             $compat,
-            $request->input('email', $request->input('customer_email'))
+            $email
         );
         
         $data = [

@@ -4,6 +4,7 @@ namespace App\Models\modules\compats;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\prestashop\customer;
 
 class compats_newsletter extends Model{
     use HasFactory;
@@ -58,6 +59,12 @@ class compats_newsletter extends Model{
     public static function saveMyCar($id_customer, string $iso_code, int $store, compats $compat, ?string $email = null): int{
         $isCustomerId = is_numeric($id_customer);
         $email = trim((string) ($email ?? ''));
+
+        if ($email === '' && $isCustomerId) {
+            $email = (string) (customer::query()
+                ->where('id_customer', (int) $id_customer)
+                ->value('email') ?? '');
+        }
 
         $row = new self();
         $row->id_compat = $compat->id_compat;

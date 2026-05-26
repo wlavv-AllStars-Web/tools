@@ -84,7 +84,8 @@ Route::group([
     /** COMPATS API **/
 
     /** MY GARAGE API **/
-        Route::get('add/car/{id_customer}/{id_compat}/{iso_code}/{store}/{token}',[myGarageController::class, 'addCar'])->name('myGarageAPI.addCar');
+        Route::post('add/car',[myGarageController::class, 'addCar'])->name('myGarageAPI.addCar.post');
+        Route::get('add/car/{id_customer}/{id_compat}/{iso_code}/{store}/{token}/{email?}',[myGarageController::class, 'addCar'])->name('myGarageAPI.addCar');
         Route::get('remove/car/{id_customer}/{id_compat}/{store}/{token}',[myGarageController::class, 'removeCar'])->name('myGarageAPI.removeCar');
         Route::get('get/cars/{id_customer}/{store}/{token}',[myGarageController::class, 'getMyGarage'])->name('myGarageAPI.getMyGarage');
 

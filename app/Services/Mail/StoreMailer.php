@@ -57,6 +57,7 @@ class StoreMailer
         Config::set('mail.mailers.smtp.port', $config['port'] ?? config('mail.mailers.smtp.port'));
         Config::set('mail.mailers.smtp.encryption', $config['encryption'] ?? config('mail.mailers.smtp.encryption'));
         Config::set('mail.mailers.smtp.username', $config['username'] ?? config('mail.mailers.smtp.username'));
+        Config::set('mail.mailers.smtp.verify_peer', $config['verify_peer'] ?? !(app()->environment('local') || str_contains(strtolower(base_path()), 'xampp')));
 
         if (!empty($config['password'])) {
             Config::set('mail.mailers.smtp.password', $config['password']);

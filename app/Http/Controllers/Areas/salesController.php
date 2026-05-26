@@ -136,7 +136,7 @@ class salesController extends Controller
 
         $email = new mailsController();
         $html = $email->createStructure('none', $template, $subject, $data, $order->id_lang);
-        $email->send($customer->email, $html, $subject);
+        $email->send($customer->email, $html, $subject, 'asm_sales');
 
         asm_dashboard::addException($this->buildReviewedEmailException($order, $customer));
 

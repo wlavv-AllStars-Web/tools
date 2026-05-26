@@ -5,9 +5,9 @@ namespace App\Http\Controllers\CustomTools;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use App\Models\modules\shipmentsCheck\CarrierExpeditionCheck;
+use App\Services\Mail\StoreMailer;
 
 class CarrierExpeditionCheckController extends Controller
 {
@@ -62,10 +62,7 @@ class CarrierExpeditionCheckController extends Controller
             ]);
         }
 
-        Mail::raw('Shipment check realizado.', function ($msg) {
-            $msg->to('bruno.fernandes.asm@gmail.com')
-                ->subject('Shipment Check');
-        });
+        StoreMailer::sendRaw('asm_sales', 'bruno.fernandes.asm@gmail.com', 'Shipment Check', 'Shipment check realizado.');
 
         return back()->with('success', 'Registo guardado');
     }

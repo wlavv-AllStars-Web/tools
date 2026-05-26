@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\App;
 use App\Http\Controllers\Controller;
+use App\Services\Mail\StoreMailer;
 
 class mailsController extends Controller
 {
@@ -56,14 +56,8 @@ class mailsController extends Controller
         return view('mails.includes.footer.' . $origin, compact('data'))->render();
     }
     
-    public function send($email, $html, $subject){
-        $recipient = (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp'))
-            ? 'bruno.fernandes.asm@gmail.com'
-            : $email;
-
-        Mail::html($html, function ($message) use ($recipient, $subject) {
-            $message->to($recipient)->subject($subject);
-        });
+    public function send($email, $html, $subject, string $mailerKey = 'asm_sales'){
+        StoreMailer::sendHtml($mailerKey, $email, $subject, $html);
     }
     
     public function getLocaleFromIDLang($id_lang){

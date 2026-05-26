@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
 use App\Models\prestashop\asm_newsletter_email;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Mail;
+use App\Services\Mail\StoreMailer;
 
 class frontMarketingController extends Controller
 {
@@ -15,19 +14,6 @@ class frontMarketingController extends Controller
 
     public function send()
     {
-        Config::set('mail.default', 'smtp');
-        Config::set('mail.mailer', 'smtp');
-
-        Config::set('mail.mailers.smtp.transport', 'smtp');
-        Config::set('mail.mailers.smtp.host', config('allstars.mailers.marketing.host'));
-        Config::set('mail.mailers.smtp.port', config('allstars.mailers.marketing.port'));
-        Config::set('mail.mailers.smtp.encryption', config('allstars.mailers.marketing.encryption'));
-        Config::set('mail.mailers.smtp.username', config('allstars.mailers.marketing.username'));
-        Config::set('mail.mailers.smtp.password', config('allstars.mailers.marketing.password'));
-
-        Config::set('mail.from.address', config('allstars.mailers.marketing.from_address'));
-        Config::set('mail.from.name', config('allstars.mailers.marketing.from_name'));
-
         $query = asm_newsletter_email::query();
 
         if (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp')) {
@@ -40,11 +26,7 @@ class frontMarketingController extends Controller
 
         foreach ($data as $item) {
             try {
-                Mail::send([], [], function ($message) use ($item) {
-                    $message->to($item->email)
-                        ->subject($item->subject)
-                        ->html($item->html);
-                });
+                StoreMailer::sendHtml('asm_media', $item->email, $item->subject, $item->html);
 
                 $results[] = [
                     'email' => $item->email,

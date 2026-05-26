@@ -5,7 +5,7 @@ namespace App\Http\Controllers\CustomTools;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Mail;
+use App\Services\Mail\StoreMailer;
 
 use App\Models\prestashop\suppliers;
 
@@ -144,24 +144,7 @@ class suppliersBackordersController extends Controller
         $email = supplier_map::where('id_supplier', $supplier->id_supplier)->value('email') ?: '';
         $subject = "ALL STARS BACK ORDERS OVERVIEW - " . $supplier->supplier . ' ( ' . date('m-Y') . ' )' . ' - ' . $email;        
 
-        $isLocalTest = app()->environment('local') || str_contains(strtolower(base_path()), 'xampp');
-
-        if (!$isLocalTest) {
-            config(['mail.mailers.smtp.username' => config('allstars.mailers.suppliers.username')]);
-            if (config('allstars.mailers.suppliers.password')) {
-                config(['mail.mailers.smtp.password' => config('allstars.mailers.suppliers.password')]);
-            }
-            config(['mail.from.address' => config('allstars.mailers.suppliers.from_address')]);
-            config(['mail.from.name' => config('allstars.mailers.suppliers.from_name')]);
-        }
-
-        $recipient = $isLocalTest
-            ? 'bruno.fernandes.asm@gmail.com'
-            : $email;
-
-        Mail::html($html, function ($message) use ($recipient, $subject) {
-            $message->to($recipient)->subject($subject);
-        });
+        StoreMailer::sendHtml('asd_sales', $email, $subject, $html);
     }
 
     public function create(){ }

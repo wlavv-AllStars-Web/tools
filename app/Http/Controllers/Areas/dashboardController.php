@@ -149,7 +149,8 @@ class dashboardController extends Controller{
             $email->send(
                 $recipient,
                 $html,
-                trans('mails.Requested products notification')
+                trans('mails.Requested products notification'),
+                'asm_sales'
             );
     
             /** Remove o registo de pedido de notificação do produto da base de dados **/

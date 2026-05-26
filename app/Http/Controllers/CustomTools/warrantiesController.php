@@ -242,7 +242,7 @@ class warrantiesController extends Controller{
         $mail_object = new mailsController();
         
         $html = $mail_object->createStructure('ASM_white', $template, $subject[$warranty->order->id_lang], (object)$data, $warranty->order->id_lang);
-        $mail_object->send($warranty->customer->email, $html, $subject[$warranty->order->id_lang]);
+        $mail_object->send($warranty->customer->email, $html, $subject[$warranty->order->id_lang], 'asm_sales');
         
         return back();
         

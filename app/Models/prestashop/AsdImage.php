@@ -43,6 +43,7 @@ class AsdImage extends PrestashopModel
         if (self::hasCustomTable()) {
             self::ensureColumn('id_product_attribute', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `id_product_attribute` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `id_product`');
             self::ensureColumn('id_manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `id_manufacturer` INT UNSIGNED NULL AFTER `id_product_attribute`');
+            self::ensureNullableColumn('id_manufacturer', 'INT UNSIGNED NULL');
             self::ensureColumn('image_name', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_name` VARCHAR(255) NULL AFTER `reference`');
             self::ensureColumn('image_code', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_code` VARCHAR(128) NULL AFTER `image_name`');
             self::ensureColumn('manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `manufacturer` VARCHAR(255) NULL AFTER `image_code`');
@@ -456,6 +457,33 @@ class AsdImage extends PrestashopModel
         if (!Schema::connection('mysql2')->hasColumn(self::unqualifiedTableName(self::tableName('custom_asd_images')), $column)) {
             DB::connection('mysql2')->statement($statement);
         }
+    }
+
+    private static function ensureNullableColumn(string $column, string $definition): void
+    {
+        [$database, $table] = self::databaseAndTable(self::tableName('custom_asd_images'));
+
+        $metadata = DB::connection('mysql2')->selectOne(
+            'SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [$database, $table, $column]
+        );
+
+        if (!$metadata || strtoupper((string) $metadata->IS_NULLABLE) === 'YES') {
+            return;
+        }
+
+        DB::connection('mysql2')->statement(
+            'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' MODIFY `' . str_replace('`', '``', $column) . '` ' . $definition
+        );
+    }
+
+    private static function databaseAndTable(string $table): array
+    {
+        if (str_contains($table, '.')) {
+            return explode('.', $table, 2);
+        }
+
+        return [DB::connection('mysql2')->getDatabaseName(), $table];
     }
 
     private static function hasCustomTable(): bool

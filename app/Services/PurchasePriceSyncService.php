@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\prestashop\manufacturers;
+use App\Services\Mail\StoreMailer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class PurchasePriceSyncService
 {
@@ -15,7 +15,7 @@ class PurchasePriceSyncService
     public function __construct()
     {
         $this->dataCode = 'asd_Products_Wholesale';
-        $this->notFoundTo = config('purchase_prices.endpoint.notfound_to');
+        $this->notFoundTo = config('allstars.emails.purchase_price_sync_not_found_to', 'bruno.fernandes.asm@gmail.com');
     }
 
     public function syncByManufacturerId($manufacturerId)
@@ -216,8 +216,6 @@ class PurchasePriceSyncService
 
         $to = $this->notFoundTo;
 
-        Mail::html($html, function ($message) use ($to) {
-            $message->to($to)->subject('PURCHASE PRICE SYNC - not found');
-        });
+        StoreMailer::sendHtml('asd_sales', $to, 'PURCHASE PRICE SYNC - not found', $html);
     }
 }

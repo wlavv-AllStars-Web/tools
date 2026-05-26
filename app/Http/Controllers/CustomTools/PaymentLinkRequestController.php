@@ -4,9 +4,9 @@ namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
 use App\Models\modules\payment_links\PaymentLinkRequest;
+use App\Services\Mail\StoreMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 
@@ -178,18 +178,12 @@ class PaymentLinkRequestController extends Controller
             'paymentUrl' => $paymentLinkRequest->paymentUrl(),
         ])->render();
 
-        $recipient = (app()->environment('local') || str_contains(strtolower(base_path()), 'xampp'))
-            ? 'bruno.fernandes.asm@gmail.com'
-            : $paymentLinkRequest->customer_email;
-
-        $from = $this->salesEmailConfig($paymentLinkRequest->store_code);
-
-        Mail::html($html, function ($message) use ($recipient, $subject, $from) {
-            $message
-                ->from($from['address'], $from['name'])
-                ->to($recipient)
-                ->subject($subject);
-        });
+        StoreMailer::sendHtml(
+            StoreMailer::mailerKeyForStore($paymentLinkRequest->store_code),
+            $paymentLinkRequest->customer_email,
+            $subject,
+            $html
+        );
 
         $paymentLinkRequest->update([
             'status' => PaymentLinkRequest::STATUS_SENT,
@@ -221,18 +215,6 @@ class PaymentLinkRequestController extends Controller
     private function storeName(string $storeCode): string
     {
         return (string) config('allstars.payment_links.stores.' . $storeCode . '.name', $storeCode);
-    }
-
-    private function salesEmailConfig(string $storeCode): array
-    {
-        $storeCode = strtoupper($storeCode);
-        $fallbackAddress = (string) config('mail.from.address');
-        $fallbackName = (string) config('allstars.payment_links.stores.' . $storeCode . '.name', config('mail.from.name'));
-
-        return [
-            'address' => (string) config('allstars.emails.sales.' . $storeCode . '.address', $fallbackAddress),
-            'name' => (string) config('allstars.emails.sales.' . $storeCode . '.name', $fallbackName),
-        ];
     }
 
     private function breadcrumbs(string $currentName, string $currentUrl, string $area = 'sales'): array

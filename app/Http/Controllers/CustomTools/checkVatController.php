@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\modules\checkVat\checkVat;
 use App\Models\prestashop\address;
 use App\Services\Vat\VatValidationRequestService;
+use App\Services\Mail\StoreMailer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 
 class CheckVatController extends Controller
@@ -55,10 +55,12 @@ class CheckVatController extends Controller
 
         checkVat::verify($addresses);
 
-        Mail::raw('VAT check execution confirmation', function ($message) {
-            $message->to('bruno.fernandes.asm@gmail.com')
-                ->subject('VAT check execution confirmation');
-        });
+        StoreMailer::sendRaw(
+            'asm_sales',
+            'bruno.fernandes.asm@gmail.com',
+            'VAT check execution confirmation',
+            'VAT check execution confirmation'
+        );
 
         return redirect()->route(request()->routeIs('finance.tools.vat.*') ? 'finance.tools.vat.check' : 'checkVat.index');
     }

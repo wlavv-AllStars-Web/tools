@@ -160,7 +160,7 @@ class returnsController extends Controller{
         
         if( $template != 0){
             $html = $mail_object->createStructure('ASM_white', $template, $subject[$return->order->id_lang], (object)$data, $return->order->id_lang);
-            $mail_object->send($return->customer->email, $html, $subject[$return->order->id_lang]);
+            $mail_object->send($return->customer->email, $html, $subject[$return->order->id_lang], 'asm_sales');
         }
         
         return back();

@@ -92,6 +92,7 @@ return [
     'emails' => [
         'suppliers' => env('ALLSTARS_SUPPLIERS_EMAIL', 'suppliers@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com')),
         'purchase' => env('ALLSTARS_PURCHASE_EMAIL', 'purchase@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com')),
+        'purchase_price_sync_not_found_to' => env('ALLSTARS_PURCHASE_PRICE_SYNC_NOT_FOUND_TO', 'bruno.fernandes.asm@gmail.com'),
         'sales' => [
             'ASM' => [
                 'address' => env('ALLSTARS_ASM_SALES_EMAIL', 'sales@' . env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com')),
@@ -109,6 +110,36 @@ return [
     ],
 
     'mailers' => [
+        'asm_sales' => [
+            'host' => env('ALLSTARS_ASM_SALES_SMTP_HOST', env('MAIL_HOST')),
+            'port' => env('ALLSTARS_ASM_SALES_SMTP_PORT', env('MAIL_PORT', 587)),
+            'encryption' => env('ALLSTARS_ASM_SALES_SMTP_ENCRYPTION', env('MAIL_ENCRYPTION', 'tls')),
+            'username' => env('ALLSTARS_ASM_SALES_SMTP_USERNAME', env('ALLSTARS_ASM_SALES_EMAIL', 'sales@' . env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com'))),
+            'password' => env('ALLSTARS_ASM_SALES_SMTP_PASSWORD'),
+            'from_address' => env('ALLSTARS_ASM_SALES_EMAIL', 'sales@' . env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com')),
+            'from_name' => env('ALLSTARS_ASM_SALES_FROM_NAME', 'All Stars Motorsport'),
+        ],
+
+        'asd_sales' => [
+            'host' => env('ALLSTARS_ASD_SALES_SMTP_HOST', env('MAIL_HOST')),
+            'port' => env('ALLSTARS_ASD_SALES_SMTP_PORT', env('MAIL_PORT', 587)),
+            'encryption' => env('ALLSTARS_ASD_SALES_SMTP_ENCRYPTION', env('MAIL_ENCRYPTION', 'tls')),
+            'username' => env('ALLSTARS_ASD_SALES_SMTP_USERNAME', env('ALLSTARS_ASD_SALES_EMAIL', 'sales@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com'))),
+            'password' => env('ALLSTARS_ASD_SALES_SMTP_PASSWORD'),
+            'from_address' => env('ALLSTARS_ASD_SALES_EMAIL', 'sales@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com')),
+            'from_name' => env('ALLSTARS_ASD_SALES_FROM_NAME', 'All Stars Distribution'),
+        ],
+
+        'asm_media' => [
+            'host' => env('ALLSTARS_ASM_MEDIA_SMTP_HOST', env('MAIL_HOST')),
+            'port' => env('ALLSTARS_ASM_MEDIA_SMTP_PORT', env('MAIL_PORT', 587)),
+            'encryption' => env('ALLSTARS_ASM_MEDIA_SMTP_ENCRYPTION', env('MAIL_ENCRYPTION', 'tls')),
+            'username' => env('ALLSTARS_ASM_MEDIA_SMTP_USERNAME', 'media@' . env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com')),
+            'password' => env('ALLSTARS_ASM_MEDIA_SMTP_PASSWORD'),
+            'from_address' => env('ALLSTARS_ASM_MEDIA_EMAIL', 'media@' . env('ASM_EMAIL_DOMAIN', 'all-stars-motorsport.com')),
+            'from_name' => env('ALLSTARS_ASM_MEDIA_FROM_NAME', 'All Stars Motorsport'),
+        ],
+
         'suppliers' => [
             'username' => env('ALLSTARS_SUPPLIERS_SMTP_USERNAME', env('ALLSTARS_SUPPLIERS_EMAIL', 'suppliers@' . env('ASD_EMAIL_DOMAIN', 'all-stars-distribution.com'))),
             'password' => env('ALLSTARS_SUPPLIERS_SMTP_PASSWORD'),

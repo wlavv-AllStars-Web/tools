@@ -77,7 +77,7 @@ class YoutubeBrokenLinkSyncService
     {
         $customProductTable = $this->table('custom_product');
         $columns = collect(self::PRODUCT_YOUTUBE_FIELDS)
-            ->filter(fn ($column) => Schema::connection('mysql2')->hasColumn($customProductTable, $column))
+            ->filter(fn ($column) => Schema::connection('mysql2')->hasColumn($this->schemaTable($customProductTable), $column))
             ->values();
 
         if ($columns->isEmpty()) {
@@ -109,8 +109,8 @@ class YoutubeBrokenLinkSyncService
         $customManufacturerTable = $this->table('custom_manufacturer');
 
         if (
-            !Schema::connection('mysql2')->hasTable($customManufacturerTable)
-            || !Schema::connection('mysql2')->hasColumn($customManufacturerTable, 'youtube')
+            !Schema::connection('mysql2')->hasTable($this->schemaTable($customManufacturerTable))
+            || !Schema::connection('mysql2')->hasColumn($this->schemaTable($customManufacturerTable), 'youtube')
         ) {
             return collect();
         }
@@ -216,5 +216,10 @@ class YoutubeBrokenLinkSyncService
     private function table(string $table): string
     {
         return env('DB2_DB_prefix', 'ps_') . $table;
+    }
+
+    private function schemaTable(string $table): string
+    {
+        return str_contains($table, '.') ? substr($table, strrpos($table, '.') + 1) : $table;
     }
 }

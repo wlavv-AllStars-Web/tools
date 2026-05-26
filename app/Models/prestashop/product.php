@@ -604,7 +604,7 @@ class product extends PrestashopModel
         $products = self::select(
                 $productTable . '.id_product',
                 $productTable . '.id_category_default',
-                DB::raw('COUNT(' . $imageTable . '.id_image) AS nr_images'),
+                DB::raw('COUNT(DISTINCT ' . $imageTable . '.id_image) AS nr_images'),
                 $productTable . '.reference',
                 DB::raw($productTable . '.location AS housing'),
                 DB::raw($manufacturerTable . '.name AS brand')
@@ -628,7 +628,7 @@ class product extends PrestashopModel
                 $productShopTable . '.id_shop'
             )
             ->havingRaw('MAX(' . $stockTable . '.quantity) > 0')
-            ->havingRaw('COUNT(' . $imageTable . '.id_image) < 5')
+            ->havingRaw('COUNT(DISTINCT ' . $imageTable . '.id_image) < 5')
             ->orderByRaw('CAST(' . $productTable . '.id_product AS UNSIGNED) ASC')
             ->get()
             ->sortBy('id_product', SORT_NUMERIC)

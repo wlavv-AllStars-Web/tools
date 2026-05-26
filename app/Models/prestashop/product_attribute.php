@@ -161,7 +161,8 @@ class product_attribute extends PrestashopModel
                 $manufacturerTable . '.name',
                 $productShopTable . '.id_shop'
             )
-            ->havingRaw('MAX(' . $stockTable . '.quantity) > 0');
+            ->havingRaw('MAX(' . $stockTable . '.quantity) > 0')
+            ->havingRaw('COUNT(DISTINCT ' . $productAttributeImageTable . '.id_image) < 5');
 
         if (!empty($excludedProductIds)) {
             $query->whereNotIn($productTable . '.id_product', $excludedProductIds);
@@ -170,7 +171,7 @@ class product_attribute extends PrestashopModel
         $no_images = $query->get();
 
         foreach ($no_images as $image) {
-            if (isset($image->id_product) && ((int) $image->nr_images < 5)) {
+            if (isset($image->id_product)) {
                 $products[$image->reference] = [
                     'id_product' => $image->id_product,
                     'id_category_default' => $image->id_category_default,

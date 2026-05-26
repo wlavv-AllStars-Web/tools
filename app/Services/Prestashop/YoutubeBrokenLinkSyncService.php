@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 class YoutubeBrokenLinkSyncService
 {
-    private const YOUTUBE_FIELDS = ['youtube_1', 'youtube_2', 'youtube'];
+    private const PRODUCT_YOUTUBE_FIELDS = ['youtube_1', 'youtube_2'];
 
     public function sync(?int $limit = null): array
     {
@@ -42,6 +42,8 @@ class YoutubeBrokenLinkSyncService
             ->map(function ($row) use ($now) {
                 return [
                     'id_product' => $row['id_product'],
+                    'source_type' => $row['source_type'],
+                    'source_id' => $row['source_id'],
                     'youtube_code' => $row['youtube_code'],
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -65,8 +67,16 @@ class YoutubeBrokenLinkSyncService
 
     private function youtubeReferences()
     {
+        return $this->productYoutubeReferences()
+            ->merge($this->manufacturerYoutubeReferences())
+            ->unique(fn ($row) => $row['source_type'] . '|' . $row['source_id'] . '|' . $row['youtube_code'])
+            ->values();
+    }
+
+    private function productYoutubeReferences()
+    {
         $customProductTable = $this->table('custom_product');
-        $columns = collect(self::YOUTUBE_FIELDS)
+        $columns = collect(self::PRODUCT_YOUTUBE_FIELDS)
             ->filter(fn ($column) => Schema::connection('mysql2')->hasColumn($customProductTable, $column))
             ->values();
 
@@ -86,10 +96,39 @@ class YoutubeBrokenLinkSyncService
                     ->unique()
                     ->map(fn ($code) => [
                         'id_product' => (int) $row->id_product,
+                        'source_type' => 'product',
+                        'source_id' => (int) $row->id_product,
                         'youtube_code' => $code,
                     ]);
             })
-            ->unique(fn ($row) => $row['id_product'] . '|' . $row['youtube_code'])
+            ->values();
+    }
+
+    private function manufacturerYoutubeReferences()
+    {
+        $customManufacturerTable = $this->table('custom_manufacturer');
+
+        if (
+            !Schema::connection('mysql2')->hasTable($customManufacturerTable)
+            || !Schema::connection('mysql2')->hasColumn($customManufacturerTable, 'youtube')
+        ) {
+            return collect();
+        }
+
+        return DB::connection('mysql2')
+            ->table($customManufacturerTable)
+            ->select(['id_manufacturer', 'youtube'])
+            ->orderBy('id_manufacturer')
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'id_product' => 0,
+                    'source_type' => 'manufacturer',
+                    'source_id' => (int) $row->id_manufacturer,
+                    'youtube_code' => $this->normalizeYoutubeCode((string) ($row->youtube ?? '')),
+                ];
+            })
+            ->filter(fn ($row) => !empty($row['youtube_code']))
             ->values();
     }
 
@@ -144,6 +183,8 @@ class YoutubeBrokenLinkSyncService
         if (Schema::connection('mysql')->hasTable($table)) {
             $this->ensureColumn($table, 'created_at', 'ALTER TABLE `youtube_broken_links` ADD `created_at` DATETIME NULL');
             $this->ensureColumn($table, 'updated_at', 'ALTER TABLE `youtube_broken_links` ADD `updated_at` DATETIME NULL');
+            $this->ensureColumn($table, 'source_type', 'ALTER TABLE `youtube_broken_links` ADD `source_type` VARCHAR(32) NOT NULL DEFAULT "product" AFTER `id_product`');
+            $this->ensureColumn($table, 'source_id', 'ALTER TABLE `youtube_broken_links` ADD `source_id` INT UNSIGNED NULL AFTER `source_type`');
 
             return;
         }
@@ -152,11 +193,14 @@ class YoutubeBrokenLinkSyncService
             'CREATE TABLE `youtube_broken_links` (
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 `id_product` INT UNSIGNED NOT NULL,
+                `source_type` VARCHAR(32) NOT NULL DEFAULT "product",
+                `source_id` INT UNSIGNED NULL,
                 `youtube_code` VARCHAR(255) NOT NULL,
                 `created_at` DATETIME NULL,
                 `updated_at` DATETIME NULL,
                 PRIMARY KEY (`id`),
                 KEY `idx_id_product` (`id_product`),
+                KEY `idx_source` (`source_type`, `source_id`),
                 KEY `idx_youtube_code` (`youtube_code`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );

@@ -45,14 +45,21 @@ class AsdImage extends PrestashopModel
             self::ensureColumn('id_manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `id_manufacturer` INT UNSIGNED NULL AFTER `id_product_attribute`');
             self::ensureNullableColumn('id_manufacturer', 'INT UNSIGNED NULL');
             self::ensureColumn('image_name', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_name` VARCHAR(255) NULL AFTER `reference`');
+            self::ensureNullableColumn('image_name', 'VARCHAR(255) NULL');
             self::ensureColumn('image_code', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_code` VARCHAR(128) NULL AFTER `image_name`');
+            self::ensureNullableColumn('image_code', 'VARCHAR(128) NULL');
             self::ensureColumn('manufacturer', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `manufacturer` VARCHAR(255) NULL AFTER `image_code`');
+            self::ensureNullableColumn('manufacturer', 'VARCHAR(255) NULL');
             self::ensureColumn('has_image', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `has_image` TINYINT(1) NOT NULL DEFAULT 0 AFTER `manufacturer`');
             self::ensureColumn('verified', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `verified` TINYINT(1) NOT NULL DEFAULT 0 AFTER `has_image`');
             self::ensureColumn('image_path', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `image_path` VARCHAR(500) NULL AFTER `verified`');
+            self::ensureNullableColumn('image_path', 'VARCHAR(500) NULL');
             self::ensureColumn('checked_at', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `checked_at` DATETIME NULL AFTER `image_path`');
+            self::ensureNullableColumn('checked_at', 'DATETIME NULL');
             self::ensureColumn('created_at', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `created_at` DATETIME NULL AFTER `checked_at`');
+            self::ensureNullableColumn('created_at', 'DATETIME NULL');
             self::ensureColumn('updated_at', 'ALTER TABLE ' . self::quotedTable('custom_asd_images') . ' ADD `updated_at` DATETIME NULL AFTER `created_at`');
+            self::ensureNullableColumn('updated_at', 'DATETIME NULL');
 
             return;
         }

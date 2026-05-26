@@ -1050,7 +1050,7 @@ public static function dashboard_end_of_life($type)
                 DB::raw($customProductAttributeTable . '.location AS housingattr'),
                 $stockTable . '.quantity'
             )
-            ->join($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
+            ->leftJoin($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')

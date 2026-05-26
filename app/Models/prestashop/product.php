@@ -1708,6 +1708,8 @@ public static function dashboard_end_of_life($type)
             ->get();
 
         foreach ($bd_data as $item) {
+            $validRecommended = [];
+
             $data_2 = accessory::select(
                     $productTable . '.id_product',
                     $productTable . '.active',
@@ -1723,12 +1725,16 @@ public static function dashboard_end_of_life($type)
             $count = 0;
 
             foreach ($data_2 as $item_2) {
+                if (!$item_2->id_product || isset($validRecommended[$item_2->id_product])) {
+                    continue;
+                }
+
                 if ((($item_2->active) && ($item_2->wmdeprecated == 1) && ($item_2->quantity > 0)) || (($item_2->active) && ($item_2->wmdeprecated == 0))) {
-                    $count++;
+                    $validRecommended[$item_2->id_product] = true;
                 }
             }
 
-            if ($count < 4) {
+            if (count($validRecommended) < 4) {
                 $data[] = [
                     'id_product' => $item->id_product,
                     'reference' => $item->reference,

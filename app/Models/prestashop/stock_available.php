@@ -3,8 +3,8 @@
 namespace App\Models\prestashop;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
 class stock_available extends PrestashopModel
 {
@@ -129,14 +129,7 @@ class stock_available extends PrestashopModel
             'name' => trans('dashboard.Negative stock'),
             'col' => 4,
             'item_id' => $type . '_negative_stock',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
+            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
             'columns' => ['id_product', 'reference', 'quantity'],
             'counter' => count($data),
             'data' => $data
@@ -189,14 +182,7 @@ class stock_available extends PrestashopModel
             'name' => trans('dashboard.Out of stock'),
             'col' => 4,
             'item_id' => $type . '_out_of_stock',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
+            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
             'columns' => ['id_product', 'reference', 'quantity'],
             'counter' => count($data),
             'data' => $data
@@ -243,14 +229,7 @@ class stock_available extends PrestashopModel
             'name' => trans('dashboard.No Sales'),
             'col' => 4,
             'item_id' => $type . '_no_sales',
-            'prestashop' => (isset(Config::get('token')->AdminProducts))
-                ? [
-                    'token' => Config::get('token')->AdminProducts,
-                    'controller' => 'AdminProducts',
-                    'element' => 'id_product',
-                    'extraParameters' => '&updateproduct'
-                ]
-                : [],
+            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
             'columns' => ['id_product', 'quantity', 'reference', 'brand'],
             'counter' => count($data),
             'data' => $data

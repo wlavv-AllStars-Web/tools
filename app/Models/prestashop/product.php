@@ -227,6 +227,7 @@ class product extends PrestashopModel
             'tr_color' => $tr_color,
             'id_product' => $id_product,
             'reference' => $reference,
+            'weight_value' => (float) $weight,
             'weight' => number_format($weight, 2, '.'),
             'width' => number_format($array_measures[0], 0, '.'),
             'height' => number_format($array_measures[1], 0, '.'),
@@ -2151,14 +2152,14 @@ public static function dashboard_end_of_life($type)
 
             if ($data_arr['volumetric'] > 299) {
                 $data[] = $data_arr;
-            } elseif ($data_arr['weight'] > 31.49) {
+            } elseif ($data_arr['weight_value'] > 31.49) {
                 $data[] = $data_arr;
             }
         }
 
         $sorted = collect($data)->sortByDesc([
             ['volumetric', 'DESC'],
-            ['weight', 'DESC']
+            ['weight_value', 'DESC']
         ]);
 
         return [

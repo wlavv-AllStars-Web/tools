@@ -14,12 +14,12 @@ use App\Http\Controllers\CustomTools\mailsController;
 
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_lang;
-use App\Models\prestashop\asm_dashboard;
-use App\Models\prestashop\asm_newsletter_email;
 use App\Models\prestashop\AsdImage;
 
 use App\Models\modules\compats\compats_newsletter;
 use App\Models\modules\compats\compats_product;
+use App\Models\modules\marketing\NewsletterEmail;
+use App\Models\modules\marketing\NewsletterProductDecision;
 
 use App\Models\modules\dashboard\dashboard;
 
@@ -121,7 +121,7 @@ class marketingController extends Controller{
                 $product_name = product_lang::getProductName($request->id_product, $id_lang);
 
                 foreach($array_emails_lang  AS $email){
-                    asm_newsletter_email::insertRow($id_lang, $request->id_product, $email, 'All Stars Motorsport - '. $product_name, $html);
+                    NewsletterEmail::insertRow($id_lang, $request->id_product, $email, 'All Stars Motorsport - '. $product_name, $html);
                 }
                 
             }
@@ -134,7 +134,7 @@ class marketingController extends Controller{
                 'var_3' => '',
             ];
                 
-            asm_dashboard::addException($data);
+            NewsletterProductDecision::decide((int) $request->id_product, (string) $request->reference, null, 'sent');
 
             return response()->json([ 
                 'added'  => 'true',
@@ -149,7 +149,7 @@ class marketingController extends Controller{
                 'var_3' => '',
             ];
                 
-            asm_dashboard::addException($data);
+            NewsletterProductDecision::decide((int) $request->id_product, (string) $request->reference, null, 'skipped');
             
             return response()->json([ 
                 'added'  => false,'result' => 'success' ]);

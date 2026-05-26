@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('vat:validate-due --limit=25')->everyMinute()->withoutOverlapping();
         $schedule->command('asd-images:sync')->dailyAt('03:00')->withoutOverlapping();
         $schedule->command('youtube:check-broken-links')->cron('30 4 */3 * *')->withoutOverlapping();
+        $schedule->command('newsletter:send-pending --limit=10')->everyFiveMinutes()->withoutOverlapping();
     }
 
     protected function commands(): void

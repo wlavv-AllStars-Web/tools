@@ -10,6 +10,7 @@ use Carbon\Carbon;
 
 use App\Models\modules\compats\compats_product;
 use App\Models\modules\oms\BilledOrderLine;
+use App\Models\modules\marketing\NewsletterProductDecision;
 
 use App\Services\Prestashop\PrestashopAdminLinkService;
 
@@ -1270,7 +1271,10 @@ public static function dashboard_end_of_life($type)
     public static function dashboard_products_for_newsletter($type)
     {
         $data = [];
-        $excluded = self::excludedProductIds('products_for_newsletter');
+        $excluded = NewsletterProductDecision::query()
+            ->pluck('id_product')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');

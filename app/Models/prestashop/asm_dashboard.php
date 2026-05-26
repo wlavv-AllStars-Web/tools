@@ -28,7 +28,7 @@ class asm_dashboard extends PrestashopModel
         $exception->reference = $data->var_2;
         $exception->brand = (isset($data->var_3) && !is_null($data->var_3)) ? $data->var_3 : '';
         $exception->verified = 1;
-        $exception->operator = auth()->id();
+        $exception->operator = auth()->id() ?: 0;
         $exception->save();
 
         $exception->logCustomAction('exception_added', [ 'panel' => $data->panel, 'id_product' => $data->var_1, 'reference' => $data->var_2 ]);

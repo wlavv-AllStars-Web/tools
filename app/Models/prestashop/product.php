@@ -1752,14 +1752,15 @@ public static function dashboard_end_of_life($type)
 
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');
+        $packTable = self::tableName('pack');
 
         $bd_data = self::select(
                 $productTable . '.id_product',
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name AS brand')
             )
+            ->join($packTable, $packTable . '.id_product_pack', '=', $productTable . '.id_product')
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->where($productTable . '.cache_is_pack', 1)
             ->groupBy(
                 $productTable . '.reference',
                 $productTable . '.id_product',

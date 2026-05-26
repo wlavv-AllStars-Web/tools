@@ -34,7 +34,7 @@ class YoutubeBrokenLinkSyncService
             }
         }
 
-        DB::connection('mysql2')->table($this->table('asm_youtube'))->delete();
+        DB::connection('mysql')->table('youtube_broken_links')->delete();
 
         $now = now()->format('Y-m-d H:i:s');
         $insertRows = $references
@@ -51,7 +51,7 @@ class YoutubeBrokenLinkSyncService
             ->all();
 
         foreach (array_chunk($insertRows, 500) as $chunk) {
-            DB::connection('mysql2')->table($this->table('asm_youtube'))->insert($chunk);
+            DB::connection('mysql')->table('youtube_broken_links')->insert($chunk);
         }
 
         return [
@@ -139,17 +139,17 @@ class YoutubeBrokenLinkSyncService
 
     private function ensureTable(): void
     {
-        $table = $this->table('asm_youtube');
+        $table = 'youtube_broken_links';
 
-        if (Schema::connection('mysql2')->hasTable($table)) {
-            $this->ensureColumn($table, 'created_at', 'ALTER TABLE ' . $this->quotedTable('asm_youtube') . ' ADD `created_at` DATETIME NULL');
-            $this->ensureColumn($table, 'updated_at', 'ALTER TABLE ' . $this->quotedTable('asm_youtube') . ' ADD `updated_at` DATETIME NULL');
+        if (Schema::connection('mysql')->hasTable($table)) {
+            $this->ensureColumn($table, 'created_at', 'ALTER TABLE `youtube_broken_links` ADD `created_at` DATETIME NULL');
+            $this->ensureColumn($table, 'updated_at', 'ALTER TABLE `youtube_broken_links` ADD `updated_at` DATETIME NULL');
 
             return;
         }
 
-        DB::connection('mysql2')->statement(
-            'CREATE TABLE ' . $this->quotedTable('asm_youtube') . ' (
+        DB::connection('mysql')->statement(
+            'CREATE TABLE `youtube_broken_links` (
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 `id_product` INT UNSIGNED NOT NULL,
                 `youtube_code` VARCHAR(255) NOT NULL,
@@ -164,18 +164,13 @@ class YoutubeBrokenLinkSyncService
 
     private function ensureColumn(string $table, string $column, string $statement): void
     {
-        if (!Schema::connection('mysql2')->hasColumn($table, $column)) {
-            DB::connection('mysql2')->statement($statement);
+        if (!Schema::connection('mysql')->hasColumn($table, $column)) {
+            DB::connection('mysql')->statement($statement);
         }
     }
 
     private function table(string $table): string
     {
         return env('DB2_DB_prefix', 'ps_') . $table;
-    }
-
-    private function quotedTable(string $table): string
-    {
-        return '`' . str_replace('`', '``', $this->table($table)) . '`';
     }
 }

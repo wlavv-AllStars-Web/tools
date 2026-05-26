@@ -9,19 +9,20 @@ class asm_youtube extends PrestashopModel
 {
     use HasFactory;
 
+    protected $connection = 'mysql';
+    protected $table = 'youtube_broken_links';
     protected $fillable = ['name'];
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = self::tableName('asm_youtube');
     }
 
     public static function dashboard_broken_link($type)
     {
         $data = [];
 
-        if (!self::hasPrestashopTable(self::tableName('asm_youtube'))) {
+        if (!\Illuminate\Support\Facades\Schema::connection('mysql')->hasTable('youtube_broken_links')) {
             return [
                 'name' => trans('dashboard.Youtube - Broken links'),
                 'col' => 4,

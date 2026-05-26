@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Areas;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
+use Throwable;
 
 use App\Http\Controllers\CustomTools\mailsController;
 
@@ -41,6 +44,25 @@ class marketingController extends Controller{
         ];
 
         return View::make('areas/marketing/index')->with($data);
+    }
+
+    public function syncYoutubeBrokenLinks(): RedirectResponse
+    {
+        try {
+            Artisan::call('youtube:check-broken-links');
+
+            $output = trim(Artisan::output());
+
+            return redirect()
+                ->route('marketing.index')
+                ->with('success', $output !== '' ? $output : 'YouTube broken links verification completed.');
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('marketing.index')
+                ->with('error', 'YouTube broken links verification failed: ' . $e->getMessage());
+        }
     }
 
     private function accessList(){

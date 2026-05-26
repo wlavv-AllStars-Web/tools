@@ -40,6 +40,7 @@ Route::post( 'finance/documents/intrastat/saveCurrencyRate', [financeController:
 Route::get('logistics', [logisticsController::class, 'index'])->name('logistics.index');
 Route::get('marketing', [marketingController::class, 'index'])->name('marketing.index');
 Route::post( 'customTools/marketing/post', [marketingController::class, 'post'])->name('marketing.post');
+Route::post('marketing/youtube-broken-links/sync', [marketingController::class, 'syncYoutubeBrokenLinks'])->name('marketing.youtube_broken_links.sync');
 Route::get( 'marketing/ASD/missingImages',[marketingController::class, 'getASDMissingImages'])->name('marketing.asdMissingImages');
 
 Route::get('customer', [customerSupportController::class, 'index'])->name('customer.index');

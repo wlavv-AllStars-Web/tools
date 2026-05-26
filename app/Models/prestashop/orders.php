@@ -314,7 +314,10 @@ class orders extends PrestashopModel
             ->join($orderCarrierTable, $ordersTable . '.id_order', '=', $orderCarrierTable . '.id_order')
             ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->where($orderStateLangTable . '.id_lang', 1)
-            ->where($orderCarrierTable . '.tracking_number', '')
+            ->where(function ($query) use ($orderCarrierTable) {
+                $query->whereNull($orderCarrierTable . '.tracking_number')
+                    ->orWhere($orderCarrierTable . '.tracking_number', '');
+            })
             ->whereIn($ordersTable . '.current_state', [4, 28])
             ->groupBy($ordersTable . '.id_order', $ordersTable . '.reference', $orderStateLangTable . '.name');
 

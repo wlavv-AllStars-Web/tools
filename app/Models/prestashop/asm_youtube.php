@@ -41,9 +41,9 @@ class asm_youtube extends PrestashopModel
                 'source_id' => $item->source_id ?? $item->id_product,
                 'id_product' => $item->id_product,
                 'youtube_code' => $item->youtube_code,
-                'url' => (int) $item->id_product > 0
-                    ? PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASM')
-                    : null,
+                'url' => ($item->source_type ?? 'product') === 'manufacturer'
+                    ? PrestashopAdminLinkService::dashboardManufacturerAdminUrl((int) $item->source_id, 'ASM')
+                    : PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASM'),
             ];
         }
 
@@ -51,7 +51,6 @@ class asm_youtube extends PrestashopModel
             'name' => trans('dashboard.Youtube - Broken links'),
             'col' => 4,
             'item_id' => $type . '_youtube_broken_links',
-            'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
             'columns' => ['source_type', 'source_id', 'id_product', 'youtube_code'],
             'counter' => count($data),
             'data' => $data

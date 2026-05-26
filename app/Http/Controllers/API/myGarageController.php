@@ -32,7 +32,13 @@ class myGarageController extends Controller
         
         $compat = compats::getCompatDetail( $request->id_compat );
 
-        compats_newsletter::saveMyCar($request->id_customer, $request->iso_code, $request->store, $compat );
+        compats_newsletter::saveMyCar(
+            $request->id_customer,
+            $request->iso_code,
+            $request->store,
+            $compat,
+            $request->input('email', $request->input('customer_email'))
+        );
         
         $data = [
             'status'    => 'SUCCESS',

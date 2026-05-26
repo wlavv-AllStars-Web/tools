@@ -55,8 +55,9 @@ class compats_newsletter extends Model{
         return $query->where('id_customer', $idCustomer);
     }
 
-    public static function saveMyCar($id_customer, string $iso_code, int $store, compats $compat): int{
+    public static function saveMyCar($id_customer, string $iso_code, int $store, compats $compat, ?string $email = null): int{
         $isCustomerId = is_numeric($id_customer);
+        $email = trim((string) ($email ?? ''));
 
         $row = new self();
         $row->id_compat = $compat->id_compat;
@@ -70,7 +71,7 @@ class compats_newsletter extends Model{
         $row->type = $compat->type->name ?? '';
         $row->id_version = $compat->id_version;
         $row->version = $compat->version->name ?? '';
-        $row->email = $isCustomerId ? '' : (string) $id_customer;
+        $row->email = $email !== '' ? $email : ($isCustomerId ? '' : (string) $id_customer);
         $row->iso_code = $iso_code;
         $row->newsletter = true;
         $row->save();

@@ -1,0 +1,200 @@
+﻿Diagnose log at 2026-05-27T12:53:28Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.7.3+5fa7116896c82164996a609accd1c5ad90fe730a
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 26200)
+Reading environment variables... OK
+ Variables:
+OneDriveConsumer=C:\Users\simul\OneDrive
+ProgramFiles(x86)=C:\Program Files (x86)
+MSYSTEM=MINGW64
+ProgramW6432=C:\Program Files
+DokanLibrary2_LibraryPath_x86=C:\Program Files\Dokan\Dokan Library-2.0.6\x86\lib\
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 151 Stepping 2, GenuineIntel
+TMP=C:\Users\simul\AppData\Local\Temp
+PROCESSOR_ARCHITECTURE=AMD64
+VSCODE_GIT_ASKPASS_MAIN=c:\Users\simul\AppData\Roaming\Code\User\globalStorage\vscode.git\askpass\493597c785d4c5cb\askpass-main.js
+Path=C:/Program Files/Git/mingw64/libexec/git-core;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\simul\bin;C:\Program Files\ImageMagick-7.1.2-Q16;C:\Program Files (x86)\Razer Chroma SDK\bin;C:\Program Files\Razer Chroma SDK\bin;C:\Program Files (x86)\Razer\ChromaBroadcast\bin;C:\Program Files\Razer\ChromaBroadcast\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Program Files\dotnet\;C:\Windows\system32\config\systemprofile\AppData\Local\Microsoft\WindowsApps;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\OpenSSL-Win64\bin;C:\xampp\php;C:\ProgramData\ComposerSetup\bin;C:\Program Files\Git\cmd;C:\Users\simul\AppData\Local\Microsoft\WindowsApps;C:\Users\simul\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\simul\AppData\Roaming\Composer\vendor\bin;C:\Users\simul\AppData\Local\GitHubDesktop\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;
+EFC_10524_4126798990=1
+TERM_PROGRAM_VERSION=1.121.0
+OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf
+PROCESSOR_REVISION=9702
+TEMP=C:\Users\simul\AppData\Local\Temp
+USERPROFILE=C:\Users\simul
+LOGONSERVER=\\SIMULADOR
+TERM=xterm-256color
+USERNAME=simul
+git=C:\Program Files\Git\cmd
+CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_27752_SSIMIKJCKJOUOEGF
+GIT_EXEC_PATH=C:/Program Files/Git/mingw64/libexec/git-core
+PLINK_PROTOCOL=ssh
+OneDrive=C:\Users\simul\OneDrive
+USERDOMAIN_ROAMINGPROFILE=SIMULADOR
+CommonProgramFiles=C:\Program Files\Common Files
+windir=C:\WINDOWS
+VSCODE_INJECTION=1
+VSCODE_PYTHON_AUTOACTIVATE_GUARD=1
+ProgramData=C:\ProgramData
+LANG=en_US.UTF-8
+DokanLibrary2_LibraryPath_x64=C:\Program Files\Dokan\Dokan Library-2.0.6\lib\
+HOMEPATH=\Users\simul
+COMPUTERNAME=SIMULADOR
+ALLUSERSPROFILE=C:\ProgramData
+CommonProgramW6432=C:\Program Files\Common Files
+__PSLockDownPolicy=0
+DokanLibrary2=C:\Program Files\Dokan\Dokan Library-2.0.6\
+SESSIONNAME=Console
+DriverData=C:\Windows\System32\Drivers\DriverData
+HOMEDRIVE=C:
+GIT_ASKPASS=c:\Users\simul\AppData\Roaming\Code\User\globalStorage\vscode.git\askpass\493597c785d4c5cb\askpass.sh
+SystemRoot=C:\WINDOWS
+GIT_TRACE2_PARENT_SID=a8290c2c-6919-41b1-87ca-e2212b5e80cb
+SystemDrive=C:
+NUMBER_OF_PROCESSORS=24
+OS=Windows_NT
+ProgramFiles=C:\Program Files
+ComSpec=C:\WINDOWS\system32\cmd.exe
+EFC_10524_1592913036=1
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL
+HOME=C:\Users\simul
+PSModulePath=C:\Users\simul\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+TMPDIR=C:\Users\simul\AppData\Local\Temp
+APPDATA=C:\Users\simul\AppData\Roaming
+USERDOMAIN=SIMULADOR
+PROCESSOR_LEVEL=6
+LOCALAPPDATA=C:\Users\simul\AppData\Local
+VSCODE_GIT_IPC_HANDLE=\\.\pipe\vscode-git-72febbf8d0-sock
+VSCODE_GIT_ASKPASS_NODE=C:\Users\simul\AppData\Local\Programs\Microsoft VS Code\Code.exe
+Git bin=C:\Program Files\Git\bin
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+COLORTERM=truecolor
+PUBLIC=C:\Users\Public
+TERM_PROGRAM=vscode
+VSCODE_GIT_ASKPASS_EXTRA_ARGS=
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\simul\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\simul\AppData\Local\Temp\d6aa4ff192948b2aa0fe7459'... OK
+Reading from temporary file 'C:\Users\simul\AppData\Local\Temp\d6aa4ff192948b2aa0fe7459'... OK
+Deleting temporary file 'C:\Users\simul\AppData\Local\Temp\d6aa4ff192948b2aa0fe7459'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\simul
+UserDataDirectoryPath: C:\Users\simul\.gcm
+GetCurrentDirectory(): C:\xampp\htdocs\webtools
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+ OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:53299/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.54.0.windows.1'
+Locating current repository...Git repository at 'C:/xampp/htdocs/webtools/.git'
+ OK
+Listing all Git configuration... OK
+Git configuration:
+file:C:/Program Files/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.required=true
+file:C:/Program Files/Git/etc/gitconfig	http.sslbackend=schannel
+file:C:/Program Files/Git/etc/gitconfig	core.autocrlf=true
+file:C:/Program Files/Git/etc/gitconfig	core.fscache=true
+file:C:/Program Files/Git/etc/gitconfig	core.symlinks=false
+file:C:/Program Files/Git/etc/gitconfig	pull.rebase=false
+file:C:/Program Files/Git/etc/gitconfig	credential.helper=manager
+file:C:/Program Files/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:C:/Program Files/Git/etc/gitconfig	init.defaultbranch=master
+file:C:/Users/simul/.gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Users/simul/.gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Users/simul/.gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Users/simul/.gitconfig	filter.lfs.required=true
+file:C:/Users/simul/.gitconfig	user.name=wlavv-AllStars-Web
+file:C:/Users/simul/.gitconfig	user.email=139965773+wlavv-AllStars-Web@users.noreply.github.com
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.autocrlf=false
+file:.git/config	remote.origin.url=https://github.com/wlavv-AllStars-Web/tools.git
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+file:.git/config	branch.master.vscode-merge-base=origin/main
+file:.git/config	branch.master.remote=origin
+file:.git/config	branch.master.merge=refs/heads/master
+file:.git/config	branch.main.vscode-merge-base=origin/main
+file:.git/config	branch.main.remote=origin
+file:.git/config	branch.main.merge=refs/heads/main
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+
+------------
+Diagnostic: Microsoft authentication (AAD/MSA)
+Skipped: False
+Success: True
+Exception: None
+Log:
+Broker is not enabled.
+Flow type is: Auto
+Gathering MSAL token cache data... OK
+CacheDirectory: C:\Users\simul\AppData\Local\.IdentityService
+CacheFileName: msal.cache
+CacheFilePath: C:\Users\simul\AppData\Local\.IdentityService\msal.cache
+Creating cache helper... OK
+Verifying MSAL token cache persistence... OK
+
+------------
+Diagnostic: GitHub API
+Skipped: False
+Success: True
+Exception: None
+Log:
+Using 'https://github.com/' as API target.
+Querying '/meta' endpoint... OK
+

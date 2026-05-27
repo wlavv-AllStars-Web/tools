@@ -97,6 +97,11 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
 
         $idTab = (int) Tab::getIdFromClassName($targetController);
 
+        if ($idTab <= 0 && $targetController === 'AdminModules') {
+            $targetController = 'AdminModulesSf';
+            $idTab = (int) Tab::getIdFromClassName($targetController);
+        }
+
         if ($idTab <= 0) {
             throw new Exception('Unknown target controller.');
         }

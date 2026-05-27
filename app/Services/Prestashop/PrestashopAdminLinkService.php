@@ -289,7 +289,7 @@ class PrestashopAdminLinkService
 
     public static function moduleConfigureUrl(string $moduleName, string $store = 'ASM', array $params = []): ?string
     {
-        return static::bridgeAdminUrl('AdminModules', array_merge([
+        return static::bridgeAdminUrl('AdminModulesSf', array_merge([
             'configure' => $moduleName,
             'module_name' => $moduleName,
         ], $params), $store);
@@ -297,6 +297,6 @@ class PrestashopAdminLinkService
 
     public static function moduleManageUrl(string $store = 'ASM'): ?string
     {
-        return static::bridgeAdminUrl('AdminModules', [], $store);
+        return static::bridgeAdminUrl('AdminModulesSf', [], $store);
     }
 }

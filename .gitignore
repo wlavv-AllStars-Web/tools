@@ -27,3 +27,5 @@ error_log
 /reports/
 /public/_uploads/
 /public/homepage/
+
+prestashop_modules/

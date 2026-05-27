@@ -112,24 +112,24 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             throw new Exception('Missing admin folder.');
         }
 
+        $this->ensureAdminDirConstant($adminFolder);
+
         $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
         $token = Tools::getAdminToken($targetController . $idTab . $idEmployee);
 
         if ($targetController === 'AdminModulesSf' && !empty($targetParams['configure'])) {
             $moduleName = (string) $targetParams['configure'];
-            unset($targetParams['configure']);
+            unset($targetParams['configure'], $targetParams['module_name'], $targetParams['tab_module']);
 
-            $params = array_merge([
-                'token' => $token,
-            ], $targetParams);
+            $symfonyUrl = $this->generateSymfonyRoute('admin_module_configure_action', array_merge([
+                'module_name' => $moduleName,
+            ], $targetParams));
 
-            return $baseUrl
-                . '/'
-                . $adminFolder
-                . '/index.php/improve/modules/manage/action/configure/'
-                . rawurlencode($moduleName)
-                . '?'
-                . http_build_query($params);
+            if ($symfonyUrl !== null) {
+                return $symfonyUrl;
+            }
+
+            throw new Exception('Unable to generate module configure route.');
         }
 
         $params = array_merge([
@@ -138,5 +138,77 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         ], $targetParams);
 
         return $baseUrl . '/' . $adminFolder . '/index.php?' . http_build_query($params);
+    }
+
+    private function ensureAdminDirConstant($adminFolder)
+    {
+        if (defined('_PS_ADMIN_DIR_')) {
+            return;
+        }
+
+        $adminDir = rtrim(_PS_ROOT_DIR_, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $adminFolder;
+
+        if (is_dir($adminDir)) {
+            define('_PS_ADMIN_DIR_', $adminDir);
+        }
+    }
+
+    private function generateSymfonyRoute($routeName, array $params)
+    {
+        $linkUrl = $this->generateSymfonyRouteWithLink($routeName, $params);
+
+        if ($this->isValidModuleConfigureUrl($linkUrl, $params)) {
+            return $linkUrl;
+        }
+
+        if (!class_exists('PrestaShop\PrestaShop\Adapter\SymfonyContainer')) {
+            return null;
+        }
+
+        $container = \PrestaShop\PrestaShop\Adapter\SymfonyContainer::getInstance();
+
+        if (!$container || !$container->has('router')) {
+            return null;
+        }
+
+        $routerUrl = $container->get('router')->generate($routeName, $params, 0);
+
+        return $this->isValidModuleConfigureUrl($routerUrl, $params) ? $routerUrl : null;
+    }
+
+    private function generateSymfonyRouteWithLink($routeName, array $params)
+    {
+        if (!isset($this->context->link)) {
+            return null;
+        }
+
+        try {
+            $sfRouteParams = array_merge(['route' => $routeName], $params);
+            $reflection = new ReflectionMethod($this->context->link, 'getAdminLink');
+
+            if ($reflection->getNumberOfParameters() >= 4) {
+                return $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams, []);
+            }
+
+            return $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams);
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    private function isValidModuleConfigureUrl($url, array $params)
+    {
+        if (!is_string($url) || $url === '') {
+            return false;
+        }
+
+        $moduleName = isset($params['module_name']) ? (string) $params['module_name'] : '';
+
+        if ($moduleName === '') {
+            return false;
+        }
+
+        return strpos($url, '/modules/manage/action/configure/' . rawurlencode($moduleName)) !== false
+            || strpos($url, '/modules/manage/action/configure/' . $moduleName) !== false;
     }
 }

@@ -121,9 +121,7 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             $moduleName = (string) $targetParams['configure'];
             unset($targetParams['configure'], $targetParams['module_name'], $targetParams['tab_module']);
 
-            $symfonyUrl = $this->generateSymfonyRoute('admin_module_configure_action', array_merge([
-                'module_name' => $moduleName,
-            ], $targetParams));
+            $symfonyUrl = $this->generateModuleConfigureUrl($moduleName, $targetParams, $baseUrl);
 
             if ($symfonyUrl !== null) {
                 return $symfonyUrl;
@@ -140,6 +138,33 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         return $baseUrl . '/' . $adminFolder . '/index.php?' . http_build_query($params);
     }
 
+    private function generateModuleConfigureUrl($moduleName, array $queryParams, $baseUrl)
+    {
+        $routeParams = ['module_name' => $moduleName];
+        $routeNames = [
+            'admin_module_configure_action',
+            'admin_module_configure',
+        ];
+
+        foreach ($routeNames as $routeName) {
+            $linkUrl = $this->generateSymfonyRouteWithLink($routeName, $routeParams, $queryParams);
+
+            if ($this->isValidModuleConfigureUrl($linkUrl, $moduleName)) {
+                return $linkUrl;
+            }
+        }
+
+        foreach ($routeNames as $routeName) {
+            $routerUrl = $this->generateSymfonyRoute($routeName, array_merge($routeParams, $queryParams), $baseUrl);
+
+            if ($this->isValidModuleConfigureUrl($routerUrl, $moduleName)) {
+                return $routerUrl;
+            }
+        }
+
+        return null;
+    }
+
     private function ensureAdminDirConstant($adminFolder)
     {
         if (defined('_PS_ADMIN_DIR_')) {
@@ -153,14 +178,8 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         }
     }
 
-    private function generateSymfonyRoute($routeName, array $params)
+    private function generateSymfonyRoute($routeName, array $params, $baseUrl)
     {
-        $linkUrl = $this->generateSymfonyRouteWithLink($routeName, $params);
-
-        if ($this->isValidModuleConfigureUrl($linkUrl, $params)) {
-            return $linkUrl;
-        }
-
         if (!class_exists('PrestaShop\PrestaShop\Adapter\SymfonyContainer')) {
             return null;
         }
@@ -171,38 +190,50 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             return null;
         }
 
-        $routerUrl = $container->get('router')->generate($routeName, $params, 0);
+        try {
+            $routerUrl = $container->get('router')->generate($routeName, $params, 0);
+        } catch (Throwable $e) {
+            return null;
+        }
 
-        return $this->isValidModuleConfigureUrl($routerUrl, $params) ? $routerUrl : null;
+        if (is_string($routerUrl) && strpos($routerUrl, '/') === 0) {
+            return rtrim($baseUrl, '/') . $routerUrl;
+        }
+
+        return $routerUrl;
     }
 
-    private function generateSymfonyRouteWithLink($routeName, array $params)
+    private function generateSymfonyRouteWithLink($routeName, array $routeParams, array $queryParams)
     {
         if (!isset($this->context->link)) {
             return null;
         }
 
         try {
-            $sfRouteParams = array_merge(['route' => $routeName], $params);
+            $sfRouteParams = array_merge(['route' => $routeName], $routeParams);
             $reflection = new ReflectionMethod($this->context->link, 'getAdminLink');
 
             if ($reflection->getNumberOfParameters() >= 4) {
-                return $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams, []);
+                $url = $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams, $queryParams);
+
+                if ($this->isValidModuleConfigureUrl($url, (string) $routeParams['module_name'])) {
+                    return $url;
+                }
+
+                return $this->context->link->getAdminLink('AdminModulesSf', true, [], array_merge($sfRouteParams, $queryParams));
             }
 
-            return $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams);
+            return $this->context->link->getAdminLink('AdminModulesSf', true, array_merge($sfRouteParams, $queryParams));
         } catch (Throwable $e) {
             return null;
         }
     }
 
-    private function isValidModuleConfigureUrl($url, array $params)
+    private function isValidModuleConfigureUrl($url, $moduleName)
     {
         if (!is_string($url) || $url === '') {
             return false;
         }
-
-        $moduleName = isset($params['module_name']) ? (string) $params['module_name'] : '';
 
         if ($moduleName === '') {
             return false;

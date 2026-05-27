@@ -53,7 +53,7 @@ class User extends Authenticatable
      * Deprecated for PrestaShop 9.
      *
      * PrestaShop BO links are now generated through App\Services\Prestashop\PrestashopAdminLinkService
-     * and the lsgwebtoolsbridge module, instead of calling external getAdminToken.php endpoints.
+     * and the asgwebtoolsbridge module, instead of calling external getAdminToken.php endpoints.
      *
      * Kept only to avoid fatal errors in old code paths while the dashboards are migrated.
      */

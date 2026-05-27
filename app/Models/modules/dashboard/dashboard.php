@@ -33,7 +33,9 @@ class dashboard extends Model
         foreach($panels AS $panel){
             
             [$class, $method] = explode('::', $panel->function);
-            $fullClass = "App\\Models\\prestashop\\" . $class;
+            $fullClass = $class === 'ASM_ukoo_customer'
+                ? \App\Models\prestashop\asm_ukoo_customer::class
+                : "App\\Models\\prestashop\\" . $class;
             $alternativeClass  = "App\\Models\\modules\\" . $class . "\\" . $class;
 
             if (class_exists($fullClass) && method_exists($fullClass, $method)) {
@@ -236,6 +238,8 @@ class dashboard extends Model
             'product_comment' => \App\Models\prestashop\product_comment::class,
             'pack' => \App\Models\prestashop\pack::class,
             'cart_rules' => \App\Models\prestashop\cart_rules::class,
+            'asm_ukoo_customer' => \App\Models\prestashop\asm_ukoo_customer::class,
+            'ASM_ukoo_customer' => \App\Models\prestashop\asm_ukoo_customer::class,
         ];
 
         if (isset($knownModels[$model])) {

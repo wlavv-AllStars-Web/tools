@@ -105,12 +105,17 @@ class PrestashopAdminLinkService
         }
 
         $targetParams = base64_encode(http_build_query($targetParams));
+        $adminToken = PrestashopAdminTokenService::token('AdminAsgwebtoolsbridgeRedirect', $store);
         $params = [
-            'controller' => 'AdminLsgwebtoolsbridgeRedirect',
+            'controller' => 'AdminAsgwebtoolsbridgeRedirect',
             static::bridgeTokenParameter($store) => $bridgeToken,
             'target_controller' => $targetController,
             'target_params' => $targetParams,
         ];
+
+        if ($adminToken) {
+            $params['token'] = $adminToken;
+        }
 
         if ($employeeId = static::employeeId()) {
             $params['id_employee'] = $employeeId;
@@ -283,31 +288,21 @@ class PrestashopAdminLinkService
     
     public static function dashboardReviewsUrl(string $store = 'ASM'): ?string
     {
-        return self::legacyAdminUrl(
-            'AdminModulesSf',
-            [
-                'configure'   => 'productcomments',
-                'tab_module'  => 'front_office_features',
-                'module_name' => 'productcomments',
-            ],
-            $store
-        );
+        return self::moduleConfigureUrl('productcomments', $store, [
+            'tab_module' => 'front_office_features',
+        ]);
     }
 
-    public static function moduleConfigureUrl(string $moduleName, string $store = 'ASM'): ?string
+    public static function moduleConfigureUrl(string $moduleName, string $store = 'ASM', array $params = []): ?string
     {
-        $store = static::normalizeStore($store);
+        return static::bridgeAdminUrl('AdminModules', array_merge([
+            'configure' => $moduleName,
+            'module_name' => $moduleName,
+        ], $params), $store);
+    }
 
-        $baseUrl = static::storeBaseUrl($store);
-        $adminFolder = static::adminFolder($store);
-
-        if (!$baseUrl || !$adminFolder) {
-            return null;
-        }
-
-        return rtrim($baseUrl, '/')
-            . '/' . trim($adminFolder, '/')
-            . '/index.php/improve/modules/manage/action/configure/'
-            . rawurlencode($moduleName);
+    public static function moduleManageUrl(string $store = 'ASM'): ?string
+    {
+        return static::bridgeAdminUrl('AdminModules', [], $store);
     }
 }

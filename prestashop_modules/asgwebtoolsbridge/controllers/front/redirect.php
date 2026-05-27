@@ -18,7 +18,7 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             $url = $this->buildAdminUrl($targetController, $targetParams, $idEmployee);
 
             Tools::redirectAdmin($url);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             header('HTTP/1.1 403 Forbidden');
             exit($e->getMessage());
         }
@@ -106,7 +106,12 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             throw new Exception('Unknown target controller.');
         }
 
-        $adminFolder = basename(_PS_ADMIN_DIR_);
+        $adminFolder = trim((string) Tools::getValue('admin_folder'), '/');
+
+        if ($adminFolder === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $adminFolder)) {
+            throw new Exception('Missing admin folder.');
+        }
+
         $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
         $token = Tools::getAdminToken($targetController . $idTab . $idEmployee);
 

@@ -109,6 +109,7 @@ class PrestashopAdminLinkService
             static::bridgeTokenParameter($store) => $bridgeToken,
             'target_controller' => $targetController,
             'target_params' => $targetParams,
+            'admin_folder' => trim($adminFolder, '/'),
         ];
 
         if ($employeeId = static::employeeId()) {

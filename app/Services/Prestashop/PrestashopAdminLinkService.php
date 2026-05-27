@@ -105,17 +105,11 @@ class PrestashopAdminLinkService
         }
 
         $targetParams = base64_encode(http_build_query($targetParams));
-        $adminToken = PrestashopAdminTokenService::tokenWithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store);
         $params = [
-            'controller' => 'AdminAsgwebtoolsbridgeRedirect',
             static::bridgeTokenParameter($store) => $bridgeToken,
             'target_controller' => $targetController,
             'target_params' => $targetParams,
         ];
-
-        if ($adminToken) {
-            $params['token'] = $adminToken;
-        }
 
         if ($employeeId = static::employeeId()) {
             $params['id_employee'] = $employeeId;
@@ -131,7 +125,7 @@ class PrestashopAdminLinkService
             );
         }
 
-        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/index.php?' . http_build_query($params);
+        return rtrim($baseUrl, '/') . '/module/asgwebtoolsbridge/redirect?' . http_build_query($params);
     }
 
     public static function legacyAdminUrl(string $controller, array $params = [], string $store = 'ASM'): ?string

@@ -24,7 +24,7 @@ class asm_ukoo_customer extends PrestashopModel
         $data = [];
         $excludedDomains = config('allstars.emails.excluded_domains', []);
 
-        if (Schema::hasTable('compats_newsletter')) {
+        if (Schema::connection('mysql')->hasTable('compats_newsletter')) {
             $query = compats_newsletter::query()
                 ->where('newsletter', 1)
                 ->whereNotNull('email')
@@ -117,7 +117,7 @@ class asm_ukoo_customer extends PrestashopModel
 
     public static function getEmailsOfTheCompats($detail, $iso)
     {
-        if (Schema::hasTable('compats_newsletter')) {
+        if (Schema::connection('mysql')->hasTable('compats_newsletter')) {
             return compats_newsletter::where('id_brand', $detail->brand)
                 ->where('id_model', $detail->model)
                 ->where('id_version', $detail->version)

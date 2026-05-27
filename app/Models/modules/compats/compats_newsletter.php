@@ -9,6 +9,7 @@ use App\Models\prestashop\customer;
 class compats_newsletter extends Model{
     use HasFactory;
 
+    protected $connection = 'mysql';
     protected $table = 'compats_newsletter';
     protected $primaryKey = 'id';
     public $incrementing = true;

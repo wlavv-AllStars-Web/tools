@@ -149,7 +149,7 @@ class product_attribute extends PrestashopModel
             ->leftJoin($stockTable, function ($join) use ($productAttributeTable, $stockTable, $asmShopId) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
                     ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->where($stockTable . '.id_shop', $asmShopId);
+                    ->whereIn($stockTable . '.id_shop', [$asmShopId, 0]);
             })
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
@@ -196,7 +196,7 @@ class product_attribute extends PrestashopModel
             'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
             'columns' => ['id_product', 'id_product_attribute', 'reference', 'brand', 'housing', 'nr_images'],
             'counter' => count($products),
-            'data' => $products
+            'data' => array_values($products)
         ];
     }
 }

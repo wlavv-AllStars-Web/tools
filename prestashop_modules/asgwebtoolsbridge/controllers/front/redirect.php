@@ -13,9 +13,9 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
 
             $targetController = trim((string) Tools::getValue('target_controller'));
             $targetParams = (string) Tools::getValue('target_params');
-            $idEmployee = $this->resolveEmployeeId();
+            $decodedTargetParams = $this->decodeTargetParams($targetParams);
 
-            $url = $this->buildBridgeAdminUrl($targetController, $targetParams, $idEmployee);
+            $url = $this->buildDirectAdminUrl($targetController, $decodedTargetParams);
 
             header('Location: ' . $url);
             exit;
@@ -76,53 +76,87 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         }
     }
 
-    private function buildBridgeAdminUrl($targetController, $targetParams, $idEmployee)
+    private function decodeTargetParams($encodedParams)
     {
-        if ($idEmployee <= 0) {
-            throw new Exception('Missing employee id.');
+        $decoded = base64_decode($encodedParams, true);
+
+        if ($decoded === false || $decoded === '') {
+            return [];
         }
 
+        $params = [];
+        parse_str($decoded, $params);
+
+        return is_array($params) ? $params : [];
+    }
+
+    private function buildDirectAdminUrl($targetController, array $targetParams)
+    {
         $adminFolder = trim((string) Tools::getValue('admin_folder'), '/');
 
         if ($adminFolder === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $adminFolder)) {
             throw new Exception('Missing admin folder.');
         }
 
-        $idTab = (int) Tab::getIdFromClassName('AdminAsgwebtoolsbridgeRedirect');
+        $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
 
-        if ($idTab <= 0) {
-            throw new Exception('Bridge admin controller is not installed.');
+        if ($targetController === 'AdminModulesSf' && !empty($targetParams['configure'])) {
+            $moduleName = (string) $targetParams['configure'];
+            unset($targetParams['configure'], $targetParams['module_name']);
+
+            return $this->moduleConfigureUrl($baseUrl, $adminFolder, $moduleName, $targetParams);
         }
 
-        $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
-        $token = Tools::getAdminToken('AdminAsgwebtoolsbridgeRedirect' . $idTab . $idEmployee);
-
-        $params = array_merge([
-            'controller' => 'AdminAsgwebtoolsbridgeRedirect',
-            'token' => $token,
-            'bridge_key' => (string) Tools::getValue('bridge_key'),
-            'target_controller' => $targetController,
-            'target_params' => $targetParams,
-        ], $this->hmacForwardParams());
-
-        return $baseUrl . '/' . $adminFolder . '/index.php?' . http_build_query($params);
+        throw new Exception('Unsupported direct target.');
     }
 
-    private function resolveEmployeeId()
+    private function moduleConfigureUrl($baseUrl, $adminFolder, $moduleName, array $queryParams)
     {
-        $email = trim((string) Tools::getValue('employee_email'));
+        $route = $this->generateSymfonyModuleConfigureUrl($moduleName, $queryParams);
 
-        if ($email !== '' && Validate::isEmail($email)) {
-            $idEmployee = (int) Db::getInstance()->getValue(
-                'SELECT id_employee FROM `' . _DB_PREFIX_ . 'employee` WHERE email = "' . pSQL($email) . '"'
-            );
+        if ($route !== null) {
+            return $route;
+        }
 
-            if ($idEmployee > 0) {
-                return $idEmployee;
+        return $baseUrl
+            . '/'
+            . $adminFolder
+            . '/index.php/improve/modules/manage/action/configure/'
+            . rawurlencode($moduleName)
+            . (!empty($queryParams) ? '?' . http_build_query($queryParams) : '');
+    }
+
+    private function generateSymfonyModuleConfigureUrl($moduleName, array $queryParams)
+    {
+        if (!class_exists('PrestaShop\PrestaShop\Adapter\SymfonyContainer')) {
+            return null;
+        }
+
+        $container = \PrestaShop\PrestaShop\Adapter\SymfonyContainer::getInstance();
+
+        if (!$container || !$container->has('router')) {
+            return null;
+        }
+
+        foreach (['admin_module_configure_action', 'admin_module_configure'] as $routeName) {
+            try {
+                $url = $container->get('router')->generate(
+                    $routeName,
+                    array_merge(['module_name' => $moduleName], $queryParams),
+                    0
+                );
+            } catch (Throwable $e) {
+                continue;
+            }
+
+            if (is_string($url) && $url !== '') {
+                return strpos($url, '/') === 0
+                    ? rtrim(Tools::getShopDomainSsl(true, true), '/') . $url
+                    : $url;
             }
         }
 
-        return (int) Tools::getValue('id_employee');
+        return null;
     }
 
     private function hmacForwardParams()

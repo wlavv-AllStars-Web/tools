@@ -318,10 +318,45 @@ class PrestashopAdminLinkService
 
     public static function moduleConfigureUrl(string $moduleName, string $store = 'ASM', array $params = []): ?string
     {
-        return static::bridgeAdminUrl('AdminModulesSf', array_merge([
+        return static::bridgeBackOfficeAdminUrl('AdminModulesSf', array_merge([
             'configure' => $moduleName,
             'module_name' => $moduleName,
         ], $params), $store);
+    }
+
+    public static function bridgeBackOfficeAdminUrl(string $targetController, array $targetParams = [], string $store = 'ASM'): ?string
+    {
+        $store = static::normalizeStore($store);
+
+        $baseUrl = static::storeBaseUrl($store);
+        $adminFolder = static::adminFolder($store);
+        $bridgeToken = static::bridgeToken($store);
+        $adminToken = PrestashopAdminTokenService::tokenWithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store);
+
+        if (!$baseUrl || !$adminFolder || !$bridgeToken || !$adminToken) {
+            return static::bridgeAdminUrl($targetController, $targetParams, $store);
+        }
+
+        $encodedTargetParams = base64_encode(http_build_query($targetParams));
+        $params = [
+            'controller' => 'AdminAsgwebtoolsbridgeRedirect',
+            'token' => $adminToken,
+            static::bridgeTokenParameter($store) => $bridgeToken,
+            'target_controller' => $targetController,
+            'target_params' => $encodedTargetParams,
+        ];
+
+        if (static::bridgeUsesHmac($store)) {
+            $timestamp = time();
+            $params['bridge_ts'] = $timestamp;
+            $params['bridge_signature'] = hash_hmac(
+                'sha256',
+                $targetController . '|' . $encodedTargetParams . '|' . $timestamp,
+                static::bridgeHmacSecret($store)
+            );
+        }
+
+        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/index.php?' . http_build_query($params);
     }
 
     public static function moduleManageUrl(string $store = 'ASM'): ?string

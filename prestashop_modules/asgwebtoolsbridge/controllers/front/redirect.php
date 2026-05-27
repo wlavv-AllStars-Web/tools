@@ -115,6 +115,23 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
         $token = Tools::getAdminToken($targetController . $idTab . $idEmployee);
 
+        if ($targetController === 'AdminModulesSf' && !empty($targetParams['configure'])) {
+            $moduleName = (string) $targetParams['configure'];
+            unset($targetParams['configure']);
+
+            $params = array_merge([
+                'token' => $token,
+            ], $targetParams);
+
+            return $baseUrl
+                . '/'
+                . $adminFolder
+                . '/index.php/improve/modules/manage/action/configure/'
+                . rawurlencode($moduleName)
+                . '?'
+                . http_build_query($params);
+        }
+
         $params = array_merge([
             'controller' => $targetController,
             'token' => $token,

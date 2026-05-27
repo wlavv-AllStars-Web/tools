@@ -118,6 +118,10 @@ class PrestashopAdminLinkService
             $params['id_employee'] = $employeeId;
         }
 
+        if ($employeeEmail = static::employeeEmail()) {
+            $params['employee_email'] = $employeeEmail;
+        }
+
         if (static::bridgeUsesHmac($store)) {
             $timestamp = time();
             $params['bridge_ts'] = $timestamp;
@@ -262,6 +266,13 @@ class PrestashopAdminLinkService
         }
 
         return $user->id ? (int) $user->id : null;
+    }
+
+    public static function employeeEmail(): ?string
+    {
+        $email = auth()->user()?->email;
+
+        return $email ? (string) $email : null;
     }
 
     public static function bridgeUsesHmac(string $store = 'ASM'): bool

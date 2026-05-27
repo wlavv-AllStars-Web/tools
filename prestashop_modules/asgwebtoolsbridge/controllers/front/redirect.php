@@ -13,7 +13,7 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
 
             $targetController = trim((string) Tools::getValue('target_controller'));
             $targetParams = (string) Tools::getValue('target_params');
-            $idEmployee = (int) Tools::getValue('id_employee');
+            $idEmployee = $this->resolveEmployeeId();
 
             $url = $this->buildBridgeAdminUrl($targetController, $targetParams, $idEmployee);
 
@@ -106,6 +106,23 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         ], $this->hmacForwardParams());
 
         return $baseUrl . '/' . $adminFolder . '/index.php?' . http_build_query($params);
+    }
+
+    private function resolveEmployeeId()
+    {
+        $email = trim((string) Tools::getValue('employee_email'));
+
+        if ($email !== '' && Validate::isEmail($email)) {
+            $idEmployee = (int) Db::getInstance()->getValue(
+                'SELECT id_employee FROM `' . _DB_PREFIX_ . 'employee` WHERE email = "' . pSQL($email) . '"'
+            );
+
+            if ($idEmployee > 0) {
+                return $idEmployee;
+            }
+        }
+
+        return (int) Tools::getValue('id_employee');
     }
 
     private function hmacForwardParams()

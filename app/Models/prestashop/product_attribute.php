@@ -132,6 +132,7 @@ class product_attribute extends PrestashopModel
 
         $query = self::select(
                 $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 DB::raw('COUNT(DISTINCT ' . $productAttributeImageTable . '.id_image) AS nr_images'),
                 $productAttributeTable . '.reference',
@@ -145,9 +146,10 @@ class product_attribute extends PrestashopModel
                     ->where($productShopTable . '.active', 1);
             })
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->leftJoin($stockTable, function ($join) use ($productAttributeTable, $stockTable) {
+            ->leftJoin($stockTable, function ($join) use ($productAttributeTable, $stockTable, $asmShopId) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
-                    ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product');
+                    ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->where($stockTable . '.id_shop', $asmShopId);
             })
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
@@ -155,6 +157,7 @@ class product_attribute extends PrestashopModel
             ->orderBy($productTable . '.id_product')
             ->groupBy(
                 $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 $productAttributeTable . '.reference',
                 $customProductAttributeTable . '.location',
@@ -172,8 +175,10 @@ class product_attribute extends PrestashopModel
 
         foreach ($no_images as $image) {
             if (isset($image->id_product)) {
-                $products[$image->reference] = [
+                $products[(int) $image->id_product_attribute] = [
+                    'clean' => $image->id_product_attribute,
                     'id_product' => $image->id_product,
+                    'id_product_attribute' => $image->id_product_attribute,
                     'id_category_default' => $image->id_category_default,
                     'nr_images' => $image->nr_images,
                     'reference' => $image->reference,
@@ -189,7 +194,7 @@ class product_attribute extends PrestashopModel
             'col' => 4,
             'item_id' => $type . '_attributes_no_5_pics',
             'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
-            'columns' => ['id_product', 'reference', 'brand', 'housing', 'nr_images'],
+            'columns' => ['id_product', 'id_product_attribute', 'reference', 'brand', 'housing', 'nr_images'],
             'counter' => count($products),
             'data' => $products
         ];

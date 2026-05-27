@@ -163,9 +163,14 @@ class product extends PrestashopModel
         $data = collect($data)
             ->map(function ($row) use ($store) {
                 $row = (array) $row;
+                $rowStore = $row['store'] ?? (
+                    isset($row['id_shop'])
+                        ? (config('allstars.auto_orders.shop_codes', [])[(int) $row['id_shop']] ?? $store)
+                        : $store
+                );
 
                 if (!empty($row['id_product']) && empty($row['url'])) {
-                    $row['url'] = PrestashopAdminLinkService::dashboardProductAdminUrl((int) $row['id_product'], $store);
+                    $row['url'] = PrestashopAdminLinkService::dashboardProductAdminUrl((int) $row['id_product'], $rowStore);
                 }
 
                 return $row;
@@ -182,6 +187,105 @@ class product extends PrestashopModel
             $extra,
             PrestashopAdminLinkService::dashboardProductLink('id_product', $store)
         );
+    }
+
+    public static function dashboardNoHousingRows(?string $store = null): array
+    {
+        $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
+        $stockTable = self::tableName('stock_available');
+        $manufacturerTable = self::tableName('manufacturer');
+        $productAttributeTable = self::tableName('product_attribute');
+        $customProductAttributeTable = self::tableName('custom_product_attribute');
+        $shopCodes = config('allstars.auto_orders.shop_codes', []);
+        $shopIds = $store
+            ? array_keys(array_filter($shopCodes, fn ($code) => strtoupper($code) === strtoupper($store)))
+            : array_keys($shopCodes);
+
+        $shopIds = array_values(array_filter(array_map('intval', $shopIds)));
+
+        $productRows = self::select(
+                $productShopTable . '.id_shop',
+                DB::raw('0 AS id_product_attribute'),
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                DB::raw($manufacturerTable . '.name AS brand')
+            )
+            ->join($productShopTable, $productTable . '.id_product', '=', $productShopTable . '.id_product')
+            ->join($stockTable, function ($join) use ($productTable, $productShopTable, $stockTable) {
+                $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->on($productShopTable . '.id_shop', '=', $stockTable . '.id_shop')
+                    ->where($stockTable . '.id_product_attribute', 0);
+            })
+            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where(function ($query) use ($productTable) {
+                $query->whereNull($productTable . '.location')
+                    ->orWhere($productTable . '.location', '');
+            })
+            ->where($productShopTable . '.active', 1)
+            ->where($stockTable . '.quantity', '>', 0)
+            ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
+                $query->select(DB::raw(1))
+                    ->from($productAttributeTable)
+                    ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product');
+            })
+            ->when(!empty($shopIds), fn ($query) => $query->whereIn($productShopTable . '.id_shop', $shopIds))
+            ->groupBy(
+                $productShopTable . '.id_shop',
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                $manufacturerTable . '.name'
+            )
+            ->get();
+
+        $attributeRows = product_attribute::select(
+                $productShopTable . '.id_shop',
+                $productAttributeTable . '.id_product_attribute',
+                $productAttributeTable . '.id_product',
+                DB::raw('COALESCE(NULLIF(' . $productAttributeTable . '.reference, ""), ' . $productTable . '.reference) AS reference'),
+                DB::raw($manufacturerTable . '.name AS brand')
+            )
+            ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
+            ->join($productShopTable, $productAttributeTable . '.id_product', '=', $productShopTable . '.id_product')
+            ->join($stockTable, function ($join) use ($productAttributeTable, $productShopTable, $stockTable) {
+                $join->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+                    ->on($productShopTable . '.id_shop', '=', $stockTable . '.id_shop');
+            })
+            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
+            ->where(function ($query) use ($customProductAttributeTable) {
+                $query->whereNull($customProductAttributeTable . '.location')
+                    ->orWhere($customProductAttributeTable . '.location', '');
+            })
+            ->where($productShopTable . '.active', 1)
+            ->where($stockTable . '.quantity', '>', 0)
+            ->when(!empty($shopIds), fn ($query) => $query->whereIn($productShopTable . '.id_shop', $shopIds))
+            ->groupBy(
+                $productShopTable . '.id_shop',
+                $productAttributeTable . '.id_product_attribute',
+                $productAttributeTable . '.id_product',
+                $productAttributeTable . '.reference',
+                $productTable . '.reference',
+                $manufacturerTable . '.name'
+            )
+            ->get();
+
+        return $productRows
+            ->concat($attributeRows)
+            ->map(function ($item) use ($shopCodes) {
+                return [
+                    'clean' => ($shopCodes[(int) $item->id_shop] ?? (string) $item->id_shop) . '_' . $item->id_product . '_' . $item->id_product_attribute,
+                    'store' => $shopCodes[(int) $item->id_shop] ?? (string) $item->id_shop,
+                    'id_shop' => (int) $item->id_shop,
+                    'id_product' => (int) $item->id_product,
+                    'reference' => $item->reference,
+                    'brand' => $item->brand,
+                ];
+            })
+            ->sortBy([['store', 'asc'], ['id_product', 'asc'], ['reference', 'asc']])
+            ->values()
+            ->all();
     }
 
     protected static function baseProductWithBrandQuery()
@@ -728,79 +832,13 @@ class product extends PrestashopModel
 
     public static function dashboard_no_housing($type)
     {
-        $data = [];
-
-        $productTable = self::tableName('product');
-        $stockTable = self::tableName('stock_available');
-        $manufacturerTable = self::tableName('manufacturer');
-        $productAttributeTable = self::tableName('product_attribute');
-        $customProductAttributeTable = self::tableName('custom_product_attribute');
-
-        $bd_data_product = self::select(
-                $productTable . '.id_product',
-                $productTable . '.reference',
-                DB::raw($manufacturerTable . '.name AS brand')
-            )
-            ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->where($productTable . '.location', '')
-            ->where($productTable . '.active', 1)
-            ->where($stockTable . '.quantity', '>', 0)
-            ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
-                $query->select(DB::raw(1))
-                    ->from($productAttributeTable)
-                    ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product');
-            })
-            ->groupBy(
-                $productTable . '.id_product',
-                $productTable . '.reference',
-                $manufacturerTable . '.name'
-            )
-            ->get();
-
-        $bd_data_attribute = product_attribute::select(
-                $productAttributeTable . '.id_product',
-                $productAttributeTable . '.reference',
-                DB::raw($manufacturerTable . '.name AS brand')
-            )
-            ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
-            ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
-            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
-            ->where(function ($query) use ($customProductAttributeTable) {
-                $query->whereNull($customProductAttributeTable . '.location')
-                    ->orWhere($customProductAttributeTable . '.location', '');
-            })
-            ->where($productTable . '.active', 1)
-            ->where($stockTable . '.quantity', '>', 0)
-            ->groupBy(
-                $productAttributeTable . '.id_product',
-                $productAttributeTable . '.reference',
-                $manufacturerTable . '.name'
-            )
-            ->get();
-
-        foreach ($bd_data_product as $item) {
-            $data[] = [
-                'id_product' => $item->id_product,
-                'reference' => $item->reference,
-                'brand' => $item->brand
-            ];
-        }
-
-        foreach ($bd_data_attribute as $item) {
-            $data[] = [
-                'id_product' => $item->id_product,
-                'reference' => $item->reference,
-                'brand' => $item->brand
-            ];
-        }
+        $data = self::dashboardNoHousingRows();
 
         return self::productDashboardResponse(
             trans('dashboard.NO HOUSING'),
             $type,
             'no_housing',
-            ['id_product', 'reference', 'brand'],
+            ['store', 'id_product', 'reference', 'brand'],
             $data
         );
     }

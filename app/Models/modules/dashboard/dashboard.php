@@ -612,6 +612,7 @@ class dashboard extends Model
             $data[] = [
                 'id_order' => (int) $item->id_order,
                 'reference' => $item->reference,
+                'state' => $item->state,
                 'products' => $item->products,
                 'url' => (int) $item->id_order > 0
                     ? PrestashopAdminLinkService::dashboardOrderAdminUrl(
@@ -627,7 +628,7 @@ class dashboard extends Model
             'col'               => 4,
             'item_id'           => 'counter_asd_warranty_orders',
             'prestashop'        => PrestashopAdminLinkService::dashboardOrderLink('id_order', 'ASD'),
-            'columns'           => ['id_order', 'reference', 'products'],
+            'columns'           => ['id_order', 'reference', 'state', 'products'],
             'counter'           => count($data),
             'data'              => $data
         ];  
@@ -636,10 +637,17 @@ class dashboard extends Model
     public static function externalNoHousingWithStock( $tab, $panel ){ 
 
         $data = [];
-        $bd_data = self::asdNoHousingWithStockRows();
+        $bd_data = product::dashboardNoHousingRows('ASD');
 
         foreach($bd_data AS $item){
-            $data[] = ['clean' => 'ASD_' . $item->id_product, 'id_product' => $item->id_product, 'reference' => $item->reference, 'other' => ''];
+            $data[] = [
+                'clean' => $item['clean'],
+                'store' => $item['store'],
+                'id_product' => $item['id_product'],
+                'reference' => $item['reference'],
+                'brand' => $item['brand'],
+                'url' => PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item['id_product'], $item['store']),
+            ];
         }
 
         return [
@@ -647,7 +655,7 @@ class dashboard extends Model
             'col'               => 4,
             'item_id'           => 'counter_asd_no_housing_with_stock',
             'prestashop'        => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD'),
-            'columns'           => ['id_product', 'reference', 'other'],
+            'columns'           => ['store', 'id_product', 'reference', 'brand'],
             'counter'           => count($data),
             'data'              => $data
         ];  
@@ -766,49 +774,29 @@ class dashboard extends Model
 
         return DB::connection('mysql2')
             ->table($prefix . 'orders as o')
-            ->join($prefix . 'order_state_lang as osl', function ($join) {
-                $join->on('osl.id_order_state', '=', 'o.current_state')
-                    ->where('osl.id_lang', 2);
+            ->join($prefix . 'order_state_lang as current_osl', function ($join) {
+                $join->on('current_osl.id_order_state', '=', 'o.current_state')
+                    ->where('current_osl.id_lang', 2);
+            })
+            ->join($prefix . 'order_history as oh', 'oh.id_order', '=', 'o.id_order')
+            ->join($prefix . 'order_state_lang as warranty_osl', function ($join) {
+                $join->on('warranty_osl.id_order_state', '=', 'oh.id_order_state')
+                    ->where('warranty_osl.id_lang', 2);
             })
             ->join($prefix . 'order_detail as od', 'od.id_order', '=', 'o.id_order')
             ->leftJoin($prefix . 'product as p', 'p.id_product', '=', 'od.product_id')
             ->leftJoin($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
-            ->where('osl.name', 'LIKE', '%warranty%')
+            ->where('warranty_osl.name', 'Warranty')
+            ->whereIn('o.current_state', [3, 15])
             ->select([
                 'o.id_order',
                 'o.id_shop',
                 'o.reference',
+                'current_osl.name AS state',
                 DB::raw('GROUP_CONCAT(DISTINCT od.product_reference ORDER BY od.product_reference SEPARATOR ", ") as products'),
             ])
-            ->groupBy('o.id_order', 'o.id_shop', 'o.reference')
+            ->groupBy('o.id_order', 'o.id_shop', 'o.reference', 'current_osl.name')
             ->orderByDesc('o.id_order')
-            ->get();
-    }
-
-    private static function asdNoHousingWithStockRows()
-    {
-        $prefix = self::prefix();
-        $shopId = self::shopId('ASD');
-
-        return DB::connection('mysql2')
-            ->table($prefix . 'product as p')
-            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
-                $join->on('ps.id_product', '=', 'p.id_product')
-                    ->where('ps.id_shop', $shopId);
-            })
-            ->join($prefix . 'stock_available as sa', function ($join) use ($shopId) {
-                $join->on('sa.id_product', '=', 'p.id_product')
-                    ->where('sa.id_shop', $shopId);
-            })
-            ->where('ps.active', 1)
-            ->where('sa.quantity', '>', 0)
-            ->where(function ($query) {
-                $query->whereNull('p.location')
-                    ->orWhere('p.location', '');
-            })
-            ->select('p.id_product', 'p.reference')
-            ->groupBy('p.id_product', 'p.reference')
-            ->orderBy('p.id_product')
             ->get();
     }
 

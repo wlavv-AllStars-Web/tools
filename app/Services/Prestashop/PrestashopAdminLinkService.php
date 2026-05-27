@@ -331,7 +331,8 @@ class PrestashopAdminLinkService
         $baseUrl = static::storeBaseUrl($store);
         $adminFolder = static::adminFolder($store);
         $bridgeToken = static::bridgeToken($store);
-        $adminToken = PrestashopAdminTokenService::tokenWithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store);
+        $adminToken = PrestashopAdminTokenService::tokenMd5WithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store)
+            ?: PrestashopAdminTokenService::tokenWithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store);
 
         if (!$baseUrl || !$adminFolder || !$bridgeToken || !$adminToken) {
             return null;

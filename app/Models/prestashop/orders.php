@@ -306,19 +306,19 @@ class orders extends PrestashopModel
 
         $query = self::select(
                 $ordersTable . '.id_order',
+                $ordersTable . '.id_shop',
                 $ordersTable . '.reference',
                 $orderStateLangTable . '.name AS state'
             )
             ->join($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
             ->join($orderCarrierTable, $ordersTable . '.id_order', '=', $orderCarrierTable . '.id_order')
-            ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->where($orderStateLangTable . '.id_lang', 1)
             ->where(function ($query) use ($orderCarrierTable) {
                 $query->whereNull($orderCarrierTable . '.tracking_number')
                     ->orWhere($orderCarrierTable . '.tracking_number', '');
             })
             ->whereIn($ordersTable . '.current_state', [4, 28])
-            ->groupBy($ordersTable . '.id_order', $ordersTable . '.reference', $orderStateLangTable . '.name');
+            ->groupBy($ordersTable . '.id_order', $ordersTable . '.id_shop', $ordersTable . '.reference', $orderStateLangTable . '.name');
 
         if (!empty($excludedOrderIds)) {
             $query->whereNotIn($ordersTable . '.id_order', $excludedOrderIds);
@@ -330,7 +330,10 @@ class orders extends PrestashopModel
                 'id_order' => $item->id_order,
                 'reference' => $item->reference,
                 'state' => $item->state,
-                'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASM'),
+                'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl(
+                    (int) $item->id_order,
+                    config('allstars.auto_orders.shop_codes', [])[(int) $item->id_shop] ?? 'ASM'
+                ),
             ];
         }
 

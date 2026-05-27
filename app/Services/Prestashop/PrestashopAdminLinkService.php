@@ -105,7 +105,7 @@ class PrestashopAdminLinkService
         }
 
         $targetParams = base64_encode(http_build_query($targetParams));
-        $adminToken = PrestashopAdminTokenService::token('AdminAsgwebtoolsbridgeRedirect', $store);
+        $adminToken = PrestashopAdminTokenService::tokenWithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store);
         $params = [
             'controller' => 'AdminAsgwebtoolsbridgeRedirect',
             static::bridgeTokenParameter($store) => $bridgeToken,

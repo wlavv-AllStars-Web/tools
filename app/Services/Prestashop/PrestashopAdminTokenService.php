@@ -25,6 +25,28 @@ class PrestashopAdminTokenService
         return static::generate($controller, (int) $idTab, (int) $employeeId, $store);
     }
 
+    public static function tokenWithFreshTabLookup(string $controller, string $store = 'ASD'): ?string
+    {
+        $employeeId = static::employeeId();
+
+        if (!$employeeId) {
+            return null;
+        }
+
+        $idTab = static::idTab($controller);
+
+        if (!$idTab) {
+            static::clearIdTabCache($controller);
+            $idTab = static::freshIdTab($controller);
+        }
+
+        if (!$idTab) {
+            return null;
+        }
+
+        return static::generate($controller, (int) $idTab, (int) $employeeId, $store);
+    }
+
     public static function tokenMd5(string $controller, string $store = 'ASD'): ?string
     {
         $employeeId = static::employeeId();
@@ -51,14 +73,25 @@ class PrestashopAdminTokenService
 
     public static function idTab(string $controller): ?int
     {
-        $prefix = static::prefix();
-
-        return Cache::remember("prestashop.admin_token.id_tab.{$controller}", now()->addHours(6), function () use ($prefix, $controller) {
-            return DB::connection('mysql2')
-                ->table($prefix . 'tab')
-                ->where('class_name', $controller)
-                ->value('id_tab');
+        return Cache::remember("prestashop.admin_token.id_tab.{$controller}", now()->addHours(6), function () use ($controller) {
+            return static::freshIdTab($controller);
         });
+    }
+
+    public static function freshIdTab(string $controller): ?int
+    {
+        $prefix = static::prefix();
+        $idTab = DB::connection('mysql2')
+            ->table($prefix . 'tab')
+            ->where('class_name', $controller)
+            ->value('id_tab');
+
+        return $idTab ? (int) $idTab : null;
+    }
+
+    public static function clearIdTabCache(string $controller): void
+    {
+        Cache::forget("prestashop.admin_token.id_tab.{$controller}");
     }
 
     public static function generate(string $controller, int $idTab, int $idEmployee, string $store = 'ASD'): string

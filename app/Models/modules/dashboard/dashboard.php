@@ -614,7 +614,10 @@ class dashboard extends Model
                 'reference' => $item->reference,
                 'products' => $item->products,
                 'url' => (int) $item->id_order > 0
-                    ? PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $item->id_order, 'ASD')
+                    ? PrestashopAdminLinkService::dashboardOrderAdminUrl(
+                        (int) $item->id_order,
+                        config('allstars.auto_orders.shop_codes', [])[(int) $item->id_shop] ?? 'ASM'
+                    )
                     : null,
             ];
         }
@@ -761,7 +764,8 @@ class dashboard extends Model
     {
         $prefix = self::prefix();
 
-        return self::asdOrdersBase()
+        return DB::connection('mysql2')
+            ->table($prefix . 'orders as o')
             ->join($prefix . 'order_state_lang as osl', function ($join) {
                 $join->on('osl.id_order_state', '=', 'o.current_state')
                     ->where('osl.id_lang', 2);
@@ -772,10 +776,11 @@ class dashboard extends Model
             ->where('osl.name', 'LIKE', '%warranty%')
             ->select([
                 'o.id_order',
+                'o.id_shop',
                 'o.reference',
                 DB::raw('GROUP_CONCAT(DISTINCT od.product_reference ORDER BY od.product_reference SEPARATOR ", ") as products'),
             ])
-            ->groupBy('o.id_order', 'o.reference')
+            ->groupBy('o.id_order', 'o.id_shop', 'o.reference')
             ->orderByDesc('o.id_order')
             ->get();
     }

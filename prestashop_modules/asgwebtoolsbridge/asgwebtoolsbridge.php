@@ -26,12 +26,14 @@ class Asgwebtoolsbridge extends Module
     {
         return parent::install()
             && $this->installConfiguration()
-            && $this->installTab();
+            && $this->installTab()
+            && $this->installAdminEndpoint();
     }
 
     public function uninstall()
     {
         return $this->uninstallTab()
+            && $this->uninstallAdminEndpoint()
             && Configuration::deleteByName('ASGWEBTOOLSBRIDGE_TOKEN')
             && Configuration::deleteByName('ASGWEBTOOLSBRIDGE_USE_HMAC')
             && Configuration::deleteByName('ASGWEBTOOLSBRIDGE_HMAC_SECRET')
@@ -120,6 +122,33 @@ class Asgwebtoolsbridge extends Module
         $tab = new Tab($idTab);
 
         return (bool) $tab->delete();
+    }
+
+    private function installAdminEndpoint()
+    {
+        if (!defined('_PS_ADMIN_DIR_')) {
+            return true;
+        }
+
+        $source = __DIR__ . '/admin-endpoint.php';
+        $target = rtrim(_PS_ADMIN_DIR_, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'asgwebtoolsbridge.php';
+
+        return is_file($source) && @copy($source, $target);
+    }
+
+    private function uninstallAdminEndpoint()
+    {
+        if (!defined('_PS_ADMIN_DIR_')) {
+            return true;
+        }
+
+        $target = rtrim(_PS_ADMIN_DIR_, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'asgwebtoolsbridge.php';
+
+        if (is_file($target)) {
+            return @unlink($target);
+        }
+
+        return true;
     }
 
     private function renderForm()

@@ -331,17 +331,13 @@ class PrestashopAdminLinkService
         $baseUrl = static::storeBaseUrl($store);
         $adminFolder = static::adminFolder($store);
         $bridgeToken = static::bridgeToken($store);
-        $adminToken = PrestashopAdminTokenService::tokenMd5WithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store)
-            ?: PrestashopAdminTokenService::tokenWithFreshTabLookup('AdminAsgwebtoolsbridgeRedirect', $store);
 
-        if (!$baseUrl || !$adminFolder || !$bridgeToken || !$adminToken) {
+        if (!$baseUrl || !$adminFolder || !$bridgeToken) {
             return null;
         }
 
         $encodedTargetParams = base64_encode(http_build_query($targetParams));
         $params = [
-            'controller' => 'AdminAsgwebtoolsbridgeRedirect',
-            'token' => $adminToken,
             static::bridgeTokenParameter($store) => $bridgeToken,
             'target_controller' => $targetController,
             'target_params' => $encodedTargetParams,
@@ -357,7 +353,7 @@ class PrestashopAdminLinkService
             );
         }
 
-        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/index.php?' . http_build_query($params);
+        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/asgwebtoolsbridge.php?' . http_build_query($params);
     }
 
     public static function moduleManageUrl(string $store = 'ASM'): ?string

@@ -66,9 +66,25 @@ class PrestashopAdminTokenService
 
     public static function employeeId(): ?int
     {
-        $id = Auth::id();
+        $user = Auth::user();
 
-        return $id ? (int) $id : null;
+        if (!$user) {
+            return null;
+        }
+
+        if (!empty($user->email)) {
+            $prefix = static::prefix();
+            $idEmployee = DB::connection('mysql2')
+                ->table($prefix . 'employee')
+                ->where('email', $user->email)
+                ->value('id_employee');
+
+            if ($idEmployee) {
+                return (int) $idEmployee;
+            }
+        }
+
+        return $user->id ? (int) $user->id : null;
     }
 
     public static function idTab(string $controller): ?int

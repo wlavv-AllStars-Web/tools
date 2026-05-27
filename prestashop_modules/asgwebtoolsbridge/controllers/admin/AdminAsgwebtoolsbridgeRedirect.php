@@ -20,7 +20,7 @@ class AdminAsgwebtoolsbridgeRedirectController extends ModuleAdminController
             $url = $this->buildAdminUrl($targetController, $targetParams);
 
             Tools::redirectAdmin($url);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             header('HTTP/1.1 403 Forbidden');
             exit($e->getMessage());
         }
@@ -93,6 +93,19 @@ class AdminAsgwebtoolsbridgeRedirectController extends ModuleAdminController
 
     private function buildAdminUrl($targetController, array $targetParams)
     {
+        if ($targetController === 'AdminModulesSf' && !empty($targetParams['configure'])) {
+            $moduleName = (string) $targetParams['configure'];
+            unset($targetParams['configure'], $targetParams['module_name']);
+
+            $url = $this->generateModuleConfigureUrl($moduleName, $targetParams);
+
+            if ($url !== null) {
+                return $url;
+            }
+
+            throw new Exception('Unable to generate module configure route inside Back Office.');
+        }
+
         $link = $this->context->link;
         $reflection = new ReflectionMethod($link, 'getAdminLink');
 
@@ -107,5 +120,93 @@ class AdminAsgwebtoolsbridgeRedirectController extends ModuleAdminController
         }
 
         return $url;
+    }
+
+    private function generateModuleConfigureUrl($moduleName, array $queryParams)
+    {
+        $routeParams = ['module_name' => $moduleName];
+        $routeNames = [
+            'admin_module_configure_action',
+            'admin_module_configure',
+        ];
+
+        foreach ($routeNames as $routeName) {
+            $url = $this->generateSymfonyRouteWithLink($routeName, $routeParams, $queryParams);
+
+            if ($this->isValidModuleConfigureUrl($url, $moduleName)) {
+                return $url;
+            }
+        }
+
+        foreach ($routeNames as $routeName) {
+            $url = $this->generateSymfonyRouteWithRouter($routeName, array_merge($routeParams, $queryParams));
+
+            if ($this->isValidModuleConfigureUrl($url, $moduleName)) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    private function generateSymfonyRouteWithLink($routeName, array $routeParams, array $queryParams)
+    {
+        if (!isset($this->context->link)) {
+            return null;
+        }
+
+        try {
+            $sfRouteParams = array_merge(['route' => $routeName], $routeParams);
+            $reflection = new ReflectionMethod($this->context->link, 'getAdminLink');
+
+            if ($reflection->getNumberOfParameters() >= 4) {
+                $url = $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams, $queryParams);
+
+                if ($this->isValidModuleConfigureUrl($url, $routeParams['module_name'])) {
+                    return $url;
+                }
+
+                return $this->context->link->getAdminLink('AdminModulesSf', true, [], array_merge($sfRouteParams, $queryParams));
+            }
+
+            return $this->context->link->getAdminLink('AdminModulesSf', true, array_merge($sfRouteParams, $queryParams));
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    private function generateSymfonyRouteWithRouter($routeName, array $params)
+    {
+        if (!class_exists('PrestaShop\PrestaShop\Adapter\SymfonyContainer')) {
+            return null;
+        }
+
+        $container = \PrestaShop\PrestaShop\Adapter\SymfonyContainer::getInstance();
+
+        if (!$container || !$container->has('router')) {
+            return null;
+        }
+
+        try {
+            $url = $container->get('router')->generate($routeName, $params, 0);
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        if (is_string($url) && strpos($url, '/') === 0) {
+            return rtrim(Tools::getShopDomainSsl(true, true), '/') . $url;
+        }
+
+        return $url;
+    }
+
+    private function isValidModuleConfigureUrl($url, $moduleName)
+    {
+        if (!is_string($url) || $url === '' || $moduleName === '') {
+            return false;
+        }
+
+        return strpos($url, '/modules/manage/action/configure/' . rawurlencode($moduleName)) !== false
+            || strpos($url, '/modules/manage/action/configure/' . $moduleName) !== false;
     }
 }

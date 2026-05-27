@@ -2,6 +2,8 @@
 
 namespace App\Services\Prestashop;
 
+use Illuminate\Support\Facades\DB;
+
 class PrestashopAdminLinkService
 {
     public static function dashboardProductLink(string $field = 'id_product', string $store = 'ASM'): array
@@ -242,9 +244,24 @@ class PrestashopAdminLinkService
 
     public static function employeeId(): ?int
     {
-        $id = auth()->id();
+        $user = auth()->user();
 
-        return $id ? (int) $id : null;
+        if (!$user) {
+            return null;
+        }
+
+        if (!empty($user->email)) {
+            $idEmployee = DB::connection('mysql2')
+                ->table(PrestashopAdminTokenService::prefix() . 'employee')
+                ->where('email', $user->email)
+                ->value('id_employee');
+
+            if ($idEmployee) {
+                return (int) $idEmployee;
+            }
+        }
+
+        return $user->id ? (int) $user->id : null;
     }
 
     public static function bridgeUsesHmac(string $store = 'ASM'): bool

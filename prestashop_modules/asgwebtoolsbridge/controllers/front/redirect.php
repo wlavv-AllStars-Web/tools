@@ -12,12 +12,13 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             $this->validateBridgeRequest();
 
             $targetController = trim((string) Tools::getValue('target_controller'));
-            $targetParams = $this->decodeTargetParams((string) Tools::getValue('target_params'));
+            $targetParams = (string) Tools::getValue('target_params');
             $idEmployee = (int) Tools::getValue('id_employee');
 
-            $url = $this->buildAdminUrl($targetController, $targetParams, $idEmployee);
+            $url = $this->buildBridgeAdminUrl($targetController, $targetParams, $idEmployee);
 
-            Tools::redirectAdmin($url);
+            header('Location: ' . $url);
+            exit;
         } catch (Throwable $e) {
             header('HTTP/1.1 403 Forbidden');
             exit($e->getMessage());
@@ -75,35 +76,10 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
         }
     }
 
-    private function decodeTargetParams($encodedParams)
-    {
-        $decoded = base64_decode($encodedParams, true);
-
-        if ($decoded === false || $decoded === '') {
-            return [];
-        }
-
-        $params = [];
-        parse_str($decoded, $params);
-
-        return is_array($params) ? $params : [];
-    }
-
-    private function buildAdminUrl($targetController, array $targetParams, $idEmployee)
+    private function buildBridgeAdminUrl($targetController, $targetParams, $idEmployee)
     {
         if ($idEmployee <= 0) {
             throw new Exception('Missing employee id.');
-        }
-
-        $idTab = (int) Tab::getIdFromClassName($targetController);
-
-        if ($idTab <= 0 && $targetController === 'AdminModules') {
-            $targetController = 'AdminModulesSf';
-            $idTab = (int) Tab::getIdFromClassName($targetController);
-        }
-
-        if ($idTab <= 0) {
-            throw new Exception('Unknown target controller.');
         }
 
         $adminFolder = trim((string) Tools::getValue('admin_folder'), '/');
@@ -112,134 +88,35 @@ class AsgwebtoolsbridgeRedirectModuleFrontController extends ModuleFrontControll
             throw new Exception('Missing admin folder.');
         }
 
-        $this->ensureAdminDirConstant($adminFolder);
+        $idTab = (int) Tab::getIdFromClassName('AdminAsgwebtoolsbridgeRedirect');
 
-        $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
-        $token = Tools::getAdminToken($targetController . $idTab . $idEmployee);
-
-        if ($targetController === 'AdminModulesSf' && !empty($targetParams['configure'])) {
-            $moduleName = (string) $targetParams['configure'];
-            unset($targetParams['configure'], $targetParams['module_name'], $targetParams['tab_module']);
-
-            $symfonyUrl = $this->generateModuleConfigureUrl($moduleName, $targetParams, $baseUrl);
-
-            if ($symfonyUrl !== null) {
-                return $symfonyUrl;
-            }
-
-            throw new Exception('Unable to generate module configure route.');
+        if ($idTab <= 0) {
+            throw new Exception('Bridge admin controller is not installed.');
         }
 
+        $baseUrl = rtrim(Tools::getShopDomainSsl(true, true), '/');
+        $token = Tools::getAdminToken('AdminAsgwebtoolsbridgeRedirect' . $idTab . $idEmployee);
+
         $params = array_merge([
-            'controller' => $targetController,
+            'controller' => 'AdminAsgwebtoolsbridgeRedirect',
             'token' => $token,
-        ], $targetParams);
+            'bridge_key' => (string) Tools::getValue('bridge_key'),
+            'target_controller' => $targetController,
+            'target_params' => $targetParams,
+        ], $this->hmacForwardParams());
 
         return $baseUrl . '/' . $adminFolder . '/index.php?' . http_build_query($params);
     }
 
-    private function generateModuleConfigureUrl($moduleName, array $queryParams, $baseUrl)
+    private function hmacForwardParams()
     {
-        $routeParams = ['module_name' => $moduleName];
-        $routeNames = [
-            'admin_module_configure_action',
-            'admin_module_configure',
+        if (!(bool) Configuration::get('ASGWEBTOOLSBRIDGE_USE_HMAC')) {
+            return [];
+        }
+
+        return [
+            'bridge_ts' => (int) Tools::getValue('bridge_ts'),
+            'bridge_signature' => (string) Tools::getValue('bridge_signature'),
         ];
-
-        foreach ($routeNames as $routeName) {
-            $linkUrl = $this->generateSymfonyRouteWithLink($routeName, $routeParams, $queryParams);
-
-            if ($this->isValidModuleConfigureUrl($linkUrl, $moduleName)) {
-                return $linkUrl;
-            }
-        }
-
-        foreach ($routeNames as $routeName) {
-            $routerUrl = $this->generateSymfonyRoute($routeName, array_merge($routeParams, $queryParams), $baseUrl);
-
-            if ($this->isValidModuleConfigureUrl($routerUrl, $moduleName)) {
-                return $routerUrl;
-            }
-        }
-
-        return null;
-    }
-
-    private function ensureAdminDirConstant($adminFolder)
-    {
-        if (defined('_PS_ADMIN_DIR_')) {
-            return;
-        }
-
-        $adminDir = rtrim(_PS_ROOT_DIR_, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $adminFolder;
-
-        if (is_dir($adminDir)) {
-            define('_PS_ADMIN_DIR_', $adminDir);
-        }
-    }
-
-    private function generateSymfonyRoute($routeName, array $params, $baseUrl)
-    {
-        if (!class_exists('PrestaShop\PrestaShop\Adapter\SymfonyContainer')) {
-            return null;
-        }
-
-        $container = \PrestaShop\PrestaShop\Adapter\SymfonyContainer::getInstance();
-
-        if (!$container || !$container->has('router')) {
-            return null;
-        }
-
-        try {
-            $routerUrl = $container->get('router')->generate($routeName, $params, 0);
-        } catch (Throwable $e) {
-            return null;
-        }
-
-        if (is_string($routerUrl) && strpos($routerUrl, '/') === 0) {
-            return rtrim($baseUrl, '/') . $routerUrl;
-        }
-
-        return $routerUrl;
-    }
-
-    private function generateSymfonyRouteWithLink($routeName, array $routeParams, array $queryParams)
-    {
-        if (!isset($this->context->link)) {
-            return null;
-        }
-
-        try {
-            $sfRouteParams = array_merge(['route' => $routeName], $routeParams);
-            $reflection = new ReflectionMethod($this->context->link, 'getAdminLink');
-
-            if ($reflection->getNumberOfParameters() >= 4) {
-                $url = $this->context->link->getAdminLink('AdminModulesSf', true, $sfRouteParams, $queryParams);
-
-                if ($this->isValidModuleConfigureUrl($url, (string) $routeParams['module_name'])) {
-                    return $url;
-                }
-
-                return $this->context->link->getAdminLink('AdminModulesSf', true, [], array_merge($sfRouteParams, $queryParams));
-            }
-
-            return $this->context->link->getAdminLink('AdminModulesSf', true, array_merge($sfRouteParams, $queryParams));
-        } catch (Throwable $e) {
-            return null;
-        }
-    }
-
-    private function isValidModuleConfigureUrl($url, $moduleName)
-    {
-        if (!is_string($url) || $url === '') {
-            return false;
-        }
-
-        if ($moduleName === '') {
-            return false;
-        }
-
-        return strpos($url, '/modules/manage/action/configure/' . rawurlencode($moduleName)) !== false
-            || strpos($url, '/modules/manage/action/configure/' . $moduleName) !== false;
     }
 }

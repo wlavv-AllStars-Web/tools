@@ -48,7 +48,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardProductAdminUrl(int $idProduct, string $store = 'ASM'): ?string
     {
-        return static::legacyAdminUrl('AdminProducts', [
+        return static::bridgeBackOfficeAdminUrl('AdminProducts', [
             'id_product' => $idProduct,
             'updateproduct' => 1,
         ], $store);
@@ -56,7 +56,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardOrderAdminUrl(int $idOrder, string $store = 'ASM'): ?string
     {
-        return static::legacyAdminUrl('AdminOrders', [
+        return static::bridgeBackOfficeAdminUrl('AdminOrders', [
             'id_order' => $idOrder,
             'vieworder' => 1,
         ], $store);
@@ -64,7 +64,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardCustomerAdminUrl(int $idCustomer, string $store = 'ASM'): ?string
     {
-        return static::legacyAdminUrl('AdminCustomers', [
+        return static::bridgeBackOfficeAdminUrl('AdminCustomers', [
             'id_customer' => $idCustomer,
             'viewcustomer' => 1,
         ], $store);
@@ -72,7 +72,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardCategoryAdminUrl(int $idCategory, string $store = 'ASM'): ?string
     {
-        return static::legacyAdminUrl('AdminCategories', [
+        return static::bridgeBackOfficeAdminUrl('AdminCategories', [
             'id_category' => $idCategory,
             'updatecategory' => 1,
         ], $store);
@@ -80,7 +80,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardSupplierAdminUrl(int $idSupplier, string $store = 'ASM'): ?string
     {
-        return static::legacyAdminUrl('AdminSuppliers', [
+        return static::bridgeBackOfficeAdminUrl('AdminSuppliers', [
             'id_supplier' => $idSupplier,
             'updatesupplier' => 1,
         ], $store);
@@ -88,7 +88,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardManufacturerAdminUrl(int $idManufacturer, string $store = 'ASM'): ?string
     {
-        return static::legacyAdminUrl('AdminManufacturers', [
+        return static::bridgeBackOfficeAdminUrl('AdminManufacturers', [
             'id_manufacturer' => $idManufacturer,
             'updatemanufacturer' => 1,
         ], $store);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
+use App\Services\homepageEditor\HomepageFrontendService;
 use App\Services\homepageEditor\HomepagePublishService;
 use App\Services\homepageEditor\HomepageRestoreService;
 use Illuminate\Http\JsonResponse;
@@ -70,9 +71,10 @@ class HomepageAdminController extends Controller
         ]);
     }
 
-    public function publish(Request $request, HomepagePublishService $service): RedirectResponse
+    public function publish(Request $request, HomepagePublishService $service, HomepageFrontendService $frontendService): RedirectResponse
     {
         $service->publish($request->input('notes'));
+        $frontendService->clearCache();
 
         return redirect()
             ->route('marketing.homepage.index', [

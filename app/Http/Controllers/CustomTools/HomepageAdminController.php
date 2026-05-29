@@ -183,7 +183,7 @@ class HomepageAdminController extends Controller
             $name = now()->format('YmdHis') . '_' . $request->input('slot_id') . '_' . $lang . '_' . $safeName . '.' . $extension;
 
             $file->move(public_path('uploads/homepage/uploads'), $name);
-            $data["image_{$lang}"] = '/uploads/homepage/uploads/' . $name;
+            $data["image_{$lang}"] = '/homepage/uploads/' . $name;
         }
 
         DB::table('homepage_asm_temp')

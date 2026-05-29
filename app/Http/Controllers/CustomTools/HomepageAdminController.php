@@ -183,7 +183,7 @@ class HomepageAdminController extends Controller
             $name = now()->format('YmdHis') . '_' . $request->input('slot_id') . '_' . $lang . '_' . $safeName . '.' . $extension;
 
             $file->move(public_path('uploads/homepage/uploads'), $name);
-            $data["image_{$lang}"] = '/homepage/uploads/' . $name;
+            $data["image_{$lang}"] = $this->normalizeHomepageUploadPath('/homepage/uploads/' . $name);
         }
 
         DB::table('homepage_asm_temp')
@@ -273,6 +273,19 @@ class HomepageAdminController extends Controller
     private function normalizeLang(?string $lang): string
     {
         return in_array($lang, ['en', 'es', 'fr'], true) ? $lang : 'en';
+    }
+
+    private function normalizeHomepageUploadPath(?string $path): ?string
+    {
+        $path = trim((string) $path);
+
+        if ($path === '') {
+            return null;
+        }
+
+        $path = preg_replace('#^https?://resources\.allstars-group\.com#', '', $path);
+
+        return str_replace('/uploads/homepage/uploads/', '/homepage/uploads/', $path);
     }
 
     private function localizedMockImage(string $mode, string $zone, string $lang): string

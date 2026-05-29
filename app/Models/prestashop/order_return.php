@@ -160,17 +160,20 @@ class order_return extends PrestashopModel
     protected static function getDashboardRows(array $states, $includeClean = true, array $excludedReturnIds = [], ?string $process = null)
     {
         $orderReturnTable = self::tableName('order_return');
+        $ordersTable = self::tableName('orders');
         $customerTable = self::tableName('customer');
 
         $query = DB::connection('mysql2')
             ->table($orderReturnTable . ' as or')
-            ->join($customerTable . ' as cu', 'cu.id_customer', '=', 'or.id_customer')
+            ->leftJoin($ordersTable . ' as o', 'o.id_order', '=', 'or.id_order')
+            ->leftJoin($customerTable . ' as cu', 'cu.id_customer', '=', 'or.id_customer')
+            ->leftJoin($customerTable . ' as ocu', 'ocu.id_customer', '=', 'o.id_customer')
             ->whereIn('or.state', $states)
             ->select(
                 'or.id_order_return',
                 'or.id_order',
-                'or.id_customer',
-                DB::raw('CONCAT(cu.firstname, " ", cu.lastname) AS customer_name')
+                DB::raw('COALESCE(NULLIF(or.id_customer, 0), o.id_customer) AS id_customer'),
+                DB::raw('TRIM(CONCAT(COALESCE(cu.firstname, ocu.firstname, ""), " ", COALESCE(cu.lastname, ocu.lastname, ""))) AS customer_name')
             );
 
         if ($process !== null) {

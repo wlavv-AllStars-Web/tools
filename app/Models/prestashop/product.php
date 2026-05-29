@@ -2243,9 +2243,16 @@ public static function dashboard_end_of_life($type)
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.active', 1)
     
-            ->where($stockTable . '.id_shop', '<>', 0)
             ->where($stockTable . '.out_of_stock', 0)
             ->where($stockTable . '.quantity', '>', 0)
+            ->where(function ($query) use ($stockTable, $productAttributeTable) {
+                $query->where($stockTable . '.id_product_attribute', '>', 0)
+                    ->orWhereNotExists(function ($subQuery) use ($stockTable, $productAttributeTable) {
+                        $subQuery->select(DB::raw(1))
+                            ->from($productAttributeTable . ' as pa_exists')
+                            ->whereColumn('pa_exists.id_product', $stockTable . '.id_product');
+                    });
+            })
     
             ->where(function ($q) use ($customProductTable) {
                 $q->whereNull($customProductTable . '.wmdeprecated')

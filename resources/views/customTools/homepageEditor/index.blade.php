@@ -47,7 +47,16 @@
     $imageColumn = $imageColumn ?? ('image_' . $activeLang);
     $mockBase = $isMobile ? '/homepage/images/homepage/mock/mobile' : '/homepage/images/homepage/mock/desktop';
     $slotImage = function ($item, $fallback = null) use ($imageColumn, $mockBase) {
-        return config('allstars.services.resources.base_url') . $item->{$imageColumn};
+        $path = trim((string) ($item->{$imageColumn} ?? ''));
+
+        if ($path === '') {
+            $path = (string) ($fallback ?: $mockBase . '/placeholder.png');
+        }
+
+        $path = preg_replace('#^https?://resources\.allstars-group\.com#', '', $path);
+        $path = str_replace('/uploads/homepage/uploads/', '/homepage/uploads/', $path);
+
+        return rtrim((string) config('allstars.services.resources.base_url'), '/') . '/' . ltrim($path, '/');
     };
 @endphp
 

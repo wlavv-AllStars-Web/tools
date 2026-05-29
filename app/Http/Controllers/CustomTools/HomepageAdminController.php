@@ -182,8 +182,8 @@ class HomepageAdminController extends Controller
             $safeName = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
             $name = now()->format('YmdHis') . '_' . $request->input('slot_id') . '_' . $lang . '_' . $safeName . '.' . $extension;
 
-            $file->move(public_path('homepage/uploads'), $name);
-            $data["image_{$lang}"] = '/homepage/uploads/' . $name;
+            $file->move(public_path('uploads/homepage/uploads'), $name);
+            $data["image_{$lang}"] = '/uploads/homepage/uploads/' . $name;
         }
 
         DB::table('homepage_asm_temp')

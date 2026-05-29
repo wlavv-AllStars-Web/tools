@@ -40,7 +40,7 @@ class order_return extends PrestashopModel
 
     public static function dashboard_new_order_return($type)
     {
-        $data = self::getDashboardRows([10]);
+        $data = self::getDashboardRows([10], true, [], 'return');
 
         return [
             'name' => trans('ORDER RETURN - NEW'),
@@ -56,12 +56,12 @@ class order_return extends PrestashopModel
 
     public static function dashboard_received_order_return($type)
     {
-        $data = self::getDashboardRows([14]);
+        $data = self::getDashboardRows([14], true, [], 'return');
 
         return [
             'name' => trans('ORDER RETURN - PACKAGE RECEIVED'),
             'col' => 4,
-            'item_id' => $type . '_new_order_return',
+            'item_id' => $type . '_received_order_return',
             'link' => route('returns.index', [0]),
             'prestashop' => null,
             'columns' => ['id_order', 'id_customer', 'customer_name'],
@@ -72,7 +72,7 @@ class order_return extends PrestashopModel
 
     public static function dashboard_progress_order_return($type)
     {
-        $data = self::getDashboardRows([11], false);
+        $data = self::getDashboardRows([11], false, [], 'return');
 
         return [
             'name' => trans('ORDER RETURN - IN PROGRESS'),
@@ -92,7 +92,7 @@ class order_return extends PrestashopModel
             ->pluck('id_product')
             ->toArray();
 
-        $data = self::getDashboardRows([12, 13], true, $excludedReturnIds);
+        $data = self::getDashboardRows([12, 13], true, $excludedReturnIds, 'return');
 
         return [
             'name' => trans('ORDER RETURN - CLOSED'),
@@ -109,7 +109,7 @@ class order_return extends PrestashopModel
 
     public static function dashboard_new_order_warranty($type)
     {
-        $data = self::getDashboardRows([2]);
+        $data = self::getDashboardRows([1], true, [], 'warranty');
 
         return [
             'name' => trans('ORDER WARRANTY - NEW'),
@@ -124,7 +124,7 @@ class order_return extends PrestashopModel
 
     public static function dashboard_progress_order_warranty($type)
     {
-        $data = self::getDashboardRows([3], false);
+        $data = self::getDashboardRows([2, 3], false, [], 'warranty');
 
         return [
             'name' => 'Warranty – Request for Additional Information',
@@ -143,7 +143,7 @@ class order_return extends PrestashopModel
             ->pluck('id_product')
             ->toArray();
 
-        $data = self::getDashboardRows([3, 8], true, $excludedReturnIds);
+        $data = self::getDashboardRows([4, 5, 6, 7, 8], true, $excludedReturnIds, 'warranty');
 
         return [
             'name' => trans('ORDER WARRANTY - CLOSED'),
@@ -157,7 +157,7 @@ class order_return extends PrestashopModel
         ];
     }
 
-    protected static function getDashboardRows(array $states, $includeClean = true, array $excludedReturnIds = [])
+    protected static function getDashboardRows(array $states, $includeClean = true, array $excludedReturnIds = [], ?string $process = null)
     {
         $orderReturnTable = self::tableName('order_return');
         $customerTable = self::tableName('customer');
@@ -172,6 +172,10 @@ class order_return extends PrestashopModel
                 'or.id_customer',
                 DB::raw('CONCAT(cu.firstname, " ", cu.lastname) AS customer_name')
             );
+
+        if ($process !== null) {
+            $query->where('or.process', $process);
+        }
 
         if (!empty($excludedReturnIds)) {
             $query->whereNotIn('or.id_order_return', $excludedReturnIds);

@@ -2243,6 +2243,7 @@ public static function dashboard_end_of_life($type)
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.active', 1)
     
+            ->where($stockTable . '.id_shop', '<>', 0)
             ->where($stockTable . '.out_of_stock', 0)
             ->where($stockTable . '.quantity', '>', 0)
     

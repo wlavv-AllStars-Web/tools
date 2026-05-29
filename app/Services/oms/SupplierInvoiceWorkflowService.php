@@ -34,6 +34,7 @@ class SupplierInvoiceWorkflowService
     {
         $orderNote->loadMissing('lines');
 
+        $prefix = $this->psPrefix();
         $lineMap = $orderNote->lines->keyBy('id');
         $productIds = $lineMap->pluck('product_id')->filter()->unique()->values()->all();
         $attributeIds = $lineMap->pluck('product_attribute_id')->filter()->unique()->values()->all();
@@ -42,16 +43,16 @@ class SupplierInvoiceWorkflowService
 
         if (!empty($productIds)) {
             $products = DB::connection('mysql2')
-                ->table('ps_product as p')
-                ->leftJoin('ps_product_lang as pl', function ($join) {
+                ->table($prefix . 'product as p')
+                ->leftJoin($prefix . 'product_lang as pl', function ($join) {
                     $join->on('pl.id_product', '=', 'p.id_product')
                         ->where('pl.id_lang', 1);
                 })
-                ->leftJoin('ps_stock_available as sa', function ($join) {
+                ->leftJoin($prefix . 'stock_available as sa', function ($join) {
                     $join->on('sa.id_product', '=', 'p.id_product')
                         ->where('sa.id_product_attribute', 0);
                 })
-                ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+                ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
                 ->whereIn('p.id_product', $productIds)
                 ->select([
                     'p.id_product',
@@ -74,8 +75,8 @@ class SupplierInvoiceWorkflowService
 
         if (!empty($attributeIds)) {
             $attributes = DB::connection('mysql2')
-                ->table('ps_product_attribute as pa')
-                ->leftJoin('ps_custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+                ->table($prefix . 'product_attribute as pa')
+                ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
                 ->whereIn('pa.id_product_attribute', $attributeIds)
                 ->select([
                     'pa.id_product_attribute',
@@ -117,11 +118,9 @@ class SupplierInvoiceWorkflowService
                 | ps_product / ps_product_attribute = EUR
                 | ps_custom_product / ps_custom_product_attribute = supplier currency
                 */
-                $currentPurchaseSupplierCurrency = (float) (
-                    $attribute->custom_attribute_wholesale_price_base_currency
-                    ?? $product->custom_wholesale_price_base_currency
-                    ?? 0
-                );
+                $currentPurchaseSupplierCurrency = $isAttribute
+                    ? (float) ($attribute->custom_attribute_wholesale_price_base_currency ?? 0)
+                    : (float) ($product->custom_wholesale_price_base_currency ?? 0);
 
                 $currentPurchaseEur = (float) (
                     $attribute->attribute_wholesale_price
@@ -136,11 +135,9 @@ class SupplierInvoiceWorkflowService
                 | Sale EUR comes from PrestaShop core.
                 | Sale supplier currency comes from ps_custom_*.
                 */
-                $currentSaleSupplierCurrency = (float) (
-                    $attribute->custom_attribute_price_base_currency
-                    ?? $product->custom_price_base_currency
-                    ?? 0
-                );
+                $currentSaleSupplierCurrency = $isAttribute
+                    ? (float) ($attribute->custom_attribute_price_base_currency ?? 0)
+                    : (float) ($product->custom_price_base_currency ?? 0);
 
                 $currentSaleEur = (float) (
                     (($product->product_sale_price ?? 0) + ($attribute->attribute_price_impact ?? 0))
@@ -532,7 +529,7 @@ class SupplierInvoiceWorkflowService
         $this->ensureCustomProductRow($productId);
 
         DB::connection('mysql2')
-            ->table('ps_custom_product')
+            ->table($this->psPrefix() . 'custom_product')
             ->where('id_product', $productId)
             ->update([
                 'wholesale_price_base_currency' => $purchaseSupplierCurrency,
@@ -551,7 +548,7 @@ class SupplierInvoiceWorkflowService
             }
 
             DB::connection('mysql2')
-                ->table('ps_product_attribute')
+                ->table($this->psPrefix() . 'product_attribute')
                 ->where('id_product', $productId)
                 ->where('id_product_attribute', $productAttributeId)
                 ->update([
@@ -567,7 +564,7 @@ class SupplierInvoiceWorkflowService
             $this->ensureCustomProductAttributeRow($productId, $productAttributeId);
 
             DB::connection('mysql2')
-                ->table('ps_custom_product_attribute')
+                ->table($this->psPrefix() . 'custom_product_attribute')
                 ->where('id_product_attribute', $productAttributeId)
                 ->update([
                     'id_product' => $productId,
@@ -581,7 +578,7 @@ class SupplierInvoiceWorkflowService
     protected function ensureCustomProductRow(int $productId): void
     {
         DB::connection('mysql2')
-            ->table('ps_custom_product')
+            ->table($this->psPrefix() . 'custom_product')
             ->updateOrInsert(
                 ['id_product' => $productId],
                 ['id_product' => $productId]
@@ -599,7 +596,7 @@ class SupplierInvoiceWorkflowService
         }
 
         DB::connection('mysql2')
-            ->table('ps_custom_product_attribute')
+            ->table($this->psPrefix() . 'custom_product_attribute')
             ->updateOrInsert(
                 ['id_product_attribute' => $productAttributeId],
                 $payload
@@ -614,13 +611,13 @@ class SupplierInvoiceWorkflowService
 
         return $this->customAttributeHasProductId = DB::connection('mysql2')
             ->getSchemaBuilder()
-            ->hasColumn('ps_custom_product_attribute', 'id_product');
+            ->hasColumn($this->psPrefix() . 'custom_product_attribute', 'id_product');
     }
 
     protected function prestashopProductExists(int $productId): bool
     {
         return DB::connection('mysql2')
-            ->table('ps_product')
+            ->table($this->psPrefix() . 'product')
             ->where('id_product', $productId)
             ->exists();
     }
@@ -628,10 +625,15 @@ class SupplierInvoiceWorkflowService
     protected function prestashopProductAttributeExists(int $productId, int $productAttributeId): bool
     {
         return DB::connection('mysql2')
-            ->table('ps_product_attribute')
+            ->table($this->psPrefix() . 'product_attribute')
             ->where('id_product', $productId)
             ->where('id_product_attribute', $productAttributeId)
             ->exists();
+    }
+
+    protected function psPrefix(): string
+    {
+        return (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
     }
 
     protected function resolvePurchaseConversionRate(?string $currencyIso): float

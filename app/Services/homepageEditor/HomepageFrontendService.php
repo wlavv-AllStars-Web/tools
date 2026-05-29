@@ -37,7 +37,7 @@ class HomepageFrontendService
             return $resolver();
         }
 
-        return Cache::remember($cacheKey, 600, $resolver);
+        return Cache::rememberForever($cacheKey, $resolver);
     }
 
     private function mapGroup($items, string $lang): array

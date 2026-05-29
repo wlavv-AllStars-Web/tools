@@ -66,11 +66,21 @@ class returnsController extends Controller{
     
     public function changeStatus(Request $request){
 
-        $return = order_return::where('id_order_return', $request->id_order_return)->where('process', 'return')->first();
+        $return = order_return::where('id_order_return', $request->id_order_return)
+            ->where('process', 'return')
+            ->with(['customer', 'order.customer', 'order.invoice.country.lang_en'])
+            ->first();
+
+        if (!$return) {
+            return back()->with('error', 'Return not found.');
+        }
 
         $id_associated = $request->returnStatusSelect;
+        $customer = $return->customer ?: optional($return->order)->customer;
 
-        $data['name'] = $return->customer->firstname . ' ' . $return->customer->lastname;
+        $data['name'] = $customer
+            ? trim((string) $customer->firstname . ' ' . (string) $customer->lastname)
+            : '';
         
         $id_lang= $return->order->id_lang;
         
@@ -158,9 +168,9 @@ class returnsController extends Controller{
         
         $mail_object = new mailsController();
         
-        if( $template != 0){
+        if( $template != 0 && $customer && !empty($customer->email)){
             $html = $mail_object->createStructure('ASM_white', $template, $subject[$return->order->id_lang], (object)$data, $return->order->id_lang);
-            $mail_object->send($return->customer->email, $html, $subject[$return->order->id_lang], 'asm_sales');
+            $mail_object->send($customer->email, $html, $subject[$return->order->id_lang], 'asm_sales');
         }
         
         return back();

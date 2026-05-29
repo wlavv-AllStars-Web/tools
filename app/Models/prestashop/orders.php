@@ -619,6 +619,8 @@ class orders extends PrestashopModel
             })
             ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
             ->where($ordersTable . '.current_state', 4)
+            ->whereNotNull($customerTable . '.email')
+            ->where($customerTable . '.email', '<>', '')
             ->where($ordersTable . '.date_add', '>', $afterOrder)
             ->when($hasCustomNotForReview, function ($query) use ($customOrdersTable) {
                 $query->where(function ($subQuery) use ($customOrdersTable) {

@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Response;
 
 
 use App\Models\modules\refund\refund;
-use App\Models\prestashop\issues;
-use App\Models\prestashop\order_history;
 use App\Models\prestashop\order_return;
 use App\Models\prestashop\order_return_history;
 use App\Models\prestashop\order_return_detail;
@@ -102,17 +100,6 @@ class returnsController extends Controller{
                 $subject[4] = 'Devolución - en espera de entrega';
                 $subject[5] = 'Retour - en attente livraison';
 
-                $order_return_detail = order_return_detail::where('id_order_return', $request->id_order_return)->first();
-                $shipped = order_history::where('id_order', $return->id_order)->where('id_order_state', 4)->orderBy('id_order_history', 'DESC')->first();
-
-                $reason = '';
-
-                $reference = $order_return_detail->orderDetail->product->reference;
-                $auto_code = '000' . substr($reference, 0, 2) . '-' . $return->id_order . 'O';
-                
-                $shipping_date = date('d/m/Y', strtotime($shipped->date_add));
-                
-                issues::saveReturn($return->id_order, $reference, $order_return_detail->product_quantity, $shipping_date, $auto_code, $reason);
                 break;
             }
             case 12:{

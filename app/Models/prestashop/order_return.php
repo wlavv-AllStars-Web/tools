@@ -124,7 +124,7 @@ class order_return extends PrestashopModel
 
     public static function dashboard_progress_order_warranty($type)
     {
-        $data = self::getDashboardRows([2, 3], false, [], 'warranty');
+        $data = self::getDashboardRows([1, 2], false, [], 'warranty');
 
         return [
             'name' => 'Warranty – Request for Additional Information',

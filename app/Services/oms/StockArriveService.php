@@ -20,7 +20,7 @@ class StockArriveService
             $this->ensureCustomProductAttributeRow($productId, $productAttributeId);
 
             DB::connection('mysql2')
-                ->table('ps_custom_product_attribute')
+                ->table($this->psPrefix() . 'custom_product_attribute')
                 ->where('id_product_attribute', $productAttributeId)
                 ->update([
                     'stock_arrive' => DB::raw('GREATEST(COALESCE(stock_arrive, 0) + (' . (int) $delta . '), 0)'),
@@ -32,7 +32,7 @@ class StockArriveService
         $this->ensureCustomProductRow($productId);
 
         DB::connection('mysql2')
-            ->table('ps_custom_product')
+            ->table($this->psPrefix() . 'custom_product')
             ->where('id_product', $productId)
             ->update([
                 'stock_arrive' => DB::raw('GREATEST(COALESCE(stock_arrive, 0) + (' . (int) $delta . '), 0)'),
@@ -42,7 +42,7 @@ class StockArriveService
     protected function ensureCustomProductRow(int $productId): void
     {
         $exists = DB::connection('mysql2')
-            ->table('ps_custom_product')
+            ->table($this->psPrefix() . 'custom_product')
             ->where('id_product', $productId)
             ->exists();
 
@@ -51,7 +51,7 @@ class StockArriveService
         }
 
         DB::connection('mysql2')
-            ->table('ps_custom_product')
+            ->table($this->psPrefix() . 'custom_product')
             ->insert([
                 'id_product' => $productId,
                 'stock_arrive' => 0,
@@ -61,7 +61,7 @@ class StockArriveService
     protected function ensureCustomProductAttributeRow(int $productId, int $productAttributeId): void
     {
         $exists = DB::connection('mysql2')
-            ->table('ps_custom_product_attribute')
+            ->table($this->psPrefix() . 'custom_product_attribute')
             ->where('id_product_attribute', $productAttributeId)
             ->exists();
 
@@ -79,7 +79,7 @@ class StockArriveService
         }
 
         DB::connection('mysql2')
-            ->table('ps_custom_product_attribute')
+            ->table($this->psPrefix() . 'custom_product_attribute')
             ->insert($payload);
     }
 
@@ -91,6 +91,11 @@ class StockArriveService
 
         return $this->customAttributeHasProductId = DB::connection('mysql2')
             ->getSchemaBuilder()
-            ->hasColumn('ps_custom_product_attribute', 'id_product');
+            ->hasColumn($this->psPrefix() . 'custom_product_attribute', 'id_product');
+    }
+
+    protected function psPrefix(): string
+    {
+        return (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
     }
 }

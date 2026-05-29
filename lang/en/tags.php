@@ -50,6 +50,7 @@ return [
     
     'delete' => '',
     'id_product' => 'ID',
+    'id_product_attribute' => 'ATTRIBUTE ID',
     'id_order' => '#',
     'send_email' => '',
     'quantity' => 'QTY',

@@ -12,6 +12,7 @@ use App\Services\oms\DocumentLineNoteService;
 use App\Services\oms\ExportService;
 use App\Services\oms\OrderNoteLogisticsService;
 use App\Services\oms\SupplierMapService;
+use App\Services\oms\StockArriveService;
 use App\Services\oms\SupplierTermsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class OrderNoteController extends Controller
         protected DocumentLineNoteService $documentLineNoteService,
         protected ExportService $exportService,
         protected SupplierMapService $supplierMapService,
+        protected StockArriveService $stockArriveService,
         protected SupplierTermsService $supplierTermsService,
         protected OrderNoteLogisticsService $orderNoteLogisticsService,
     ) {
@@ -1151,31 +1153,7 @@ class OrderNoteController extends Controller
 
     protected function adjustCustomStockArrive(int $productId, ?int $productAttributeId, int $delta): void
     {
-        if ($delta === 0) {
-            return;
-        }
-
-        $prefix = $this->psPrefix();
-        $productAttributeId = (int) ($productAttributeId ?? 0);
-
-        $this->ensurePrestashopCustomProductRows($productId, $productAttributeId > 0 ? $productAttributeId : null);
-
-        DB::connection('mysql2')
-            ->table($prefix . 'custom_product')
-            ->where('id_product', $productId)
-            ->update([
-                'stock_arrive' => DB::raw('COALESCE(stock_arrive, 0) + ' . (int) $delta),
-            ]);
-
-        if ($productAttributeId > 0) {
-            DB::connection('mysql2')
-                ->table($prefix . 'custom_product_attribute')
-                ->where('id_product_attribute', $productAttributeId)
-                ->update([
-                    'id_product' => $productId,
-                    'stock_arrive' => DB::raw('COALESCE(stock_arrive, 0) + ' . (int) $delta),
-                ]);
-        }
+        $this->stockArriveService->adjust($productId, (int) ($productAttributeId ?? 0), $delta);
     }
 
     protected function isPrestashopPack(int $productId): bool

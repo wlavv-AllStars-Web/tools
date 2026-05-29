@@ -236,15 +236,7 @@ class ReceptionController extends Controller
 
                 $this->incrementPrestashopStock($productId, $productAttributeId, $qty);
 
-                /*
-                |--------------------------------------------------------------------------
-                | Stock arrive update
-                |--------------------------------------------------------------------------
-                | Receiving stock must also reduce the custom stock_arrive value.
-                | These fields live in ps_custom_product / ps_custom_product_attribute,
-                | not in ps_stock_available.
-                */
-                $this->decreaseCustomStockArrive($productId, $productAttributeId, $qty);
+                $this->stockArriveService->adjust($productId, $productAttributeId, -$qty);
 
                 $stockAfter = $this->getPrestashopQuantity($productId, $productAttributeId);
                 $arriveAfter = $this->getPrestashopStockArrive($productId, $productAttributeId);
@@ -444,63 +436,6 @@ class ReceptionController extends Controller
             ])
             ->unique(fn ($row) => $row->id_product . ':0')
             ->values();
-    }
-
-    protected function decreaseCustomStockArrive(int $productId, int $productAttributeId, int $qty): void
-    {
-        if ($qty <= 0) {
-            return;
-        }
-
-        $prefix = $this->psPrefix();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Base product custom row
-        |--------------------------------------------------------------------------
-        */
-        $productQuery = DB::connection('mysql2')
-            ->table($prefix . 'custom_product')
-            ->where('id_product', $productId);
-
-        if ($productQuery->exists()) {
-            $productQuery->update([
-                'stock_arrive' => DB::raw('COALESCE(stock_arrive, 0) - ' . (int) $qty),
-            ]);
-        } else {
-            DB::connection('mysql2')
-                ->table($prefix . 'custom_product')
-                ->insert([
-                    'id_product' => $productId,
-                    'stock_arrive' => -1 * (int) $qty,
-                ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Attribute custom row
-        |--------------------------------------------------------------------------
-        */
-        if ($productAttributeId > 0) {
-            $attributeQuery = DB::connection('mysql2')
-                ->table($prefix . 'custom_product_attribute')
-                ->where('id_product_attribute', $productAttributeId);
-
-            if ($attributeQuery->exists()) {
-                $attributeQuery->update([
-                    'id_product' => $productId,
-                    'stock_arrive' => DB::raw('COALESCE(stock_arrive, 0) - ' . (int) $qty),
-                ]);
-            } else {
-                DB::connection('mysql2')
-                    ->table($prefix . 'custom_product_attribute')
-                    ->insert([
-                        'id_product_attribute' => $productAttributeId,
-                        'id_product' => $productId,
-                        'stock_arrive' => -1 * (int) $qty,
-                    ]);
-            }
-        }
     }
 
     protected function psPrefix(): string

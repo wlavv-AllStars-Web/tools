@@ -49,5 +49,6 @@ return [
 
     'source_type' => 'SOURCE TYPE',
     'source_id' => 'SOURCE ID',
+    'id_product_attribute' => 'ATTRIBUTE ID',
     'pending_reviews' => 'Pending reviews',
 ];

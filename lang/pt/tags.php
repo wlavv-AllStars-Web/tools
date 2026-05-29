@@ -49,5 +49,6 @@ return [
 
     'source_type' => 'TIPO DE ORIGEM',
     'source_id' => 'ID ORIGEM',
+    'id_product_attribute' => 'ID ATRIBUTO',
     'pending_reviews' => 'Pending reviews',
 ];

@@ -19,13 +19,19 @@ class picking extends Model
 
     public static function getOrders(){
         return (object)[
-            'preparation'   => self::mountOrdersArray('preparation')
+            'asm' => self::mountOrdersArray('preparation', [2]),
+            'asd' => self::mountOrdersArray('preparation', [3]),
+            'other' => self::mountOrdersArray('preparation', [1, 6]),
         ];
     }
         
-    public static function mountOrdersArray($status){
+    public static function mountOrdersArray($status, array $shops = []){
         
-        $data_order  = self::where('status', $status)->where('row_done', 0)->groupBy('id_order')->get();
+        $data_order = self::where('status', $status)
+            ->where('row_done', 0)
+            ->when(!empty($shops), fn ($query) => $query->whereIn('id_shop', $shops))
+            ->groupBy('id_order')
+            ->get();
 
         $array_order = array();
         foreach($data_order AS $order){
@@ -41,19 +47,27 @@ class picking extends Model
     }
         
     public static function add(){
+        self::classifyPaymentAcceptedOrders();
+        self::removeNonPreparationPickingRows();
         self::addData(3, 'preparation');
     }
         
     public static function addData($id_status, $status){
         
-        $orders = orders::with('order_detail', 'carrier')->where('current_state', $id_status)->get();
+        $states = is_array($id_status) ? $id_status : [$id_status];
+        $orders = orders::with('order_detail', 'carrier')->whereIn('current_state', $states)->get();
 
         if(count($orders)){
             
             foreach($orders AS $order){
 
+                $customDetails = self::customOrderDetails($order);
+
                 foreach($order->order_detail AS $detail){
-                    if($detail->product_quantity > $detail->qtd_sent){
+
+                    $qtdSent = self::qtdSent($detail, $customDetails);
+
+                    if($detail->product_quantity > $qtdSent){
                         
                         if( $detail->product_attribute_id == 0){
                             $product = product::where('id_product', $detail->product_id)->first();
@@ -95,7 +109,7 @@ class picking extends Model
                                     $picking['product_id'] = $pack_item->id_product_item;                    
                                     $picking['product_attribute_id'] = $pack_item->id_product_attribute_item;  
                                     
-                                    $quantity = $detail->product_quantity - $detail->qtd_sent;
+                                    $quantity = $detail->product_quantity - $qtdSent;
                                     
                                     $picking['product_quantity'] = ( $quantity * $pack_item->quantity);
                                     $picking['quantity_picked'] = 0;                      
@@ -106,7 +120,7 @@ class picking extends Model
                                     
                                 }
                             }else{
-                                $quantity = $detail->product_quantity - $detail->qtd_sent;
+                                $quantity = $detail->product_quantity - $qtdSent;
                                 self::insertData($detail, $quantity, $status, $order->carrier->name);
                             }
                         }
@@ -114,6 +128,188 @@ class picking extends Model
                 }
             }    
         }
+    }
+
+    private static function classifyPaymentAcceptedOrders(): void
+    {
+        $orders = orders::with('order_detail')->where('current_state', 2)->get();
+
+        foreach ($orders as $order) {
+            $idOrder = (int) $order->id_order;
+            $targetState = self::orderHasEnoughStock($order) ? 3 : 15;
+
+            self::moveOrderState($idOrder, $targetState);
+
+            if ($targetState === 15) {
+                self::where('id_order', $idOrder)->delete();
+            }
+        }
+    }
+
+    private static function removeNonPreparationPickingRows(): void
+    {
+        $orderIds = self::where('status', 'preparation')
+            ->pluck('id_order')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($orderIds)) {
+            return;
+        }
+
+        $preparationOrderIds = orders::whereIn('id_order', $orderIds)
+            ->where('current_state', 3)
+            ->pluck('id_order')
+            ->map(fn ($idOrder) => (int) $idOrder)
+            ->all();
+
+        self::where('status', 'preparation')
+            ->whereNotIn('id_order', $preparationOrderIds)
+            ->delete();
+    }
+
+    private static function orderHasEnoughStock($order): bool
+    {
+        foreach (self::stockRequirementsForOrder($order) as $requirement) {
+            $stock = self::stockQuantityFor(
+                (int) $requirement['id_product'],
+                (int) $requirement['id_product_attribute'],
+                (int) $order->id_shop
+            );
+
+            if ($stock < (int) $requirement['quantity']) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function stockRequirementsForOrder($order): array
+    {
+        $requirements = [];
+        $customDetails = self::customOrderDetails($order);
+
+        foreach ($order->order_detail as $detail) {
+            $quantity = max(0, (int) $detail->product_quantity - self::qtdSent($detail, $customDetails));
+
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            if (pack::is_pack((int) $detail->product_id)) {
+                foreach (pack::getPackItems((int) $detail->product_id) as $packItem) {
+                    self::addStockRequirement(
+                        $requirements,
+                        (int) $packItem->id_product_item,
+                        (int) $packItem->id_product_attribute_item,
+                        $quantity * max(1, (int) $packItem->quantity)
+                    );
+                }
+
+                continue;
+            }
+
+            self::addStockRequirement(
+                $requirements,
+                (int) $detail->product_id,
+                (int) $detail->product_attribute_id,
+                $quantity
+            );
+        }
+
+        return $requirements;
+    }
+
+    private static function addStockRequirement(array &$requirements, int $idProduct, int $idProductAttribute, int $quantity): void
+    {
+        if ($idProduct <= 0 || $quantity <= 0) {
+            return;
+        }
+
+        $key = $idProduct . ':' . $idProductAttribute;
+
+        if (!isset($requirements[$key])) {
+            $requirements[$key] = [
+                'id_product' => $idProduct,
+                'id_product_attribute' => $idProductAttribute,
+                'quantity' => 0,
+            ];
+        }
+
+        $requirements[$key]['quantity'] += $quantity;
+    }
+
+    private static function stockQuantityFor(int $idProduct, int $idProductAttribute, int $idShop): int
+    {
+        if ($idProduct <= 0) {
+            return 0;
+        }
+
+        return (int) (DB::connection('mysql2')
+            ->table(self::psTable('stock_available'))
+            ->where('id_product', $idProduct)
+            ->where('id_product_attribute', $idProductAttribute)
+            ->when($idShop > 0, fn ($query) => $query->where('id_shop', $idShop))
+            ->value('quantity') ?? 0);
+    }
+
+    private static function customOrderDetails($order)
+    {
+        $detailIds = $order->order_detail
+            ->pluck('id_order_detail')
+            ->filter()
+            ->values()
+            ->all();
+
+        if (empty($detailIds)) {
+            return collect();
+        }
+
+        return DB::connection('mysql2')
+            ->table(self::psTable('custom_order_detail'))
+            ->whereIn('id_order_detail', $detailIds)
+            ->get()
+            ->keyBy('id_order_detail');
+    }
+
+    private static function qtdSent($detail, $customDetails): int
+    {
+        $customDetail = $customDetails->get($detail->id_order_detail);
+
+        return (int) ($customDetail->qtd_sent ?? $detail->qtd_sent ?? 0);
+    }
+
+    private static function moveOrderState(int $idOrder, int $idOrderState): void
+    {
+        if ($idOrder <= 0 || !in_array($idOrderState, [3, 15], true)) {
+            return;
+        }
+
+        DB::connection('mysql2')->transaction(function () use ($idOrder, $idOrderState) {
+            $updated = DB::connection('mysql2')
+                ->table(self::psTable('orders'))
+                ->where('id_order', $idOrder)
+                ->where('current_state', 2)
+                ->update([
+                    'current_state' => $idOrderState,
+                    'date_upd' => now()->toDateTimeString(),
+                ]);
+
+            if (!$updated) {
+                return;
+            }
+
+            DB::connection('mysql2')
+                ->table(self::psTable('order_history'))
+                ->insert([
+                    'id_employee' => Auth::id() ?? 0,
+                    'id_order' => $idOrder,
+                    'id_order_state' => $idOrderState,
+                    'date_add' => now()->toDateTimeString(),
+                ]);
+        });
     }
         
     private static function insertData($row, $quantity, $status, $carrier_name){

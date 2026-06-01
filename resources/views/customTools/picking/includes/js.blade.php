@@ -22,6 +22,13 @@
     function openList(list){
         $('.holders').css('display', 'none');
         $('#holder_' + list).css('display', 'block');
+        $('#barcodeScanContainer').css('display', 'none');
+        $('#openOrder').attr('value', '');
+        $('#barcodeToFind').attr('value', '');
+        $('#pickingContainer').attr('value', '');
+        $('.order_container').css('display', 'none');
+        $('.orderHeader_active').addClass('orderHeader').removeClass('orderHeader_active').css('display', 'block');
+        $('.orderHeader').css('display', 'block');
     }
     
     function openOrder(id_order, element){

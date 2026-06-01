@@ -172,6 +172,7 @@ class AppServiceProvider extends ServiceProvider
             'logistics.tools.safety_check.' => ['logistics', 'logistics.index', 'Safety check'],
             'logistics.tools.carrier_issues.' => ['logistics', 'logistics.index', 'Carrier issues'],
             'logistics.tools.suppliers.issues.' => ['logistics', 'logistics.index', "Supplier's issues"],
+            'logistics.tools.inventory.' => ['logistics', 'logistics.index', 'Inventory'],
             'logistics.tools.oms.' => ['logistics', 'logistics.index', 'OMS - logistic containers'],
             'admin.tools.asg_tasks.' => ['administration', 'administration.index', 'Tasks'],
             'admin.tools.tasks.' => ['administration', 'administration.index', 'Tasks'],

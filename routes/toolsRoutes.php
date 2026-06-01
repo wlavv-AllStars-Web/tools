@@ -49,6 +49,8 @@ use App\Http\Controllers\CustomTools\purchasePriceController;
 use App\Http\Controllers\CustomTools\SafetyCheckController;
 use App\Http\Controllers\CustomTools\CarrierExpeditionCheckController;
 use App\Http\Controllers\CustomTools\CarrierEndOfDayDocumentController;
+use App\Http\Controllers\CustomTools\LogisticsRmaCheckController;
+use App\Http\Controllers\CustomTools\LogisticsInventoryController;
 use App\Http\Controllers\CustomTools\HomepageAdminController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\AsdResourcesController;
@@ -318,6 +320,38 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/documents/{document}', [CarrierEndOfDayDocumentController::class, 'show'])->name('show');
             Route::get('/documents/{document}/print', [CarrierEndOfDayDocumentController::class, 'print'])->name('print');
             Route::get('/documents/{document}/pdf', [CarrierEndOfDayDocumentController::class, 'pdf'])->name('pdf');
+        });
+
+        Route::prefix('rma-check')->name('rma_check.')->group(function () {
+            Route::get('/', [LogisticsRmaCheckController::class, 'index'])->name('index');
+            Route::post('/check', [LogisticsRmaCheckController::class, 'check'])->name('check');
+        });
+
+        Route::prefix('inventory')->name('inventory.')->group(function () {
+            Route::get('/', [LogisticsInventoryController::class, 'index'])->name('index');
+            Route::get('/prepare', [LogisticsInventoryController::class, 'prepare'])->name('prepare');
+            Route::post('/prepare', [LogisticsInventoryController::class, 'prepareStore'])->name('prepare.store');
+            Route::get('/work', [LogisticsInventoryController::class, 'work'])->name('work');
+            Route::post('/work', [LogisticsInventoryController::class, 'workStore'])->name('work.store');
+            Route::get('/count/{schedule}', [LogisticsInventoryController::class, 'count'])->name('count');
+            Route::post('/count/{schedule}', [LogisticsInventoryController::class, 'countStore'])->name('count.store');
+
+            Route::middleware('role:admin,manager')->prefix('admin')->name('admin.')->group(function () {
+                Route::get('/', [LogisticsInventoryController::class, 'admin'])->name('index');
+                Route::get('/map', [LogisticsInventoryController::class, 'map'])->name('map');
+                Route::get('/map/columns', [LogisticsInventoryController::class, 'mapColumns'])->name('map.columns');
+                Route::get('/map/cells', [LogisticsInventoryController::class, 'mapCells'])->name('map.cells');
+                Route::get('/map/products', [LogisticsInventoryController::class, 'mapProducts'])->name('map.products');
+                Route::post('/schedule', [LogisticsInventoryController::class, 'scheduleStore'])->name('schedule.store');
+                Route::delete('/schedule/{schedule}', [LogisticsInventoryController::class, 'scheduleDestroy'])->name('schedule.destroy');
+                Route::get('/verification', [LogisticsInventoryController::class, 'verification'])->name('verification');
+                Route::post('/verification/recount/{count}', [LogisticsInventoryController::class, 'requestRecount'])->name('verification.recount');
+                Route::post('/verification/comment/{count}', [LogisticsInventoryController::class, 'saveVerificationComment'])->name('verification.comment');
+                Route::post('/verification/{schedule}', [LogisticsInventoryController::class, 'verify'])->name('verification.verify');
+                Route::get('/report', [LogisticsInventoryController::class, 'report'])->name('report');
+                Route::get('/report/csv', [LogisticsInventoryController::class, 'reportCsv'])->name('report.csv');
+                Route::get('/report/pdf', [LogisticsInventoryController::class, 'reportPdf'])->name('report.pdf');
+            });
         });
 
         Route::get('/picking', [pickingController::class, 'index'])->name('picking.index');

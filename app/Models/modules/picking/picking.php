@@ -56,8 +56,11 @@ class picking extends Model
                         
                         if( $detail->product_attribute_id == 0){
                             $product = product::where('id_product', $detail->product_id)->first();
+                            $detail->product_date_add = $product->date_add ?? null;
                         }else{
                             $product = product_attribute::where('id_product', $detail->product_id)->where('id_product_attribute', $detail->product_attribute_id)->first();
+                            $parentProduct = product::where('id_product', $detail->product_id)->first();
+                            $detail->product_date_add = $parentProduct->date_add ?? null;
                         }
                         
                         if(isset($product->id_product)){
@@ -78,6 +81,7 @@ class picking extends Model
                                     
                                     $picking['id_shop'] = $detail->id_shop;
                                     $picking['product_name'] = $product->lang->name;
+                                    $picking['product_date_add'] = $product->date_add ?? null;
                                     
                                     if( $pack_item->id_product_attribute_item == 0){
                                         $picking['product_reference'] = $product->reference;                      
@@ -129,6 +133,7 @@ class picking extends Model
                     'id_product_attribute' => $row->product_attribute_id,                      
                     'reference' => $row->product_reference,        
                     'product_barcode' => $row->product_ean13,  
+                    'is_new' => !empty($row->product_date_add) && $row->product_date_add >= date('Y-m-d', strtotime('-30 DAYS')),
                     'quantity' => $quantity,                
                     'quantity_picked' => 0,     
                     'row_done' => 0,               

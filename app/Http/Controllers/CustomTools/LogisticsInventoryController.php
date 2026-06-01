@@ -211,11 +211,11 @@ class LogisticsInventoryController extends Controller
             'schedule' => $schedule,
             'recountActive' => $recountActive,
             'cellConfirmed' => $cellConfirmed,
-            'counts' => $this->countsQuery($schedule->id)
+            'counts' => $this->groupCountsByReference($this->countsQuery($schedule->id)
                 ->when($recountActive, fn ($query) => $query->where('recount_requested', true))
                 ->orderBy('location')
                 ->orderBy('reference')
-                ->get(),
+                ->get()),
         ]);
     }
 
@@ -323,20 +323,45 @@ class LogisticsInventoryController extends Controller
             return back()->with('warning', $recountActive ? 'Este produto nao esta marcado para recontagem.' : 'Produto nao encontrado nesta celula.');
         }
 
-        if ($matches->count() > 1) {
+        $matchedReferences = $matches
+            ->map(fn ($row) => $this->normalizedReference($row->reference))
+            ->unique()
+            ->values();
+
+        if ($matchedReferences->count() > 1) {
             return back()->with('warning', 'Referencia ambigua nesta celula. Use o EAN do produto.');
         }
 
         $row = $matches->first();
+        $reference = $this->normalizedReference($row->reference);
+        $countQuery = DB::table('logistics_inventory_counts')
+            ->where('schedule_id', $schedule->id)
+            ->when($recountActive, fn ($query) => $query->where('recount_requested', true));
 
-        DB::table('logistics_inventory_counts')
-            ->where('id', $row->id)
-            ->update([
-                'counted_quantity' => ((int) ($row->counted_quantity ?? 0)) + 1,
-                'counted_by' => $request->user()->id,
-                'counted_at' => now(),
-                'updated_at' => now(),
-            ]);
+        if ($reference !== '') {
+            $countQuery->whereRaw('UPPER(reference) = ?', [$reference]);
+        } else {
+            $countQuery->where('id', $row->id);
+        }
+
+        $currentCountedQuantity = (int) $countQuery->max('counted_quantity');
+
+        $updateQuery = DB::table('logistics_inventory_counts')
+            ->where('schedule_id', $schedule->id)
+            ->when($recountActive, fn ($query) => $query->where('recount_requested', true));
+
+        if ($reference !== '') {
+            $updateQuery->whereRaw('UPPER(reference) = ?', [$reference]);
+        } else {
+            $updateQuery->where('id', $row->id);
+        }
+
+        $updateQuery->update([
+            'counted_quantity' => $currentCountedQuantity + 1,
+            'counted_by' => $request->user()->id,
+            'counted_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         return back();
     }
@@ -363,14 +388,45 @@ class LogisticsInventoryController extends Controller
             abort(403);
         }
 
-        DB::table('logistics_inventory_schedules')
-            ->where('id', $schedule->id)
-            ->update([
-                'verification_done' => true,
-                'verification_operator_id' => $request->user()->id,
-                'verification_done_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $counts = DB::table('logistics_inventory_counts')
+            ->where('schedule_id', $schedule->id)
+            ->get();
+
+        if ($counts->contains(fn ($count) => $count->counted_quantity === null)) {
+            return back()->with('error', 'Existem produtos sem contagem. Valide ou envie para recontagem antes de concluir.');
+        }
+
+        DB::beginTransaction();
+        DB::connection('mysql2')->beginTransaction();
+
+        try {
+            $verifiedAt = now();
+            $this->applyVerifiedInventoryStock($schedule, $counts, (int) $request->user()->id, $verifiedAt);
+
+            DB::table('logistics_inventory_schedules')
+                ->where('id', $schedule->id)
+                ->update([
+                    'verification_done' => true,
+                    'verification_operator_id' => $request->user()->id,
+                    'verification_done_at' => $verifiedAt,
+                    'updated_at' => $verifiedAt,
+                ]);
+
+            DB::connection('mysql2')->commit();
+            DB::commit();
+        } catch (\Throwable $exception) {
+            if (DB::connection('mysql2')->transactionLevel() > 0) {
+                DB::connection('mysql2')->rollBack();
+            }
+
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            report($exception);
+
+            return back()->with('error', 'Nao foi possivel aplicar o stock do inventario.');
+        }
 
         return back()->with('success', 'Inventario validado.');
     }
@@ -392,15 +448,23 @@ class LogisticsInventoryController extends Controller
         }
 
         DB::transaction(function () use ($row) {
-            DB::table('logistics_inventory_counts')
-                ->where('id', $row->id)
-                ->update([
-                    'counted_quantity' => null,
-                    'counted_by' => null,
-                    'counted_at' => null,
-                    'recount_requested' => true,
-                    'updated_at' => now(),
-                ]);
+            $reference = $this->normalizedReference($row->reference);
+            $counts = DB::table('logistics_inventory_counts')
+                ->where('schedule_id', $row->schedule_id);
+
+            if ($reference !== '') {
+                $counts->whereRaw('UPPER(reference) = ?', [$reference]);
+            } else {
+                $counts->where('id', $row->id);
+            }
+
+            $counts->update([
+                'counted_quantity' => null,
+                'counted_by' => null,
+                'counted_at' => null,
+                'recount_requested' => true,
+                'updated_at' => now(),
+            ]);
 
             DB::table('logistics_inventory_schedules')
                 ->where('id', $row->schedule_id)
@@ -524,20 +588,37 @@ class LogisticsInventoryController extends Controller
     public function verification(Request $request)
     {
         $date = $this->date($request);
+        $cell = strtoupper(trim((string) $request->query('cell')));
 
         $rows = DB::table('logistics_inventory_counts as c')
             ->join('logistics_inventory_schedules as s', 's.id', '=', 'c.schedule_id')
             ->where('s.inventory_date', $date)
             ->where('s.inventory_done', true)
+            ->when($cell !== '', fn ($query) => $query->where('s.cell', $cell))
             ->select('c.*', 's.cell')
             ->orderBy('s.cell')
             ->orderBy('c.location')
             ->orderBy('c.reference')
             ->get();
+        $pendingSales = $this->pendingSalesQuantitiesForCounts($rows);
+        $rows = $rows->map(function ($row) use ($pendingSales) {
+            $key = (int) $row->id_product . ':' . (int) $row->id_product_attribute;
+            $row->pending_sales_by_state = $pendingSales[$key] ?? [
+                'payment_accepted' => 0,
+                'preparation' => 0,
+                'backorders' => 0,
+                'waiting_info' => 0,
+            ];
+            $row->pending_sales_quantity = array_sum($row->pending_sales_by_state);
+
+            return $row;
+        });
+        $rows = $this->groupVerificationRowsByReference($rows);
 
         return View::make('customTools.logistics.inventory.verification', [
             'breadcrumbs' => $this->breadcrumbs('Verificacao'),
             'date' => $date,
+            'selectedCell' => $cell,
             'rows' => $rows,
             'schedules' => $this->schedulesFor($date)->where('inventory_done', true)->values(),
             'stats' => $this->stats($date),
@@ -706,6 +787,182 @@ class LogisticsInventoryController extends Controller
     private function cellConfirmationSessionKey(int $scheduleId): string
     {
         return 'logistics_inventory_cell_confirmed_' . $scheduleId;
+    }
+
+    private function normalizedReference(?string $reference): string
+    {
+        return strtoupper(trim((string) $reference));
+    }
+
+    private function groupCountsByReference($counts)
+    {
+        return $counts
+            ->groupBy(fn ($row) => $this->normalizedReference($row->reference) ?: 'stock:' . $row->id_stock_available)
+            ->map(function ($items) {
+                $first = $items->first();
+                $countedValues = $items
+                    ->pluck('counted_quantity')
+                    ->filter(fn ($quantity) => $quantity !== null);
+
+                $first->ean13 = $items
+                    ->pluck('ean13')
+                    ->filter()
+                    ->unique()
+                    ->implode(' / ');
+                $first->current_quantity = $items->sum('current_quantity');
+                $first->counted_quantity = $countedValues->isEmpty() ? null : (int) $countedValues->max();
+
+                return $first;
+            })
+            ->sortBy('reference')
+            ->values();
+    }
+
+    private function groupVerificationRowsByReference($rows)
+    {
+        return $rows
+            ->groupBy(fn ($row) => $row->cell . '|' . ($this->normalizedReference($row->reference) ?: 'stock:' . $row->id_stock_available))
+            ->map(function ($items) {
+                $first = $items->first();
+                $countedValues = $items
+                    ->pluck('counted_quantity')
+                    ->filter(fn ($quantity) => $quantity !== null);
+                $pendingSalesByState = [
+                    'payment_accepted' => 0,
+                    'preparation' => 0,
+                    'backorders' => 0,
+                    'waiting_info' => 0,
+                ];
+
+                foreach ($items as $item) {
+                    foreach ($pendingSalesByState as $state => $quantity) {
+                        $pendingSalesByState[$state] += (int) ($item->pending_sales_by_state[$state] ?? 0);
+                    }
+                }
+
+                $locations = $items
+                    ->pluck('location')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $comments = $items
+                    ->pluck('verification_comment')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $first->id = $first->id;
+                $first->location = $locations->count() > 1 ? $locations->implode(' / ') : ($locations->first() ?: null);
+                $first->current_quantity = (int) $items->max('current_quantity');
+                $first->counted_quantity = $countedValues->isEmpty() ? null : (int) $countedValues->max();
+                $first->pending_sales_by_state = $pendingSalesByState;
+                $first->pending_sales_quantity = array_sum($pendingSalesByState);
+                $first->verification_comment = $comments->implode(' | ');
+                $first->grouped_rows = $items->count();
+
+                return $first;
+            })
+            ->sortBy([
+                ['cell', 'asc'],
+                ['reference', 'asc'],
+            ])
+            ->values();
+    }
+
+    private function applyVerifiedInventoryStock(object $schedule, $counts, int $validatedBy, Carbon $validatedAt): void
+    {
+        $stockTable = $this->psTable('stock_available');
+
+        foreach ($counts->groupBy(fn ($count) => $this->normalizedReference($count->reference) ?: 'stock:' . $count->id_stock_available) as $groupKey => $referenceCounts) {
+            $sourceCount = $referenceCounts->first();
+            $newQuantity = (int) $referenceCounts->max('counted_quantity');
+            $reference = str_starts_with((string) $groupKey, 'stock:') ? '' : (string) $groupKey;
+            $targetStocks = $reference !== ''
+                ? $this->stockRowsForReference($reference)
+                : DB::connection('mysql2')
+                    ->table($stockTable)
+                    ->where('id_stock_available', (int) $sourceCount->id_stock_available)
+                    ->lockForUpdate()
+                    ->get();
+
+            if ($targetStocks->isEmpty()) {
+                throw new \RuntimeException('Stock rows not found for reference: ' . ($reference ?: $sourceCount->id_stock_available));
+            }
+
+            foreach ($targetStocks->unique('id_stock_available') as $stock) {
+                $previousQuantity = (int) $stock->quantity;
+
+                if ($previousQuantity === $newQuantity) {
+                    continue;
+                }
+
+                DB::connection('mysql2')
+                    ->table($stockTable)
+                    ->where('id_stock_available', (int) $stock->id_stock_available)
+                    ->update([
+                        'quantity' => $newQuantity,
+                    ]);
+
+                DB::table('logistics_inventory_stock_logs')->insert([
+                    'schedule_id' => (int) $schedule->id,
+                    'count_id' => (int) $sourceCount->id,
+                    'id_stock_available' => (int) $stock->id_stock_available,
+                    'id_product' => (int) $stock->id_product,
+                    'id_product_attribute' => (int) $stock->id_product_attribute,
+                    'reference' => $stock->reference ?: $sourceCount->reference,
+                    'previous_quantity' => $previousQuantity,
+                    'new_quantity' => $newQuantity,
+                    'quantity_delta' => $newQuantity - $previousQuantity,
+                    'reason' => 'inventory',
+                    'validated_by' => $validatedBy,
+                    'validated_at' => $validatedAt,
+                    'created_at' => $validatedAt,
+                    'updated_at' => $validatedAt,
+                ]);
+            }
+        }
+    }
+
+    private function stockRowsForReference(string $reference)
+    {
+        $reference = $this->normalizedReference($reference);
+        $productTable = $this->psTable('product');
+        $attributeTable = $this->psTable('product_attribute');
+        $stockTable = $this->psTable('stock_available');
+
+        $products = DB::connection('mysql2')
+            ->table($productTable . ' as p')
+            ->leftJoin($this->psTable('pack') . ' as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->join($stockTable . ' as s', function ($join) {
+                $join->on('s.id_product', '=', 'p.id_product')
+                    ->where('s.id_product_attribute', '=', 0);
+            })
+            ->whereNull('pack.id_product_pack')
+            ->where(function ($query) {
+                $query->whereNull('p.cache_is_pack')->orWhere('p.cache_is_pack', 0);
+            })
+            ->whereRaw('UPPER(p.reference) = ?', [$reference])
+            ->select('s.id_stock_available', 's.id_product', 's.id_product_attribute', 'p.reference', 's.quantity');
+
+        $attributes = DB::connection('mysql2')
+            ->table($attributeTable . ' as pa')
+            ->join($productTable . ' as p', 'p.id_product', '=', 'pa.id_product')
+            ->leftJoin($this->psTable('pack') . ' as pack', 'pack.id_product_pack', '=', 'pa.id_product')
+            ->join($stockTable . ' as s', 's.id_product_attribute', '=', 'pa.id_product_attribute')
+            ->whereNull('pack.id_product_pack')
+            ->where(function ($query) {
+                $query->whereNull('p.cache_is_pack')->orWhere('p.cache_is_pack', 0);
+            })
+            ->whereRaw('UPPER(pa.reference) = ?', [$reference])
+            ->select('s.id_stock_available', 's.id_product', 's.id_product_attribute', 'pa.reference', 's.quantity');
+
+        return $products
+            ->lockForUpdate()
+            ->get()
+            ->merge($attributes->lockForUpdate()->get())
+            ->unique('id_stock_available')
+            ->values();
     }
 
     private function productsForCell(string $cell)
@@ -910,6 +1167,55 @@ class LogisticsInventoryController extends Controller
             }
 
             $result[$key] = (int) $query->count();
+        }
+
+        return $result;
+    }
+
+    private function pendingSalesQuantitiesForCounts($rows): array
+    {
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $states = [
+            2 => 'payment_accepted',
+            3 => 'preparation',
+            15 => 'backorders',
+            30 => 'waiting_info',
+        ];
+        $result = [];
+
+        foreach ($rows->unique(fn ($row) => (int) $row->id_product . ':' . (int) $row->id_product_attribute) as $row) {
+            $key = (int) $row->id_product . ':' . (int) $row->id_product_attribute;
+            $result[$key] = [
+                'payment_accepted' => 0,
+                'preparation' => 0,
+                'backorders' => 0,
+                'waiting_info' => 0,
+            ];
+
+            $query = DB::connection('mysql2')
+                ->table($this->psTable('order_detail') . ' as od')
+                ->join($this->psTable('orders') . ' as o', 'o.id_order', '=', 'od.id_order')
+                ->where('od.product_id', (int) $row->id_product)
+                ->whereIn('o.current_state', array_keys($states));
+
+            if ((int) $row->id_product_attribute > 0) {
+                $query->where('od.product_attribute_id', (int) $row->id_product_attribute);
+            } else {
+                $query->where(function ($q) {
+                    $q->whereNull('od.product_attribute_id')->orWhere('od.product_attribute_id', 0);
+                });
+            }
+
+            foreach ($query->select('o.current_state', DB::raw('SUM(od.product_quantity) as quantity'))->groupBy('o.current_state')->get() as $stateRow) {
+                $label = $states[(int) $stateRow->current_state] ?? null;
+
+                if ($label) {
+                    $result[$key][$label] = (int) $stateRow->quantity;
+                }
+            }
         }
 
         return $result;

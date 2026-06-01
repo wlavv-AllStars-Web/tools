@@ -50,8 +50,11 @@
     .inventory-workflow-columns .inventory-card{margin-bottom:0;min-height:240px;}
     .inventory-column-list{display:grid;grid-template-columns:1fr;gap:10px;}
     .inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+    .inventory-validation-cells{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:2px 2px 8px;max-width:100%;}
+    .inventory-validation-cells .inventory-cell{flex:0 0 180px;}
     .inventory-cell{display:block;border:1px solid #bbb;border-radius:6px;padding:12px;text-align:center;color:#222;text-decoration:none;background:#fff;}
     .inventory-cell:hover{text-decoration:none;color:#111;border-color:#0d6efd;}
+    .inventory-cell.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.16);background:#eff6ff;}
     .inventory-cell .code{font-size:24px;font-weight:800;display:block;}
     .inventory-cell .meta{font-size:12px;color:#666;display:block;margin-top:4px;}
     .inventory-status{display:inline-flex;align-items:center;justify-content:center;min-width:82px;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800;}
@@ -62,9 +65,20 @@
     .inventory-form-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap;}
     .inventory-form-row .form-control{min-width:180px;}
     .inventory-table{width:100%;border-collapse:collapse;background:#fff;}
-    .inventory-table th,.inventory-table td{border:1px solid #ddd;padding:8px;vertical-align:middle;}
+    .inventory-table th,.inventory-table td{border:1px solid #ddd;padding:8px;vertical-align:middle;text-align:center;}
     .inventory-table th{background:#f5f5f5;}
     .inventory-table .number{width:110px;text-align:center;}
+    .inventory-copy-reference{border:0;background:transparent;color:#111;font-weight:800;padding:2px 4px;cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .inventory-copy-reference:hover{color:#0d6efd;text-decoration:underline;}
+    .inventory-copy-reference.copied{color:#16a34a;}
+    .inventory-sales-states{min-width:96px;}
+    .inventory-sales-state-grid{display:flex;justify-content:center;gap:5px;}
+    .inventory-sales-state{border:1px solid transparent;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;text-align:center;line-height:1;}
+    .inventory-sales-state strong{display:block;font-size:12px;color:#fff;line-height:1;}
+    .inventory-sales-state.state-paid{background:#16a34a;border-color:#15803d;}
+    .inventory-sales-state.state-preparation{background:dodgerblue;border-color:#1d4ed8;}
+    .inventory-sales-state.state-backorder{background:#f59e0b;border-color:#d97706;}
+    .inventory-sales-state.state-info{background:#6b7280;border-color:#4b5563;}
     .inventory-row-diff{background:#fee2e2;color:#7f1d1d;}
     .inventory-row-ok{background:#dcfce7;color:#14532d;}
     .inventory-mobile-input{height:46px;font-size:22px;text-align:center;font-weight:800;}

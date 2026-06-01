@@ -19,7 +19,7 @@
             <div class="inventory-card-header">Scan de celula/coluna</div>
             <div class="inventory-card-body">
                 <input type="hidden" name="date" value="{{ $date }}">
-                <input id="cellInput" class="form-control inventory-mobile-input" name="cell" value="" placeholder="A-01-01" autofocus autocomplete="off">
+                <input id="cellInput" class="form-control inventory-mobile-input" name="cell" value="{{ $selectedCell }}" placeholder="A-01-01" autofocus autocomplete="off">
                 <button class="btn btn-primary w-100 mt-3" type="submit">Preparar</button>
             </div>
         </form>
@@ -30,16 +30,23 @@
                 @if($schedules->isEmpty())
                     <div class="alert alert-success mb-0">Sem celulas pendentes de preparacao.</div>
                 @else
-                    <div class="inventory-grid">
-                        @foreach($schedules as $schedule)
-                            <form method="POST" action="{{ route('logistics.tools.inventory.prepare.store') }}" class="inventory-cell">
-                                @csrf
-                                <input type="hidden" name="date" value="{{ $date }}">
-                                <input type="hidden" name="cell" value="{{ $schedule->cell }}">
-                                <span class="code">{{ $schedule->cell }}</span>
-                                <span class="meta">Por preparar</span>
-                                <button class="btn btn-sm btn-primary mt-2" type="submit">Preparar</button>
-                            </form>
+                    <div class="inventory-housing-groups">
+                        @foreach($scheduleGroups as $group)
+                            <details class="inventory-housing-group" {{ $selectedCell && $group->schedules->pluck('cell')->contains($selectedCell) ? 'open' : '' }}>
+                                <summary>
+                                    <strong>{{ $group->housing }}</strong>
+                                    <span>{{ $group->count }} celulas</span>
+                                </summary>
+                                <div class="inventory-housing-cells">
+                                    @foreach($group->schedules as $schedule)
+                                        <a class="inventory-cell {{ $selectedCell === $schedule->cell ? 'active' : '' }}" href="{{ route('logistics.tools.inventory.prepare', ['date' => $date, 'cell' => $schedule->cell]) }}">
+                                            <span class="code">{{ $schedule->cell }}</span>
+                                            <span class="meta">Por preparar</span>
+                                            <span class="inventory-status todo">Selecionar</span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </details>
                         @endforeach
                     </div>
                 @endif

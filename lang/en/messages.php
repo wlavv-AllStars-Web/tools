@@ -541,6 +541,7 @@ return [
     'logistics.tools.carrier_end_of_day.show' => 'Carrier end of day document',
     'logistics.tools.rma_check.index' => 'RMA check',
     'logistics.tools.inventory.index' => 'Inventory',
+    'logistics.tools.inventory.prepare' => 'Inventory preparation',
     'logistics.tools.inventory.count' => 'Inventory count',
     'logistics.tools.inventory.work' => 'Inventory work',
     'logistics.tools.inventory.admin.map' => 'Inventory map',

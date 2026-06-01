@@ -45,13 +45,23 @@
                         @if($preparationSchedules->isEmpty())
                             <div class="alert alert-success mb-0">Sem celulas pendentes de preparacao.</div>
                         @else
-                            <div class="inventory-column-list">
-                                @foreach($preparationSchedules as $schedule)
-                                    <a class="inventory-cell" href="{{ route('logistics.tools.inventory.prepare', ['date' => $date]) }}">
-                                        <span class="code">{{ $schedule->cell }}</span>
-                                        <span class="meta">Aguarda preparacao</span>
-                                        <span class="inventory-status todo">Preparar</span>
-                                    </a>
+                            <div class="inventory-housing-groups">
+                                @foreach($preparationGroups as $group)
+                                    <details class="inventory-housing-group">
+                                        <summary>
+                                            <strong>{{ $group->housing }}</strong>
+                                            <span>{{ $group->count }} celulas</span>
+                                        </summary>
+                                        <div class="inventory-housing-cells">
+                                            @foreach($group->schedules as $schedule)
+                                                <a class="inventory-cell" href="{{ route('logistics.tools.inventory.prepare', ['date' => $date, 'cell' => $schedule->cell]) }}">
+                                                    <span class="code">{{ $schedule->cell }}</span>
+                                                    <span class="meta">Aguarda preparacao</span>
+                                                    <span class="inventory-status todo">Preparar</span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </details>
                                 @endforeach
                             </div>
                         @endif
@@ -64,13 +74,23 @@
                         @if($inventorySchedules->isEmpty())
                             <div class="alert alert-success mb-0">Sem celulas preparadas para inventario.</div>
                         @else
-                            <div class="inventory-column-list">
-                                @foreach($inventorySchedules as $schedule)
-                                    <a class="inventory-cell" href="{{ route('logistics.tools.inventory.count', $schedule->id) }}">
-                                        <span class="code">{{ $schedule->cell }}</span>
-                                        <span class="meta">{{ $schedule->counted_rows }}/{{ $schedule->total_rows }} linhas</span>
-                                        <span class="inventory-status {{ $schedule->counted_rows > 0 ? 'progress' : 'verify' }}">{{ $schedule->counted_rows > 0 ? 'Em curso' : 'Inventariar' }}</span>
-                                    </a>
+                            <div class="inventory-housing-groups">
+                                @foreach($inventoryGroups as $group)
+                                    <details class="inventory-housing-group">
+                                        <summary>
+                                            <strong>{{ $group->housing }}</strong>
+                                            <span>{{ $group->counted_rows }}/{{ $group->total_rows }} linhas</span>
+                                        </summary>
+                                        <div class="inventory-housing-cells">
+                                            @foreach($group->schedules as $schedule)
+                                                <a class="inventory-cell" href="{{ route('logistics.tools.inventory.count', $schedule->id) }}">
+                                                    <span class="code">{{ $schedule->cell }}</span>
+                                                    <span class="meta">{{ $schedule->counted_rows }}/{{ $schedule->total_rows }} linhas</span>
+                                                    <span class="inventory-status {{ $schedule->counted_rows > 0 ? 'progress' : 'verify' }}">{{ $schedule->counted_rows > 0 ? 'Em curso' : 'Inventariar' }}</span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </details>
                                 @endforeach
                             </div>
                         @endif
@@ -84,13 +104,23 @@
                             @if($validationSchedules->isEmpty())
                                 <div class="alert alert-success mb-0">Sem celulas pendentes de validacao.</div>
                             @else
-                                <div class="inventory-column-list">
-                                    @foreach($validationSchedules as $schedule)
-                                        <a class="inventory-cell" href="{{ route('logistics.tools.inventory.admin.verification', ['date' => $date]) }}">
-                                            <span class="code">{{ $schedule->cell }}</span>
-                                            <span class="meta">{{ $schedule->diff_rows }} diferencas</span>
-                                            <span class="inventory-status verify">Validar</span>
-                                        </a>
+                                <div class="inventory-housing-groups">
+                                    @foreach($validationGroups as $group)
+                                        <details class="inventory-housing-group">
+                                            <summary>
+                                                <strong>{{ $group->housing }}</strong>
+                                                <span>{{ $group->diff_rows }} diferencas</span>
+                                            </summary>
+                                            <div class="inventory-housing-cells">
+                                                @foreach($group->schedules as $schedule)
+                                                    <a class="inventory-cell" href="{{ route('logistics.tools.inventory.admin.verification', ['date' => $date, 'cell' => $schedule->cell]) }}">
+                                                        <span class="code">{{ $schedule->cell }}</span>
+                                                        <span class="meta">{{ $schedule->diff_rows }} diferencas</span>
+                                                        <span class="inventory-status verify">Validar</span>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </details>
                                     @endforeach
                                 </div>
                             @endif

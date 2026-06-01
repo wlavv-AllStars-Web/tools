@@ -33,13 +33,20 @@ class LogisticsInventoryController extends Controller
 
         $schedules = $this->schedulesFor($date);
 
+        $preparationSchedules = $schedules->where('preparation_done', false)->values();
+        $inventorySchedules = $schedules->where('preparation_done', true)->where('inventory_done', false)->values();
+        $validationSchedules = $schedules->where('inventory_done', true)->where('verification_done', false)->values();
+
         return View::make('customTools.logistics.inventory.index', [
             'breadcrumbs' => $this->breadcrumbs(),
             'date' => $date,
             'schedules' => $schedules,
-            'preparationSchedules' => $schedules->where('preparation_done', false)->values(),
-            'inventorySchedules' => $schedules->where('preparation_done', true)->where('inventory_done', false)->values(),
-            'validationSchedules' => $schedules->where('inventory_done', true)->where('verification_done', false)->values(),
+            'preparationSchedules' => $preparationSchedules,
+            'inventorySchedules' => $inventorySchedules,
+            'validationSchedules' => $validationSchedules,
+            'preparationGroups' => $this->scheduleHousingGroups($preparationSchedules),
+            'inventoryGroups' => $this->scheduleHousingGroups($inventorySchedules),
+            'validationGroups' => $this->scheduleHousingGroups($validationSchedules),
             'isManager' => $this->isManager($request),
             'stats' => $this->stats($date),
         ]);
@@ -50,11 +57,15 @@ class LogisticsInventoryController extends Controller
         abort_unless($this->canPrepareInventory($request), 403);
 
         $date = $this->date($request);
+        $schedules = $this->schedulesFor($date)->where('preparation_done', false)->values();
+        $selectedCell = strtoupper(trim((string) $request->query('cell')));
 
         return View::make('customTools.logistics.inventory.prepare', [
             'breadcrumbs' => $this->breadcrumbs('Preparacao'),
             'date' => $date,
-            'schedules' => $this->schedulesFor($date)->where('preparation_done', false)->values(),
+            'schedules' => $schedules,
+            'scheduleGroups' => $this->scheduleHousingGroups($schedules),
+            'selectedCell' => $selectedCell,
         ]);
     }
 
@@ -782,6 +793,30 @@ class LogisticsInventoryController extends Controller
     private function countsQuery(int $scheduleId)
     {
         return DB::table('logistics_inventory_counts')->where('schedule_id', $scheduleId);
+    }
+
+    private function scheduleHousingGroups($schedules)
+    {
+        return $schedules
+            ->map(function ($schedule) {
+                $parsed = $this->parseHousingCell((string) $schedule->cell);
+                $schedule->housing_group = $parsed['row'] ?? strtoupper(strtok((string) $schedule->cell, '-') ?: (string) $schedule->cell);
+
+                return $schedule;
+            })
+            ->groupBy('housing_group')
+            ->map(function ($items, $housing) {
+                return (object) [
+                    'housing' => $housing,
+                    'count' => $items->count(),
+                    'diff_rows' => $items->sum(fn ($schedule) => (int) ($schedule->diff_rows ?? 0)),
+                    'counted_rows' => $items->sum(fn ($schedule) => (int) ($schedule->counted_rows ?? 0)),
+                    'total_rows' => $items->sum(fn ($schedule) => (int) ($schedule->total_rows ?? 0)),
+                    'schedules' => $items->sortBy('cell')->values(),
+                ];
+            })
+            ->sortKeys()
+            ->values();
     }
 
     private function cellConfirmationSessionKey(int $scheduleId): string

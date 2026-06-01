@@ -205,6 +205,7 @@ return [
     'logistics.tools.carrier_end_of_day.show' => 'Documento fim de dia transportadora',
     'logistics.tools.rma_check.index' => 'Verificacao RMA',
     'logistics.tools.inventory.index' => 'Inventario',
+    'logistics.tools.inventory.prepare' => 'Preparacao de inventario',
     'logistics.tools.inventory.count' => 'Contagem de inventario',
     'logistics.tools.inventory.work' => 'Inventario operacional',
     'logistics.tools.inventory.admin.map' => 'Mapa de inventario',

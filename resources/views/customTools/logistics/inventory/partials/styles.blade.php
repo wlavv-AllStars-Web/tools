@@ -49,6 +49,15 @@
     .inventory-workflow-columns.two-columns{grid-template-columns:repeat(2,minmax(0,1fr));}
     .inventory-workflow-columns .inventory-card{margin-bottom:0;min-height:240px;}
     .inventory-column-list{display:grid;grid-template-columns:1fr;gap:10px;}
+    .inventory-housing-groups{display:grid;grid-template-columns:1fr;gap:8px;}
+    .inventory-housing-group{border:1px solid #d1d5db;border-radius:6px;background:#fff;overflow:hidden;}
+    .inventory-housing-group summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#f8fafc;font-weight:800;}
+    .inventory-housing-group summary::-webkit-details-marker{display:none;}
+    .inventory-housing-group summary:after{content:"\\f078";font-family:"Font Awesome 6 Free";font-weight:900;color:#64748b;font-size:12px;transition:transform .15s ease;}
+    .inventory-housing-group[open] summary:after{transform:rotate(180deg);}
+    .inventory-housing-group summary strong{font-size:18px;color:#111827;}
+    .inventory-housing-group summary span{margin-left:auto;font-size:12px;color:#64748b;text-align:right;}
+    .inventory-housing-cells{display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-top:1px solid #e5e7eb;}
     .inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
     .inventory-validation-cells{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:2px 2px 8px;max-width:100%;}
     .inventory-validation-cells .inventory-cell{flex:0 0 180px;}

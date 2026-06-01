@@ -57,8 +57,8 @@
     .inventory-housing-group[open] summary:after{transform:rotate(225deg);}
     .inventory-housing-group summary strong{font-size:18px;color:#111827;}
     .inventory-housing-group summary span{margin-left:auto;font-size:12px;color:#64748b;text-align:right;}
-    .inventory-housing-cells{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;padding:10px;border-top:1px solid #e5e7eb;}
-    .inventory-housing-cells .inventory-cell{padding:8px 4px;min-width:0;}
+    .inventory-housing-cells{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;overflow-x:auto;overflow-y:hidden;}
+    .inventory-housing-cells .inventory-cell{padding:8px 4px;min-width:150px;flex:0 0 150px;}
     .inventory-housing-cells .inventory-cell .code{font-size:15px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .inventory-housing-cells .inventory-cell .meta{font-size:10px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .inventory-housing-cells .inventory-status{min-width:0;padding:3px 6px;font-size:10px;margin-top:4px;}
@@ -155,7 +155,7 @@
         .inventory-title{font-size:26px;}
         .inventory-table th,.inventory-table td{font-size:13px;padding:6px;}
         .inventory-table .hide-mobile{display:none;}
-        .inventory-housing-cells{grid-template-columns:repeat(3,minmax(0,1fr));}
+        .inventory-housing-cells .inventory-cell{min-width:140px;flex-basis:140px;}
         .warehouse-navigator,.warehouse-navigator.has-plan{grid-template-columns:1fr;}
     }
 </style>

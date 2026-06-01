@@ -22,7 +22,7 @@
             <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;">
                 <a href="{{ route('data.asd_shipping.index') }}">
                     <div><i style="font-size: 40px;" class="fa-solid fa-truck-fast"></i></div>
-                    <div style="line-height: 18px; padding: 5px 0;">ASD shipping</div>
+                    <div style="line-height: 18px; padding: 5px 0;">ASD</div>
                 </a>
             </div>
         </div>

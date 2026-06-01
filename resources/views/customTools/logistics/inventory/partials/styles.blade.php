@@ -53,11 +53,15 @@
     .inventory-housing-group{border:1px solid #d1d5db;border-radius:6px;background:#fff;overflow:hidden;}
     .inventory-housing-group summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#f8fafc;font-weight:800;}
     .inventory-housing-group summary::-webkit-details-marker{display:none;}
-    .inventory-housing-group summary:after{content:"\\f078";font-family:"Font Awesome 6 Free";font-weight:900;color:#64748b;font-size:12px;transition:transform .15s ease;}
-    .inventory-housing-group[open] summary:after{transform:rotate(180deg);}
+    .inventory-housing-group summary:after{content:"";width:8px;height:8px;border-right:2px solid #64748b;border-bottom:2px solid #64748b;transform:rotate(45deg);transition:transform .15s ease;margin-left:4px;}
+    .inventory-housing-group[open] summary:after{transform:rotate(225deg);}
     .inventory-housing-group summary strong{font-size:18px;color:#111827;}
     .inventory-housing-group summary span{margin-left:auto;font-size:12px;color:#64748b;text-align:right;}
-    .inventory-housing-cells{display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-top:1px solid #e5e7eb;}
+    .inventory-housing-cells{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;padding:10px;border-top:1px solid #e5e7eb;}
+    .inventory-housing-cells .inventory-cell{padding:8px 4px;min-width:0;}
+    .inventory-housing-cells .inventory-cell .code{font-size:15px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .inventory-housing-cells .inventory-cell .meta{font-size:10px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .inventory-housing-cells .inventory-status{min-width:0;padding:3px 6px;font-size:10px;margin-top:4px;}
     .inventory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
     .inventory-validation-cells{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:2px 2px 8px;max-width:100%;}
     .inventory-validation-cells .inventory-cell{flex:0 0 180px;}
@@ -151,6 +155,7 @@
         .inventory-title{font-size:26px;}
         .inventory-table th,.inventory-table td{font-size:13px;padding:6px;}
         .inventory-table .hide-mobile{display:none;}
+        .inventory-housing-cells{grid-template-columns:repeat(3,minmax(0,1fr));}
         .warehouse-navigator,.warehouse-navigator.has-plan{grid-template-columns:1fr;}
     }
 </style>

@@ -38,13 +38,9 @@
         
         let pickingBarcode = $('#pickingBarcode_'+id_order).val();
         
-        if(pickingBarcode == ''){
-            addPickingContainer(id_order); 
-        }else{
-            $('#pickingContainer').prop('value', pickingBarcode);
-            $('#barcodeScanContainer').css('display', 'block');
-            $('#scan').focus();
-        }
+        $('#pickingContainer').prop('value', pickingBarcode);
+        $('#barcodeScanContainer').css('display', 'block');
+        $('#scan').focus();
     }
 
     function addPickingContainer(id_order){
@@ -53,24 +49,44 @@
             title: "PICKING CONTAINER!",
             text: "Please scan the picking container!",
             input: 'text',
-            showCancelButton: false        
+            showCancelButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Please scan the picking container!';
+                }
+            }
         }).then((result) => {
             
             if (result.value) {
                 
-                $('#pickingContainer').attr('value', result.value);
-                
-                $('#pickingContainer_' + id_order).replaceWith('<span style="color: dodgerblue;" id="pickingContainer_' + id_order + '">' + result.value + '</span>');;
-                $('#tr_pickingContainer_' + id_order).css('display', 'contents');
-                
-                
-                $('#pickingBarcode_' + id_order).prop('value', result.value);
-                
-                $('#barcodeScanContainer').css('display', 'block');
-                $('#scan').focus();
-            }else{
-                $('.order_container').css('display', 'none');
-                location.reload();
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ route('picking.container.save') }}",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        id_order: id_order,
+                        pickingContainer: result.value
+                    },
+                    success: function(response) {
+                        if (response == 1) {
+                            $('#pickingContainer').attr('value', result.value);
+                            $('#pickingContainer_' + id_order).replaceWith('<span style="color: dodgerblue;" id="pickingContainer_' + id_order + '">' + result.value + '</span>');
+                            $('#tr_pickingContainer_' + id_order).css('display', 'contents');
+                            $('#pickingBarcode_' + id_order).prop('value', result.value);
+                            location.reload();
+                        } else {
+                            Swal.fire({
+                                title: "Can't close picking.",
+                                text: "Please confirm all products before scanning the container.",
+                                icon: "error"
+                            }).then(() => {
+                                $('#scan').focus();
+                            });
+                        }
+                    }
+                });
             }
         });
         
@@ -133,7 +149,7 @@
             return false;    
         }
         
-        if( ( id_order.length > 0 ) && ( pickingContainer.length > 0 ) && ( barcodeToFind.length > 0 ) ){
+        if( ( id_order.length > 0 ) && ( barcodeToFind.length > 0 ) ){
             
             let scanned_item = $('.product_' + id_order + '_' + barcodeToFind);
             
@@ -192,7 +208,7 @@
                         pickingContainer: pickingContainer     
                     },
                     success: function(response) {
-                        if( response == 1) location.reload();
+                        if( response == 1) addPickingContainer(id_order);
                     }       
                 });
 

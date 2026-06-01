@@ -167,18 +167,46 @@ class picking extends Model
         }
 
         $row->quantity_picked = $scannedQuantity;
-        $row->barcode = $data->pickingContainer;
         $row->operator = $user;
         $row->row_done = ($scannedQuantity >= $targetQuantity) ? 1 : 0;
+
+        if (!empty($data->pickingContainer)) {
+            $row->barcode = $data->pickingContainer;
+        }
+
         $row->save();
-        
-        picking::where('id_order', (int) $data->id_order)->update([
-            'operator' => $user,
-            'barcode' => $data->pickingContainer,
-        ]);
+
+        $updateData = ['operator' => $user];
+
+        if (!empty($data->pickingContainer)) {
+            $updateData['barcode'] = $data->pickingContainer;
+        }
+
+        picking::where('id_order', (int) $data->id_order)->update($updateData);
         
         return self::orderDone($data->id_order);
 
+    }
+
+    public static function saveContainer($data) {
+
+        $idOrder = (int) ($data->id_order ?? 0);
+        $barcode = trim((string) ($data->pickingContainer ?? ''));
+
+        if ($idOrder <= 0 || $barcode === '') {
+            return 0;
+        }
+
+        if (self::orderDone($idOrder) != 1) {
+            return 2;
+        }
+
+        picking::where('id_order', $idOrder)->update([
+            'barcode' => $barcode,
+            'operator' => Auth::id() . ' - ' . Auth::user()->name,
+        ]);
+
+        return 1;
     }
 
     private static function orderDone($id_order) {

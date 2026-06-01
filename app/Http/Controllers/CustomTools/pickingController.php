@@ -23,6 +23,10 @@ class pickingController extends Controller
         return picking::rowDone( (object)$request->all() );
     }
 
+    public function saveContainer(Request $request) {
+        return picking::saveContainer( (object)$request->all() );
+    }
+
     public function getEAN(Request $request) {
         return picking::getEAN( (object)$request->all() );
     }

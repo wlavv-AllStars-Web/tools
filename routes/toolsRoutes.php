@@ -357,6 +357,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/picking', [pickingController::class, 'index'])->name('picking.index');
         Route::get('/picking/index', [pickingController::class, 'index'])->name('picking.legacy_index');
         Route::post('/picking/row-done', [pickingController::class, 'rowDone'])->name('picking.row_done');
+        Route::post('/picking/container', [pickingController::class, 'saveContainer'])->name('picking.container');
         Route::post('/picking/get-ean', [pickingController::class, 'getEAN'])->name('picking.get_ean');
 
         Route::get('/housing', [housingController::class, 'index'])->name('housing.index');
@@ -842,6 +843,7 @@ Route::middleware(['auth'])->group(function () {
     
     Route::get(  'customTools/picking/index', [pickingController::class, 'index'])->name('picking.index');
     Route::post( 'customTools/picking/rowDone', [pickingController::class, 'rowDone'])->name('picking.rowDone');
+    Route::post( 'customTools/picking/container', [pickingController::class, 'saveContainer'])->name('picking.container.save');
     Route::post( 'customTools/picking/getEAN', [pickingController::class, 'getEAN'])->name('picking.confirmEAN');
 
 Route::get('customTools/housing/index', [housingController::class, 'index'])->name('housing.index');

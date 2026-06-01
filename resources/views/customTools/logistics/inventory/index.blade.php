@@ -83,7 +83,7 @@
                                         </summary>
                                         <div class="inventory-housing-cells">
                                             @foreach($group->schedules as $schedule)
-                                                <a class="inventory-cell" href="{{ route('logistics.tools.inventory.count', $schedule->id) }}">
+                                                <a class="inventory-cell" href="{{ route('logistics.tools.inventory.count', ['schedule' => $schedule->id, 'selected' => 1]) }}">
                                                     <span class="code">{{ $schedule->cell }}</span>
                                                     <span class="meta">{{ $schedule->counted_rows }}/{{ $schedule->total_rows }} linhas</span>
                                                     <span class="inventory-status {{ $schedule->counted_rows > 0 ? 'progress' : 'verify' }}">{{ $schedule->counted_rows > 0 ? 'Em curso' : 'Inventariar' }}</span>

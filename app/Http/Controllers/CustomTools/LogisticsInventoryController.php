@@ -215,6 +215,10 @@ class LogisticsInventoryController extends Controller
         }
 
         $recountActive = (int) $this->countsQuery($schedule->id)->where('recount_requested', true)->count() > 0;
+        if ($request->boolean('selected')) {
+            $request->session()->put($this->cellConfirmationSessionKey($schedule->id), true);
+        }
+
         $cellConfirmed = (bool) $request->session()->get($this->cellConfirmationSessionKey($schedule->id), false);
 
         return View::make('customTools.logistics.inventory.count', [

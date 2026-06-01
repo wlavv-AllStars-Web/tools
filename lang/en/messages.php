@@ -548,6 +548,7 @@ return [
     'logistics.tools.inventory.admin.index' => 'Inventory management',
     'logistics.tools.inventory.admin.verification' => 'Inventory verification',
     'logistics.tools.inventory.admin.report' => 'Inventory report',
+    'data.asd_shipping.index' => 'ASD shipping',
     'marketing.tools.tv.index' => 'TV',
     'marketing.tools.homepage.asm.index' => 'ASM homepage',
     'marketing.tools.homepage.asd.index' => 'ASD homepage',

@@ -13,6 +13,7 @@ use App\Http\Controllers\Areas\salesController;
 use App\Http\Controllers\Areas\purchaseController;
 
 use App\Http\Controllers\Areas\dataController;
+use App\Http\Controllers\CustomTools\DataAsdShippingController;
 
 /** AREAS **/
 Route::get('home', [dashboardController::class, 'index'])->name('home.index');
@@ -30,6 +31,8 @@ Route::get('finance', [financeController::class, 'index'])->name('finance.index'
 
 Route::get('data', [dataController::class, 'index'])->name('data.index');
 Route::post('data/asd-images/sync', [dataController::class, 'syncAsdImages'])->name('data.asd_images.sync');
+Route::get('data/asd-shipping', [DataAsdShippingController::class, 'index'])->name('data.asd_shipping.index');
+Route::post('data/asd-shipping', [DataAsdShippingController::class, 'update'])->name('data.asd_shipping.update');
 
 
 Route::get(  'finance/documents/inventory', [financeController::class, 'download_inventory'])->name('finance.download_inventory');

@@ -212,6 +212,7 @@ return [
     'logistics.tools.inventory.admin.index' => 'Gestao de inventario',
     'logistics.tools.inventory.admin.verification' => 'Verificacao de inventario',
     'logistics.tools.inventory.admin.report' => 'Relatorio de inventario',
+    'data.asd_shipping.index' => 'Portes ASD',
     'marketing.tools.tv.index' => 'TV',
     'marketing.tools.homepage.asm.index' => 'Homepage ASM',
     'marketing.tools.homepage.asd.index' => 'Homepage ASD',

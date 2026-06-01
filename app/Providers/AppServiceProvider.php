@@ -160,6 +160,7 @@ class AppServiceProvider extends ServiceProvider
             'finance.tools.refunds.' => ['finance', 'finance.index', 'Refunds'],
             'finance.tools.vat.' => ['finance', 'finance.index', 'VAT'],
             'finance.tools.payment_links.' => ['finance', 'finance.index', "Payment link request's"],
+            'data.asd_shipping.' => ['data', 'data.index', 'data.asd_shipping.index'],
             'logistics.tools.stats.' => ['logistics', 'logistics.index', 'Stats'],
             'logistics.tools.shipping.' => ['logistics', 'logistics.index', 'Shipping'],
             'logistics.tools.carrier_check.' => ['logistics', 'logistics.index', 'Carrier check'],

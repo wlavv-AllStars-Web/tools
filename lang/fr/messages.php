@@ -198,6 +198,7 @@ return [
     'logistics.tools.inventory.admin.index' => 'Gestion inventaire',
     'logistics.tools.inventory.admin.verification' => 'Verification inventaire',
     'logistics.tools.inventory.admin.report' => 'Rapport inventaire',
+    'data.asd_shipping.index' => 'Frais de port ASD',
     'marketing.tools.tv.index' => 'TV',
     'marketing.tools.homepage.asm.index' => 'ASM homepage',
     'marketing.tools.homepage.asd.index' => 'ASD homepage',

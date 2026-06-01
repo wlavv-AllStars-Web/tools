@@ -126,6 +126,7 @@
     .warehouse-option span{display:block;font-size:12px;color:#475569;}
     .warehouse-empty{color:#64748b;padding:12px;text-align:center;grid-column:1/-1;}
     .warehouse-cell.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.16);}
+    .warehouse-cell.selected{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.16);}
     .warehouse-products{padding:10px;display:flex;flex-direction:column;gap:8px;}
     .warehouse-product{border:1px solid #d1d5db;border-radius:6px;background:#fff;padding:9px;}
     .warehouse-product strong{display:block;font-size:15px;color:#111827;margin-bottom:6px;word-break:break-word;}

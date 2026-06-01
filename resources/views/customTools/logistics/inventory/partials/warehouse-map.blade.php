@@ -125,13 +125,13 @@
                 root.find('.warehouse-cell-options').html(cells.map(function(cell){
                     const isUnavailable = unavailable.includes(cell.cell);
                     const input = selectable && !isUnavailable
-                        ? '<input class="warehouse-cell-checkbox" type="checkbox" name="cells[]" value="' + cell.cell + '">'
+                        ? '<input class="warehouse-cell-checkbox" type="checkbox" name="cells[]" value="' + cell.cell + '" checked>'
                         : '';
                     const pending = selectable && isUnavailable
                         ? '<span class="warehouse-cell-pending">Pendente</span>'
                         : '';
 
-                    return '<label class="warehouse-cell warehouse-cell-option age-' + cell.age_status + '" data-cell="' + cell.cell + '">' +
+                    return '<label class="warehouse-cell warehouse-cell-option ' + (selectable && !isUnavailable ? 'selected ' : '') + 'age-' + cell.age_status + '" data-cell="' + cell.cell + '">' +
                         input +
                         '<strong>' + cell.cell + '</strong>' +
                         '<span>' + cell.product_count + ' produtos</span>' +
@@ -175,11 +175,7 @@
         });
 
         root.on('change', '.warehouse-cell-checkbox', function(){
-            const checked = root.find('.warehouse-cell-checkbox:checked');
-            if (checked.length > 6) {
-                this.checked = false;
-                alert('Pode selecionar no maximo 6 celulas de cada vez.');
-            }
+            $(this).closest('.warehouse-cell-option').toggleClass('selected', this.checked);
         });
     })();
 </script>

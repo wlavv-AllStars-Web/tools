@@ -1255,6 +1255,27 @@ class LogisticsInventoryController extends Controller
                     $result[$key][$label] = (int) $stateRow->quantity;
                 }
             }
+
+            $packQuery = DB::connection('mysql2')
+                ->table($this->psTable('order_detail') . ' as od')
+                ->join($this->psTable('orders') . ' as o', 'o.id_order', '=', 'od.id_order')
+                ->join($this->psTable('pack') . ' as pack', 'pack.id_product_pack', '=', 'od.product_id')
+                ->where('pack.id_product_item', (int) $row->id_product)
+                ->whereIn('o.current_state', array_keys($states));
+
+            if ((int) $row->id_product_attribute > 0) {
+                $packQuery->where('pack.id_product_attribute_item', (int) $row->id_product_attribute);
+            } else {
+                $packQuery->where('pack.id_product_attribute_item', 0);
+            }
+
+            foreach ($packQuery->select('o.current_state', DB::raw('SUM(od.product_quantity * pack.quantity) as quantity'))->groupBy('o.current_state')->get() as $stateRow) {
+                $label = $states[(int) $stateRow->current_state] ?? null;
+
+                if ($label) {
+                    $result[$key][$label] += (int) $stateRow->quantity;
+                }
+            }
         }
 
         return $result;

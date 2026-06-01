@@ -11,9 +11,10 @@
                     <td colspan="3" style="text-align: center;border-bottom: 1px solid #ccc;"><b>PICKING CONTAINER: </b><span style="color: dodgerblue;" id="pickingContainer_{{$product->id_order}}"> {{$product->barcode}}</span></td>
                 </tr>
 
-                @if( strlen($row->order_main->note) > 0)
+                @php $orderNote = (string) optional($row->order_main)->note; @endphp
+                @if( strlen($orderNote) > 0)
                     <tr>
-                        <td colspan="3" style="text-align: center;border-bottom: 1px solid #ccc;"><b>ORDER NOTE: </b><span style="color: red;">{{$row->order_main->note}}</span></td>
+                        <td colspan="3" style="text-align: center;border-bottom: 1px solid #ccc;"><b>ORDER NOTE: </b><span style="color: red;">{{$orderNote}}</span></td>
                     </tr>
                 @endif
                 

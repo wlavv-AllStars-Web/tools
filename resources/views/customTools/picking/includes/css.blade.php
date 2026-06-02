@@ -11,6 +11,46 @@
     #scan{ width: 100%; border: 1px solid #ccc; text-align: center; border-radius: 5px; }
     
     .specialPanel{ background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 10px !important; margin-top: 10px; }
+
+    .picking-store-switcher{
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        align-items: stretch;
+        flex-wrap: nowrap;
+    }
+
+    .picking-store-badge{
+        width: 50%;
+        border: 0;
+        border-radius: 5px;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 48px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .picking-store-badge span{
+        font-size: 18px;
+    }
+
+    .picking-store-badge strong{
+        min-width: 30px;
+        padding: 3px 8px;
+        border-radius: 15px;
+        background: #fff;
+        color: #333;
+        font-size: 15px;
+        line-height: 1.2;
+    }
+
+    .picking-store-badge-asm{ background-color: red; }
+    .picking-store-badge-asd{ background-color: dodgerblue; }
     
     .order_container > table > tbody > tr{ height: 40px; }
     

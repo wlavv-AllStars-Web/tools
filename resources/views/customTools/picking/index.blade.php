@@ -19,9 +19,15 @@
         <input readonly type="text" name="pickingContainer" id="pickingContainer" value="" style="width: 100%;">
     </div>
 
-    <div class="navbar navbar-light customPanel" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-primary" type="button" onclick="openList('asm')">ASM <span class="badge bg-light text-dark">{{ $orders->asm->counter }}</span></button>
-        <button class="btn btn-dark" type="button" onclick="openList('asd')">ASD <span class="badge bg-light text-dark">{{ $orders->asd->counter }}</span></button>
+    <div class="navbar navbar-light customPanel picking-store-switcher">
+        <button class="picking-store-badge picking-store-badge-asm" type="button" onclick="openList('asm')">
+            <span>ASM</span>
+            <strong>{{ $orders->asm->counter }}</strong>
+        </button>
+        <button class="picking-store-badge picking-store-badge-asd" type="button" onclick="openList('asd')">
+            <span>ASD</span>
+            <strong>{{ $orders->asd->counter }}</strong>
+        </button>
         @if($orders->other->counter > 0)
             <button class="btn btn-secondary" type="button" onclick="openList('other')">Outras <span class="badge bg-light text-dark">{{ $orders->other->counter }}</span></button>
         @endif

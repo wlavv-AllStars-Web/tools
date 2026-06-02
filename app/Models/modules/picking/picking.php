@@ -6,6 +6,7 @@ use Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 use App\Models\prestashop\product_attribute;
 use App\Models\prestashop\product;
@@ -39,7 +40,17 @@ class picking extends Model
                 'id_order' => $order->id_order,
                 'carrier' => $order->carrier,
                 'order_main' => orders::where('id_order', $order->id_order)->first(),
-                'order' => self::where('id_order', $order->id_order)->where('row_done', 0)->get(),
+                'order' => self::where('id_order', $order->id_order)
+                    ->where('row_done', 0)
+                    ->get()
+                    ->map(function ($row) {
+                        $row->is_new = self::needsMarketingPhotos(
+                            (int) $row->id_product,
+                            (int) $row->id_product_attribute
+                        );
+
+                        return $row;
+                    }),
             ];
         }
         
@@ -332,27 +343,33 @@ class picking extends Model
             ->first();
         
         if( $existingRow ){
-            $existingRow->is_new = $needsMarketingPhotos;
+            if (self::hasPickingIsNewColumn()) {
+                $existingRow->is_new = $needsMarketingPhotos;
+            }
+
             $existingRow->save();
         }else{
-            picking::insert(
-                [
-                    'status'  => $status,
-                    'housing'  => (!is_null($row->location)) ? $row->location : 'N/D',
-                    'id_shop' => $row->id_shop,
-                    'name' => $row->product_name,
-                    'id_product' => $row->product_id,                    
-                    'id_product_attribute' => $row->product_attribute_id,                      
-                    'reference' => $row->product_reference,        
-                    'product_barcode' => $row->product_ean13,  
-                    'is_new' => $needsMarketingPhotos,
-                    'quantity' => $quantity,                
-                    'quantity_picked' => 0,     
-                    'row_done' => 0,               
-                    'id_order' => $row->id_order,
-                    'carrier' => $carrier_name
-                ]
-            );
+            $insert = [
+                'status'  => $status,
+                'housing'  => (!is_null($row->location)) ? $row->location : 'N/D',
+                'id_shop' => $row->id_shop,
+                'name' => $row->product_name,
+                'id_product' => $row->product_id,
+                'id_product_attribute' => $row->product_attribute_id,
+                'reference' => $row->product_reference,
+                'product_barcode' => $row->product_ean13,
+                'quantity' => $quantity,
+                'quantity_picked' => 0,
+                'row_done' => 0,
+                'id_order' => $row->id_order,
+                'carrier' => $carrier_name
+            ];
+
+            if (self::hasPickingIsNewColumn()) {
+                $insert['is_new'] = $needsMarketingPhotos;
+            }
+
+            picking::insert($insert);
         }
 
     }
@@ -377,6 +394,17 @@ class picking extends Model
         }
 
         return $photoCount < 5;
+    }
+
+    private static function hasPickingIsNewColumn(): bool
+    {
+        static $hasColumn = null;
+
+        if ($hasColumn === null) {
+            $hasColumn = Schema::connection('mysql')->hasColumn('picking', 'is_new');
+        }
+
+        return $hasColumn;
     }
 
     private static function psTable(string $table): string

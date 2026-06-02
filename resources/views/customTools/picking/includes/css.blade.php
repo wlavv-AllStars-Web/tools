@@ -21,7 +21,9 @@
     }
 
     .picking-store-badge{
-        width: 50%;
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
         border: 0;
         border-radius: 5px;
         color: #fff;

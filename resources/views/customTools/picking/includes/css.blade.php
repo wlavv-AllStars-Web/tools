@@ -13,16 +13,16 @@
     .specialPanel{ background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 10px !important; margin-top: 10px; }
 
     .picking-store-switcher{
-        display: flex;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 8px;
         width: 100%;
         align-items: stretch;
-        flex-wrap: nowrap;
+        justify-content: stretch;
     }
 
     .picking-store-badge{
-        flex: 1 1 0;
-        width: auto;
+        width: 100% !important;
         min-width: 0;
         border: 0;
         border-radius: 5px;

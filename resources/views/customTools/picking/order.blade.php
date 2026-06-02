@@ -28,7 +28,7 @@
                 </td>
                 <td style="text-align: left;padding-left: 5px;">
                     @if( strlen($product->housing) < 6) <div title="Housing errado ou em falta" style="margin: 3px;width: 15px; height: 15px; border-radius: 15px;background-color: #f5c6cb; border: 1px solid #721c24;float: left;"> </div> @endif
-                    @if( !empty($product->is_new) ) <div title="Novidade" style="margin: 3px;width: 15px; height: 15px; border-radius: 15px;background-color: #000; border: 1px solid #000;float: left;"> </div> @endif
+                    @if( !empty($product->is_new) ) <div title="Enviar para marketing: menos de 5 fotos" style="margin: 3px;width: 15px; height: 15px; border-radius: 15px;background-color: #000; border: 1px solid #000;float: left;"> </div> @endif
                     {{$product->reference}}
                 </td>
                 <td style="width: 90px;">

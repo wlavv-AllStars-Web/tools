@@ -93,8 +93,6 @@ class picking extends Model
                                     
                                     $picking['id_shop'] = $detail->id_shop;
                                     $picking['product_name'] = $product->lang->name;
-                                    $picking['is_new'] = self::isNewProduct((int) $pack_item->id_product_item);
-                                    
                                     if( $pack_item->id_product_attribute_item == 0){
                                         $picking['product_reference'] = $product->reference;                      
                                         $picking['product_ean13'] = $product->ean13; 
@@ -108,6 +106,10 @@ class picking extends Model
                                     
                                     $picking['product_id'] = $pack_item->id_product_item;                    
                                     $picking['product_attribute_id'] = $pack_item->id_product_attribute_item;  
+                                    $picking['is_new'] = self::needsMarketingPhotos(
+                                        (int) $pack_item->id_product_item,
+                                        (int) $pack_item->id_product_attribute_item
+                                    );
                                     
                                     $quantity = $detail->product_quantity - $qtdSent;
                                     
@@ -323,9 +325,16 @@ class picking extends Model
         
     private static function insertData($row, $quantity, $status, $carrier_name){
         
-        $exist = self::where('id_order', $row->id_order)->where('id_product', $row->product_id)->where('id_product_attribute', $row->product_attribute_id)->count();
+        $needsMarketingPhotos = self::needsMarketingPhotos((int) $row->product_id, (int) $row->product_attribute_id);
+        $existingRow = self::where('id_order', $row->id_order)
+            ->where('id_product', $row->product_id)
+            ->where('id_product_attribute', $row->product_attribute_id)
+            ->first();
         
-        if( !$exist ){
+        if( $existingRow ){
+            $existingRow->is_new = $needsMarketingPhotos;
+            $existingRow->save();
+        }else{
             picking::insert(
                 [
                     'status'  => $status,
@@ -336,7 +345,7 @@ class picking extends Model
                     'id_product_attribute' => $row->product_attribute_id,                      
                     'reference' => $row->product_reference,        
                     'product_barcode' => $row->product_ean13,  
-                    'is_new' => isset($row->is_new) ? (int) $row->is_new : self::isNewProduct((int) $row->product_id),
+                    'is_new' => $needsMarketingPhotos,
                     'quantity' => $quantity,                
                     'quantity_picked' => 0,     
                     'row_done' => 0,               
@@ -348,36 +357,31 @@ class picking extends Model
 
     }
 
-    private static function isNewProduct(int $idProduct): bool
+    private static function needsMarketingPhotos(int $idProduct, int $idProductAttribute = 0): bool
     {
-        static $hasColumn = null;
-
-        if ($hasColumn === null) {
-            $hasColumn = count(DB::connection('mysql2')->select(
-                "SHOW COLUMNS FROM " . self::quoteMysql2Table('custom_product') . " LIKE 'is_new'"
-            )) > 0;
-        }
-
-        if (!$hasColumn) {
+        if ($idProduct <= 0) {
             return false;
         }
 
-        return (int) DB::connection('mysql2')
-            ->table(self::psTable('custom_product'))
-            ->where('id_product', $idProduct)
-            ->value('is_new') === 1;
+        if ($idProductAttribute > 0) {
+            $photoCount = DB::connection('mysql2')
+                ->table(self::psTable('product_attribute_image'))
+                ->where('id_product_attribute', $idProductAttribute)
+                ->distinct()
+                ->count('id_image');
+        } else {
+            $photoCount = DB::connection('mysql2')
+                ->table(self::psTable('image'))
+                ->where('id_product', $idProduct)
+                ->count();
+        }
+
+        return $photoCount < 5;
     }
 
     private static function psTable(string $table): string
     {
         return (string) env('DB2_DB_prefix', 'ps_') . $table;
-    }
-
-    private static function quoteMysql2Table(string $table): string
-    {
-        return collect(explode('.', self::psTable($table)))
-            ->map(fn ($part) => '`' . str_replace('`', '``', $part) . '`')
-            ->implode('.');
     }
 
     public static function rowDone($data) {

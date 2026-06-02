@@ -130,20 +130,29 @@ class picking extends Model
         }
     }
 
-    private static function classifyPaymentAcceptedOrders(): void
+    public static function classifyPaymentAcceptedOrders(): object
     {
         $orders = orders::with('order_detail')->where('current_state', 2)->get();
+        $summary = [
+            'checked' => 0,
+            'preparation' => 0,
+            'backorder' => 0,
+        ];
 
         foreach ($orders as $order) {
+            $summary['checked']++;
             $idOrder = (int) $order->id_order;
             $targetState = self::orderHasEnoughStock($order) ? 3 : 15;
 
             self::moveOrderState($idOrder, $targetState);
+            $summary[$targetState === 3 ? 'preparation' : 'backorder']++;
 
             if ($targetState === 15) {
                 self::where('id_order', $idOrder)->delete();
             }
         }
+
+        return (object) $summary;
     }
 
     private static function removeNonPreparationPickingRows(): void

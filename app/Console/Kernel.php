@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
     
     protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): void
     {
+        $schedule->command('orders:classify-payment-accepted')->everyMinute()->withoutOverlapping();
         $schedule->command('vat:validate-due --limit=25')->everyMinute()->withoutOverlapping();
         $schedule->command('asd-images:sync')->dailyAt('03:00')->withoutOverlapping();
         $schedule->command('youtube:check-broken-links')->cron('30 4 */3 * *')->withoutOverlapping();

@@ -14,7 +14,7 @@
             @endforeach
         </div>
     </div>
-
+{{--
     @php
         $symbols = [
             'EUR' => '&euro;',
@@ -68,7 +68,7 @@
             </tbody>
         </table>
     </div>
-
+--}}
     {!! $counters !!}
 
     <style>

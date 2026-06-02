@@ -53,12 +53,6 @@
                             <div>KPI</div>
                         </a>
                     </div>
-                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
-                        <a href="{{ route('customTools.changesTracker.index') }}" title="Carrier Check">   
-                            <div><i class="fa-solid fa-code" style="font-size: 40px;"></i></div>
-                            <div style="line-height: 1.2;">CHANGES</div>
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>

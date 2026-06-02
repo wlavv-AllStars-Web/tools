@@ -64,7 +64,8 @@ class AutoOrder extends Model
             })
             ->leftJoin($stockTable . ' as sa', function ($join) {
                 $join->on('sa.id_product', '=', 'od.product_id')
-                    ->whereRaw('sa.id_product_attribute = COALESCE(od.product_attribute_id, 0)');
+                    ->whereRaw('sa.id_product_attribute = COALESCE(od.product_attribute_id, 0)')
+                    ->on('sa.id_shop', '=', 'o.id_shop');
             })
             ->whereIn('o.current_state', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]))
             ->where('o.valid', 1)
@@ -155,7 +156,8 @@ class AutoOrder extends Model
             })
             ->leftJoin($stockTable . ' as sa', function ($join) use ($idProductAttribute) {
                 $join->on('sa.id_product', '=', 'p.id_product')
-                    ->where('sa.id_product_attribute', $idProductAttribute);
+                    ->where('sa.id_product_attribute', $idProductAttribute)
+                    ->where('sa.id_shop', (int) $sourceRow['id_shop']);
             })
             ->where('p.id_product', $idProduct)
             ->select(
@@ -306,4 +308,3 @@ class AutoOrder extends Model
     }
 
 }
-

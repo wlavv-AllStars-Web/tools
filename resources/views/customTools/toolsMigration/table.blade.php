@@ -5,6 +5,12 @@
     <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h5 style="margin: 0;">{{ $details['table'] }}</h5>
         <div style="display: flex; gap: 8px;">
+            @if($details['can_import'])
+                <form method="POST" action="{{ route('web.tools.db_migration.import', $details['table']) }}" style="margin: 0;" onsubmit="return confirm('Clear this NEW table and import data from the OLD table?');">
+                    @csrf
+                    <button class="btn btn-success btn-sm" type="submit">Import</button>
+                </form>
+            @endif
             @if($details['can_replace'])
                 <form method="POST" action="{{ route('web.tools.db_migration.sync', $details['table']) }}" style="margin: 0;" onsubmit="return confirm('Replace the NEW table with the OLD table? This will delete all records from the new table and then copy all records from the old table.');">
                     @csrf
@@ -29,6 +35,27 @@
             <div>{{ $details['old_exists'] ? $details['old_count'] . ' records' : 'Not found' }}</div>
             <div>PK: {{ $details['old_primary_key'] ?? '-' }}</div>
         </div>
+    </div>
+
+    <div style="width: 100%; border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-bottom: 12px;">
+        <strong>Import</strong>
+        @if($details['can_import'])
+            <span class="badge bg-success">{{ $details['import']['label'] }}</span>
+            <div style="margin-top: 5px;">Common columns: {{ $details['import']['common_columns'] }}</div>
+            @if(!empty($details['import']['missing_required_columns']))
+                <div style="margin-top: 5px; color: #a15c00;">
+                    Missing required columns for inserts: {{ implode(', ', $details['import']['missing_required_columns']) }}.
+                    Existing rows can still be updated, but new rows may be skipped.
+                </div>
+            @endif
+        @elseif(!$details['import_allowed'])
+            <span class="badge bg-warning text-dark">Protected</span>
+            <div style="margin-top: 5px; color: #777;">
+                This table is listed in <code>tools_migration.not_allowed_tables</code>.
+            </div>
+        @else
+            <span class="badge bg-secondary">Not importable</span>
+        @endif
     </div>
 
     @if(!$details['has_comparable_key'])

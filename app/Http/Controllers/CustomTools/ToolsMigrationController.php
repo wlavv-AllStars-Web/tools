@@ -17,7 +17,10 @@ class ToolsMigrationController extends Controller
 
     public function index()
     {
-        $tables = $this->comparator->tableComparison();
+        $tables = array_values(array_filter(
+            $this->comparator->tableComparison(),
+            fn (array $table) => $table['can_import']
+        ));
 
         return View::make('customTools.toolsMigration.index', [
             'tables' => $tables,
@@ -89,6 +92,36 @@ class ToolsMigrationController extends Controller
         return redirect()
             ->route('web.tools.db_migration.table', $table)
             ->with('success', 'Record #' . $id . ' replaced from old tools.');
+    }
+
+    public function import(string $table)
+    {
+        try {
+            $result = $this->comparator->importCompatibleTableFromOldToNew($table);
+        } catch (Throwable $exception) {
+            return redirect()
+                ->route('web.tools.db_migration.table', $table)
+                ->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('web.tools.db_migration.table', $table)
+            ->with('success', 'Import completed for ' . $table . '. New table was cleared and filled with ' . $result['inserted'] . ' records from old tools.');
+    }
+
+    public function importAll()
+    {
+        try {
+            $result = $this->comparator->importAllCompatibleTablesFromOldToNew();
+        } catch (Throwable $exception) {
+            return redirect()
+                ->route('web.tools.db_migration.index')
+                ->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('web.tools.db_migration.index')
+            ->with('success', 'Import all completed. Tables: ' . $result['tables'] . ', inserted: ' . $result['inserted'] . ' records from old tools.');
     }
 
     public function clear(string $table)

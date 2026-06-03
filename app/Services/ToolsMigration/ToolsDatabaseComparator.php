@@ -42,6 +42,9 @@ class ToolsDatabaseComparator
                 'old_rows' => $inOld ? $this->estimatedRows(self::OLD_CONNECTION, $table) : null,
                 'can_verify' => $inNew || $inOld,
                 'can_replace' => $this->canReplaceTable($table, $inNew, $inOld, $structure),
+                'can_import' => $this->canImportTable($table, $inNew, $inOld),
+                'import' => $this->importStatus($table, $inNew, $inOld),
+                'import_allowed' => $this->tableImportAllowed($table, $inNew, $inOld),
             ];
         }, $allTables);
     }
@@ -83,6 +86,9 @@ class ToolsDatabaseComparator
             'has_comparable_key' => (bool) $primaryKey,
             'structure' => $structure,
             'can_replace' => (bool) $newColumns && (bool) $oldColumns && (bool) $primaryKey && $structure['same'],
+            'can_import' => $this->canImportTable($table, (bool) $newColumns, (bool) $oldColumns),
+            'import' => $this->importStatus($table, (bool) $newColumns, (bool) $oldColumns),
+            'import_allowed' => $this->tableImportAllowed($table, (bool) $newColumns, (bool) $oldColumns),
             'rows' => array_map(function (string $id) use ($table, $primaryKey, $newColumns, $oldColumns) {
                 return [
                     'id' => $id,
@@ -204,6 +210,86 @@ class ToolsDatabaseComparator
         ];
     }
 
+    public function importCompatibleTableFromOldToNew(string $table): array
+    {
+        $inNew = in_array($table, $this->tables(self::NEW_CONNECTION), true);
+        $inOld = in_array($table, $this->tables(self::OLD_CONNECTION), true);
+
+        if (! $this->tableImportAllowed($table, $inNew, $inOld)) {
+            throw new InvalidArgumentException('This table is protected from migration import.');
+        }
+
+        $context = $this->validatedImportContext($table);
+        $columns = $context['common_columns'];
+
+        if (! empty($context['missing_required_columns'])) {
+            throw new InvalidArgumentException('This table has required columns in the new database that do not exist in the old database: ' . implode(', ', $context['missing_required_columns']));
+        }
+
+        $processed = 0;
+        $inserted = 0;
+
+        $newConnection = DB::connection(self::NEW_CONNECTION);
+        $newConnection->statement('SET FOREIGN_KEY_CHECKS=0');
+
+        try {
+            $newConnection->transaction(function () use ($table, $columns, &$processed, &$inserted) {
+                DB::connection(self::NEW_CONNECTION)->table($table)->delete();
+
+                DB::connection(self::OLD_CONNECTION)
+                    ->table($table)
+                    ->select($columns)
+                    ->orderBy($columns[0])
+                    ->chunk(500, function ($rows) use ($table, &$processed, &$inserted) {
+                        $insertRows = [];
+
+                        foreach ($rows as $row) {
+                            $insertRows[] = (array) $row;
+                            $processed++;
+                        }
+
+                        if ($insertRows) {
+                            DB::connection(self::NEW_CONNECTION)->table($table)->insert($insertRows);
+                            $inserted += count($insertRows);
+                        }
+                    });
+                });
+        } finally {
+            $newConnection->statement('SET FOREIGN_KEY_CHECKS=1');
+        }
+
+        return [
+            'table' => $table,
+            'processed' => $processed,
+            'inserted' => $inserted,
+            'updated' => 0,
+            'skipped' => 0,
+            'missing_required_columns' => $context['missing_required_columns'],
+        ];
+    }
+
+    public function importAllCompatibleTablesFromOldToNew(): array
+    {
+        $results = [];
+
+        foreach ($this->tableComparison() as $table) {
+            if (! $table['can_import'] || ! $table['import_allowed']) {
+                continue;
+            }
+
+            $results[] = $this->importCompatibleTableFromOldToNew($table['name']);
+        }
+
+        return [
+            'tables' => count($results),
+            'processed' => array_sum(array_column($results, 'processed')),
+            'inserted' => array_sum(array_column($results, 'inserted')),
+            'updated' => array_sum(array_column($results, 'updated')),
+            'skipped' => array_sum(array_column($results, 'skipped')),
+            'results' => $results,
+        ];
+    }
+
     public function clearNewTable(string $table): array
     {
         $this->assertKnownTable($table);
@@ -247,6 +333,28 @@ class ToolsDatabaseComparator
         }
 
         return [$newColumns, $oldColumns, $primaryKey];
+    }
+
+    private function validatedImportContext(string $table): array
+    {
+        $this->assertKnownTable($table);
+
+        $newColumns = $this->columnsIfExists(self::NEW_CONNECTION, $table);
+        $oldColumns = $this->columnsIfExists(self::OLD_CONNECTION, $table);
+        if (!$newColumns || !$oldColumns) {
+            throw new InvalidArgumentException('The table must exist in both databases before import.');
+        }
+
+        $commonColumns = array_values(array_intersect(array_keys($newColumns), array_keys($oldColumns)));
+
+        if (count($commonColumns) < 1) {
+            throw new InvalidArgumentException('The table must have at least one common column before import.');
+        }
+
+        return [
+            'common_columns' => $commonColumns,
+            'missing_required_columns' => $this->missingRequiredColumnsForInsert($newColumns, $oldColumns),
+        ];
     }
 
     private function safeConnectionStatus(string $connection): array
@@ -451,6 +559,90 @@ class ToolsDatabaseComparator
         $newColumns = $this->columnsIfExists(self::NEW_CONNECTION, $table);
 
         return $structure['same'] && (bool) $this->singlePrimaryKey($newColumns);
+    }
+
+    private function canImportTable(string $table, bool $inNew, bool $inOld): bool
+    {
+        if (! $this->tableImportAllowed($table, $inNew, $inOld)) {
+            return false;
+        }
+
+        try {
+            $context = $this->validatedImportContext($table);
+            return empty($context['missing_required_columns']);
+        } catch (Throwable $exception) {
+            return false;
+        }
+    }
+
+    private function importStatus(string $table, bool $inNew, bool $inOld): array
+    {
+        if (!$inNew || !$inOld) {
+            return [
+                'common_columns' => 0,
+                'missing_required_columns' => [],
+                'label' => 'Not available',
+            ];
+        }
+
+        if (! $this->tableImportAllowed($table, $inNew, $inOld)) {
+            return [
+                'common_columns' => 0,
+                'missing_required_columns' => [],
+                'label' => 'Protected from import',
+            ];
+        }
+
+        $newColumns = $this->columnsIfExists(self::NEW_CONNECTION, $table);
+        $oldColumns = $this->columnsIfExists(self::OLD_CONNECTION, $table);
+        $commonColumns = array_values(array_intersect(array_keys($newColumns), array_keys($oldColumns)));
+        $missingRequiredColumns = $this->missingRequiredColumnsForInsert($newColumns, $oldColumns);
+
+        return [
+            'common_columns' => count($commonColumns),
+            'missing_required_columns' => $missingRequiredColumns,
+            'label' => count($missingRequiredColumns) > 0
+                ? 'Cannot import; missing required columns'
+                : 'Will clear and import',
+        ];
+    }
+
+    private function missingRequiredColumnsForInsert(array $newColumns, array $oldColumns): array
+    {
+        return array_values(array_filter(array_keys($newColumns), function (string $column) use ($newColumns, $oldColumns) {
+            $definition = $newColumns[$column];
+
+            if (isset($oldColumns[$column])) {
+                return false;
+            }
+
+            if ($definition['nullable'] === 'YES') {
+                return false;
+            }
+
+            if ($definition['default'] !== null) {
+                return false;
+            }
+
+            if (str_contains((string) $definition['extra'], 'auto_increment')) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
+    private function tableImportAllowed(string $table, bool $inNew, bool $inOld): bool
+    {
+        return $inNew && $inOld && ! in_array($table, $this->importDenylist(), true);
+    }
+
+    private function importDenylist(): array
+    {
+        return array_values(array_unique(array_filter(array_map(
+            'trim',
+            config('tools_migration.not_allowed_tables', [])
+        ))));
     }
 
     private function normalizeValue($value): string

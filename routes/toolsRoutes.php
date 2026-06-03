@@ -115,8 +115,10 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/table/{table}', [ToolsMigrationController::class, 'table'])->name('table')->where('table', '[A-Za-z0-9_]+');
             Route::get('/table/{table}/row/{id}', [ToolsMigrationController::class, 'row'])->name('row')->where('table', '[A-Za-z0-9_]+');
             Route::post('/table/{table}/sync', [ToolsMigrationController::class, 'sync'])->name('sync')->where('table', '[A-Za-z0-9_]+');
+            Route::post('/table/{table}/import', [ToolsMigrationController::class, 'import'])->name('import')->where('table', '[A-Za-z0-9_]+');
             Route::post('/table/{table}/clear', [ToolsMigrationController::class, 'clear'])->name('clear')->where('table', '[A-Za-z0-9_]+');
             Route::post('/table/{table}/row/{id}/sync', [ToolsMigrationController::class, 'syncRow'])->name('sync_row')->where('table', '[A-Za-z0-9_]+');
+            Route::post('/import-all', [ToolsMigrationController::class, 'importAll'])->name('import_all');
         });
     });
 

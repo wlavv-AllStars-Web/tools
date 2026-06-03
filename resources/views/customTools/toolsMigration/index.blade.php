@@ -1,31 +1,26 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
-    .migration-row-new-only td {
-        background-color: dodgerblue !important;
-        color: #fff;
-    }
-
-    .migration-row-old-only td {
-        background-color: red !important;
-        color: #fff;
-    }
-
-    .migration-row-new-only td a,
-    .migration-row-old-only td a {
-        color: #fff;
-    }
-</style>
-
 <div class="navbar navbar-light customPanel">
     <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h5 style="margin: 0;">Migration tool</h5>
-        <span class="badge bg-secondary">Compare only</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="badge bg-secondary">{{ count($tables) }} importable tables</span>
+            <form method="POST" action="{{ route('web.tools.db_migration.import_all') }}" style="margin: 0;" onsubmit="return confirm('Clear and import all allowed common tables from OLD tools into NEW tools? Protected tables will be ignored.');">
+                @csrf
+                <button class="btn btn-success btn-sm" type="submit">Run migration import</button>
+            </form>
+        </div>
     </div>
 
     @if(session('error')) <div class="alert alert-danger" style="width: 100%;">{{ session('error') }}</div> @endif
     @if(session('success')) <div class="alert alert-success" style="width: 100%;">{{ session('success') }}</div> @endif
+
+    @if(collect($tables)->where('can_import', true)->isEmpty())
+        <div class="alert alert-warning" style="width: 100%;">
+            No common tables are currently importable. Check protected tables in <code>config/tools_migration.php</code> and required column differences.
+        </div>
+    @endif
 
     <div style="width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px;">
         <div style="border: 1px solid #ddd; border-radius: 5px; padding: 10px;">
@@ -52,74 +47,27 @@
     <table class="table table-bordered customTable text-center" style="width: 100%;">
         <thead>
             <tr style="text-transform: uppercase;">
-                <th>New tools</th>
-                <th>Rows estimate</th>
-                <th>Old tools</th>
-                <th>Rows estimate</th>
-                <th>Status</th>
-                <th>Structure</th>
-                <th>Action</th>
+                <th>Table</th>
+                <th>New rows estimate</th>
+                <th>Old rows estimate</th>
+                <th>Common columns</th>
+                <th>Import mode</th>
             </tr>
         </thead>
         <tbody>
             @forelse($tables as $table)
-                <tr class="@if($table['status'] === 'new_only') migration-row-new-only @elseif($table['status'] === 'old_only') migration-row-old-only @endif">
-                    <td>{{ $table['new'] ?? 'Not found' }}</td>
-                    <td style="text-align: left;">
-                        <div style="display: flex; gap: 6px; justify-content: flex-start; align-items: center;">
-                            @if($table['new'])
-                                <form method="POST" action="{{ route('web.tools.db_migration.clear', $table['name']) }}" style="margin: 0;" onsubmit="return confirm('Clear the NEW table {{ $table['name'] }}? This will delete all records from the new table.');">
-                                    @csrf
-                                    <button class="btn btn-warning btn-sm" type="submit">Clear</button>
-                                </form>
-                            @endif
-                            <span>{{ $table['new_rows'] ?? '-' }}</span>
-                        </div>
-                    </td>
-                    <td>{{ $table['old'] ?? 'Not found' }}</td>
+                <tr>
+                    <td>{{ $table['name'] }}</td>
+                    <td>{{ $table['new_rows'] ?? '-' }}</td>
                     <td>{{ $table['old_rows'] ?? '-' }}</td>
+                    <td>{{ $table['import']['common_columns'] }}</td>
                     <td>
-                        @if($table['status'] === 'matched')
-                            <span class="badge bg-success">Matched</span>
-                        @elseif($table['status'] === 'new_only')
-                            <span class="badge" style="background-color: dodgerblue; color: white;">New only</span>
-                        @else
-                            <span class="badge bg-danger">Old only</span>
-                        @endif
-                    </td>
-                    <td>
-                        @if($table['structure']['same'])
-                            <span class="badge bg-success">Same</span>
-                        @elseif($table['status'] === 'matched')
-                            <span class="badge bg-danger" title="{{ implode(' | ', $table['structure']['differences']) }}">
-                                {{ $table['structure']['label'] }}
-                            </span>
-                            @if(!empty($table['structure']['differences']))
-                                <div style="font-size: 11px; color: #777; margin-top: 3px;">
-                                    {{ implode(' | ', $table['structure']['differences']) }}
-                                </div>
-                            @endif
-                        @else
-                            <span class="badge bg-secondary">Not comparable</span>
-                        @endif
-                    </td>
-                    <td>
-                        <div style="display: flex; gap: 6px; justify-content: center;">
-                            @if($table['can_verify'])
-                                <a class="btn btn-primary btn-sm" href="{{ route('web.tools.db_migration.table', $table['name']) }}">Verify</a>
-                            @endif
-                            @if($table['can_replace'])
-                                <form method="POST" action="{{ route('web.tools.db_migration.sync', $table['name']) }}" style="margin: 0;" onsubmit="return confirm('Replace the NEW table {{ $table['name'] }} with the OLD table? This will delete all records from the new table and then copy all records from the old table.');">
-                                    @csrf
-                                    <button class="btn btn-danger btn-sm" type="submit">Replace</button>
-                                </form>
-                            @endif
-                        </div>
+                        <span class="badge bg-success">{{ $table['import']['label'] }}</span>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7">
+                    <td colspan="5">
                         No tables found.
                     </td>
                 </tr>

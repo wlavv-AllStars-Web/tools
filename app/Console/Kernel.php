@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('asd-images:sync')->dailyAt('03:00')->withoutOverlapping();
         $schedule->command('youtube:check-broken-links')->cron('30 4 */3 * *')->withoutOverlapping();
         $schedule->command('newsletter:send-pending --limit=10')->everyFiveMinutes()->withoutOverlapping();
+        $schedule->command('web:export-products')->dailyAt('01:00')->withoutOverlapping();
     }
 
     protected function commands(): void

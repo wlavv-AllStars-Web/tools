@@ -11,6 +11,7 @@ use App\Http\Controllers\Areas\marketingController;
 use App\Http\Controllers\Areas\customerSupportController;
 use App\Http\Controllers\Areas\salesController;
 use App\Http\Controllers\Areas\purchaseController;
+use App\Http\Controllers\Areas\WebProductExportController;
 
 use App\Http\Controllers\Areas\dataController;
 use App\Http\Controllers\CustomTools\DataAsdShippingController;
@@ -25,6 +26,9 @@ Route::post( 'customTools/dashboard/shipping_report',   [dashboardController::cl
 Route::get('administration', [adminController::class, 'index'])->name('administration.index');
 Route::get('web', [webController::class, 'index'])->name('web.index');
 Route::post('web/newsletter/send-pending', [webController::class, 'sendPendingNewsletterEmails'])->name('web.newsletter.send_pending');
+Route::get('web/product-export', [WebProductExportController::class, 'index'])->name('web.product_export.index');
+Route::post('web/product-export/generate', [WebProductExportController::class, 'generate'])->name('web.product_export.generate');
+Route::get('web/product-export/download/{filename}', [WebProductExportController::class, 'download'])->name('web.product_export.download');
 
 Route::resources([ 'hr'             => hrController::class      ]);
 Route::get('finance', [financeController::class, 'index'])->name('finance.index');

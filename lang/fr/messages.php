@@ -266,5 +266,7 @@ return [
     'product_export_download_csv' => 'Telecharger CSV',
     'product_export_all' => 'Tous',
     'product_export_generated' => 'Export genere: :filename (:rows lignes).',
-    'product_export_failed' => 'L export produits a echoue: :error'
+    'product_export_failed' => 'L export produits a echoue: :error',
+    'web.product_store_compare.index' => 'Comparaison produits entre boutiques',
+    'web.product_store_compare.catalog' => 'Catalogue fournisseur'
 ];

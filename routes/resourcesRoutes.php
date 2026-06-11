@@ -12,6 +12,7 @@ use App\Http\Controllers\Areas\customerSupportController;
 use App\Http\Controllers\Areas\salesController;
 use App\Http\Controllers\Areas\purchaseController;
 use App\Http\Controllers\Areas\WebProductExportController;
+use App\Http\Controllers\Areas\WebProductStoreCompareController;
 
 use App\Http\Controllers\Areas\dataController;
 use App\Http\Controllers\CustomTools\DataAsdShippingController;
@@ -29,6 +30,10 @@ Route::post('web/newsletter/send-pending', [webController::class, 'sendPendingNe
 Route::get('web/product-export', [WebProductExportController::class, 'index'])->name('web.product_export.index');
 Route::post('web/product-export/generate', [WebProductExportController::class, 'generate'])->name('web.product_export.generate');
 Route::get('web/product-export/download/{filename}', [WebProductExportController::class, 'download'])->name('web.product_export.download');
+Route::get('web/product-store-compare', [WebProductStoreCompareController::class, 'index'])->name('web.product_store_compare.index');
+Route::post('web/product-store-compare/catalog', [WebProductStoreCompareController::class, 'uploadCatalog'])->name('web.product_store_compare.catalog');
+Route::get('web/product-store-compare/csv', [WebProductStoreCompareController::class, 'csv'])->name('web.product_store_compare.csv');
+Route::get('web/product-store-compare/pdf', [WebProductStoreCompareController::class, 'pdf'])->name('web.product_store_compare.pdf');
 
 Route::resources([ 'hr'             => hrController::class      ]);
 Route::get('finance', [financeController::class, 'index'])->name('finance.index');

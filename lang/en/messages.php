@@ -579,7 +579,7 @@ return [
     'checklist.legacy.index' => 'Checklist',
     'Refunds' => 'Refunds',
     'VAT' => 'VAT',
-    'product_export' => 'Product export',
+    'product_export' => 'EXPORT',
     'web.product_export.index' => 'Product export',
     'product_export_column_reference' => 'Reference',
     'product_export_column_id_product' => 'Product',
@@ -604,7 +604,9 @@ return [
     'product_export_download_csv' => 'Download CSV',
     'product_export_all' => 'All',
     'product_export_generated' => 'Export generated: :filename (:rows rows).',
-    'product_export_failed' => 'Product export failed: :error'
+    'product_export_failed' => 'Product export failed: :error',
+    'web.product_store_compare.index' => 'Store product compare',
+    'web.product_store_compare.catalog' => 'Supplier catalog'
 
 
     

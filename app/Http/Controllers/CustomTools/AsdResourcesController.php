@@ -144,6 +144,13 @@ class ASDResourcesController extends Controller
                 $imageCode
             );
 
+            echo $id_manufacturer;
+            echo '<br>' . $item->id_product_attribute;
+            echo '<br>' . $reference;
+            echo '<br>' . $imageName;
+            echo '<br>' . $imageCode;
+            dd($imagePath);
+
             return [
                 'reference' => $reference,
                 'product_name' => $item->product_name,

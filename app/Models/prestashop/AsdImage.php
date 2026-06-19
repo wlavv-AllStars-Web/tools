@@ -377,44 +377,33 @@ class AsdImage extends PrestashopModel
         $reference = trim($reference);
         $imageCode = trim($imageCode);
 
-        echo $idManufacturer;
-        echo '<br> : ' . $idProductAttribute;
-        echo '<br> : ' . $reference;
-        echo '<br> : ' . $imageName;
-        echo '<br> : ' . $imageCode;
-        echo '<br><br><br>';
-
         if ($idManufacturer <= 0 || $reference === '') {
-            dd(1);
             return null;
         }
 
         $lookupValue = $imageCode !== '' ? $imageCode : $reference;
 
         if ($lookupValue === '') {
-            dd(2);
             return null;
         }
 
         $filenames = self::imageFilenameCandidates($lookupValue)
             ->map(fn ($filename) => trim((string) $filename))
+            ->map(fn ($filename) => self::normalizeImageFilename($filename))
             ->filter()
             ->unique()
             ->values();
 
         foreach (['thumb', '600'] as $size) {
             foreach ($filenames as $filename) {
-                echo '<br>: ' . $path = env('RESOURCES_PRODUCTION') . '/asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
-                echo '<br>: ' . file_exists($path);
-                
-                if (file_exists($path)) {
-                    dd(4);
+                $path = 'uploads/asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
+
+                if (file_exists(public_path($path))) {
                     return $path;
                 }
             }
         }
 
-        dd(3);
         return null;
     }
 
@@ -429,6 +418,11 @@ class AsdImage extends PrestashopModel
             Str::slug($value, '_'),
             Str::slug($withoutExtension, '_'),
         ]);
+    }
+
+    private static function normalizeImageFilename(string $value): string
+    {
+        return strtolower(preg_replace('/[^a-z0-9]/i', '', $value) ?? '');
     }
 
     private static function cleanImageName(?string $value): ?string

@@ -377,13 +377,23 @@ class AsdImage extends PrestashopModel
         $reference = trim($reference);
         $imageCode = trim($imageCode);
 
+        
+
+            echo $id_manufacturer;
+            echo '<br>' . $idProductAttribute;
+            echo '<br>' . $reference;
+            echo '<br>' . $imageName;
+            echo '<br>' . $imageCode;
+
         if ($idManufacturer <= 0 || $reference === '') {
+            dd(1);
             return null;
         }
 
         $lookupValue = $imageCode !== '' ? $imageCode : $reference;
 
         if ($lookupValue === '') {
+            dd(2);
             return null;
         }
 
@@ -395,14 +405,16 @@ class AsdImage extends PrestashopModel
 
         foreach (['thumb', '600'] as $size) {
             foreach ($filenames as $filename) {
-                $path = env('RESOURCES_PRODUCTION') . '/asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
+                echo $path = env('RESOURCES_PRODUCTION') . '/asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
 
                 if (file_exists(public_path($path))) {
+                    dd(4);
                     return $path;
                 }
             }
         }
 
+        dd(3);
         return null;
     }
 

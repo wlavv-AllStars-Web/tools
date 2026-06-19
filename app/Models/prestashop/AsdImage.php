@@ -377,13 +377,12 @@ class AsdImage extends PrestashopModel
         $reference = trim($reference);
         $imageCode = trim($imageCode);
 
-        
-
-            echo $idManufacturer;
-            echo '<br>' . $idProductAttribute;
-            echo '<br>' . $reference;
-            echo '<br>' . $imageName;
-            echo '<br>' . $imageCode;
+        echo $idManufacturer;
+        echo '<br> : ' . $idProductAttribute;
+        echo '<br> : ' . $reference;
+        echo '<br> : ' . $imageName;
+        echo '<br> : ' . $imageCode;
+        echo '<br><br><br>';
 
         if ($idManufacturer <= 0 || $reference === '') {
             dd(1);

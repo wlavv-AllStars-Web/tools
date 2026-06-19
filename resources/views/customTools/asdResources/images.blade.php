@@ -120,10 +120,6 @@
                 </div>
             @else
                 <div class="asd-image-grid">
-                    <pre>
-                        {{print_r($rows, 1)}}
-                    </pre>
-
                     @foreach($rows as $row)
                         <div class="asd-image-card">
                             <div class="asd-image-box {{ $row['has_image'] ? '' : 'missing' }}">

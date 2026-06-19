@@ -395,7 +395,7 @@ class AsdImage extends PrestashopModel
 
         foreach (['thumb', '600'] as $size) {
             foreach ($filenames as $filename) {
-                $path = 'uploads/asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
+                $path = env('RESOURCES_PRODUCTION') . '/asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
 
                 if (file_exists(public_path($path))) {
                     return $path;

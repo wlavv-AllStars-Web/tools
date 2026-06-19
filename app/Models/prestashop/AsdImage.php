@@ -379,7 +379,7 @@ class AsdImage extends PrestashopModel
 
         
 
-            echo $id_manufacturer;
+            echo $idManufacturer;
             echo '<br>' . $idProductAttribute;
             echo '<br>' . $reference;
             echo '<br>' . $imageName;

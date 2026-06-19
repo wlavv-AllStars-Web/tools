@@ -121,6 +121,7 @@
             @else
                 <div class="asd-image-grid">
                     @foreach($rows as $row)
+                        {{$row['image_path']}}
                         <div class="asd-image-card">
                             <div class="asd-image-box {{ $row['has_image'] ? '' : 'missing' }}">
                                 @if($row['has_image'])

@@ -74,6 +74,7 @@ class marketingController extends Controller{
         $accessList[]                           = ['name' =>  trans('messages.asm_resources'),      'url' => route('marketing.tools.resources.asm.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.resources'),         	'url' => route('marketing.tools.resources.asd.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.cars'),         	    'url' => route('marketing.tools.car_gallery.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-car"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.asg_events'),         'url' => route('asg_events.index'),                           'icon' => '<i style="font-size: 40px;" class="fa-solid fa-calendar-days"></i>'];
 
         return $accessList;
     }

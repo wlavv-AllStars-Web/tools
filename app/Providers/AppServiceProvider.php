@@ -143,6 +143,7 @@ class AppServiceProvider extends ServiceProvider
             'marketing.resources.' => ['marketing', 'marketing.index', 'ASM resources'],
             'data.resources.' => ['marketing', 'marketing.index', 'ASD resources'],
             'asg_cars.' => ['marketing', 'marketing.index', 'Car gallery'],
+            'asg_events.' => ['marketing', 'marketing.index', 'Event gallery'],
             'tv.' => ['marketing', 'marketing.index', 'TV'],
             'refund.' => ['finance', 'finance.index', 'Refunds'],
             'carrierReturn.' => ['finance', 'finance.index', 'Carrier check'],

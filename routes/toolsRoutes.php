@@ -56,6 +56,7 @@ use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\AsdResourcesController;
 use App\Http\Controllers\CustomTools\asmResourcesController;
 use App\Http\Controllers\CustomTools\asgCarsController;
+use App\Http\Controllers\CustomTools\asgEventsController;
 use App\Http\Controllers\CustomTools\PaymentLinkRequestController;
 use App\Http\Controllers\CustomTools\AsdAlertController;
 use App\Http\Controllers\CustomTools\ToolsMigrationController;
@@ -657,6 +658,8 @@ Route::get('/api/asm/resources', [asmResourcesController::class, 'api'])->name('
 Route::get('/api/gallery/cars', [asgCarsController::class, 'api'])->name('api.gallery.cars');
 Route::get('/api/gallery/cars/{lang}', [asgCarsController::class, 'apiList'])->where('lang', 'en|es|fr|pt|it')->name('api.gallery.cars.lang');
 Route::get('/api/gallery/cars/{lang}/{id}', [asgCarsController::class, 'apiShow'])->where('lang', 'en|es|fr|pt|it')->whereNumber('id')->name('api.gallery.cars.show');
+Route::get('/api/gallery/events', [asgEventsController::class, 'api'])->name('api.gallery.events');
+Route::get('/api/gallery/events/{id}', [asgEventsController::class, 'apiShow'])->whereNumber('id')->name('api.gallery.events.show');
 
 Route::middleware(['web', 'auth'])->prefix('marketing/asm/resources')->name('marketing.resources.')->group(function () {
     Route::get('/', [asmResourcesController::class, 'index'])->name('index');
@@ -673,6 +676,18 @@ Route::prefix('customTools/asg-cars')
         Route::get('/{id}/edit', [asgCarsController::class, 'edit'])->name('edit');
         Route::put('/{id}', [asgCarsController::class, 'update'])->name('update');
         Route::delete('/{id}', [asgCarsController::class, 'destroy'])->name('destroy');
+    });
+
+Route::prefix('customTools/asg-events')
+    ->name('asg_events.')
+    ->middleware(['web', 'auth'])
+    ->group(function () {
+        Route::get('/', [asgEventsController::class, 'index'])->name('index');
+        Route::get('/create', [asgEventsController::class, 'create'])->name('create');
+        Route::post('/', [asgEventsController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [asgEventsController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [asgEventsController::class, 'update'])->name('update');
+        Route::delete('/{id}', [asgEventsController::class, 'destroy'])->name('destroy');
     });
 
 

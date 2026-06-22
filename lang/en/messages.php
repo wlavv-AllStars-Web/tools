@@ -515,6 +515,10 @@ return [
     "asg_cars.index" => "ASM - Cars gallery",
     "asg_cars.create" => "Create new car gallery",
     "asg_cars.edit" => "Edit car gallery",
+    "asg_events" => "EVENTS",
+    "asg_events.index" => "ASM - Events gallery",
+    "asg_events.create" => "Create new event gallery",
+    "asg_events.edit" => "Edit event gallery",
 
     /** Area tool routes **/
     'web.tools.tracking.index' => 'Tracking',

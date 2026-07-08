@@ -381,13 +381,22 @@ class AsdImage extends PrestashopModel
             return null;
         }
 
-        $lookupValue = $imageCode !== '' ? $imageCode : $reference;
+        $lookupValues = collect([
+            $imageCode,
+            $reference,
+            $imageName,
+        ])
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->values();
 
-        if ($lookupValue === '') {
+        if ($lookupValues->isEmpty()) {
             return null;
         }
 
-        $filenames = self::imageFilenameCandidates($lookupValue)
+        $filenames = $lookupValues
+            ->flatMap(fn ($lookupValue) => self::imageFilenameCandidates($lookupValue))
             ->map(fn ($filename) => trim((string) $filename))
             ->map(fn ($filename) => self::normalizeImageFilename($filename))
             ->filter()
@@ -413,12 +422,15 @@ class AsdImage extends PrestashopModel
     {
         $value = trim(strip_tags(html_entity_decode($value)));
         $withoutExtension = preg_replace('/\.(webp|jpg|jpeg|png)$/i', '', $value) ?: $value;
+        $separatorNormalized = preg_replace('/[\/\\\\\s]+/', '_', $withoutExtension) ?: $withoutExtension;
 
         return collect([
             $value,
             $withoutExtension,
+            $separatorNormalized,
             Str::slug($value, '_'),
             Str::slug($withoutExtension, '_'),
+            Str::slug($separatorNormalized, '_'),
         ]);
     }
 

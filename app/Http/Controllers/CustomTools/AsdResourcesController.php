@@ -238,7 +238,8 @@ class ASDResourcesController extends Controller
             )
             ->where('p.id_manufacturer', $idManufacturer)
             ->whereNotNull('p.reference')
-            ->where('p.reference', '!=', '');
+            ->where('p.reference', '!=', '')
+            ->where('p.reference', 'not like', '%-Z');
 
         $attributes = DB::connection('mysql2')
             ->table('ps_product_attribute as pa')
@@ -258,7 +259,8 @@ class ASDResourcesController extends Controller
             )
             ->where('p.id_manufacturer', $idManufacturer)
             ->whereNotNull('pa.reference')
-            ->where('pa.reference', '!=', '');
+            ->where('pa.reference', '!=', '')
+            ->where('pa.reference', 'not like', '%-Z');
 
         return $products
             ->union($attributes)

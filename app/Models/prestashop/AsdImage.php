@@ -398,7 +398,7 @@ class AsdImage extends PrestashopModel
             foreach ($filenames as $filename) {
                 $resourcePath = 'asd/brands/' . $idManufacturer . '/' . $size . '/' . $filename . '.webp';
                 $localPath = public_path('uploads/' . $resourcePath);
-                $url = rtrim((string) env('RESOURCES_PRODUCTION'), '/') . '/' . $resourcePath;
+                $url = rtrim((string) config('allstars.services.resources.base_url', env('RESOURCES_PRODUCTION')), '/') . '/' . $resourcePath;
 
                 if (file_exists($localPath)) {
                     return $url;
@@ -424,7 +424,7 @@ class AsdImage extends PrestashopModel
 
     private static function normalizeImageFilename(string $value): string
     {
-        return strtolower(preg_replace('/[^a-z0-9]/i', '', $value) ?? '');
+        return strtolower(preg_replace('/[^a-z0-9_-]/i', '', $value) ?? '');
     }
 
     private static function cleanImageName(?string $value): ?string

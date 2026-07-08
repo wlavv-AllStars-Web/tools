@@ -32,7 +32,8 @@ class barcodeController extends Controller
         
         self::saveProductBarcode($ean13, $id_product, $id_product_attribute);
 
-        return view('customTools/barcode/saveEAN13')->render();
+        return response()->json(['ean13' => $ean13]);
+        //return view('customTools/barcode/saveEAN13')->render();
     }
 
     private function saveProductBarcode($barcode, $id_product, $id_product_attribute){

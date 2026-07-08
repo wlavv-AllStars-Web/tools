@@ -145,11 +145,13 @@
 
                         <div class="mb-3">
                             <label class="form-label">Product pictures 600x600</label>
-                            <input type="file" name="pictures[]" class="form-control" accept="image/*" multiple>
+                            <input type="hidden" name="pictures_selected_count" id="pictures_selected_count" value="0">
+                            <input type="file" name="pictures[]" id="pictures" class="form-control" accept="image/*" multiple data-max-files="{{ (int) ini_get('max_file_uploads') }}">
                             <div class="form-text">
-                                Upload individual product images. File name should be the product reference.
+                                Upload up to {{ (int) ini_get('max_file_uploads') }} images at a time. File name should be the product reference.
                                 The system saves the 600px file, creates a 125x125 thumb and rebuilds the 600px ZIP.
                             </div>
+                            <div class="text-danger small mt-1 d-none" id="pictures_count_error"></div>
                         </div>
                     </div>
                 </div>
@@ -181,3 +183,129 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const picturesInput = document.getElementById('pictures');
+        const selectedCountInput = document.getElementById('pictures_selected_count');
+        const countError = document.getElementById('pictures_count_error');
+        const form = picturesInput ? picturesInput.closest('form') : null;
+
+        if (!picturesInput || !selectedCountInput || !countError || !form) {
+            return;
+        }
+
+        function syncPicturesCount() {
+            const selectedCount = picturesInput.files ? picturesInput.files.length : 0;
+            const maxFiles = parseInt(picturesInput.dataset.maxFiles, 10) || 50;
+
+            selectedCountInput.value = selectedCount;
+
+            if (selectedCount > maxFiles) {
+                countError.textContent = selectedCount + ' images selected. They will be uploaded in batches of ' + maxFiles + '.';
+                countError.classList.remove('text-danger');
+                countError.classList.add('text-muted');
+                countError.classList.remove('d-none');
+                return true;
+            }
+
+            countError.classList.add('d-none');
+            countError.textContent = '';
+            return true;
+        }
+
+        function appendBaseFields(formData, sourceFormData, includeSingleFiles) {
+            sourceFormData.forEach(function (value, key) {
+                if (key === 'pictures[]' || key === 'pictures_selected_count') {
+                    return;
+                }
+
+                if (value instanceof File) {
+                    if (!includeSingleFiles || value.size === 0) {
+                        return;
+                    }
+                }
+
+                formData.append(key, value);
+            });
+        }
+
+        async function uploadPictureBatches(event) {
+            const files = Array.from(picturesInput.files || []);
+            const maxFiles = parseInt(picturesInput.dataset.maxFiles, 10) || 50;
+
+            if (files.length <= maxFiles) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const submitButton = form.querySelector('[type="submit"]');
+
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+
+            countError.classList.remove('d-none', 'text-danger');
+            countError.classList.add('text-muted');
+
+            try {
+                for (let offset = 0; offset < files.length; offset += maxFiles) {
+                    const batch = files.slice(offset, offset + maxFiles);
+                    const batchFormData = new FormData();
+                    appendBaseFields(batchFormData, new FormData(form), offset === 0);
+
+                    batchFormData.append('pictures_selected_count', batch.length);
+                    batch.forEach(function (file) {
+                        batchFormData.append('pictures[]', file, file.name);
+                    });
+
+                    countError.textContent = 'Uploading images ' + (offset + 1) + '-' + (offset + batch.length) + ' of ' + files.length + '...';
+
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: batchFormData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        let message = 'Upload failed.';
+
+                        try {
+                            const payload = await response.json();
+                            message = payload.message || Object.values(payload.errors || {}).flat().join(' ') || message;
+                        } catch (error) {
+                            message = response.statusText || message;
+                        }
+
+                        throw new Error(message);
+                    }
+                }
+
+                countError.classList.remove('text-muted', 'text-danger');
+                countError.classList.add('text-success');
+                countError.textContent = 'Upload complete. Reloading...';
+                window.setTimeout(function () {
+                    window.location.reload();
+                }, 700);
+            } catch (error) {
+                countError.classList.remove('text-muted', 'text-success');
+                countError.classList.add('text-danger');
+                countError.textContent = error.message;
+
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            }
+        }
+
+        picturesInput.addEventListener('change', syncPicturesCount);
+
+        form.addEventListener('submit', uploadPictureBatches);
+    });
+</script>
+@endpush

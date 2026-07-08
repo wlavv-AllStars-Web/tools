@@ -69,6 +69,8 @@ class ASDResourcesController extends Controller
             'import_file' => ['nullable', 'file', 'mimes:csv,txt', 'max:20480'],
             'logos_zip' => ['nullable', 'file', 'mimes:zip', 'max:102400'],
 
+            'pictures_selected_count' => ['nullable', 'integer', 'max:' . (int) ini_get('max_file_uploads')],
+            'pictures' => ['nullable', 'array'],
             'pictures.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
         ]);
 
@@ -111,6 +113,15 @@ class ASDResourcesController extends Controller
         }
 
         if ($request->hasFile('pictures')) {
+            $selectedPictures = (int) $request->input('pictures_selected_count', 0);
+            $receivedPictures = count($request->file('pictures', []));
+
+            if ($selectedPictures > $receivedPictures) {
+                throw ValidationException::withMessages([
+                    'pictures' => 'Only ' . $receivedPictures . ' of ' . $selectedPictures . ' selected images reached the server. Upload at most ' . (int) ini_get('max_file_uploads') . ' images at a time.',
+                ]);
+            }
+
             $failedPictures = [];
 
             foreach ($request->file('pictures') as $picture) {
@@ -133,6 +144,13 @@ class ASDResourcesController extends Controller
         }
 
         $resource->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'ASD brand resources updated successfully.',
+            ]);
+        }
 
         return redirect()
             ->route('data.resources.edit', $brand->id_manufacturer)

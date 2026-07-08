@@ -9,6 +9,8 @@ use App\Models\prestashop\AsdImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 use ZipArchive;
 
 class ASDResourcesController extends Controller
@@ -109,10 +111,22 @@ class ASDResourcesController extends Controller
         }
 
         if ($request->hasFile('pictures')) {
+            $failedPictures = [];
+
             foreach ($request->file('pictures') as $picture) {
-                if ($picture) {
-                    $this->uploadPictureAndThumb($picture, $brandFolder);
+                if (!$picture) {
+                    continue;
                 }
+
+                if (!$picture->isValid() || !$this->uploadPictureAndThumb($picture, $brandFolder)) {
+                    $failedPictures[] = $picture->getClientOriginalName();
+                }
+            }
+
+            if (!empty($failedPictures)) {
+                throw ValidationException::withMessages([
+                    'pictures' => 'Could not process these images: ' . implode(', ', $failedPictures),
+                ]);
             }
 
             $data['images_zip'] = $this->rebuildImagesZip($brandFolder, $brandSlug);
@@ -291,7 +305,7 @@ class ASDResourcesController extends Controller
         return $folder . '/' . $filename;
     }
 
-    private function uploadPictureAndThumb($file, string $brandFolder): void
+    private function uploadPictureAndThumb($file, string $brandFolder): bool
     {
         $folder600 = $brandFolder . '/600';
         $folderThumb = $brandFolder . '/thumb';
@@ -308,7 +322,7 @@ class ASDResourcesController extends Controller
         }
 
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $safeName = Str::slug($originalName, '_') ?: 'image_' . now()->format('YmdHis');
+        $safeName = $this->safeImageFilename($originalName) ?: 'image_' . now()->format('YmdHis');
         $filename = $safeName . '.webp';
 
         $image600Relative = $folder600 . '/' . $filename;
@@ -317,14 +331,18 @@ class ASDResourcesController extends Controller
         $sourceImage = $this->createImageResourceFromUpload($file->getPathname());
 
         if (!$sourceImage) {
-            return;
+            return false;
         }
 
-        imagewebp($sourceImage, public_path($image600Relative), 90);
+        $imageCreated = imagewebp($sourceImage, public_path($image600Relative), 90);
 
         imagedestroy($sourceImage);
 
-        $this->createThumb125(
+        if (!$imageCreated) {
+            return false;
+        }
+
+        return $this->createThumb125(
             public_path($image600Relative),
             public_path($thumbRelative)
         );
@@ -340,12 +358,24 @@ class ASDResourcesController extends Controller
 
         $mime = $info['mime'] ?? null;
 
-        return match ($mime) {
-            'image/jpeg' => imagecreatefromjpeg($sourcePath),
-            'image/png' => imagecreatefrompng($sourcePath),
-            'image/webp' => imagecreatefromwebp($sourcePath),
-            default => null,
-        };
+        try {
+            return match ($mime) {
+                'image/jpeg' => imagecreatefromjpeg($sourcePath),
+                'image/png' => imagecreatefrompng($sourcePath),
+                'image/webp' => imagecreatefromwebp($sourcePath),
+                default => null,
+            };
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function safeImageFilename(string $originalName): string
+    {
+        $filename = strtolower(Str::ascii(trim($originalName)));
+        $filename = preg_replace('/\s+/', '_', $filename) ?? '';
+
+        return preg_replace('/[^a-z0-9_-]/', '', $filename) ?? '';
     }
 
     private function rebuildImagesZip(string $brandFolder, string $brandSlug): ?string
@@ -386,23 +416,23 @@ class ASDResourcesController extends Controller
         return $zipRelativePath;
     }
 
-    private function createThumb125(string $sourcePath, string $destinationPath): void
+    private function createThumb125(string $sourcePath, string $destinationPath): bool
     {
         if (!file_exists($sourcePath)) {
-            return;
+            return false;
         }
 
         $info = getimagesize($sourcePath);
 
         if (!$info) {
-            return;
+            return false;
         }
 
         [$width, $height] = $info;
         $sourceImage = imagecreatefromwebp($sourcePath);
 
         if (!$sourceImage) {
-            return;
+            return false;
         }
 
         $thumbSize = 125;
@@ -441,10 +471,12 @@ class ASDResourcesController extends Controller
             mkdir($destinationDir, 0755, true);
         }
 
-        imagewebp($thumbImage, $destinationPath, 90);
+        $thumbCreated = imagewebp($thumbImage, $destinationPath, 90);
 
         imagedestroy($sourceImage);
         imagedestroy($thumbImage);
+
+        return $thumbCreated;
     }
 
     private function brandFolder(int $idManufacturer): string

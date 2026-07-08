@@ -20,6 +20,24 @@
         margin-bottom: 8px;
     }
     .asd-current-resource .label { font-weight: 600; }
+    .asd-upload-status {
+        border-radius: 5px;
+        padding: 10px 12px;
+        background: #fff3cd;
+        border: 1px solid #ffe69c;
+        color: #664d03;
+        font-weight: 600;
+    }
+    .asd-upload-status.text-danger {
+        background: #f8d7da;
+        border-color: #f1aeb5;
+        color: #842029 !important;
+    }
+    .asd-upload-status.text-success {
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+        color: #0f5132 !important;
+    }
 </style>
 
 <div class="asd-resources-wrap">
@@ -146,12 +164,12 @@
                         <div class="mb-3">
                             <label class="form-label">Product pictures 600x600</label>
                             <input type="hidden" name="pictures_selected_count" id="pictures_selected_count" value="0">
-                            <input type="file" name="pictures[]" id="pictures" class="form-control" accept="image/*" multiple data-max-files="{{ (int) ini_get('max_file_uploads') }}">
+                            <input type="file" name="pictures[]" id="pictures" class="form-control" accept="image/*" multiple data-max-files="{{ (int) ini_get('max_file_uploads') }}" data-batch-size="40">
                             <div class="form-text">
-                                Upload up to {{ (int) ini_get('max_file_uploads') }} images at a time. File name should be the product reference.
+                                Uploads are sent in batches of 40 images. File name should be the product reference.
                                 The system saves the 600px file, creates a 125x125 thumb and rebuilds the 600px ZIP.
                             </div>
-                            <div class="text-danger small mt-1 d-none" id="pictures_count_error"></div>
+                            <div class="asd-upload-status mt-2 d-none" id="pictures_count_error"></div>
                         </div>
                     </div>
                 </div>
@@ -199,13 +217,13 @@
         function syncPicturesCount() {
             const selectedCount = picturesInput.files ? picturesInput.files.length : 0;
             const maxFiles = parseInt(picturesInput.dataset.maxFiles, 10) || 50;
+            const batchSize = Math.min(parseInt(picturesInput.dataset.batchSize, 10) || 40, maxFiles);
 
             selectedCountInput.value = selectedCount;
 
-            if (selectedCount > maxFiles) {
-                countError.textContent = selectedCount + ' images selected. They will be uploaded in batches of ' + maxFiles + '.';
-                countError.classList.remove('text-danger');
-                countError.classList.add('text-muted');
+            if (selectedCount > batchSize) {
+                countError.textContent = selectedCount + ' images selected. They will be uploaded in batches of ' + batchSize + '.';
+                countError.classList.remove('text-danger', 'text-success');
                 countError.classList.remove('d-none');
                 return true;
             }
@@ -234,8 +252,9 @@
         async function uploadPictureBatches(event) {
             const files = Array.from(picturesInput.files || []);
             const maxFiles = parseInt(picturesInput.dataset.maxFiles, 10) || 50;
+            const batchSize = Math.min(parseInt(picturesInput.dataset.batchSize, 10) || 40, maxFiles);
 
-            if (files.length <= maxFiles) {
+            if (files.length <= batchSize) {
                 return;
             }
 
@@ -247,12 +266,11 @@
                 submitButton.disabled = true;
             }
 
-            countError.classList.remove('d-none', 'text-danger');
-            countError.classList.add('text-muted');
+            countError.classList.remove('d-none', 'text-danger', 'text-success');
 
             try {
-                for (let offset = 0; offset < files.length; offset += maxFiles) {
-                    const batch = files.slice(offset, offset + maxFiles);
+                for (let offset = 0; offset < files.length; offset += batchSize) {
+                    const batch = files.slice(offset, offset + batchSize);
                     const batchFormData = new FormData();
                     appendBaseFields(batchFormData, new FormData(form), offset === 0);
 
@@ -286,14 +304,14 @@
                     }
                 }
 
-                countError.classList.remove('text-muted', 'text-danger');
+                countError.classList.remove('text-danger');
                 countError.classList.add('text-success');
                 countError.textContent = 'Upload complete. Reloading...';
                 window.setTimeout(function () {
                     window.location.reload();
                 }, 700);
             } catch (error) {
-                countError.classList.remove('text-muted', 'text-success');
+                countError.classList.remove('text-success');
                 countError.classList.add('text-danger');
                 countError.textContent = error.message;
 

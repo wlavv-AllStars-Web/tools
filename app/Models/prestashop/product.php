@@ -2211,82 +2211,81 @@ public static function dashboard_end_of_life($type)
         ];
     }
     
-    /** TESTED AND WORKING WITH PS9 AND CUSTOM **/
-    public static function dashboard_locked_products_with_stock($type){
+    public static function dashboard_locked_products_with_stock($type)
+    {
         $data = [];
-    
+        $idsToSearch = [];
+
         $productTable = self::tableName('product');
         $stockTable = self::tableName('stock_available');
         $productAttributeTable = self::tableName('product_attribute');
         $customProductTable = self::tableName('custom_product');
         $manufacturerTable = self::tableName('manufacturer');
-    
-        $bd_data = self::select(
+
+        $products = self::select(
                 $productTable . '.id_product',
-                $productTable . '.id_manufacturer',
-                DB::raw($productTable . '.reference AS prod_ref'),
-                DB::raw('MAX(' . $productAttributeTable . '.reference) AS attr_ref'),
-                DB::raw('MAX(' . $stockTable . '.quantity) AS total_stock'),
-                DB::raw('COUNT(DISTINCT ' . $productAttributeTable . '.id_product_attribute) AS combinations_count'),
-                DB::raw($manufacturerTable . '.name AS brand_name')
+                DB::raw('SUM(' . $stockTable . '.quantity) AS product_quantity')
             )
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-     
-            ->leftJoin($productAttributeTable, function ($join) use ($productAttributeTable, $stockTable) {
-                $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute');
-            })
-    
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-    
-            ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-    
-            ->where($productTable . '.visibility', '<>', 'none')
-            ->where($productTable . '.active', 1)
-    
+            ->where($stockTable . '.id_product_attribute', 0)
             ->where($stockTable . '.out_of_stock', 0)
-            ->where($stockTable . '.quantity', '>', 0)
-            ->where(function ($query) use ($stockTable, $productAttributeTable) {
-                $query->where($stockTable . '.id_product_attribute', '>', 0)
-                    ->orWhereNotExists(function ($subQuery) use ($stockTable, $productAttributeTable) {
-                        $subQuery->select(DB::raw(1))
-                            ->from($productAttributeTable . ' as pa_exists')
-                            ->whereColumn('pa_exists.id_product', $stockTable . '.id_product');
-                    });
+            ->where($productTable . '.visibility', '<>', 'none')
+            ->where(function ($query) use ($customProductTable) {
+                $query->whereNull($customProductTable . '.wmdeprecated')
+                    ->orWhere($customProductTable . '.wmdeprecated', 0);
             })
-    
-            ->where(function ($q) use ($customProductTable) {
-                $q->whereNull($customProductTable . '.wmdeprecated')
-                  ->orWhere($customProductTable . '.wmdeprecated', 0);
-            })
-    
-            ->groupBy(
-                $productTable . '.id_product',
-                $productTable . '.id_manufacturer',
-                $productTable . '.reference',
-                $manufacturerTable . '.name'
-            )
-    
-            ->orderBy($productTable . '.id_manufacturer')
+            ->where($productTable . '.active', 1)
+            ->groupBy($productTable . '.id_product')
             ->get();
-    
-        foreach ($bd_data as $item) {
-            $data[] = [
-                'id_product' => $item->id_product,
-                'reference' => $item->prod_ref ?: $item->attr_ref,
-                'brand' => $item->brand_name ?? '',
-                'stock' => (int) $item->total_stock,
-            ];
+
+        foreach ($products as $product) {
+            $sons = self::select(
+                    DB::raw('SUM(' . $stockTable . '.quantity) AS quantity'),
+                    DB::raw('COUNT(' . $stockTable . '.quantity) AS linhas')
+                )
+                ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+                ->where($stockTable . '.id_product', $product->id_product)
+                ->where($stockTable . '.id_product_attribute', '<>', 0)
+                ->first();
+
+            if (($sons->linhas > 1) && ($sons->quantity != $product->product_quantity) && ($product->product_quantity < 1)) {
+                $idsToSearch[] = $product->id_product;
+            }
         }
-    
+
+        if (!empty($idsToSearch)) {
+            $bdData = self::select(
+                    $productTable . '.id_product',
+                    $productTable . '.id_manufacturer',
+                    DB::raw($productTable . '.reference AS prod_ref'),
+                    DB::raw($productAttributeTable . '.reference AS attr_ref'),
+                    DB::raw($manufacturerTable . '.name AS brand_name')
+                )
+                ->join($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
+                ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+                ->whereIn($productTable . '.id_product', $idsToSearch)
+                ->orderBy($productTable . '.id_manufacturer')
+                ->groupBy($productTable . '.reference')
+                ->get();
+
+            foreach ($bdData as $item) {
+                $data[] = [
+                    'id_product' => $item->id_product,
+                    'reference' => isset($item->attr_ref) ? $item->attr_ref : $item->prod_ref,
+                    'brand' => $item->brand_name ?? '',
+                ];
+            }
+        }
+
         return self::productDashboardResponse(
             trans('dashboard.Locked with stock'),
             $type,
             'locked_products_with_stock',
-            ['id_product', 'reference', 'brand', 'stock'],
+            ['id_product', 'reference', 'brand'],
             $data
         );
     }
-
     public static function dashboard_same_sku_diff_stock($type)
     {
         $data = [];

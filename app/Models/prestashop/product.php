@@ -1485,20 +1485,19 @@ public static function dashboard_end_of_life($type)
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name as brand'),
                 $productTable . '.date_add',
-                DB::raw($stockTable . '.quantity AS stock')
+                DB::raw('SUM(COALESCE(' . $stockTable . '.quantity, 0)) AS stock')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->join($categoryProductTable, $productTable . '.id_product', '=', $categoryProductTable . '.id_product')
             ->where($categoryProductTable . '.id_category', 523)
-            ->where($stockTable . '.quantity', '>', 0)
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',
                 $manufacturerTable . '.name',
-                $productTable . '.date_add',
-                $stockTable . '.quantity'
+                $productTable . '.date_add'
             )
+            ->havingRaw('SUM(COALESCE(' . $stockTable . '.quantity, 0)) > 0')
             ->orderBy($productTable . '.date_upd', 'DESC')
             ->get();
 
@@ -1584,6 +1583,11 @@ public static function dashboard_end_of_life($type)
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productTable . '.wholesale_price', 0)
+            ->where($productTable . '.reference', 'NOT LIKE', '%PARTS%')
+            ->where($productTable . '.reference', '<>', 'VAT')
+            ->where($productTable . '.reference', 'NOT LIKE', '%SHIPPING%')
+            ->where($productTable . '.reference', 'NOT LIKE', 'SHIP-%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
                 $query->select(DB::raw(1))
                     ->from($productAttributeTable)
@@ -1610,6 +1614,16 @@ public static function dashboard_end_of_life($type)
             ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productAttributeTable . '.wholesale_price', 0)
+            ->where($productTable . '.reference', 'NOT LIKE', '%PARTS%')
+            ->where($productTable . '.reference', '<>', 'VAT')
+            ->where($productTable . '.reference', 'NOT LIKE', '%SHIPPING%')
+            ->where($productTable . '.reference', 'NOT LIKE', 'SHIP-%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productAttributeTable . '.reference', 'NOT LIKE', '%PARTS%')
+            ->where($productAttributeTable . '.reference', '<>', 'VAT')
+            ->where($productAttributeTable . '.reference', 'NOT LIKE', '%SHIPPING%')
+            ->where($productAttributeTable . '.reference', 'NOT LIKE', 'SHIP-%')
+            ->where($productAttributeTable . '.reference', '<>', 'PICK-UP')
             ->get();
 
         foreach ($bd_data_attr as $item) {

@@ -39,7 +39,9 @@ class product_comment extends PrestashopModel
             $type,
             'reviews',
             ['pending_reviews'],
-            $data
+            $data,
+            ['counter' => $pendingReviews]
         );
     }
 }
+

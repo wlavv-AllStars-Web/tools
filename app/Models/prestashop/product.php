@@ -2214,7 +2214,6 @@ public static function dashboard_end_of_life($type)
     public static function dashboard_locked_products_with_stock($type)
     {
         $data = [];
-        $idsToSearch = [];
 
         $productTable = self::tableName('product');
         $stockTable = self::tableName('stock_available');
@@ -2222,67 +2221,77 @@ public static function dashboard_end_of_life($type)
         $customProductTable = self::tableName('custom_product');
         $manufacturerTable = self::tableName('manufacturer');
 
-        $products = self::select(
-                $productTable . '.id_product',
-                DB::raw('SUM(' . $stockTable . '.quantity) AS product_quantity')
+        $childrenStockSubquery = DB::table($stockTable)
+            ->select(
+                'id_product',
+                'id_shop',
+                'id_shop_group',
+                DB::raw('SUM(quantity) AS children_quantity')
             )
-            ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+            ->where('id_product_attribute', '<>', 0)
+            ->groupBy('id_product', 'id_shop', 'id_shop_group');
+
+        $bdData = self::select(
+                $productTable . '.id_product',
+                $productTable . '.id_manufacturer',
+                DB::raw($productTable . '.reference AS prod_ref'),
+                DB::raw('MAX(' . $productAttributeTable . '.reference) AS attr_ref'),
+                DB::raw($manufacturerTable . '.name AS brand_name'),
+                DB::raw('parent_stock.id_shop AS id_shop'),
+                DB::raw('parent_stock.id_shop_group AS id_shop_group'),
+                DB::raw('parent_stock.quantity AS parent_quantity'),
+                DB::raw('children_stock.children_quantity AS children_quantity')
+            )
+            ->join($stockTable . ' AS parent_stock', function ($join) use ($productTable) {
+                $join->on($productTable . '.id_product', '=', 'parent_stock.id_product')
+                    ->where('parent_stock.id_product_attribute', 0);
+            })
+            ->joinSub($childrenStockSubquery, 'children_stock', function ($join) {
+                $join->on('children_stock.id_product', '=', 'parent_stock.id_product')
+                    ->on('children_stock.id_shop', '=', 'parent_stock.id_shop')
+                    ->on('children_stock.id_shop_group', '=', 'parent_stock.id_shop_group');
+            })
+            ->join($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-            ->where($stockTable . '.id_product_attribute', 0)
-            ->where($stockTable . '.out_of_stock', 0)
+            ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productTable . '.visibility', '<>', 'none')
             ->where(function ($query) use ($customProductTable) {
                 $query->whereNull($customProductTable . '.wmdeprecated')
                     ->orWhere($customProductTable . '.wmdeprecated', 0);
             })
             ->where($productTable . '.active', 1)
-            ->groupBy($productTable . '.id_product')
+            ->whereColumn('parent_stock.quantity', '<>', 'children_stock.children_quantity')
+            ->groupBy(
+                $productTable . '.id_product',
+                $productTable . '.id_manufacturer',
+                $productTable . '.reference',
+                $manufacturerTable . '.name',
+                'parent_stock.id_shop',
+                'parent_stock.id_shop_group',
+                'parent_stock.quantity',
+                'children_stock.children_quantity'
+            )
+            ->orderBy($productTable . '.id_manufacturer')
+            ->orderBy($productTable . '.reference')
             ->get();
 
-        foreach ($products as $product) {
-            $sons = self::select(
-                    DB::raw('SUM(' . $stockTable . '.quantity) AS quantity'),
-                    DB::raw('COUNT(' . $stockTable . '.quantity) AS linhas')
-                )
-                ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-                ->where($stockTable . '.id_product', $product->id_product)
-                ->where($stockTable . '.id_product_attribute', '<>', 0)
-                ->first();
-
-            if (($sons->linhas > 1) && ($sons->quantity != $product->product_quantity) && ($product->product_quantity < 1)) {
-                $idsToSearch[] = $product->id_product;
-            }
-        }
-
-        if (!empty($idsToSearch)) {
-            $bdData = self::select(
-                    $productTable . '.id_product',
-                    $productTable . '.id_manufacturer',
-                    DB::raw($productTable . '.reference AS prod_ref'),
-                    DB::raw($productAttributeTable . '.reference AS attr_ref'),
-                    DB::raw($manufacturerTable . '.name AS brand_name')
-                )
-                ->join($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
-                ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-                ->whereIn($productTable . '.id_product', $idsToSearch)
-                ->orderBy($productTable . '.id_manufacturer')
-                ->groupBy($productTable . '.reference')
-                ->get();
-
-            foreach ($bdData as $item) {
-                $data[] = [
-                    'id_product' => $item->id_product,
-                    'reference' => isset($item->attr_ref) ? $item->attr_ref : $item->prod_ref,
-                    'brand' => $item->brand_name ?? '',
-                ];
-            }
+        foreach ($bdData as $item) {
+            $data[] = [
+                'id_product' => $item->id_product,
+                'reference' => isset($item->attr_ref) ? $item->attr_ref : $item->prod_ref,
+                'brand' => $item->brand_name ?? '',
+                'id_shop' => $item->id_shop,
+                'id_shop_group' => $item->id_shop_group,
+                'parent_stock' => (int) $item->parent_quantity,
+                'children_stock' => (int) $item->children_quantity,
+            ];
         }
 
         return self::productDashboardResponse(
             trans('dashboard.Locked with stock'),
             $type,
             'locked_products_with_stock',
-            ['id_product', 'reference', 'brand'],
+            ['id_product', 'reference', 'brand', 'id_shop', 'id_shop_group', 'parent_stock', 'children_stock'],
             $data
         );
     }

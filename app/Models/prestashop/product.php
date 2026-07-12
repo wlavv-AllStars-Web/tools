@@ -1140,6 +1140,8 @@ public static function dashboard_end_of_life($type)
                     ->orWhere($customProductTable . '.nc', '')
                     ->orWhere($customProductTable . '.nc', '0');
             })
+            ->where($productTable . '.reference', 'NOT LIKE', 'shipping%')
+            ->where($productTable . '.reference', 'NOT LIKE', 'parts%')
             ->orderBy($productTable . '.id_manufacturer')
             ->get();
 

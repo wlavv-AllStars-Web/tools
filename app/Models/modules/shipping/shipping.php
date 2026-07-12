@@ -215,16 +215,126 @@ class shipping extends Model
         
         $percentage = max(0, min(12, $percentage));
     
-        // Aplicar uma curva quadrática para acelerar a transição para vermelho
+        // Apply a quadratic curve to accelerate the transition to red
         $adjustedPercentage = pow($percentage / 12, 2) * 100; 
     
-        // Cálculo da cor baseada no gradiente verde → vermelho com transição rápida
-        $r = min(255, (int)(255 * ($adjustedPercentage / 100))); // Vermelho cresce mais rápido
-        $g = min(255, (int)(255 * ((100 - $adjustedPercentage) / 100))); // Verde diminui mais rápido
+        // Calculate the color using a green-to-red gradient with a fast transition
+        $r = min(255, (int)(255 * ($adjustedPercentage / 100))); // Red grows faster
+        $g = min(255, (int)(255 * ((100 - $adjustedPercentage) / 100))); // Green decreases faster
         $b = 0; // Azul fixo para manter a escala de cores
     
         return sprintf("#%02X%02X%02X", $r, $g, $b);
         
     }
 
+    public static function dashboard_shipping_eta_alert($type)
+    {
+        $data = [];
+
+        $lastEtaSub = \DB::table('shipping_delay')
+            ->select('id_shipping', \DB::raw('MAX(date) as last_eta_date'))
+            ->groupBy('id_shipping');
+
+        $rows = \DB::table('shipping_delay as sd')
+            ->joinSub($lastEtaSub, 'last_eta', function ($join) {
+                $join->on('last_eta.id_shipping', '=', 'sd.id_shipping');
+                $join->on('last_eta.last_eta_date', '=', 'sd.date');
+            })
+            ->join('shipping as s', 's.id', '=', 'sd.id_shipping')
+            ->select(
+                'sd.id',
+                'sd.id_shipping',
+                'sd.date',
+                'sd.created_at',
+                's.id as shipping_id',
+                's.supplier'
+            )
+            ->where('s.status', '<', 3)
+            ->get();
+
+        $supplierIds = $rows->pluck('supplier')->filter()->unique()->values();
+        $supplierNames = collect();
+
+        if ($supplierIds->isNotEmpty()) {
+            try {
+                $supplierNames = suppliers::whereIn('id_supplier', $supplierIds)
+                    ->pluck('name', 'id_supplier');
+            } catch (\Throwable $e) {
+                \Log::warning('Shipping ETA alert supplier lookup failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        foreach ($rows as $row) {
+            $supplierName = $supplierNames[$row->supplier] ?? ($row->supplier ? '#' . $row->supplier : '');
+            $line = self::getShippingEtaRow($row, $supplierName);
+
+            if (!empty($line['tr_color'])) {
+                $data[] = $line;
+            }
+        }
+
+        $sorted = collect($data)->sortBy(function ($item) {
+            $priority = 4;
+
+            if ($item['tr_color'] == 'row_red') {
+                $priority = 1;
+            } elseif ($item['tr_color'] == 'row_orange') {
+                $priority = 2;
+            } elseif ($item['tr_color'] == 'row_yellow') {
+                $priority = 3;
+            }
+
+            return $priority . '_' . $item['eta_date'];
+        })->values();
+
+        return [
+            'name'       => trans('dashboard.SHIPPING ETA ALERT'),
+            'col'        => 4,
+            'item_id'    => $type . '_shipping_eta_alert',
+            'prestashop' => null,
+            'columns'    => ['id_shipping', 'supplier', 'eta_date'],
+            'counter'    => count($sorted),
+            'data'       => $sorted,
+        ];
+    }
+
+    public static function getShippingEtaRow($shippingDelay, $supplierName = null)
+    {
+        $etaDate = $shippingDelay->date ?? null;
+        $eta = $etaDate ? \Carbon\Carbon::parse($etaDate)->startOfDay() : null;
+
+        return [
+            'tr_color'    => self::getShippingEtaColor($etaDate),
+            'id_shipping' => $shippingDelay->id_shipping,
+            'supplier'    => $supplierName ?? '',
+            'eta_date'    => $eta ? $eta->format('Y-m-d') : '',
+            'created_at'  => !empty($shippingDelay->created_at)
+                ? \Carbon\Carbon::parse($shippingDelay->created_at)->format('Y-m-d H:i')
+                : '',
+        ];
+    }
+
+    public static function getShippingEtaColor($eta_date)
+    {
+        if (empty($eta_date)) {
+            return '';
+        }
+
+        $today = \Carbon\Carbon::today();
+        $eta = \Carbon\Carbon::parse($eta_date)->startOfDay();
+        $diff = $today->diffInDays($eta, false);
+
+        if ($diff < 1) {
+            return 'row_red';
+        } elseif ($diff >= 1 && $diff <= 3) {
+            return 'row_orange';
+        } elseif ($diff >= 4 && $diff <= 6) {
+            return 'row_yellow';
+        }
+
+        return '';
+    }
 }
+

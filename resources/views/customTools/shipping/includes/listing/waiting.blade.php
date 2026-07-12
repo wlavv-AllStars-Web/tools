@@ -19,7 +19,7 @@
         @foreach($shipments AS $shipment)
             <tr onclick="$('.shipments_details').css('display', 'none'); $('#shipment_{{$shipment->id}}').css('display', 'contents')">
                 <td>{{$shipment->id}}</td>
-                <td>{{$shipment->supplier_info->name}}</td>
+                <td>{{ optional($shipment->supplier_info)->name ?? ('#' . $shipment->supplier) }}</td>
                 <td><span @if( $shipment->carrier_name == 'UNKNOWN') style="color: red;font-weight: bolder;" @endif>{{$shipment->carrier_name}}</span></td>
                 <td>{{$shipment->ready_date}}</td>
                 <td>{{$shipment->picking_date}}</td>

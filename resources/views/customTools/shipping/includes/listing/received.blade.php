@@ -32,7 +32,7 @@
             @foreach($shipments AS $shipment)
                 <tr class="list_shipments_rows" onclick="$('.shipments_details').css('display', 'none'); $('#shipment_{{$shipment->id}}').css('display', 'contents')" 
                     search_id="{{$shipment->id}}" 
-                    search_supplier="{{$shipment->supplier_info->name}}" 
+                    search_supplier="{{ optional($shipment->supplier_info)->name ?? ('#' . $shipment->supplier) }}" 
                     search_carrier="{{$shipment->carrier_name}}"
                     search_validation_date="{{$shipment->validation_date}}"
                     search_ready_date="{{$shipment->ready_date}}"
@@ -40,7 +40,7 @@
                     search_delivery_date="{{$shipment->delivery_date}}"
                     >
                     <td>{{$shipment->id}}</td>
-                    <td>{{$shipment->supplier_info->name}}</td>
+                    <td>{{ optional($shipment->supplier_info)->name ?? ('#' . $shipment->supplier) }}</td>
                     <td>{{$shipment->carrier_name}}</td>
                     <td>{{$shipment->validation_date}}</td>
                     <td>{{$shipment->ready_date}}</td>

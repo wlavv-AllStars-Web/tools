@@ -1607,6 +1607,7 @@ public static function dashboard_end_of_life($type)
 
         $bd_data_attr = product_attribute::select(
                 $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
                 DB::raw($productTable . '.reference AS product_reference'),
                 DB::raw($productAttributeTable . '.reference AS attribute_reference'),
                 DB::raw($manufacturerTable . '.name as brand')
@@ -1627,15 +1628,11 @@ public static function dashboard_end_of_life($type)
             ->get();
 
         foreach ($bd_data_attr as $item) {
-            $idProduct = (int) $item->id_product;
-
-            if (!isset($rows[$idProduct])) {
-                $rows[$idProduct] = [
-                    'id_product' => $item->id_product,
-                    'reference' => $item->product_reference ?: $item->attribute_reference,
-                    'brand' => $item->brand,
-                ];
-            }
+            $rows['attribute-' . (int) $item->id_product_attribute] = [
+                'id_product' => $item->id_product,
+                'reference' => $item->attribute_reference ?: $item->product_reference,
+                'brand' => $item->brand,
+            ];
         }
 
         return self::productDashboardResponse(

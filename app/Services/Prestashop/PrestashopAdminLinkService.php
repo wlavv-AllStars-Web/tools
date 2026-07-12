@@ -205,6 +205,13 @@ class PrestashopAdminLinkService
         return $configured ? rtrim((string) $configured, '/') : null;
     }
 
+    public static function adminBaseUrl(): ?string
+    {
+        $configured = env('PRESTASHOP_ADMIN_BASE_URL') ?: static::storeBaseUrl('ASM');
+
+        return $configured ? rtrim((string) $configured, '/') : null;
+    }
+
     public static function shopId(string $store = 'ASM'): ?int
     {
         $store = static::normalizeStore($store);
@@ -328,7 +335,7 @@ class PrestashopAdminLinkService
     {
         $store = static::normalizeStore($store);
 
-        $baseUrl = static::storeBaseUrl($store);
+        $baseUrl = static::adminBaseUrl();
         $adminFolder = static::adminFolder($store);
         $bridgeToken = static::bridgeToken($store);
 
@@ -336,6 +343,7 @@ class PrestashopAdminLinkService
             return null;
         }
 
+        $targetParams = array_merge(static::shopContextParams($store), $targetParams);
         $encodedTargetParams = base64_encode(http_build_query($targetParams));
         $params = [
             static::bridgeTokenParameter($store) => $bridgeToken,

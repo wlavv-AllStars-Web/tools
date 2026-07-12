@@ -45,4 +45,5 @@ return [
     /** MODEL stock_available **/
     'Negative stock' => 'STOCK NEGATIVO',
     'Out of stock' => 'SEM STOCK',
+    'SHIPPING ETA ALERT' => 'ALERTA ETA ENVIO',
 ];

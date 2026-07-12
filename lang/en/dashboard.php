@@ -129,5 +129,6 @@ return [
     "Warranty – Request for Additional Information" => "Warranty – Request for Additional Information",
     "INVOICE WITHOUT SHIPMENT" => "INVOICE WITHOUT SHIPMENT",
     
-    "VAT verification - Failed" => "VAT verification - Failed"
+    "VAT verification - Failed" => "VAT verification - Failed",
+    'SHIPPING ETA ALERT' => 'SHIPPING ETA ALERT',
 ];

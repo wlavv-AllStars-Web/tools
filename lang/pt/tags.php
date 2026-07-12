@@ -51,4 +51,6 @@ return [
     'source_id' => 'ID ORIGEM',
     'id_product_attribute' => 'ID ATRIBUTO',
     'pending_reviews' => 'Pending reviews',
+    'id_shipping' => 'ID',
+    'eta_date' => 'ETA',
 ];

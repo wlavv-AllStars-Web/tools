@@ -169,4 +169,6 @@ return [
     'id_shop'   => 'SHOP',
     'discounts_count' => 'Counter',
     'pending_reviews' => 'Pending reviews',
+    'id_shipping' => 'ID',
+    'eta_date' => 'ETA',
 ];

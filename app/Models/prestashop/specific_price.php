@@ -30,44 +30,66 @@ class specific_price extends PrestashopModel
         $productShopTable = self::tableName('product_shop');
         $specificPriceTable = self::tableName('specific_price');
         $now = now()->format('Y-m-d H:i:s');
-    
-        $bd_data = product::select(
-                $productShopTable . '.id_shop',
-                $productTable . '.reference',
-                DB::raw('MIN(' . $productTable . '.id_product) AS id_product'),
-                DB::raw('COUNT(DISTINCT ' . $productTable . '.id_product) AS products_count'),
-                DB::raw('COUNT(DISTINCT ' . $specificPriceTable . '.id_product) AS specific_price_count'),
-                DB::raw('COUNT(DISTINCT CONCAT(COALESCE(' . $specificPriceTable . '.reduction_type, "none"), ":", COALESCE(' . $specificPriceTable . '.reduction, 0))) AS discounts_count')
-            )
-            ->join($productShopTable, $productShopTable . '.id_product', '=', $productTable . '.id_product')
-            ->leftJoin($specificPriceTable, function ($join) use ($productTable, $productShopTable, $specificPriceTable, $now) {
-                $join->on($specificPriceTable . '.id_product', '=', $productTable . '.id_product')
-                    ->whereRaw($specificPriceTable . '.id_shop IN (0, ' . $productShopTable . '.id_shop)')
-                    ->where($specificPriceTable . '.id_cart', 0)
-                    ->where($specificPriceTable . '.id_customer', 0)
-                    ->where(function ($query) use ($specificPriceTable, $now) {
-                        $query->whereNull($specificPriceTable . '.from')
-                            ->orWhere($specificPriceTable . '.from', '0000-00-00 00:00:00')
-                            ->orWhere($specificPriceTable . '.from', '<=', $now);
+
+        $productProfiles = DB::connection('mysql2')
+            ->table($productTable . ' as p')
+            ->join($productShopTable . ' as ps', 'ps.id_product', '=', 'p.id_product')
+            ->leftJoin($specificPriceTable . ' as sp', function ($join) use ($now) {
+                $join->on('sp.id_product', '=', 'p.id_product')
+                    ->whereRaw('sp.id_shop IN (0, ps.id_shop)')
+                    ->where('sp.id_cart', 0)
+                    ->where('sp.id_customer', 0)
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('sp.from')
+                            ->orWhere('sp.from', '0000-00-00 00:00:00')
+                            ->orWhere('sp.from', '<=', $now);
                     })
-                    ->where(function ($query) use ($specificPriceTable, $now) {
-                        $query->whereNull($specificPriceTable . '.to')
-                            ->orWhere($specificPriceTable . '.to', '0000-00-00 00:00:00')
-                            ->orWhere($specificPriceTable . '.to', '>=', $now);
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('sp.to')
+                            ->orWhere('sp.to', '0000-00-00 00:00:00')
+                            ->orWhere('sp.to', '>=', $now);
                     });
             })
-            ->whereIn($productShopTable . '.id_shop', [2, 3])
-            ->where($productShopTable . '.active', 1)
-            ->whereNotNull($productTable . '.reference')
-            ->where($productTable . '.reference', '!=', '')
-            ->groupBy(
-                $productShopTable . '.id_shop',
-                $productTable . '.reference'
+            ->whereIn('ps.id_shop', [2, 3])
+            ->where('ps.active', 1)
+            ->whereNotNull('p.reference')
+            ->where('p.reference', '!=', '')
+            ->groupBy('ps.id_shop', 'p.reference', 'p.id_product')
+            ->select(
+                'ps.id_shop',
+                'p.reference',
+                'p.id_product',
+                DB::raw(
+                    'COALESCE(GROUP_CONCAT(CONCAT_WS("|", ' .
+                    'COALESCE(sp.id_shop, 0), ' .
+                    'COALESCE(sp.id_currency, 0), ' .
+                    'COALESCE(sp.id_country, 0), ' .
+                    'COALESCE(sp.id_group, 0), ' .
+                    'COALESCE(sp.id_customer, 0), ' .
+                    'COALESCE(sp.id_product_attribute, 0), ' .
+                    'COALESCE(sp.from_quantity, 0), ' .
+                    'COALESCE(sp.reduction_type, "none"), ' .
+                    'COALESCE(sp.reduction, 0), ' .
+                    'COALESCE(sp.reduction_tax, 0)' .
+                    ') ORDER BY sp.id_shop, sp.id_currency, sp.id_country, sp.id_group, sp.id_customer, sp.id_product_attribute, sp.from_quantity, sp.reduction_type, sp.reduction, sp.reduction_tax SEPARATOR ";"), "") AS discount_profile'
+                )
+            );
+
+        $bd_data = DB::connection('mysql2')
+            ->query()
+            ->fromSub($productProfiles, 'profiles')
+            ->select(
+                'id_shop',
+                'reference',
+                DB::raw('MIN(id_product) AS id_product'),
+                DB::raw('COUNT(DISTINCT id_product) AS products_count'),
+                DB::raw('COUNT(DISTINCT discount_profile) AS discounts_count')
             )
-            ->havingRaw('COUNT(DISTINCT ' . $productTable . '.id_product) > 1')
-            ->havingRaw('COUNT(DISTINCT CONCAT(COALESCE(' . $specificPriceTable . '.reduction_type, "none"), ":", COALESCE(' . $specificPriceTable . '.reduction, 0))) > 1')
-            ->orderBy($productShopTable . '.id_shop')
-            ->orderBy($productTable . '.reference')
+            ->groupBy('id_shop', 'reference')
+            ->havingRaw('COUNT(DISTINCT id_product) > 1')
+            ->havingRaw('COUNT(DISTINCT discount_profile) > 1')
+            ->orderBy('id_shop')
+            ->orderBy('reference')
             ->get();
     
         foreach ($bd_data as $item) {
@@ -78,7 +100,6 @@ class specific_price extends PrestashopModel
                 'id_product'           => $item->id_product,
                 'reference'            => $item->reference,
                 'products_count'       => $item->products_count,
-                'specific_price_count' => $item->specific_price_count,
                 'discounts_count'      => $item->discounts_count,
                 'url'                  => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, $storeCode),
             ];

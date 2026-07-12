@@ -690,6 +690,11 @@ class product extends PrestashopModel
                   ->orWhere($customProductTable . '.real_photos', 0);
             })
             ->where($productTable . '.visibility', '<>', 'none')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->orderBy($productTable . '.id_product')
             ->groupBy($productTable . '.id_product', $productTable . '.reference')
             ->get();
@@ -738,6 +743,11 @@ class product extends PrestashopModel
             })
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.id_category_default', '<>', 526)
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.id_category_default',
@@ -1343,7 +1353,13 @@ public static function dashboard_end_of_life($type)
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productTable . '.active', 1)
-            ->where($productTable . '.date_add', '>', date('Y-m-d', strtotime('-30 DAYS')));
+            ->where($productTable . '.date_add', '>', date('Y-m-d', strtotime('-30 DAYS')))
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK');
+
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);
@@ -1551,6 +1567,11 @@ public static function dashboard_end_of_life($type)
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($productTable . '.active', 1)
             ->where($productTable . '.visibility', '<>', 'none')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->where(function ($q) use ($customProductTable) {
                 $q->whereNull($customProductTable . '.wmdeprecated')
                   ->orWhere($customProductTable . '.wmdeprecated', 0);

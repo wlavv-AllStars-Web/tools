@@ -1014,43 +1014,40 @@ public static function dashboard_end_of_life($type)
     $data = [];
 
     $productTable = self::tableName('product');
-    $productAttributeTable = self::tableName('product_attribute');
     $manufacturerTable = self::tableName('manufacturer');
     $stockTable = self::tableName('stock_available');
     $customProductTable = self::tableName('custom_product');
-    $customProductAttributeTable = self::tableName('custom_product_attribute');
 
     $bd_data = self::select(
             $productTable . '.id_product',
             DB::raw($manufacturerTable . '.name AS name'),
             DB::raw($productTable . '.location AS housing'),
             $productTable . '.reference',
-            DB::raw($productAttributeTable . '.reference AS refattr'),
-            DB::raw($customProductAttributeTable . '.location AS housingattr'),
-            DB::raw($stockTable . '.quantity AS quantity')
+            DB::raw('SUM(' . $stockTable . '.quantity) AS quantity')
         )
-        ->leftJoin($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
         ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
         ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-        ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
-        ->join($stockTable, function ($join) use ($productTable, $productAttributeTable, $stockTable) {
-            $join->on($productTable . '.id_product', '=', $productTable . '.id_product');
-            $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute');
+        ->join($stockTable, function ($join) use ($productTable, $stockTable) {
+            $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
+                ->where($stockTable . '.id_product_attribute', 0);
         })
         ->whereRaw('COALESCE(' . $customProductTable . '.wmdeprecated, 0) = 1')
         ->where($productTable . '.active', 1)
-        ->orderBy($stockTable . '.quantity')
+        ->groupBy(
+            $productTable . '.id_product',
+            $manufacturerTable . '.name',
+            $productTable . '.location',
+            $productTable . '.reference'
+        )
+        ->orderBy('quantity')
         ->get();
 
     foreach ($bd_data as $item) {
-        $reference = !empty($item->refattr) ? $item->refattr : $item->reference;
-        $housing = !empty($item->housingattr) ? $item->housingattr : $item->housing;
-
         $data[] = [
             'id_product' => $item->id_product,
-            'reference'  => $reference,
+            'reference'  => $item->reference,
             'name'       => $item->name,
-            'housing'    => $housing,
+            'housing'    => $item->housing,
             'quantity'   => $item->quantity,
             'url'        => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, 'ASM'),
         ];
@@ -1063,8 +1060,7 @@ public static function dashboard_end_of_life($type)
         ['id_product', 'housing', 'reference', 'quantity'],
         $data
     );
-}   
-
+}
     public static function dashboard_end_of_life_logistics($type)
     {
         $data = [];

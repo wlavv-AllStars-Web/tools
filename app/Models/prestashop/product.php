@@ -2099,7 +2099,7 @@ public static function dashboard_end_of_life($type)
         $productTable = self::tableName('product');
         $customProductTable = self::tableName('custom_product');
 
-        if (!Schema::hasTable('oms_billed_orders') || !Schema::hasTable('oms_billed_order_lines')) {
+        if (!Schema::hasTable('oms_billed_orders') || !Schema::hasTable('oms_billed_order_lines') || !Schema::hasTable('oms_reception_lines')) {
             return self::productDashboardResponse(
                 trans('dashboard.PRODUCT AVS BUT ORDERED IN ERP'),
                 $type,
@@ -2122,8 +2122,13 @@ public static function dashboard_end_of_life($type)
             $avs[] = $product->reference;
         }
 
+        $receivedSubquery = DB::table('oms_reception_lines')
+            ->select('billed_order_line_id', DB::raw('SUM(qty_received) as qty_received_sum'))
+            ->groupBy('billed_order_line_id');
+
         $references_ordered = DB::table('oms_billed_order_lines as bol')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
+            ->leftJoinSub($receivedSubquery, 'rl_sum', 'rl_sum.billed_order_line_id', '=', 'bol.id')
             ->leftJoin(DB::raw(self::tableName('product') . ' as p'), function ($join) {
                 $join->on('p.id_product', '=', 'bol.product_id')
                     ->where(function ($query) {
@@ -2132,10 +2137,12 @@ public static function dashboard_end_of_life($type)
                     });
             })
             ->leftJoin(DB::raw(self::tableName('product_attribute') . ' as pa'), 'pa.id_product_attribute', '=', 'bol.product_attribute_id')
+            ->whereDate('bo.created_at', '<', now()->subMonth()->toDateString())
             ->where(function ($query) {
                 $query->whereNull('bo.status')
                     ->orWhereNotIn('bo.status', ['cancelled', 'closed']);
             })
+            ->whereRaw('COALESCE(bol.qty_billed, 0) > COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)')
             ->selectRaw('COALESCE(pa.reference, p.reference) as reference')
             ->pluck('reference')
             ->filter()

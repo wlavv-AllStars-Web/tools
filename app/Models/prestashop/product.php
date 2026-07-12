@@ -876,6 +876,8 @@ class product extends PrestashopModel
             })
             ->where($stockTable . '.quantity', '>', 0)
             ->where($productTable . '.active', 1)
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', 'not like', '%parts')
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -918,6 +920,8 @@ class product extends PrestashopModel
                 $query->whereNull($productTable . '.weight')
                     ->orWhere($productTable . '.weight', 0);
             })
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', 'not like', '%parts')
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -963,6 +967,8 @@ class product extends PrestashopModel
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($customProductTable . '.stock_arrive', '<', 0)
             ->where($productTable . '.reference', 'not like', '%-Z')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', 'not like', '%parts')
             ->groupBy($productTable . '.reference')
             ->orderBy($productTable . '.reference')
             ->get();
@@ -978,6 +984,8 @@ class product extends PrestashopModel
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->where($customProductAttributeTable . '.stock_arrive', '<', 0)
             ->where($productAttributeTable . '.reference', 'not like', '%-Z')
+            ->where($productAttributeTable . '.reference', 'not like', 'shipping%')
+            ->where($productAttributeTable . '.reference', 'not like', '%parts')
             ->groupBy($productAttributeTable . '.reference')
             ->orderBy($productAttributeTable . '.reference')
             ->get();

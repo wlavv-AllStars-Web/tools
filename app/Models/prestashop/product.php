@@ -1025,29 +1025,21 @@ public static function dashboard_end_of_life($type)
             DB::raw($manufacturerTable . '.name AS name'),
             DB::raw($productTable . '.location AS housing'),
             $productTable . '.reference',
-            DB::raw('MAX(' . $productAttributeTable . '.reference) AS refattr'),
-            DB::raw('MAX(' . $customProductAttributeTable . '.location) AS housingattr'),
-            DB::raw('SUM(COALESCE(' . $stockTable . '.quantity, 0)) AS quantity')
+            DB::raw($productAttributeTable . '.reference AS refattr'),
+            DB::raw($customProductAttributeTable . '.location AS housingattr'),
+            DB::raw($stockTable . '.quantity AS quantity')
         )
-        ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-        ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
         ->leftJoin($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
-        ->leftJoin($customProductAttributeTable, function ($join) use ($productAttributeTable, $customProductAttributeTable) {
-            $join->on(
-                $productAttributeTable . '.id_product_attribute',
-                '=',
-                $customProductAttributeTable . '.id_product_attribute'
-            );
+        ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+        ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
+        ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
+        ->join($stockTable, function ($join) use ($productTable, $productAttributeTable, $stockTable) {
+            $join->on($productTable . '.id_product', '=', $productTable . '.id_product');
+            $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute');
         })
-        ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-        ->whereRaw('COALESCE(' . $customProductAttributeTable . '.wmdeprecated, ' . $customProductTable . '.wmdeprecated, 0) = 1')
-        ->groupBy(
-            $productTable . '.id_product',
-            $manufacturerTable . '.name',
-            $productTable . '.location',
-            $productTable . '.reference'
-        )
-        ->orderBy('quantity')
+        ->whereRaw('COALESCE(' . $customProductTable . '.wmdeprecated, 0) = 1')
+        ->where($productTable . '.active', 1)
+        ->orderBy($stockTable . '.quantity')
         ->get();
 
     foreach ($bd_data as $item) {

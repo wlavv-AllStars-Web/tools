@@ -222,6 +222,8 @@ class product extends PrestashopModel
                 $query->whereNull($productTable . '.location')
                     ->orWhere($productTable . '.location', '');
             })
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', 'not like', '%parts')
             ->where($productShopTable . '.active', 1)
             ->where($stockTable . '.quantity', '>', 0)
             ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
@@ -258,6 +260,8 @@ class product extends PrestashopModel
                 $query->whereNull($customProductAttributeTable . '.location')
                     ->orWhere($customProductAttributeTable . '.location', '');
             })
+            ->whereRaw('COALESCE(NULLIF(' . $productAttributeTable . '.reference, ""), ' . $productTable . '.reference) not like ?', ['shipping%'])
+            ->whereRaw('COALESCE(NULLIF(' . $productAttributeTable . '.reference, ""), ' . $productTable . '.reference) not like ?', ['%parts'])
             ->where($productShopTable . '.active', 1)
             ->where($stockTable . '.quantity', '>', 0)
             ->when(!empty($shopIds), fn ($query) => $query->whereIn($productShopTable . '.id_shop', $shopIds))
@@ -278,12 +282,18 @@ class product extends PrestashopModel
                     'clean' => ($shopCodes[(int) $item->id_shop] ?? (string) $item->id_shop) . '_' . $item->id_product . '_' . $item->id_product_attribute,
                     'store' => $shopCodes[(int) $item->id_shop] ?? (string) $item->id_shop,
                     'id_shop' => (int) $item->id_shop,
+                    'id_product_attribute' => (int) $item->id_product_attribute,
                     'id_product' => (int) $item->id_product,
                     'reference' => $item->reference,
                     'brand' => $item->brand,
                 ];
             })
-            ->sortBy([['store', 'asc'], ['id_product', 'asc'], ['reference', 'asc']])
+            ->unique(fn ($item) => $item['id_product'] . '_' . $item['id_product_attribute'] . '_' . $item['reference'])
+            ->map(function ($item) {
+                unset($item['store'], $item['id_shop'], $item['id_product_attribute']);
+                return $item;
+            })
+            ->sortBy([['id_product', 'asc'], ['reference', 'asc']])
             ->values()
             ->all();
     }
@@ -838,7 +848,7 @@ class product extends PrestashopModel
             trans('dashboard.NO HOUSING'),
             $type,
             'no_housing',
-            ['store', 'id_product', 'reference', 'brand'],
+            ['id_product', 'reference', 'brand'],
             $data
         );
     }
@@ -944,42 +954,32 @@ class product extends PrestashopModel
         $customProductAttributeTable = self::tableName('custom_product_attribute');
 
         $bd_data = self::select(
-                $productTable . '.id_product',
+                DB::raw('MIN(' . $productTable . '.id_product) AS id_product'),
                 $productTable . '.reference',
-                DB::raw($customProductTable . '.stock_arrive AS stock_arrive'),
-                DB::raw($manufacturerTable . '.name AS brand')
+                DB::raw('MIN(' . $customProductTable . '.stock_arrive) AS stock_arrive'),
+                DB::raw('MIN(' . $manufacturerTable . '.name) AS brand')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($customProductTable . '.stock_arrive', '<', 0)
             ->where($productTable . '.reference', 'not like', '%-Z')
-            ->groupBy(
-                $productTable . '.id_product',
-                $productTable . '.reference',
-                $customProductTable . '.stock_arrive',
-                $manufacturerTable . '.name'
-            )
-            ->orderBy($productTable . '.id_manufacturer')
+            ->groupBy($productTable . '.reference')
+            ->orderBy($productTable . '.reference')
             ->get();
 
         $bd_data_attr = product_attribute::select(
-                $productAttributeTable . '.id_product',
+                DB::raw('MIN(' . $productAttributeTable . '.id_product) AS id_product'),
                 $productAttributeTable . '.reference AS attr_reference',
-                DB::raw($customProductAttributeTable . '.stock_arrive AS stock_arrivepa'),
-                DB::raw($manufacturerTable . '.name AS brand')
+                DB::raw('MIN(' . $customProductAttributeTable . '.stock_arrive) AS stock_arrivepa'),
+                DB::raw('MIN(' . $manufacturerTable . '.name) AS brand')
             )
             ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->where($customProductAttributeTable . '.stock_arrive', '<', 0)
             ->where($productAttributeTable . '.reference', 'not like', '%-Z')
-            ->groupBy(
-                $productAttributeTable . '.id_product',
-                $productAttributeTable . '.reference',
-                $customProductAttributeTable . '.stock_arrive',
-                $manufacturerTable . '.name'
-            )
-            ->orderBy($productTable . '.id_manufacturer')
+            ->groupBy($productAttributeTable . '.reference')
+            ->orderBy($productAttributeTable . '.reference')
             ->get();
 
         foreach ($bd_data as $item) {
@@ -1080,16 +1080,28 @@ public static function dashboard_end_of_life($type)
                 $productTable . '.reference',
                 DB::raw($productAttributeTable . '.reference AS refattr'),
                 DB::raw($customProductAttributeTable . '.location AS housingattr'),
-                $stockTable . '.quantity'
+                DB::raw('MIN(' . $stockTable . '.quantity) AS quantity')
             )
             ->leftJoin($productAttributeTable, $productTable . '.id_product', '=', $productAttributeTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+            ->join($stockTable, function ($join) use ($productTable, $productAttributeTable, $stockTable) {
+                $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->whereRaw($stockTable . '.id_product_attribute = COALESCE(' . $productAttributeTable . '.id_product_attribute, 0)');
+            })
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->whereRaw('COALESCE(' . $customProductAttributeTable . '.wmdeprecated, ' . $customProductTable . '.wmdeprecated, 0) = 1')
             ->where($productTable . '.active', 1)
-            ->orderBy($stockTable . '.quantity');
+            ->groupBy(
+                $productTable . '.id_product',
+                $manufacturerTable . '.name',
+                $productTable . '.location',
+                $productTable . '.reference',
+                $productAttributeTable . '.id_product_attribute',
+                $productAttributeTable . '.reference',
+                $customProductAttributeTable . '.location'
+            )
+            ->orderBy('quantity');
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);

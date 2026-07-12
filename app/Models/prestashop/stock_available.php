@@ -78,19 +78,15 @@ class stock_available extends PrestashopModel
 
         $bd_data_product = self::select(
                 $productTable . '.reference',
-                $stockTable . '.quantity',
-                $stockTable . '.id_product'
+                DB::raw('MIN(' . $stockTable . '.quantity) AS quantity'),
+                DB::raw('MIN(' . $stockTable . '.id_product) AS id_product')
             )
             ->join($productTable, $stockTable . '.id_product', '=', $productTable . '.id_product')
             ->where($stockTable . '.id_product_attribute', 0)
             ->where($stockTable . '.quantity', '<', 0)
             ->where($productTable . '.reference', 'NOT LIKE', '%-Z')
-            ->orderBy($stockTable . '.quantity', 'ASC')
-            ->groupBy(
-                $productTable . '.reference',
-                $stockTable . '.quantity',
-                $stockTable . '.id_product'
-            )
+            ->groupBy($productTable . '.reference')
+            ->orderBy('quantity', 'ASC')
             ->get();
 
         foreach ($bd_data_product as $item) {
@@ -102,19 +98,15 @@ class stock_available extends PrestashopModel
         }
 
         $bd_data_attr = self::select(
-                $stockTable . '.quantity',
-                $stockTable . '.id_product',
+                DB::raw('MIN(' . $stockTable . '.quantity) AS quantity'),
+                DB::raw('MIN(' . $stockTable . '.id_product) AS id_product'),
                 $productAttributeTable . '.reference'
             )
             ->join($productAttributeTable, $stockTable . '.id_product_attribute', '=', $productAttributeTable . '.id_product_attribute')
             ->where($stockTable . '.quantity', '<', 0)
             ->where($stockTable . '.id_product_attribute', '<>', 0)
-            ->orderBy($stockTable . '.quantity', 'ASC')
-            ->groupBy(
-                $productAttributeTable . '.reference',
-                $stockTable . '.quantity',
-                $stockTable . '.id_product'
-            )
+            ->groupBy($productAttributeTable . '.reference')
+            ->orderBy('quantity', 'ASC')
             ->get();
 
         foreach ($bd_data_attr as $item) {

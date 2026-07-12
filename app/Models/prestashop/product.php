@@ -922,6 +922,9 @@ class product extends PrestashopModel
             })
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.reference',

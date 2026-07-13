@@ -87,6 +87,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('dashboard')->name('dashboard.tools.')->group(function () {
         Route::get('/daily', [dashboardController::class, 'index'])->name('daily');
         Route::get('/kpi', [statsController::class, 'kpi'])->name('kpi');
+        Route::get('/adminKpi', [statsController::class, 'adminKpi'])->name('adminKpi');
         Route::get('/changes', [ChangeTrackerController::class, 'index'])->name('changes');
     });
 
@@ -694,6 +695,7 @@ Route::prefix('customTools/asg-events')
 
 Route::post( 'customTools/stats/daily_stats',       [statsController::class, 'daily_stats'])->name('stats.daily_stats');
 Route::get(  'customTools/stats/kpi',               [statsController::class, 'kpi'])->name('stats.kpi');
+Route::get(  'customTools/stats/adminKpi',          [statsController::class, 'adminKpi'])->name('stats.adminKpi');
 
 
 Route::get(  'customTools/dashboard/cron',              [dashboardController::class, 'cron_update'])->name('dashboard.cron_update');

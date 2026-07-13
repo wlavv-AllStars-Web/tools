@@ -142,6 +142,16 @@ class statsController extends Controller
     
     public function kpi()
     {
+        return $this->renderKpi('areas/dashboard/dashboard');
+    }
+
+    public function adminKpi()
+    {
+        return $this->renderKpi('areas/dashboard/dashboard-admin');
+    }
+
+    private function renderKpi($view)
+    {
         $asd = orders::getCounters(3, self::$expectedEvolution);
         $asm = orders::getCounters(2, self::$expectedEvolution);
         $er  = orders::getCounters(1, self::$expectedEvolution);
@@ -262,7 +272,7 @@ class statsController extends Controller
             'yen'    => $currency_rates ? number_format($currency_rates->yen, 4, ',', ' ') : '0,0000',
         ];
     
-        return View::make('areas/dashboard/dashboard')->with($data);
+        return View::make($view)->with($data);
     }      
     
 }

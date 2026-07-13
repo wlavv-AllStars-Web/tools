@@ -48,7 +48,11 @@
                         </a>
                     </div>
                     <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;margin-left: 20px;"> 
-                        <a href="{{ route('stats.kpi') }}">     
+                        @if(auth()->user()->id == 2 || auth()->user()->id == 94 || auth()->user()->id == 43 )
+                            <a href="{{ route('stats.adminKpi') }}">     
+                        @else
+                            <a href="{{ route('stats.kpi') }}">     
+                        @endif
                             <div><i style="font-size: 40px;" class="fa-solid fa-chart-pie"></i></div>
                             <div>KPI</div>
                         </a>

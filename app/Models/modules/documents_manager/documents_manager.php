@@ -176,17 +176,20 @@ class documents_manager extends Model
         }
 
         if (strlen($element) > 0 && $element !== 'others') {
-            $legacyPath = '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . $filename;
-            if (file_exists(public_path(ltrim($legacyPath, '/')))) {
-                return $legacyPath;
+            $candidatePaths = [
+                '/uploads/documents/' . $category . '/' . self::legacyElementPath($element) . '/' . $filename,
+                '/uploads/documents/' . $category . '/' . self::legacyElementPath($element) . '/' . self::sanitizePathSegment((string) $document->document),
+                '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . $filename,
+                '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . self::sanitizePathSegment((string) $document->document),
+            ];
+
+            foreach ($candidatePaths as $candidatePath) {
+                if (file_exists(public_path(ltrim($candidatePath, '/')))) {
+                    return $candidatePath;
+                }
             }
 
-            $fallbackPath = '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . self::sanitizePathSegment((string) $document->document);
-            if (file_exists(public_path(ltrim($fallbackPath, '/')))) {
-                return $fallbackPath;
-            }
-
-            return $legacyPath;
+            return $candidatePaths[0];
         }
 
         $legacyPath = '/uploads/documents/' . str_replace('.', '/', $category) . '/' . $filename;
@@ -223,6 +226,11 @@ class documents_manager extends Model
         $value = str_replace(['\\', '|'], ['/', '_'], $value);
 
         return str_replace('.', '/', $value);
+    }
+
+    private static function legacyElementPath(string $value): string
+    {
+        return str_replace('.', '/', str_replace(' ', '', $value));
     }
     
     

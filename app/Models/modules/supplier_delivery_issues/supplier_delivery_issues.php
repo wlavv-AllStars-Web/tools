@@ -24,13 +24,29 @@ class supplier_delivery_issues extends Model
     }
 
     public static function getAllActive( ){ 
-        
-        $supplierTable = self::prestashopTable('supplier');
-        $suppliers = supplier_delivery_issues::select('supplier_delivery_issues.id_supplier', 's.name')
-            ->join($supplierTable . ' as s', 's.id_supplier', '=', 'supplier_delivery_issues.id_supplier')
-            ->groupBy('supplier_delivery_issues.id_supplier', 's.name')
-            ->orderBy('s.name', 'ASC')
-            ->get();
+        $supplierIds = supplier_delivery_issues::query()
+            ->select('id_supplier')
+            ->distinct()
+            ->pluck('id_supplier')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        if ($supplierIds->isEmpty()) {
+            return [];
+        }
+
+        $supplierNames = suppliers::query()
+            ->whereIn('id_supplier', $supplierIds)
+            ->pluck('name', 'id_supplier');
+
+        $suppliers = $supplierIds
+            ->map(fn ($id) => (object) [
+                'id_supplier' => $id,
+                'name' => $supplierNames[$id] ?? ('Supplier #' . $id),
+            ])
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
         
         $suppliers_list = array();
         

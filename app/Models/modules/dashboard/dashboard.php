@@ -824,65 +824,90 @@ class dashboard extends Model
     public static function productsWithoutDiscounts($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = self::shopId('ASD');
         $now = now()->format('Y-m-d H:i:s');
-    
-        $exceptions = asm_dashboard::getExceptions('asd_products_without_discounts')
+
+        $exceptionKeys = [
+            'products_without_discounts',
+            'asd_products_without_discounts',
+        ];
+
+        $exceptions = collect($exceptionKeys)
+            ->flatMap(fn ($key) => asm_dashboard::getExceptions($key))
             ->pluck('id_product')
             ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
             ->toArray();
-    
-        $rows = DB::connection('mysql2')
-            ->table($prefix . 'product as p')
-            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
-                $join->on('ps.id_product', '=', 'p.id_product')
-                    ->where('ps.id_shop', '=', $shopId);
-            })
-            ->leftJoin($prefix . 'specific_price as sp', function ($join) use ($shopId, $now) {
-                $join->on('sp.id_product', '=', 'p.id_product')
-                    ->where(function ($query) use ($shopId) {
-                        $query->where('sp.id_shop', '=', 0)
-                            ->orWhere('sp.id_shop', '=', $shopId);
-                    })
-                    ->where(function ($query) {
-                        $query->where('sp.reduction', '>', 0)
-                            ->orWhere('sp.price', '>=', 0);
-                    })
-                    ->where(function ($query) use ($now) {
-                        $query->whereNull('sp.from')
-                            ->orWhere('sp.from', '0000-00-00 00:00:00')
-                            ->orWhere('sp.from', '<=', $now);
-                    })
-                    ->where(function ($query) use ($now) {
-                        $query->whereNull('sp.to')
-                            ->orWhere('sp.to', '0000-00-00 00:00:00')
-                            ->orWhere('sp.to', '>=', $now);
-                    });
-            })
-            ->whereNull('sp.id_specific_price')
-            ->where('ps.active', 1)
-            ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('p.id_product', $exceptions))
-            ->select(['p.id_product', 'p.reference'])
-            ->orderBy('p.id_product', 'ASC')
-            ->get();
+
+        $rows = collect();
+
+        foreach (['ASM', 'ASD'] as $store) {
+            $shopId = self::shopId($store);
+
+            $storeRows = DB::connection('mysql2')
+                ->table($prefix . 'product as p')
+                ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
+                    $join->on('ps.id_product', '=', 'p.id_product')
+                        ->where('ps.id_shop', '=', $shopId);
+                })
+                ->leftJoin($prefix . 'specific_price as sp', function ($join) use ($shopId, $now) {
+                    $join->on('sp.id_product', '=', 'p.id_product')
+                        ->where(function ($query) use ($shopId) {
+                            $query->where('sp.id_shop', '=', 0)
+                                ->orWhere('sp.id_shop', '=', $shopId);
+                        })
+                        ->where(function ($query) {
+                            $query->where('sp.reduction', '>', 0)
+                                ->orWhere('sp.price', '>=', 0);
+                        })
+                        ->where(function ($query) use ($now) {
+                            $query->whereNull('sp.from')
+                                ->orWhere('sp.from', '0000-00-00 00:00:00')
+                                ->orWhere('sp.from', '<=', $now);
+                        })
+                        ->where(function ($query) use ($now) {
+                            $query->whereNull('sp.to')
+                                ->orWhere('sp.to', '0000-00-00 00:00:00')
+                                ->orWhere('sp.to', '>=', $now);
+                        });
+                })
+                ->whereNull('sp.id_specific_price')
+                ->where('ps.active', 1)
+                ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('p.id_product', $exceptions))
+                ->select(['p.id_product', 'p.reference'])
+                ->orderBy('p.id_product', 'ASC')
+                ->get()
+                ->map(function ($item) use ($store) {
+                    $item->store = $store;
+                    return $item;
+                });
+
+            $rows = $rows->merge($storeRows);
+        }
     
         return self::dashboardPanel(
-            trans('dashboard.ASD - PRODUCTS WITHOUT DISCOUNT'),
+            trans('dashboard.PRODUCTS WITHOUT DISCOUNT'),
             'counter',
-            'asd_products_without_discount',
-            ['clean', 'id_product', 'reference'],
+            'products_without_discount',
+            ['clean', 'store', 'id_product', 'reference'],
             $rows->map(fn ($item) => [
-                'clean' => 'ASD_' . $item->id_product,
+                'clean' => $item->store . '_' . $item->id_product,
+                'store' => $item->store,
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
                 'extra' => 0,
-                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASD'),
+                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, $item->store),
             ]),
-            ['exception_fields' => ['asd_products_without_discounts', 'id_product', 'reference', 'extra']],
-            \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD')
+            ['exception_fields' => ['products_without_discounts', 'store', 'id_product', 'reference', 'extra']],
+            null
         );
     }
-    
+
+    public static function externalProductsWithoutDiscounts($tab, $panel)
+    {
+        return self::productsWithoutDiscounts($tab, $panel);
+    }
+
     public static function ordersReferenceWithSpaces($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
@@ -948,41 +973,67 @@ class dashboard extends Model
     public static function productsPriceIssue($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $shopId = self::shopId('ASD');
-    
-        $exceptions = asm_dashboard::getExceptions('asd_product_price_issues')
+
+        $exceptionKeys = [
+            'product_price_issues',
+            'asd_product_price_issues',
+        ];
+
+        $exceptions = collect($exceptionKeys)
+            ->flatMap(fn ($key) => asm_dashboard::getExceptions($key))
             ->pluck('id_product')
             ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
             ->toArray();
-    
-        $rows = DB::connection('mysql2')
-            ->table($prefix . 'product_shop as ps')
-            ->join($prefix . 'product as p', 'p.id_product', '=', 'ps.id_product')
-            ->where('ps.id_shop', $shopId)
-            ->whereColumn('ps.wholesale_price', '>', 'ps.price')
-            ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('ps.id_product', $exceptions))
-            ->select(['ps.id_product', 'p.reference', 'ps.wholesale_price', 'ps.price'])
-            ->orderBy('ps.id_product', 'ASC')
-            ->get();
+
+        $rows = collect();
+
+        foreach (['ASM', 'ASD'] as $store) {
+            $shopId = self::shopId($store);
+
+            $storeRows = DB::connection('mysql2')
+                ->table($prefix . 'product_shop as ps')
+                ->join($prefix . 'product as p', 'p.id_product', '=', 'ps.id_product')
+                ->where('ps.id_shop', $shopId)
+                ->whereColumn('ps.wholesale_price', '>', 'ps.price')
+                ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('ps.id_product', $exceptions))
+                ->select(['ps.id_product', 'p.reference', 'ps.wholesale_price', 'ps.price'])
+                ->orderBy('ps.id_product', 'ASC')
+                ->get()
+                ->map(function ($item) use ($store) {
+                    $item->store = $store;
+                    return $item;
+                });
+
+            $rows = $rows->merge($storeRows);
+        }
     
         return self::dashboardPanel(
-            trans('dashboard.ASD - Wholesale > price ( ex VAT)'),
+            trans('dashboard.Wholesale > Price ( EX VAT )'),
             'counter',
-            'asd_product_price_issues',
-            ['clean', 'id_product', 'reference', 'wholesale_price', 'price'],
+            'product_price_issues',
+            ['clean', 'store', 'id_product', 'reference', 'wholesale_price', 'price'],
             $rows->map(fn ($item) => [
-                'clean' => 'ASD_' . $item->id_product,
+                'clean' => $item->store . '_' . $item->id_product,
+                'store' => $item->store,
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
                 'wholesale_price' => $item->wholesale_price,
                 'price' => $item->price,
                 'extra' => 0,
-                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASD'),
+                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, $item->store),
             ]),
-            ['exception_fields' => ['asd_product_price_issues', 'id_product', 'reference', 'extra']],
-            \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASD')
+            ['exception_fields' => ['product_price_issues', 'store', 'id_product', 'reference', 'extra']],
+            null
         );
     }
+
+    public static function externalProductsPriceIssue($tab, $panel)
+    {
+        return self::productsPriceIssue($tab, $panel);
+    }
+
 
     
 }

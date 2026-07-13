@@ -2301,7 +2301,8 @@ public static function dashboard_end_of_life($type)
                 'id_product',
                 'id_shop',
                 'id_shop_group',
-                DB::raw('SUM(quantity) AS children_quantity')
+                DB::raw('SUM(quantity) AS children_quantity'),
+                DB::raw('COUNT(quantity) AS child_rows')
             )
             ->where('id_product_attribute', '<>', 0)
             ->groupBy('id_product', 'id_shop', 'id_shop_group');
@@ -2315,7 +2316,8 @@ public static function dashboard_end_of_life($type)
                 DB::raw('parent_stock.id_shop AS id_shop'),
                 DB::raw('parent_stock.id_shop_group AS id_shop_group'),
                 DB::raw('parent_stock.quantity AS parent_quantity'),
-                DB::raw('children_stock.children_quantity AS children_quantity')
+                DB::raw('children_stock.children_quantity AS children_quantity'),
+                DB::raw('children_stock.child_rows AS child_rows')
             )
             ->join($stockTable . ' AS parent_stock', function ($join) use ($productTable) {
                 $join->on($productTable . '.id_product', '=', 'parent_stock.id_product')
@@ -2335,6 +2337,10 @@ public static function dashboard_end_of_life($type)
                     ->orWhere($customProductTable . '.wmdeprecated', 0);
             })
             ->where($productTable . '.active', 1)
+            ->where('parent_stock.out_of_stock', 0)
+            ->where('parent_stock.quantity', '<', 1)
+            ->where('children_stock.children_quantity', '>', 0)
+            ->where('children_stock.child_rows', '>', 1)
             ->whereColumn('parent_stock.quantity', '<>', 'children_stock.children_quantity')
             ->groupBy(
                 $productTable . '.id_product',
@@ -2344,7 +2350,8 @@ public static function dashboard_end_of_life($type)
                 'parent_stock.id_shop',
                 'parent_stock.id_shop_group',
                 'parent_stock.quantity',
-                'children_stock.children_quantity'
+                'children_stock.children_quantity',
+                'children_stock.child_rows'
             )
             ->orderBy($productTable . '.id_manufacturer')
             ->orderBy($productTable . '.reference')

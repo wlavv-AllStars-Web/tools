@@ -1875,7 +1875,6 @@ public static function dashboard_end_of_life($type)
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->groupBy(
                 $productTable . '.reference',
-                $productTable . '.id_product',
                 $manufacturerTable . '.name'
             )
             ->orderBy('brand', 'ASC')

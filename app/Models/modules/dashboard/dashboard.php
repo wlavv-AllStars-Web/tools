@@ -970,6 +970,11 @@ class dashboard extends Model
         );
     }
     
+    public static function externalProductsNoImage($tab, $panel)
+    {
+        return self::productsNoImage($tab, $panel);
+    }
+    
     public static function productsPriceIssue($tab, $panel)
     {
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));

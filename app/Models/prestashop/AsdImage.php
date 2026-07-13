@@ -247,9 +247,19 @@ class AsdImage extends PrestashopModel
     {
         self::ensureTable();
 
+        $prefix = self::prefix();
+
         return self::query()
             ->where('verified', 0)
             ->where('has_image', 0)
+            ->where(function ($query) use ($prefix) {
+                $query->where('id_product_attribute', '>', 0)
+                    ->orWhereNotExists(function ($subQuery) use ($prefix) {
+                        $subQuery->select(DB::raw(1))
+                            ->from($prefix . 'product_attribute as pa_exists')
+                            ->whereColumn('pa_exists.id_product', self::tableName('custom_asd_images') . '.id_product');
+                    });
+            })
             ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('id_product', $exceptions))
             ->select(['id_product', 'id_product_attribute', 'reference', 'manufacturer'])
             ->orderBy('id_product')
@@ -301,7 +311,12 @@ class AsdImage extends PrestashopModel
                 DB::raw('COALESCE(m.name, "") as manufacturer'),
             ])
             ->whereNotNull('p.reference')
-            ->where('p.reference', '<>', '');
+            ->where('p.reference', '<>', '')
+            ->whereNotExists(function ($query) use ($prefix) {
+                $query->select(DB::raw(1))
+                    ->from($prefix . 'product_attribute as pa_exists')
+                    ->whereColumn('pa_exists.id_product', 'p.id_product');
+            });
 
         $attributes = DB::connection('mysql2')
             ->table($prefix . 'product_attribute as pa')

@@ -170,13 +170,57 @@ class OmsLegacyProcurementService
             return collect();
         }
 
-        return self::billedOrdersBase()
+        $receivedSubquery = DB::table('oms_reception_lines')
+            ->select('billed_order_line_id', DB::raw('SUM(qty_received) as qty_received_sum'))
+            ->groupBy('billed_order_line_id');
+
+        $rows = DB::table('oms_billed_orders as bo')
+            ->join('oms_order_notes as onote', 'onote.id', '=', 'bo.order_note_id')
+            ->join('oms_billed_order_lines as bol', 'bol.billed_order_id', '=', 'bo.id')
+            ->leftJoin('oms_order_note_lines as onl', 'onl.id', '=', 'bol.order_note_line_id')
+            ->leftJoinSub($receivedSubquery, 'rl_sum', 'rl_sum.billed_order_line_id', '=', 'bol.id')
+            ->where(function ($query) {
+                $query->whereNull('bo.status')
+                    ->orWhereNotIn('bo.status', ['cancelled']);
+            })
             ->whereDate('bo.created_at', '<', $date)
             ->whereRaw('COALESCE(bol.qty_billed, 0) > COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)')
-            ->selectRaw('bo.id AS order_id, bo.reference AS order_reference, bo.created_at AS order_date, onote.supplier_id, s.name AS supplier_name, COALESCE(pa.reference, p.reference, "") AS product_reference, COALESCE(onl.qty_ordered, bol.qty_billed, 0) AS qty_ordered, COALESCE(bol.qty_billed, 0) AS qty_billed, COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) AS qty_received')
+            ->selectRaw('bo.id AS order_id, bo.reference AS order_reference, bo.created_at AS order_date, onote.supplier_id, bol.product_id, COALESCE(bol.product_attribute_id, 0) AS product_attribute_id, COALESCE(onl.qty_ordered, bol.qty_billed, 0) AS qty_ordered, COALESCE(bol.qty_billed, 0) AS qty_billed, COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) AS qty_received')
             ->orderBy('onote.supplier_id')
             ->orderBy('bo.id')
             ->get();
+
+        return self::enrichProductReferences($rows);
+    }
+
+    private static function enrichProductReferences(Collection $rows): Collection
+    {
+        $productIds = $rows->pluck('product_id')->filter()->map(fn ($id) => (int) $id)->unique()->values();
+        $attributeIds = $rows->pluck('product_attribute_id')->filter()->map(fn ($id) => (int) $id)->unique()->values();
+
+        $prefix = self::psTable('');
+
+        $products = $productIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table($prefix . 'product')
+                ->whereIn('id_product', $productIds->all())
+                ->pluck('reference', 'id_product');
+
+        $attributes = $attributeIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table($prefix . 'product_attribute')
+                ->whereIn('id_product_attribute', $attributeIds->all())
+                ->pluck('reference', 'id_product_attribute');
+
+        return $rows->map(function ($row) use ($products, $attributes) {
+            $attributeReference = $attributes->get((int) $row->product_attribute_id);
+            $productReference = $products->get((int) $row->product_id);
+            $row->product_reference = $attributeReference ?: ($productReference ?: '');
+
+            return $row;
+        });
     }
 
     private static function billedOrdersBase()

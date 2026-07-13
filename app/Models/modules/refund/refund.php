@@ -4,31 +4,18 @@ namespace App\Models\modules\refund;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\prestashop\orders;
+use App\Models\prestashop\customer;
+use App\Models\prestashop\order_state_lang;
 
 class refund extends Model
 {
     use HasFactory;
     protected $table = "refunds";
 
-    private static function prestashopTable(string $table): string
-    {
-        $prefix = env('DB2_DB_prefix', 'ps_');
-
-        return (str_contains($prefix, '.') ? $prefix : config('database.connections.mysql2.database') . '.' . $prefix) . $table;
-    }
-
 public static function getRefunds($year = null, $month = null, $method = null, $refunds = 'active')
 {
-    $ordersTable = self::prestashopTable('orders');
-    $customerTable = self::prestashopTable('customer');
-    $orderStateLangTable = self::prestashopTable('order_state_lang');
-
-    $refund_query = refund::query()
-        ->select('*', $ordersTable . '.date_add AS purchase_date')
-        ->leftjoin($ordersTable, 'refunds.id_order', '=', $ordersTable . '.id_order')
-        ->leftjoin($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
-        ->leftjoin($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
-        ->groupBy('refunds.id')
+    $refund_query = self::query()
         ->where('refunds.id', '>', 0);
 
     if (!is_null($method)) {
@@ -46,16 +33,81 @@ public static function getRefunds($year = null, $month = null, $method = null, $
                      ->whereMonth('refunds.refund_date', $month);
     }
     
-    if( $refunds == 'active'){
+    if ($refunds == 'active') {
         $refund_query->whereIn('refund_status', ['Pending']);
-    }else{
+    } else {
         $refund_query->whereNotIn('refund_status', ['Pending']);
     }
     
-    $refund_query->groupBy('refunds.id');
-    
-    return $refund_query->get();
+    return self::enrichPrestashopData($refund_query->orderBy('refunds.id', 'DESC')->get());
 }
+
+public static function enrichPrestashopData($refunds)
+{
+    $single = $refunds instanceof self;
+    $collection = $single ? collect([$refunds]) : collect($refunds);
+
+    $orderIds = $collection
+        ->pluck('id_order')
+        ->filter()
+        ->map(fn ($id) => (int) $id)
+        ->unique()
+        ->values();
+
+    if ($orderIds->isEmpty()) {
+        return $single ? $refunds : $refunds;
+    }
+
+    $orders = orders::whereIn('id_order', $orderIds)->get()->keyBy('id_order');
+
+    $customerIds = $orders
+        ->pluck('id_customer')
+        ->filter()
+        ->map(fn ($id) => (int) $id)
+        ->unique()
+        ->values();
+
+    $customers = $customerIds->isEmpty()
+        ? collect()
+        : customer::whereIn('id_customer', $customerIds)->get()->keyBy('id_customer');
+
+    $stateIds = $orders
+        ->pluck('current_state')
+        ->filter()
+        ->map(fn ($id) => (int) $id)
+        ->unique()
+        ->values();
+
+    $states = $stateIds->isEmpty()
+        ? collect()
+        : order_state_lang::whereIn('id_order_state', $stateIds)
+            ->where('id_lang', 1)
+            ->get()
+            ->keyBy('id_order_state');
+
+    foreach ($collection as $refund) {
+        $order = $orders->get((int) $refund->id_order);
+
+        $refund->purchase_date = $order?->date_add;
+        $refund->id_customer = $order?->id_customer;
+        $refund->total_paid = $order?->total_paid;
+        $refund->order_total = $order?->total_paid;
+        $refund->order_id = $refund->id_order;
+
+        $customer = $order ? $customers->get((int) $order->id_customer) : null;
+        $refund->email = $customer?->email;
+        $refund->client_email = $customer?->email;
+        $refund->firstname = $customer?->firstname;
+        $refund->lastname = $customer?->lastname;
+        $refund->client_name = trim(($customer?->firstname ?? '') . ' ' . ($customer?->lastname ?? ''));
+
+        $state = $order ? $states->get((int) $order->current_state) : null;
+        $refund->name = $state?->name;
+    }
+
+    return $single ? $refunds : $refunds;
+}
+
 
 
 

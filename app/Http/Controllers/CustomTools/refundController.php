@@ -89,18 +89,7 @@ class refundController extends Controller
 
     public function editRefund(Request $request){
         $updateRoute = $request->routeIs('finance.tools.refunds.*') ? 'finance.tools.refunds.update' : 'refund.updateRefund';
-        $prefix = env('DB2_DB_prefix', 'ps_');
-        $prefix = str_contains($prefix, '.') ? $prefix : config('database.connections.mysql2.database') . '.' . $prefix;
-        $ordersTable = $prefix . 'orders';
-        $customerTable = $prefix . 'customer';
-        $orderStateLangTable = $prefix . 'order_state_lang';
-
-        $refund = refund::
-        select('*', $ordersTable . '.date_add AS purchase_date')
-        ->leftjoin($ordersTable, 'refunds.id_order', '=', $ordersTable . '.id_order')
-        ->leftjoin($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
-        ->leftjoin($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
-        ->findOrFail($request->id);
+        $refund = refund::enrichPrestashopData(refund::findOrFail($request->id));
         return view('customTools.refund.includes.edit-form', compact('refund', 'updateRoute'));
     }
 

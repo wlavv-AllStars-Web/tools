@@ -44,7 +44,7 @@
         }
 
         .panel.bottom {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             height: 43vh;
         }
 
@@ -83,7 +83,6 @@
         .shipped { background: #8A2BE2; color:#fff; }
         .warranty { background: #EBC5E0; }
         .backorders { background: #F78E1F; color:#fff; }
-        .partial { background: #B46700; color:#fff; }
         .pending { background: #BFBFBF; }
 
         .title {
@@ -198,7 +197,6 @@
                 ['shipped',$shipped],
                 ['warranty',$warranty],
                 ['backorders',$backorders],
-                ['partial',$partial],
                 ['pending',$pending],
             ] as $item)
                 <div class="card">
@@ -257,8 +255,6 @@
             @foreach([
                 ['asd',$forcast_asd,$realized_asd,$reached_asd],
                 ['asm',$forcast_asm,$realized_asm,$reached_asm],
-                ['er',$forcast_er,$realized_er,$reached_er],
-                ['em',$forcast_em,$realized_em,$reached_em],
             ] as $shop)
                 <div class="card shop-card">
                     <div class="logo-container"> <img src="/uploads/logos/{{$shop[0]}}-350x250.png?v=1"> </div>

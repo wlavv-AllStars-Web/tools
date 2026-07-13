@@ -83,6 +83,7 @@
         .shipped { background: #8A2BE2; color:#fff; }
         .warranty { background: #EBC5E0; }
         .backorders { background: #F78E1F; color:#fff; }
+        .partial { background: #B46700; color:#fff; }
         .pending { background: #BFBFBF; }
 
         .title {
@@ -127,6 +128,7 @@
 
         .ok { color: darkgreen; }
         .nok { color: red; }
+        .top { color: dodgerblue; }
 
         .currency-bar {
             display: flex;
@@ -196,6 +198,7 @@
                 ['shipped',$shipped],
                 ['warranty',$warranty],
                 ['backorders',$backorders],
+                ['partial',$partial],
                 ['pending',$pending],
             ] as $item)
                 <div class="card">

@@ -198,6 +198,7 @@ class statsController extends Controller
             'shipped' =>    ($asm->shipped     + $asd->shipped     + $er->shipped      + $em->shipped),
             'warranty' =>   ($asm->warranty    + $asd->warranty    + $er->warranty     + $em->warranty),
             'backorders' => ($asm->backorders  + $asd->backorders  + $er->backorders   + $em->backorders),
+            'partial' =>    ($asm->partial     + $asd->partial     + $er->partial      + $em->partial),
             'pending' =>    ($asm->pending     + $asd->pending     + $er->pending      + $em->pending),
     
             'group_result' => number_format($today_realized, 2, ',', ' ') . ' €',

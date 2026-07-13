@@ -368,7 +368,12 @@ class product extends PrestashopModel
             ->join($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($customProductTable . '.ec_approved', 0)
             ->where($productTable . '.active', 1)
-            ->where($productTable . '.visibility', '<>', 'none');
+            ->where($productTable . '.visibility', '<>', 'none')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK');
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);
@@ -515,8 +520,16 @@ class product extends PrestashopModel
     public static function dashboard_without_brand($type)
     {
         $data = [];
+        $productTable = self::tableName('product');
 
-        foreach (self::select('id_product', 'reference')->where('id_manufacturer', 0)->get() as $item) {
+        foreach (self::select('id_product', 'reference')
+            ->where('id_manufacturer', 0)
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
+            ->get() as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference' => $item->reference
@@ -639,6 +652,11 @@ class product extends PrestashopModel
             ->with('manufacturer')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productTable . '.visibility', '<>', 'none')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->whereNotIn($productTable . '.id_product', $attachmentIds)
             ->whereNotIn($productTable . '.id_manufacturer', [104, 109, 127, 139, 153]);
 

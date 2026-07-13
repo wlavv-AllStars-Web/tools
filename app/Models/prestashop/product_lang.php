@@ -59,6 +59,11 @@ class product_lang extends PrestashopModel
                     ->orWhere($productLangTable . '.available_later', '=', '')
                     ->orWhere($productLangTable . '.available_soon_text', '=', '');
             })
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->groupBy(
                 $productLangTable . '.id_product',
                 $productTable . '.id_product',
@@ -101,6 +106,11 @@ class product_lang extends PrestashopModel
             )
             ->leftJoin($productTable, $productLangTable . '.id_product', '=', $productTable . '.id_product')
             ->where($productLangTable . '.name', 'LIKE', '%  %')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->groupBy(
                 $productLangTable . '.id_product',
                 $productTable . '.id_product',

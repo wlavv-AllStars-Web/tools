@@ -1558,8 +1558,6 @@ public static function dashboard_end_of_life($type)
         $manufacturerTable = self::tableName('manufacturer');
         $customProductTable = self::tableName('custom_product');
 
-        $authorizedManufacturers = array_map('intval', config('prestashop_migration.allowed_manufacturers', []));
-
         $query = self::select(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -1586,10 +1584,6 @@ public static function dashboard_end_of_life($type)
                 $q->whereNull($customProductTable . '.youtube_2')
                   ->orWhere($customProductTable . '.youtube_2', '');
             });
-
-        if (!empty($authorizedManufacturers)) {
-            $query->whereIn($productTable . '.id_manufacturer', $authorizedManufacturers);
-        }
 
         $bd_data = $query
             ->orderBy($productTable . '.id_product', 'DESC')

@@ -1229,7 +1229,12 @@ public static function dashboard_end_of_life($type)
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->where($productTable . '.visibility', '<>', 'both');
+            ->where($productTable . '.visibility', '<>', 'both')
+            ->where($productTable . '.reference', 'not like', 'VAT-%')
+            ->where($productTable . '.reference', 'not like', '%parts')
+            ->where($productTable . '.reference', 'not like', 'shipping%')
+            ->where($productTable . '.reference', '<>', 'PICK-UP')
+            ->where($productTable . '.reference', '<>', 'SHIP-PICK');
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);

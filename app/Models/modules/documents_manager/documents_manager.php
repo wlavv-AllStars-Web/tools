@@ -168,7 +168,7 @@ class documents_manager extends Model
     {
         $category = trim((string) $document->category, '/');
         $element = (string) $document->element;
-        $filename = self::sanitizePathSegment((string) $document->document);
+        $filename = self::legacyDocumentFilename((string) $document->document);
 
         if ($category === 'manifest' && $element === 'others') {
             $manifestFilename = str_starts_with($filename, 'manifest') ? $filename : 'manifest' . $filename;
@@ -176,10 +176,30 @@ class documents_manager extends Model
         }
 
         if (strlen($element) > 0 && $element !== 'others') {
-            return '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . $filename;
+            $legacyPath = '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . $filename;
+            if (file_exists(public_path(ltrim($legacyPath, '/')))) {
+                return $legacyPath;
+            }
+
+            $fallbackPath = '/uploads/documents/' . $category . '/' . self::sanitizeElementPath($element) . '/' . self::sanitizePathSegment((string) $document->document);
+            if (file_exists(public_path(ltrim($fallbackPath, '/')))) {
+                return $fallbackPath;
+            }
+
+            return $legacyPath;
         }
 
-        return '/uploads/documents/' . str_replace('.', '/', $category) . '/' . $filename;
+        $legacyPath = '/uploads/documents/' . str_replace('.', '/', $category) . '/' . $filename;
+        if (file_exists(public_path(ltrim($legacyPath, '/')))) {
+            return $legacyPath;
+        }
+
+        $fallbackPath = '/uploads/documents/' . str_replace('.', '/', $category) . '/' . self::sanitizePathSegment((string) $document->document);
+        if (file_exists(public_path(ltrim($fallbackPath, '/')))) {
+            return $fallbackPath;
+        }
+
+        return $legacyPath;
     }
 
     public static function documentAbsolutePath($document): string
@@ -190,6 +210,11 @@ class documents_manager extends Model
     private static function sanitizePathSegment(string $value): string
     {
         return str_replace(['/', '\\', '|'], '_', $value);
+    }
+
+    private static function legacyDocumentFilename(string $value): string
+    {
+        return str_replace(['/', '\\'], ['|', '_'], $value);
     }
 
     private static function sanitizeElementPath(string $value): string

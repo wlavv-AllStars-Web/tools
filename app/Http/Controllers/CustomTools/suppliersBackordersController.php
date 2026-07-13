@@ -41,21 +41,25 @@ class suppliersBackordersController extends Controller
         
         $suppliers = backorders_list::getSuppliersBackordersOf($current_month, $current_year);
         
-        $openOrders = backorders_list::getBackordersOfSupplier($suppliers[0]->id_supplier, $current_month, $current_year);
-        $replied = backorders_list::getSupplierRepliedFromTokenOf($suppliers[0]->id_supplier, $suppliers[0]->token);
+        $supplierBackorder = '<div class="alert alert-info" style="margin: 15px;">No supplier backorders found for the current month.</div>';
 
-        $dataView = [ 
-            'openOrders' => $openOrders, 
-            'token' => $suppliers[0]->token,
-            'reply' => $replied,
-            'quantity_replied' => $suppliers[0]->quantity_replied,
-            'number_of_rows' => $suppliers[0]->number_of_rows,
-            'selected_supplier_name' => $suppliers[0]->supplier,
-            'selected_supplier_id'   => $suppliers[0]->id_supplier
-        ];
-        
-        $supplierBackorder = '';
-        $supplierBackorder = view('customTools.suppliersBackorders.includes.render', compact('dataView'))->render();
+        if ($suppliers->isNotEmpty()) {
+            $selectedSupplier = $suppliers->first();
+            $openOrders = backorders_list::getBackordersOfSupplier($selectedSupplier->id_supplier, $current_month, $current_year);
+            $replied = backorders_list::getSupplierRepliedFromTokenOf($selectedSupplier->id_supplier, $selectedSupplier->token);
+
+            $dataView = [ 
+                'openOrders' => $openOrders, 
+                'token' => $selectedSupplier->token,
+                'reply' => $replied,
+                'quantity_replied' => $selectedSupplier->quantity_replied,
+                'number_of_rows' => $selectedSupplier->number_of_rows,
+                'selected_supplier_name' => $selectedSupplier->supplier,
+                'selected_supplier_id'   => $selectedSupplier->id_supplier
+            ];
+            
+            $supplierBackorder = view('customTools.suppliersBackorders.includes.render', compact('dataView'))->render();
+        }
 
         $data = [
             'suppliers'   => $suppliers,
@@ -73,6 +77,13 @@ class suppliersBackordersController extends Controller
         $current_month= date('M');
         
         $supplier = backorders_list::getSupplierBackordersOf($request->id_supplier, $current_month, $current_year);
+
+        if (!$supplier) {
+            return response()->json([
+                'html' => '<div id="backorders_suppliers_holder"><div class="alert alert-info" style="margin: 15px;">No supplier backorders found.</div></div>'
+            ]);
+        }
+
         $openOrders = backorders_list::getBackordersOfSupplier($request->id_supplier, $current_month, $current_year);
         
         $dataView = [ 

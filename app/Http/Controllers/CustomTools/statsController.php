@@ -147,6 +147,8 @@ class statsController extends Controller
 
     public function adminKpi()
     {
+        abort_unless(in_array((int) auth()->id(), [2, 94, 43], true), 403);
+
         return $this->renderKpi('areas/dashboard/dashboard-admin');
     }
 

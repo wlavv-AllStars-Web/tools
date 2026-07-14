@@ -80,7 +80,7 @@ class warrantiesController extends Controller{
         $images = self::loadWarrantyMedia($return->id_customer, $return->id_order);
     
         return response()->json([
-            'title' => 'Warranty detail of order with ID: ' . $return->id_order . ' ( ' . $return->order->reference . ' ) ',
+            'title' => 'Warranty detail of order with ID: ' . $return->id_order . ' ( ' . (optional($return->order)->reference ?? 'missing order') . ' ) ',
             'html' => view('customTools.warranties.includes.modal', [
                 'warranty' => $return,
                 'detail' => $detail,
@@ -139,16 +139,16 @@ class warrantiesController extends Controller{
         switch($id_associated){
             case 1:{
                 $template = 'warranties_'.$iso.'_6_1';
-                $subject[2] = 'Warranty – Request Registered';
-                $subject[4] = 'Garantía – solicitud registrada';
-                $subject[5] = 'Garantie – demande enregistrée';
+                $subject[2] = 'Warranty â€“ Request Registered';
+                $subject[4] = 'GarantÃ­a â€“ solicitud registrada';
+                $subject[5] = 'Garantie â€“ demande enregistrÃ©e';
                 break;
             }
             case 2:{
                 $template = 'warranties_'.$iso.'_6_2';
-                $subject[2] = 'Warranty – Request Being Processed';
-                $subject[4] = 'Garantía – En proceso de tramitación';
-                $subject[5] = 'Garantie – en cours de traitement';
+                $subject[2] = 'Warranty â€“ Request Being Processed';
+                $subject[4] = 'GarantÃ­a â€“ En proceso de tramitaciÃ³n';
+                $subject[5] = 'Garantie â€“ en cours de traitement';
 
                 $order_return_detail = order_return_detail::where('id_order_return', $request->id_order_return)->first();
 
@@ -180,16 +180,16 @@ class warrantiesController extends Controller{
                 $baseUrl = \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM');
                 $data['href'] = $baseUrl . "/index.php?controller=returnwarranty&action=view-warranty&id_order=" . $warranty->id_order . "&order_ref=" . $order->reference . "&selection=" . $order_return_detail->id_order_detail . "%3A1&multi=1&validate=false";
                 
-                $subject[2] = 'Warranty – Request for Additional Information';
-                $subject[4] = 'Garantía – Solicitud de información adicional';
-                $subject[5] = 'Garantie – demande d’éléments complémentaires';
+                $subject[2] = 'Warranty â€“ Request for Additional Information';
+                $subject[4] = 'GarantÃ­a â€“ Solicitud de informaciÃ³n adicional';
+                $subject[5] = 'Garantie â€“ demande dâ€™Ã©lÃ©ments complÃ©mentaires';
                 break;
             }
             case 4:{
                 $template = 'warranties_'.$iso.'_6_4';
-                $subject[2] = 'Warranty – Approved';
-                $subject[4] = 'Garantía – Aprobada';
-                $subject[5] = 'Garantie – approuvée';
+                $subject[2] = 'Warranty â€“ Approved';
+                $subject[4] = 'GarantÃ­a â€“ Aprobada';
+                $subject[5] = 'Garantie â€“ approuvÃ©e';
 
                 $newOrderID = 0;
                 if( ( isset($request->fromOurStock) ) && ( $request->fromOurStock == 1 ) ){
@@ -229,9 +229,9 @@ class warrantiesController extends Controller{
                 $data['response_manufacturer'] = $request->response_manufacturer;
 
                 $template = 'warranties_'.$iso.'_6_5';
-                $subject[2] = 'Warranty – Not Approved';
-                $subject[4] = 'Garantía – No aprobada';
-                $subject[5] = 'Garantie – non approuvée';
+                $subject[2] = 'Warranty â€“ Not Approved';
+                $subject[4] = 'GarantÃ­a â€“ No aprobada';
+                $subject[5] = 'Garantie â€“ non approuvÃ©e';
                 break;
             }
         }
@@ -303,10 +303,10 @@ class warrantiesController extends Controller{
             $od   = orders_details::where('id_order_detail', $orderDetailId)->first();
             $ret  = order_return_detail::where('id_order_return', $orderReturnDetailId)->first();
 
-            if (! $orig) throw new \Exception("Encomenda original não encontrada.");
-            if (! $od) throw new \Exception("order_detail não encontrado.");
-            if ((int)$od->id_order !== (int)$originalOrderId) throw new \Exception("O order_detail não pertence à encomenda original.");
-            if (! $ret) throw new \Exception("order_return_detail não encontrado.");
+            if (! $orig) throw new \Exception("Encomenda original nÃ£o encontrada.");
+            if (! $od) throw new \Exception("order_detail nÃ£o encontrado.");
+            if ((int)$od->id_order !== (int)$originalOrderId) throw new \Exception("O order_detail nÃ£o pertence Ã  encomenda original.");
+            if (! $ret) throw new \Exception("order_return_detail nÃ£o encontrado.");
 
             $qty = max(1, (int)$ret->product_quantity);
 

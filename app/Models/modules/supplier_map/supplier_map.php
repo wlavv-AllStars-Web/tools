@@ -48,6 +48,9 @@ class supplier_map extends Model
         foreach($supplier_map_extra AS $manufacturer){
             
             $supplier_map = supplier_map::with('supplier', 'manufacturer')->where('id', $manufacturer->id)->first();
+            if (is_null($supplier_map) || is_null($supplier_map->supplier)) {
+                continue;
+            }
             $id_supplier_map[] = $supplier_map->id;
             $manufacturers_list[] = [
                 'id_manufacturer' => 0,
@@ -116,3 +119,4 @@ class supplier_map extends Model
         return 1;
     }
 }
+

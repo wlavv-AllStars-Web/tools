@@ -948,6 +948,7 @@ class product extends PrestashopModel
                 $query->whereNull($productTable . '.weight')
                     ->orWhere($productTable . '.weight', 0);
             })
+            ->where($productTable . '.active', 1)
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', 'not like', '%parts')
             ->where($productTable . '.reference', 'not like', 'VAT-%')
@@ -1580,6 +1581,7 @@ public static function dashboard_end_of_life($type)
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');
         $customProductTable = self::tableName('custom_product');
+        $customManufacturerTable = self::tableName('custom_manufacturer');
 
         $query = self::select(
                 $productTable . '.id_product',
@@ -1588,6 +1590,7 @@ public static function dashboard_end_of_life($type)
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
+            ->leftJoin($customManufacturerTable, $productTable . '.id_manufacturer', '=', $customManufacturerTable . '.id_manufacturer')
             ->where($productTable . '.active', 1)
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.reference', 'not like', 'VAT-%')
@@ -1606,6 +1609,10 @@ public static function dashboard_end_of_life($type)
             ->where(function ($q) use ($customProductTable) {
                 $q->whereNull($customProductTable . '.youtube_2')
                   ->orWhere($customProductTable . '.youtube_2', '');
+            })
+            ->where(function ($q) use ($customManufacturerTable) {
+                $q->whereNull($customManufacturerTable . '.youtube')
+                  ->orWhere($customManufacturerTable . '.youtube', '');
             });
 
         $bd_data = $query

@@ -60,34 +60,37 @@ protected $table = 'quotes';
         );
     }
 
-    public static function dashboard_quote_frontoffice($type){
+    public static function dashboard_quote_frontoffice($type)
+    {
+        $exceptions = asm_dashboard::getExceptions('quotes_front')
+            ->pluck('id_product')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
 
-        $data = array();
+        $rows = self::select('id', 'brand', 'referencia', 'notas_back', 'status')
+            ->where('status', '<>', 'new')
+            ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('id', $exceptions))
+            ->orderBy('id', 'DESC')
+            ->get();
 
-        $ids_exceptions = [];
-        $bd_data = self::select('id', 'brand', 'referencia', 'notas_back')->whereNot('status', 'new')->get();
-        $exceptions = asm_dashboard::getExceptions('quotes_front');
-
-
-        foreach($exceptions AS $exception){
-            $ids_exceptions[] = $exception->id_product;
-        }    
-
-        foreach($bd_data AS $item){
-            if( !in_array($item['id'], $ids_exceptions) ) $data[] = ['clean' => $item['id'], 'id' => $item->id, 'brand' => $item->brand, 'reference' => $item->referencia, 'status' => strtoupper(str_replace('_', ' ', $item->status))];
-        }
-        
-        return [
-            'name'              => "PRODUCT REQUEST'S ( Frontoffice )",
-            'col'               => 4,
-            'item_id'           => $type . '_product_requests_back',
-            'columns'           => ['clean', 'id', 'brand', 'reference'],
-            'exception_fields'  => ['quotes_front', 'id', 'brand', 'reference'],  
-            'link'              => route('quotes.index', [1]),
-            'prestashop'        => null,
-            'counter'           => count($data),
-            'data'              => $data
-        ];        
+        return self::dashboardPanel(
+            "PRODUCT REQUEST'S ( Frontoffice )",
+            $type,
+            'product_requests_back',
+            ['clean', 'id', 'brand', 'reference'],
+            $rows->map(fn ($item) => [
+                'clean' => $item->id,
+                'id' => $item->id,
+                'brand' => $item->brand,
+                'reference' => $item->referencia,
+                'status' => strtoupper(str_replace('_', ' ', $item->status)),
+            ]),
+            [
+                'exception_fields' => ['quotes_front', 'id', 'brand', 'reference'],
+                'link' => route('sales.tools.quotes.index', ['list' => 1]),
+            ],
+            null
+        );
     }
     
 }

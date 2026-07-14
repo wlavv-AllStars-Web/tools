@@ -31,6 +31,9 @@ class salesController extends Controller
 
     public function index()
     {
+        dashboard::getCountersContentOfTabPanel('purchase', 'dashboard_quote_backoffice');
+        dashboard::getCountersContentOfTabPanel('sales', 'dashboard_quote_frontoffice');
+
         $deferredPanels = [
             'clients_request',
             'dashboard_dropcart_3_days',

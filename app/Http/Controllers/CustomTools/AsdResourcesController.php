@@ -157,7 +157,7 @@ class ASDResourcesController extends Controller
             ->with('success', 'ASD brand resources updated successfully.');
     }
 
-    public function images(int $id_manufacturer)
+    public function images(Request $request, int $id_manufacturer)
     {
         $breadcrumbs = $this->breadcrumbs;
         $brand = $this->getAsdBrandOrFail($id_manufacturer);
@@ -192,13 +192,18 @@ class ASDResourcesController extends Controller
         $totalReferences = $rows->count();
         $totalImages = $rows->where('has_image', true)->count();
         $totalMissing = $totalReferences - $totalImages;
+        $imageFilter = $request->query('filter') === 'missing' ? 'missing' : 'all';
+
+        if ($imageFilter === 'missing') {
+            $rows = $rows->where('has_image', false)->values();
+        }
 
         return view('customTools.asdResources.images', compact(
             'brand',
             'rows',
             'totalReferences',
             'totalImages',
-            'totalMissing', 'breadcrumbs'
+            'totalMissing', 'imageFilter', 'breadcrumbs'
         ));
     }
 
@@ -255,9 +260,14 @@ class ASDResourcesController extends Controller
     {
         $products = DB::connection('mysql2')
             ->table('ps_product as p')
+            ->join('ps_product_shop as pshop', function ($join) {
+                $join->on('pshop.id_product', '=', 'p.id_product')
+                    ->where('pshop.id_shop', $this->asdShopId);
+            })
             ->leftJoin('ps_product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
-                    ->where('pl.id_lang', '=', 1);
+                    ->where('pl.id_lang', '=', 1)
+                    ->where('pl.id_shop', $this->asdShopId);
             })
             ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->select(
@@ -276,9 +286,14 @@ class ASDResourcesController extends Controller
         $attributes = DB::connection('mysql2')
             ->table('ps_product_attribute as pa')
             ->join('ps_product as p', 'p.id_product', '=', 'pa.id_product')
+            ->join('ps_product_shop as pshop', function ($join) {
+                $join->on('pshop.id_product', '=', 'p.id_product')
+                    ->where('pshop.id_shop', $this->asdShopId);
+            })
             ->leftJoin('ps_product_lang as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
-                    ->where('pl.id_lang', '=', 1);
+                    ->where('pl.id_lang', '=', 1)
+                    ->where('pl.id_shop', $this->asdShopId);
             })
             ->leftJoin('ps_custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
             ->select(

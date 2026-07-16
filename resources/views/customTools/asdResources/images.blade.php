@@ -86,6 +86,23 @@
 </style>
 
 <div class="asd-images-wrap">
+    <div class="d-flex justify-content-end mb-3">
+        <div class="btn-group" role="group" aria-label="Image filter">
+            <a
+                href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'all']) }}"
+                class="btn {{ $imageFilter === 'all' ? 'btn-primary' : 'btn-outline-primary' }}"
+            >
+                All references
+            </a>
+            <a
+                href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}"
+                class="btn {{ $imageFilter === 'missing' ? 'btn-danger' : 'btn-outline-danger' }}"
+            >
+                Without image
+            </a>
+        </div>
+    </div>
+
     <div class="row g-3 mb-3" style="text-align: center;">
         <div class="col-md-4">
             <div class="asd-stat-card">

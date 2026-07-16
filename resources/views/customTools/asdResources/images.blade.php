@@ -27,6 +27,20 @@
         margin-top: 6px;
     }
 
+    .asd-filter-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .asd-filter-card .btn-group {
+        width: 100%;
+    }
+
+    .asd-filter-card .btn {
+        flex: 1 1 50%;
+    }
+
     .asd-image-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -86,40 +100,43 @@
 </style>
 
 <div class="asd-images-wrap">
-    <div class="d-flex justify-content-end mb-3">
-        <div class="btn-group" role="group" aria-label="Image filter">
-            <a
-                href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'all']) }}"
-                class="btn {{ $imageFilter === 'all' ? 'btn-primary' : 'btn-outline-primary' }}"
-            >
-                All references
-            </a>
-            <a
-                href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}"
-                class="btn {{ $imageFilter === 'missing' ? 'btn-danger' : 'btn-outline-danger' }}"
-            >
-                Without image
-            </a>
-        </div>
-    </div>
-
     <div class="row g-3 mb-3" style="text-align: center;">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="asd-stat-card">
                 <div class="asd-stat-value">{{ $totalReferences }}</div>
                 <div class="asd-stat-label">Total references</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="asd-stat-card">
                 <div class="asd-stat-value text-success">{{ $totalImages }}</div>
                 <div class="asd-stat-label">Total images found</div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="asd-stat-card">
                 <div class="asd-stat-value text-danger">{{ $totalMissing }}</div>
                 <div class="asd-stat-label">References without image</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="asd-stat-card asd-filter-card">
+                <div class="btn-group" role="group" aria-label="Image filter">
+                    <a
+                        href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'all']) }}"
+                        class="btn {{ $imageFilter === 'all' ? 'btn-primary' : 'btn-outline-primary' }}"
+                    >
+                        <i class="fa-solid fa-images me-1"></i>
+                        All references
+                    </a>
+                    <a
+                        href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}"
+                        class="btn {{ $imageFilter === 'missing' ? 'btn-danger' : 'btn-outline-danger' }}"
+                    >
+                        <i class="fa-solid fa-image me-1"></i>
+                        Without image
+                    </a>
+                </div>
             </div>
         </div>
     </div>

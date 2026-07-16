@@ -613,5 +613,19 @@ return [
     'web.product_store_compare.catalog' => 'Supplier catalog'
 
 
-    
+    ,
+    'marketing.product_images.index' => 'Product image review',
+    'product_images' => 'Product images',
+    'product_image_review' => 'Product Image Review',
+    'product_image_review_eyebrow' => 'Marketing · ASM',
+    'product_image_review_description' => 'Select a brand to review all references and their associated photos.',
+    'product_image_review_asm_brand' => 'ASM brand',
+    'product_image_review_select_brand' => 'Select a brand…',
+    'product_image_review_missing_english_name' => 'No English name',
+    'product_image_review_loading' => 'Loading 10 more products…',
+    'product_image_review_product' => 'Product',
+    'product_image_review_no_images' => 'No images',
+    'product_image_review_image' => 'image',
+    'product_image_review_cover' => 'Cover',
+    'product_image_review_load_error' => 'Products could not be loaded. Please try again.'
 ];

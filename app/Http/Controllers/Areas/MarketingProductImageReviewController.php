@@ -28,7 +28,7 @@ class MarketingProductImageReviewController extends Controller
                 ->get(),
             'breadcrumbs' => [
                 ['name' => trans('marketing'), 'url' => route('marketing.index')],
-                ['name' => 'Product Image Review', 'url' => route('marketing.product_images.index')],
+                ['name' => 'product_image_review', 'url' => route('marketing.product_images.index')],
             ],
             'actions' => [],
         ]);
@@ -63,7 +63,7 @@ class MarketingProductImageReviewController extends Controller
             'data' => $products->map(fn ($product) => [
                 'id_product' => (int) $product->id_product,
                 'reference' => trim((string) $product->reference) ?: '—',
-                'name' => trim((string) $product->name) ?: 'Sem nome em EN',
+                'name' => trim((string) $product->name) ?: trans('messages.product_image_review_missing_english_name'),
                 'images' => $images->get((int) $product->id_product, collect())->values()->all(),
             ])->values(),
             'meta' => [

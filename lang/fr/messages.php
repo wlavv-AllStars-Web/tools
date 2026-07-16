@@ -272,5 +272,19 @@ return [
     'product_export_generated' => 'Export genere: :filename (:rows lignes).',
     'product_export_failed' => 'L export produits a echoue: :error',
     'web.product_store_compare.index' => 'Comparaison produits entre boutiques',
-    'web.product_store_compare.catalog' => 'Catalogue fournisseur'
+    'web.product_store_compare.catalog' => 'Catalogue fournisseur',
+    'marketing.product_images.index' => 'Vérification des images produits',
+    'product_images' => 'Images produits',
+    'product_image_review' => 'Vérification des images produits',
+    'product_image_review_eyebrow' => 'Marketing · ASM',
+    'product_image_review_description' => 'Sélectionnez une marque pour vérifier toutes les références et leurs photos associées.',
+    'product_image_review_asm_brand' => 'Marque ASM',
+    'product_image_review_select_brand' => 'Sélectionner une marque…',
+    'product_image_review_missing_english_name' => 'Aucun nom en anglais',
+    'product_image_review_loading' => 'Chargement de 10 produits supplémentaires…',
+    'product_image_review_product' => 'Produit',
+    'product_image_review_no_images' => 'Aucune image',
+    'product_image_review_image' => 'image',
+    'product_image_review_cover' => 'Couverture',
+    'product_image_review_load_error' => 'Impossible de charger les produits. Veuillez réessayer.'
 ];

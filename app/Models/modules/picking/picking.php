@@ -428,32 +428,13 @@ class picking extends Model
         }
 
         if ($idProductAttribute > 0) {
-            $attributeTable = self::psTable('product_attribute');
+            $housing = trim((string) (DB::connection('mysql2')
+                ->table(self::psTable('custom_product_attribute'))
+                ->where('id_product_attribute', $idProductAttribute)
+                ->value('location') ?? ''));
 
-            if (Schema::connection('mysql2')->hasColumn($attributeTable, 'housing')) {
-                $housing = trim((string) (DB::connection('mysql2')
-                    ->table($attributeTable)
-                    ->where('id_product_attribute', $idProductAttribute)
-                    ->value('housing') ?? ''));
-
-                if ($housing !== '') {
-                    return $housing;
-                }
-            }
-
-            $customAttributeTable = self::psTable('custom_product_attribute');
-            if (
-                Schema::connection('mysql2')->hasTable($customAttributeTable)
-                && Schema::connection('mysql2')->hasColumn($customAttributeTable, 'location')
-            ) {
-                $housing = trim((string) (DB::connection('mysql2')
-                    ->table($customAttributeTable)
-                    ->where('id_product_attribute', $idProductAttribute)
-                    ->value('location') ?? ''));
-
-                if ($housing !== '') {
-                    return $housing;
-                }
+            if ($housing !== '') {
+                return $housing;
             }
         }
 

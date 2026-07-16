@@ -1,6 +1,6 @@
 <div onclick="openOrder({{$row->id_order}}, $(this))" class="orderHeader" style="border: 1px solid #999; padding: 5px;margin: 3px 0; border-radius: 5px;background-color: #FFF;">
     <span>#{{$row->id_order}} - {{$row->carrier}}</span>
-    <span style="border-radius: 30px; border: 1px solid #999; float: right; min-width: 25px;text-align: center;padding: 0 3px;">{{count($row->order)}}</span>
+    <span style="border-radius: 30px; border: 1px solid #999; float: right; min-width: 25px;text-align: center;padding: 0 3px;">{{$row->order->sum('quantity')}}</span>
 </div>
 <div class="order_container" id="order_{{$row->id_order}}" style="display: none; background-color: #eee; border: 1px solid #bbb;border-radius: 5px;padding: 10px 2px;">
     <table style="width: 100%;">

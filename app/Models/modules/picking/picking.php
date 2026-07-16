@@ -88,7 +88,11 @@ class picking extends Model
                         
                         if(isset($product->id_product)){
                         
-                            $detail->location = $product->location; 
+                            $detail->location = self::resolveHousing(
+                                (int) $detail->product_id,
+                                (int) $detail->product_attribute_id,
+                                (string) ($product->location ?? '')
+                            );
                             
                             $is_pack = pack::is_pack($detail->product_id);
     
@@ -107,12 +111,20 @@ class picking extends Model
                                     if( $pack_item->id_product_attribute_item == 0){
                                         $picking['product_reference'] = $product->reference;                      
                                         $picking['product_ean13'] = $product->ean13; 
-                                        $picking['location'] = $product->location; 
+                                        $picking['location'] = self::resolveHousing(
+                                            (int) $pack_item->id_product_item,
+                                            0,
+                                            (string) ($product->location ?? '')
+                                        );
                                     }else{
                                         $attribute = product_attribute::where('id_product',  $pack_item->id_product_item)->where('id_product_attribute',  $pack_item->id_product_attribute_item)->first();
                                         $picking['product_reference'] = $attribute->reference;                      
                                         $picking['product_ean13'] = $attribute->ean13; 
-                                        $picking['location'] = $attribute->location; 
+                                        $picking['location'] = self::resolveHousing(
+                                            (int) $pack_item->id_product_item,
+                                            (int) $pack_item->id_product_attribute_item,
+                                            (string) ($attribute->location ?? '')
+                                        );
                                     }
                                     
                                     $picking['product_id'] = $pack_item->id_product_item;                    
@@ -337,12 +349,19 @@ class picking extends Model
     private static function insertData($row, $quantity, $status, $carrier_name){
         
         $needsMarketingPhotos = self::needsMarketingPhotos((int) $row->product_id, (int) $row->product_attribute_id);
+        $housing = self::resolveHousing(
+            (int) $row->product_id,
+            (int) $row->product_attribute_id,
+            (string) ($row->location ?? '')
+        );
         $existingRow = self::where('id_order', $row->id_order)
             ->where('id_product', $row->product_id)
             ->where('id_product_attribute', $row->product_attribute_id)
             ->first();
         
         if( $existingRow ){
+            $existingRow->housing = $housing;
+
             if (self::hasPickingIsNewColumn()) {
                 $existingRow->is_new = $needsMarketingPhotos;
             }
@@ -351,7 +370,7 @@ class picking extends Model
         }else{
             $insert = [
                 'status'  => $status,
-                'housing'  => (!is_null($row->location)) ? $row->location : 'N/D',
+                'housing'  => $housing,
                 'id_shop' => $row->id_shop,
                 'name' => $row->product_name,
                 'id_product' => $row->product_id,
@@ -374,6 +393,50 @@ class picking extends Model
 
     }
 
+    private static function resolveHousing(int $idProduct, int $idProductAttribute = 0, string $fallback = ''): string
+    {
+        if ($idProductAttribute > 0) {
+            $attributeTable = self::psTable('product_attribute');
+
+            if (Schema::connection('mysql2')->hasColumn($attributeTable, 'housing')) {
+                $housing = trim((string) (DB::connection('mysql2')
+                    ->table($attributeTable)
+                    ->where('id_product_attribute', $idProductAttribute)
+                    ->value('housing') ?? ''));
+
+                if ($housing !== '') {
+                    return $housing;
+                }
+            }
+
+            $customAttributeTable = self::psTable('custom_product_attribute');
+            if (
+                Schema::connection('mysql2')->hasTable($customAttributeTable)
+                && Schema::connection('mysql2')->hasColumn($customAttributeTable, 'location')
+            ) {
+                $housing = trim((string) (DB::connection('mysql2')
+                    ->table($customAttributeTable)
+                    ->where('id_product_attribute', $idProductAttribute)
+                    ->value('location') ?? ''));
+
+                if ($housing !== '') {
+                    return $housing;
+                }
+            }
+        }
+
+        $fallback = trim($fallback);
+        if ($fallback !== '') {
+            return $fallback;
+        }
+
+        $housing = trim((string) (DB::connection('mysql2')
+            ->table(self::psTable('product'))
+            ->where('id_product', $idProduct)
+            ->value('location') ?? ''));
+
+        return $housing !== '' ? $housing : 'N/D';
+    }
     private static function needsMarketingPhotos(int $idProduct, int $idProductAttribute = 0): bool
     {
         if ($idProduct <= 0) {

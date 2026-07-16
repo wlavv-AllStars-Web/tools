@@ -101,7 +101,7 @@ class MarketingProductImageReviewController extends Controller
                 'id_image' => (int) $image->id_image,
                 'position' => (int) $image->position,
                 'cover' => (bool) $image->cover,
-                'thumbnail_url' => $this->imageUrl((int) $image->id_image, 'small_default'),
+                'thumbnail_url' => $this->imageUrl((int) $image->id_image, 'medium_default'),
                 'large_url' => $this->imageUrl((int) $image->id_image, 'large_default'),
             ]));
     }

@@ -87,13 +87,25 @@ class SupplierInvoiceController extends Controller
         ]);
 
         $invoice = $this->workflowService->confirmInvoiceForOrderNote($orderNote, $data);
+        $skippedInvalidPriceLines = collect($invoice->getAttribute('skipped_invalid_price_lines') ?? []);
 
         $message = $data['invoice_action'] === 'close_invoice'
             ? 'Supplier invoice closed successfully.'
             : 'Supplier invoice saved as draft successfully.';
 
-        return redirect()->route('erp.oms.invoices.show', $invoice)
+        $redirect = redirect()->route('erp.oms.invoices.show', $invoice)
             ->with('success', $message);
+
+        if ($skippedInvalidPriceLines->isNotEmpty()) {
+            $references = $skippedInvalidPriceLines->pluck('reference')->filter()->implode(', ');
+
+            $redirect->with(
+                'warning',
+                'The following products were not marked as invoiced because their purchase price was invalid (must be greater than zero): ' . $references
+            );
+        }
+
+        return $redirect;
     }
     
     public function show(SupplierInvoice $invoice)

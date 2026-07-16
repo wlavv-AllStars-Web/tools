@@ -232,19 +232,22 @@ class SupplierInvoiceWorkflowService
     {
         $invoiceableLines = $this->getInvoiceableLines($orderNote)->keyBy('order_note_line_id');
 
-        $selectedLines = collect($payload['lines'] ?? [])
+        $requestedLines = collect($payload['lines'] ?? [])
             ->filter(function ($line) {
                 return (int) ($line['qty_billed'] ?? 0) > 0;
             })
             ->values();
 
-        if ($selectedLines->isEmpty()) {
+        if ($requestedLines->isEmpty()) {
             throw ValidationException::withMessages([
                 'lines' => 'Select at least one line and billed quantity.',
             ]);
         }
 
-        foreach ($selectedLines as $linePayload) {
+        $skippedInvalidPriceLines = collect();
+        $selectedLines = collect();
+
+        foreach ($requestedLines as $linePayload) {
             $orderNoteLineId = (int) ($linePayload['order_note_line_id'] ?? 0);
             $qtyBilled = (int) ($linePayload['qty_billed'] ?? 0);
             $unitPrice = (float) ($linePayload['unit_price'] ?? 0);
@@ -262,11 +265,26 @@ class SupplierInvoiceWorkflowService
                 ]);
             }
 
-            if ($unitPrice < 0) {
-                throw ValidationException::withMessages([
-                    'lines' => 'Unit price cannot be negative.',
+            if ($unitPrice <= 0) {
+                $skippedInvalidPriceLines->push([
+                    'order_note_line_id' => $orderNoteLineId,
+                    'reference' => (string) ($line->reference ?: ('Product #' . $line->product_id)),
+                    'qty_billed' => $qtyBilled,
+                    'unit_price' => $unitPrice,
                 ]);
+
+                continue;
             }
+
+            $selectedLines->push($linePayload);
+        }
+
+        if ($selectedLines->isEmpty()) {
+            $references = $skippedInvalidPriceLines->pluck('reference')->filter()->implode(', ');
+
+            throw ValidationException::withMessages([
+                'lines' => 'No product was marked as invoiced because the selected purchase price was invalid (must be greater than zero): ' . $references,
+            ]);
         }
 
         $currencyMeta = $this->resolveCurrencyForOrderNote(
@@ -278,7 +296,7 @@ class SupplierInvoiceWorkflowService
             })
         );
 
-        return DB::transaction(function () use ($orderNote, $payload, $selectedLines, $invoiceableLines, $currencyMeta) {
+        return DB::transaction(function () use ($orderNote, $payload, $selectedLines, $invoiceableLines, $currencyMeta, $skippedInvalidPriceLines) {
             $invoice = null;
             $existingInvoiceId = (int) ($payload['existing_invoice_id'] ?? 0);
             $invoiceReference = trim((string) ($payload['invoice_reference'] ?? ''));
@@ -439,7 +457,10 @@ class SupplierInvoiceWorkflowService
 
             $this->refreshOrderNoteStatus($orderNote->fresh(['lines', 'billedOrders']));
 
-            return $invoice->fresh(['billedOrders.lines', 'supplier']);
+            $result = $invoice->fresh(['billedOrders.lines', 'supplier']);
+            $result->setAttribute('skipped_invalid_price_lines', $skippedInvalidPriceLines->all());
+
+            return $result;
         });
     }
 

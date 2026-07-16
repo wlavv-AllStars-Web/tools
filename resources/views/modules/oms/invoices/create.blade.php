@@ -177,7 +177,7 @@
                                             <td class="text-center fw-semibold">{{ $line->qty_remaining }}</td>
                                             <td class="text-center">
                                                 <input type="hidden" name="lines[{{ $loop->index }}][order_note_line_id]" value="{{ $line->order_note_line_id }}">
-                                                <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ $line->qty_remaining > 0 ? $line->qty_remaining : 0 }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                             </td>
                                             <td class="text-end">
                                                 <input type="number" min="0" step="0.000001" name="lines[{{ $loop->index }}][unit_price]" class="form-control form-control-sm price-input ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_wholesale_price, 6, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>

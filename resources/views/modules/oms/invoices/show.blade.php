@@ -16,6 +16,12 @@
 @endphp
 
 <div class="container-fluid py-3 oms-premium">
+    @if(session('success'))
+        <div class="alert alert-success py-2">{{ session('success') }}</div>
+    @endif
+    @if(session('warning'))
+        <div class="alert alert-warning py-2">{{ session('warning') }}</div>
+    @endif
     <div style="border: 1px solid rgba(20, 33, 61, .08); background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .05); padding: 10px;margin-bottom: 10px;">
         <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap oms-top-strip">
             <div class="d-flex align-items-center gap-2 flex-wrap">

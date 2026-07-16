@@ -15,15 +15,18 @@
     <div class="pir-sentinel" id="pirSentinel"></div>
 </div>
 
+@php
+    $pirTranslations = [
+        'product' => __('messages.product_image_review_product'),
+        'noImages' => __('messages.product_image_review_no_images'),
+        'image' => __('messages.product_image_review_image'),
+        'cover' => __('messages.product_image_review_cover'),
+        'loadError' => __('messages.product_image_review_load_error'),
+        'openProduct' => __('messages.product_image_review_open_product'),
+    ];
+@endphp
 <script>
-const pirTranslations = @json([
-    'product' => __('messages.product_image_review_product'),
-    'noImages' => __('messages.product_image_review_no_images'),
-    'image' => __('messages.product_image_review_image'),
-    'cover' => __('messages.product_image_review_cover'),
-    'loadError' => __('messages.product_image_review_load_error'),
-    'openProduct' => __('messages.product_image_review_open_product'),
-]);
+const pirTranslations = {!! json_encode($pirTranslations, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
 document.addEventListener('DOMContentLoaded',()=>{const root=document.getElementById('productImageReview'),select=document.getElementById('pirManufacturer'),list=document.getElementById('pirList'),loader=document.getElementById('pirLoader'),sentinel=document.getElementById('pirSentinel');let manufacturer='',page=0,loading=false,more=false,version=0;const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};function render(p){const card=el('article','pir-product'),meta=el('div','pir-product-meta'),ref=el('div','pir-reference'),gallery=el('div','pir-gallery');ref.append(el('i','fa-solid fa-barcode'),document.createTextNode(p.reference));const id=el('div','pir-id',`${pirTranslations.product} #${p.id_product}`);meta.append(ref,el('div','pir-name',p.name),id);if(p.front_url){const productLink=el('a','pir-product-link');productLink.href=p.front_url;productLink.target='_blank';productLink.rel='noopener';productLink.append(el('i','fa-solid fa-arrow-up-right-from-square'),document.createTextNode(pirTranslations.openProduct));meta.append(productLink)}if(!p.images.length)gallery.append(el('div','pir-no-images',pirTranslations.noImages));p.images.forEach((image,i)=>{const a=el('a','pir-image-link'),img=document.createElement('img');a.href=image.large_url;a.target='_blank';a.rel='noopener';a.title=`${p.reference} · ${pirTranslations.image} ${i+1}`;img.src=image.thumbnail_url;img.alt=`${p.reference} · ${p.name} · ${pirTranslations.image} ${i+1}`;img.loading='lazy';img.decoding='async';img.addEventListener('error',()=>{img.remove();a.prepend(el('i','fa-solid fa-triangle-exclamation text-warning fa-2x'))},{once:true});a.append(img);if(image.cover)a.append(el('span','pir-cover',pirTranslations.cover));a.append(el('span','pir-image-number',String(i+1)));gallery.append(a)});card.append(meta,gallery);list.append(card)}async function load(){if(!manufacturer||loading||!more)return;loading=true;loader.hidden=false;const current=version;try{const url=new URL(root.dataset.productsUrl,location.origin);url.searchParams.set('manufacturer_id',manufacturer);url.searchParams.set('page',String(page+1));const response=await fetch(url,{headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw new Error(response.status);const payload=await response.json();if(current!==version)return;payload.data.forEach(render);page=payload.meta.page;more=payload.meta.has_more}catch(e){if(current===version)list.append(el('div','alert alert-danger',pirTranslations.loadError))}finally{if(current===version){loading=false;loader.hidden=true}}}select.addEventListener('change',()=>{version++;manufacturer=select.value;page=0;more=Boolean(manufacturer);loading=false;list.replaceChildren();loader.hidden=true;if(!manufacturer)return;load()});new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting))load()},{rootMargin:'600px 0px'}).observe(sentinel)});
 </script>
 @endsection

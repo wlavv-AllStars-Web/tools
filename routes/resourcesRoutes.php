@@ -8,6 +8,7 @@ use App\Http\Controllers\Areas\hrController;
 use App\Http\Controllers\Areas\financeController;
 use App\Http\Controllers\Areas\logisticsController;
 use App\Http\Controllers\Areas\marketingController;
+use App\Http\Controllers\Areas\MarketingProductImageReviewController;
 use App\Http\Controllers\Areas\customerSupportController;
 use App\Http\Controllers\Areas\salesController;
 use App\Http\Controllers\Areas\purchaseController;
@@ -52,6 +53,8 @@ Route::post( 'finance/documents/intrastat/saveCurrencyRate', [financeController:
 
 Route::get('logistics', [logisticsController::class, 'index'])->name('logistics.index');
 Route::get('marketing', [marketingController::class, 'index'])->name('marketing.index');
+Route::get('marketing/product-images', [MarketingProductImageReviewController::class, 'index'])->name('marketing.product_images.index');
+Route::get('marketing/product-images/products', [MarketingProductImageReviewController::class, 'products'])->name('marketing.product_images.products');
 Route::post( 'customTools/marketing/post', [marketingController::class, 'post'])->name('marketing.post');
 Route::post('marketing/youtube-broken-links/sync', [marketingController::class, 'syncYoutubeBrokenLinks'])->name('marketing.youtube_broken_links.sync');
 Route::get( 'marketing/ASD/missingImages',[marketingController::class, 'getASDMissingImages'])->name('marketing.asdMissingImages');

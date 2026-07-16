@@ -60,7 +60,7 @@ class picking extends Model
     public static function add(){
         self::classifyPaymentAcceptedOrders();
         self::removeNonPreparationPickingRows();
-        self::addData(3, 'preparation');
+        self::addData([3, 35], 'preparation');
     }
         
     public static function addData($id_status, $status){
@@ -181,7 +181,7 @@ class picking extends Model
         }
 
         $preparationOrderIds = orders::whereIn('id_order', $orderIds)
-            ->where('current_state', 3)
+            ->whereIn('current_state', [3, 35])
             ->pluck('id_order')
             ->map(fn ($idOrder) => (int) $idOrder)
             ->all();

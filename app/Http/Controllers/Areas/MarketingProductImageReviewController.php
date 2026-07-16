@@ -64,6 +64,7 @@ class MarketingProductImageReviewController extends Controller
                 'id_product' => (int) $product->id_product,
                 'reference' => trim((string) $product->reference) ?: '—',
                 'name' => trim((string) $product->name) ?: trans('messages.product_image_review_missing_english_name'),
+                'front_url' => $this->frontProductUrl((int) $product->id_product),
                 'images' => $images->get((int) $product->id_product, collect())->values()->all(),
             ])->values(),
             'meta' => [
@@ -104,6 +105,11 @@ class MarketingProductImageReviewController extends Controller
                 'thumbnail_url' => $this->imageUrl((int) $image->id_image, 'medium_default'),
                 'large_url' => $this->imageUrl((int) $image->id_image, 'large_default'),
             ]));
+    }
+
+    private function frontProductUrl(int $idProduct): string
+    {
+        return rtrim((string) config('allstars.stores.ASM.base_url'), '/').'/index.php?id_product='.$idProduct.'&controller=product';
     }
 
     private function imageUrl(int $idImage, string $type): string

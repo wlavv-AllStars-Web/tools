@@ -627,5 +627,6 @@ return [
     'product_image_review_no_images' => 'No images',
     'product_image_review_image' => 'image',
     'product_image_review_cover' => 'Cover',
-    'product_image_review_load_error' => 'Products could not be loaded. Please try again.'
+    'product_image_review_load_error' => 'Products could not be loaded. Please try again.',
+    'product_image_review_open_product' => 'View product in ASM'
 ];

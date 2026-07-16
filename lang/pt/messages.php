@@ -284,5 +284,6 @@ return [
     'product_image_review_no_images' => 'Sem imagens',
     'product_image_review_image' => 'imagem',
     'product_image_review_cover' => 'Capa',
-    'product_image_review_load_error' => 'Não foi possível carregar os produtos. Tenta novamente.'
+    'product_image_review_load_error' => 'Não foi possível carregar os produtos. Tenta novamente.',
+    'product_image_review_open_product' => 'Ver produto em ASM'
 ];

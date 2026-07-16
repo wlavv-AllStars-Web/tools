@@ -44,6 +44,12 @@ class picking extends Model
                     ->where('row_done', 0)
                     ->get()
                     ->map(function ($row) {
+                        $row->housing = self::resolveHousing(
+                            (int) $row->id_product,
+                            (int) $row->id_product_attribute,
+                            (string) ($row->housing ?? ''),
+                            (string) ($row->reference ?? '')
+                        );
                         $row->is_new = self::needsMarketingPhotos(
                             (int) $row->id_product,
                             (int) $row->id_product_attribute
@@ -91,12 +97,14 @@ class picking extends Model
                             $detail->location = self::resolveHousing(
                                 (int) $detail->product_id,
                                 (int) $detail->product_attribute_id,
-                                (string) ($product->location ?? '')
+                                (string) ($product->location ?? ''),
+                                (string) ($detail->product_reference ?? '')
                             );
                             
                             $is_pack = pack::is_pack($detail->product_id);
+                            $isGoodiesPack = $is_pack && self::isGoodiesPack((int) $detail->product_id);
     
-                            if( $is_pack ){
+                            if( $is_pack && !$isGoodiesPack ){
                                 
                                 $pack_products = pack::getPackItems($detail->product_id);
         
@@ -114,7 +122,8 @@ class picking extends Model
                                         $picking['location'] = self::resolveHousing(
                                             (int) $pack_item->id_product_item,
                                             0,
-                                            (string) ($product->location ?? '')
+                                            (string) ($product->location ?? ''),
+                                            (string) ($product->reference ?? '')
                                         );
                                     }else{
                                         $attribute = product_attribute::where('id_product',  $pack_item->id_product_item)->where('id_product_attribute',  $pack_item->id_product_attribute_item)->first();
@@ -123,7 +132,8 @@ class picking extends Model
                                         $picking['location'] = self::resolveHousing(
                                             (int) $pack_item->id_product_item,
                                             (int) $pack_item->id_product_attribute_item,
-                                            (string) ($attribute->location ?? '')
+                                            (string) ($attribute->location ?? ''),
+                                            (string) ($attribute->reference ?? '')
                                         );
                                     }
                                     
@@ -145,6 +155,14 @@ class picking extends Model
                                     
                                 }
                             }else{
+                                if ($isGoodiesPack) {
+                                    self::removeExpandedGoodiesRows(
+                                        (int) $detail->id_order,
+                                        (int) $detail->product_id,
+                                        $status
+                                    );
+                                }
+
                                 $quantity = $detail->product_quantity - $qtdSent;
                                 self::insertData($detail, $quantity, $status, $order->carrier->name);
                             }
@@ -352,7 +370,8 @@ class picking extends Model
         $housing = self::resolveHousing(
             (int) $row->product_id,
             (int) $row->product_attribute_id,
-            (string) ($row->location ?? '')
+            (string) ($row->location ?? ''),
+            (string) ($row->product_reference ?? '')
         );
         $existingRow = self::where('id_order', $row->id_order)
             ->where('id_product', $row->product_id)
@@ -393,8 +412,21 @@ class picking extends Model
 
     }
 
-    private static function resolveHousing(int $idProduct, int $idProductAttribute = 0, string $fallback = ''): string
+    private static function resolveHousing(
+        int $idProduct,
+        int $idProductAttribute = 0,
+        string $fallback = '',
+        string $reference = ''
+    ): string
     {
+        if ($idProductAttribute <= 0 && trim($reference) !== '') {
+            $idProductAttribute = (int) (DB::connection('mysql2')
+                ->table(self::psTable('product_attribute'))
+                ->where('id_product', $idProduct)
+                ->where('reference', trim($reference))
+                ->value('id_product_attribute') ?? 0);
+        }
+
         if ($idProductAttribute > 0) {
             $attributeTable = self::psTable('product_attribute');
 
@@ -437,6 +469,61 @@ class picking extends Model
 
         return $housing !== '' ? $housing : 'N/D';
     }
+
+    private static function removeExpandedGoodiesRows(int $idOrder, int $idPack, string $status): void
+    {
+        $componentIds = pack::getPackItems($idPack)
+            ->pluck('id_product_item')
+            ->map(fn ($idProduct) => (int) $idProduct)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($componentIds === []) {
+            return;
+        }
+
+        $standaloneComponentIds = DB::connection('mysql2')
+            ->table(self::psTable('order_detail'))
+            ->where('id_order', $idOrder)
+            ->whereIn('product_id', $componentIds)
+            ->pluck('product_id')
+            ->map(fn ($idProduct) => (int) $idProduct)
+            ->all();
+
+        $componentIds = array_values(array_diff($componentIds, $standaloneComponentIds));
+        if ($componentIds === []) {
+            return;
+        }
+
+        self::where('id_order', $idOrder)
+            ->where('status', $status)
+            ->where('row_done', 0)
+            ->whereIn('id_product', $componentIds)
+            ->delete();
+    }
+
+    private static function isGoodiesPack(int $idProduct): bool
+    {
+        if ($idProduct <= 0 || !pack::is_pack($idProduct)) {
+            return false;
+        }
+
+        return DB::connection('mysql2')
+            ->table(self::psTable('product') . ' as p')
+            ->leftJoin(self::psTable('product_lang') . ' as pl', function ($join) {
+                $join->on('pl.id_product', '=', 'p.id_product')
+                    ->where('pl.id_lang', 1);
+            })
+            ->where('p.id_product', $idProduct)
+            ->where(function ($query) {
+                $query->where('p.reference', 'like', '%goods%')
+                    ->orWhere('pl.name', 'like', '%goodies%');
+            })
+            ->exists();
+    }
+
     private static function needsMarketingPhotos(int $idProduct, int $idProductAttribute = 0): bool
     {
         if ($idProduct <= 0) {

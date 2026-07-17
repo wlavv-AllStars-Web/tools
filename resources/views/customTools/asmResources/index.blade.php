@@ -121,6 +121,15 @@
         gap: 6px;
         min-width: 260px;
     }
+
+    .asm-manufacturer-logo {
+        width: 64px;
+        height: 42px;
+        object-fit: contain;
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 5px;
+        background: #fff;
+    }
     @media (max-width: 992px) {
         .asm-image-box {
             width: 180px;
@@ -155,7 +164,8 @@
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
-                            <th style="width: 10%;">Brand</th>
+                            <th style="width: 8%;">Logo</th>
+                            <th style="width: 12%;">Brand</th>
                             <th style="width: 15%;">Image EN</th>
                             <th style="width: 15%;">Image ES</th>
                             <th style="width: 15%;">Image FR</th>
@@ -165,6 +175,15 @@
                     <tbody>
                         @foreach($brands as $brand)
                             <tr>
+                                <td>
+                                    <img
+                                        src="{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/img/m/{{ $brand->id_manufacturer }}.jpg"
+                                        alt="{{ $brand->name }}"
+                                        class="asm-manufacturer-logo"
+                                        loading="lazy"
+                                    >
+                                </td>
+
                                 <td>
                                     <div class="asm-brand-title">
                                         {{ $brand->name }}
@@ -203,7 +222,6 @@
                                                     @if($bannerExists)
                                                         <div class="asm-image-ok">
                                                             <i class="fa-solid fa-circle-check"></i>
-                                                            Image available
                                                         </div>
                                                         <span class="asm-upload-overlay">
                                                             <i class="fa-solid fa-upload me-1"></i>
@@ -234,8 +252,8 @@
                                     <form method="POST" action="{{ route('marketing.resources.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
                                         @csrf
                                         <input type="text" name="youtube" class="form-control form-control-sm" value="{{ old('youtube', $brand->youtube) }}" placeholder="YouTube URL or code">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Save YouTube">
-                                            <i class="fa-brands fa-youtube"></i>
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Save YouTube">
+                                            <i class="fa-solid fa-floppy-disk"></i>
                                         </button>
                                     </form>
                                 </td>
@@ -244,7 +262,7 @@
 
                         @if($brands->isEmpty())
                             <tr>
-                                <td colspan="5" class="text-center text-muted p-4">
+                                <td colspan="6" class="text-center text-muted p-4">
                                     No brands found for shop 2.
                                 </td>
                             </tr>

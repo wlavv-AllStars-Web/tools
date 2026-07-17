@@ -110,7 +110,8 @@ class MarketingProductImageReviewController extends Controller
                 'thumbnail_url' => $this->friendlyImageUrl(
                     (int) $image->id_image,
                     'tm_medium_default',
-                    $linkRewrites[(int) $image->id_product] ?? ''
+                    $linkRewrites[(int) $image->id_product] ?? '',
+                    'webp'
                 ),
                 'large_url' => $this->imageUrl((int) $image->id_image, 'large_default'),
             ]));
@@ -127,14 +128,17 @@ class MarketingProductImageReviewController extends Controller
         return rtrim((string) config('allstars.stores.ASM.base_url'), '/').'/img/p/'.$path.'/'.$idImage.'-'.$type.'.jpg';
     }
 
-    private function friendlyImageUrl(int $idImage, string $type, string $linkRewrite): string
+    private function friendlyImageUrl(int $idImage, string $type, string $linkRewrite, string $extension = 'jpg'): string
     {
         if ($linkRewrite === '') {
-            return $this->imageUrl($idImage, $type);
+            return $extension === 'jpg'
+                ? $this->imageUrl($idImage, $type)
+                : rtrim((string) config('allstars.stores.ASM.base_url'), '/')
+                    .'/img/p/'.implode('/', str_split((string) $idImage)).'/'.$idImage.'-'.$type.'.'.$extension;
         }
 
         return rtrim((string) config('allstars.stores.ASM.base_url'), '/')
-            .'/'.$idImage.'-'.$type.'/'.$linkRewrite.'.jpg';
+            .'/'.$idImage.'-'.$type.'/'.$linkRewrite.'.'.$extension;
     }
 
     private function englishLanguageId(): int

@@ -27,9 +27,10 @@
     }
 
     .asm-image-upload-label {
-        display: block;
+        display: inline-block;
         cursor: pointer;
         margin: 0;
+        position: relative;
     }
 
     .asm-image-box {
@@ -118,6 +119,78 @@
     .asm-language-status.is-present { background: #198754; }
     .asm-language-status.is-missing { background: #dc3545; }
     .asm-language-status:hover { filter: brightness(.92); transform: translateY(-1px); }
+
+    .asm-brand-banners-preview {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: calc(100% + 10px);
+        transform: translateY(-50%);
+        width: 360px;
+        padding: 10px;
+        border: 1px solid rgba(0,0,0,.15);
+        border-radius: 5px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(0,0,0,.2);
+        pointer-events: none;
+        z-index: 1050;
+    }
+
+    .asm-brand-preview-trigger:hover .asm-brand-banners-preview {
+        display: block;
+    }
+
+    .asm-brand-preview-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        width: 30px;
+        height: 30px;
+        margin-top: 7px;
+        border: 0;
+        border-radius: 5px;
+        color: #fff;
+        background: #0d6efd;
+        cursor: help;
+    }
+
+    .asm-preview-row + .asm-preview-row {
+        margin-top: 8px;
+    }
+
+    .asm-preview-language {
+        display: block;
+        margin-bottom: 3px;
+        color: #212529;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .asm-preview-image {
+        display: block;
+        width: 100%;
+        max-height: 150px;
+        object-fit: contain;
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 4px;
+        background: #f8f9fa;
+    }
+
+    .asm-preview-missing {
+        padding: 12px;
+        border: 1px dashed #dc3545;
+        border-radius: 4px;
+        color: #dc3545;
+        background: #fff5f5;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .asm-card .table-responsive {
+        overflow: visible;
+    }
+
     .asm-youtube-form {
         display: flex;
         gap: 6px;
@@ -133,6 +206,14 @@
         background: #fff;
     }
     @media (max-width: 992px) {
+        .asm-card .table-responsive {
+            overflow-x: auto;
+        }
+
+        .asm-brand-banners-preview {
+            width: 280px;
+        }
+
         .asm-image-box {
             width: 180px;
             height: 80px;
@@ -198,6 +279,35 @@
                                             <span class="badge bg-secondary ms-1">Inactive</span>
                                         @endif
                                     </div>
+
+                                    <span class="asm-brand-preview-trigger" title="Preview EN, ES and FR banners">
+                                        <i class="fa-solid fa-eye"></i>
+
+                                        <span class="asm-brand-banners-preview">
+                                            @foreach($languages as $previewLang)
+                                                @php
+                                                    $previewPath = 'uploads/asm/product/' . $brand->id_manufacturer . '_' . $previewLang . '.webp';
+                                                    $previewFullPath = public_path($previewPath);
+                                                    $previewExists = file_exists($previewFullPath);
+                                                @endphp
+
+                                                <span class="asm-preview-row">
+                                                    <span class="asm-preview-language">{{ $previewLang }}</span>
+
+                                                    @if($previewExists)
+                                                        <img
+                                                            src="{{ asset($previewPath) }}?v={{ filemtime($previewFullPath) }}"
+                                                            alt="{{ $brand->name }} {{ $previewLang }} banner"
+                                                            class="asm-preview-image"
+                                                            loading="lazy"
+                                                        >
+                                                    @else
+                                                        <span class="asm-preview-missing">No image</span>
+                                                    @endif
+                                                </span>
+                                            @endforeach
+                                        </span>
+                                    </span>
                                 </td>
 
                                 @foreach($languages as $lang)

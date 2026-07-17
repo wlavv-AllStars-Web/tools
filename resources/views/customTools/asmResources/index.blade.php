@@ -167,13 +167,14 @@
         font-weight: 700;
     }
 
-    .asm-preview-image {
+    .asm-brand-banners-preview .asm-preview-image {
         display: block;
-        width: auto;
-        height: auto;
-        max-width: 700px;
-        max-height: none;
-        object-fit: none;
+        width: auto !important;
+        height: auto !important;
+        max-width: 700px !important;
+        max-height: 700px !important;
+        object-fit: contain;
+        box-sizing: border-box;
         border: 1px solid rgba(0,0,0,.08);
         border-radius: 4px;
         background: #f8f9fa;

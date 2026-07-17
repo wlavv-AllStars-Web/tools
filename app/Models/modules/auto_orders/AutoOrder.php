@@ -154,7 +154,7 @@ class AutoOrder extends Model
                 $join->on('cpa.id_product', '=', 'p.id_product')
                     ->where('cpa.id_product_attribute', $idProductAttribute);
             })
-            ->leftJoin($stockTable . ' as sa', function ($join) use ($idProductAttribute) {
+            ->leftJoin($stockTable . ' as sa', function ($join) use ($idProductAttribute, $sourceRow) {
                 $join->on('sa.id_product', '=', 'p.id_product')
                     ->where('sa.id_product_attribute', $idProductAttribute)
                     ->where('sa.id_shop', (int) $sourceRow['id_shop']);

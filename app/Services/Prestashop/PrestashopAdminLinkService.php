@@ -48,7 +48,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardProductAdminUrl(int $idProduct, string $store = 'ASM'): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminProducts', [
+        return static::bridgeAdminUrl('AdminProducts', [
             'id_product' => $idProduct,
             'updateproduct' => 1,
         ], $store);
@@ -56,7 +56,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardOrderAdminUrl(int $idOrder, string $store = 'ASM'): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminOrders', [
+        return static::bridgeAdminUrl('AdminOrders', [
             'id_order' => $idOrder,
             'vieworder' => 1,
         ], $store);
@@ -64,7 +64,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardCustomerAdminUrl(int $idCustomer, string $store = 'ASM'): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminCustomers', [
+        return static::bridgeAdminUrl('AdminCustomers', [
             'id_customer' => $idCustomer,
             'viewcustomer' => 1,
         ], $store);
@@ -72,7 +72,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardCategoryAdminUrl(int $idCategory, string $store = 'ASM'): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminCategories', [
+        return static::bridgeAdminUrl('AdminCategories', [
             'id_category' => $idCategory,
             'updatecategory' => 1,
         ], $store);
@@ -80,7 +80,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardSupplierAdminUrl(int $idSupplier, string $store = 'ASM'): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminSuppliers', [
+        return static::bridgeAdminUrl('AdminSuppliers', [
             'id_supplier' => $idSupplier,
             'updatesupplier' => 1,
         ], $store);
@@ -88,7 +88,7 @@ class PrestashopAdminLinkService
 
     public static function dashboardManufacturerAdminUrl(int $idManufacturer, string $store = 'ASM'): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminManufacturers', [
+        return static::bridgeAdminUrl('AdminManufacturers', [
             'id_manufacturer' => $idManufacturer,
             'updatemanufacturer' => 1,
         ], $store);
@@ -106,6 +106,7 @@ class PrestashopAdminLinkService
             return null;
         }
 
+        $targetParams = array_merge(static::shopContextParams($store), $targetParams);
         $targetParams = base64_encode(http_build_query($targetParams));
         $params = [
             static::bridgeTokenParameter($store) => $bridgeToken,
@@ -325,7 +326,7 @@ class PrestashopAdminLinkService
 
     public static function moduleConfigureUrl(string $moduleName, string $store = 'ASM', array $params = []): ?string
     {
-        return static::bridgeBackOfficeAdminUrl('AdminModulesSf', array_merge([
+        return static::bridgeAdminUrl('AdminModulesSf', array_merge([
             'configure' => $moduleName,
             'module_name' => $moduleName,
         ], $params), $store);

@@ -21,20 +21,27 @@ Route::get('/session/reset', function (Request $request) {
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    $cookieName = (string) config('session.cookie');
+    $cookieNames = array_unique([
+        (string) config('session.cookie'),
+        'laravel_session',
+        'XSRF-TOKEN',
+    ]);
     $response = redirect()->route('login');
 
     foreach (array_unique(array_filter([
         config('session.domain'),
         '.all-stars-motorsport.com',
     ])) as $domain) {
-        $response->withCookie(Cookie::forget($cookieName, '/', $domain));
-        $response->withCookie(Cookie::forget('XSRF-TOKEN', '/', $domain));
+        foreach ($cookieNames as $cookieName) {
+            $response->withCookie(Cookie::forget($cookieName, '/', $domain));
+        }
     }
 
-    return $response
-        ->withCookie(Cookie::forget($cookieName, '/', null))
-        ->withCookie(Cookie::forget('XSRF-TOKEN', '/', null));
+    foreach ($cookieNames as $cookieName) {
+        $response->withCookie(Cookie::forget($cookieName, '/', null));
+    }
+
+    return $response;
 })->name('session.reset');
 Route::get('/tv', function () { 
     $item = tv::where('active', 1)->first();

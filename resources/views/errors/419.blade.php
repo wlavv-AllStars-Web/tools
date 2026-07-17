@@ -26,7 +26,7 @@
     </main>
     <script>
         document.getElementById('resetSessionForm').addEventListener('submit', function () {
-            [@json(config('session.cookie')), 'XSRF-TOKEN'].forEach(function (name) {
+            [@json(config('session.cookie')), 'laravel_session', 'XSRF-TOKEN'].forEach(function (name) {
                 document.cookie = name + '=; Max-Age=0; path=/';
                 document.cookie = name + '=; Max-Age=0; path=/; domain=.all-stars-motorsport.com';
             });

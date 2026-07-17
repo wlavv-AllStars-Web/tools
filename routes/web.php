@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 
 Use App\Http\Controllers\Front\suppliersBackordersController;
 Use App\Http\Controllers\Front\frontMarketingController;
@@ -13,6 +15,27 @@ Use App\Http\Controllers\Front\frontMarketingController;
 use App\Models\modules\tv\tv;
 
 Route::get('/', function () { return view('auth.login'); });
+
+Route::get('/session/reset', function (Request $request) {
+    Auth::guard('web')->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    $cookieName = (string) config('session.cookie');
+    $response = redirect()->route('login');
+
+    foreach (array_unique(array_filter([
+        config('session.domain'),
+        '.all-stars-motorsport.com',
+    ])) as $domain) {
+        $response->withCookie(Cookie::forget($cookieName, '/', $domain));
+        $response->withCookie(Cookie::forget('XSRF-TOKEN', '/', $domain));
+    }
+
+    return $response
+        ->withCookie(Cookie::forget($cookieName, '/', null))
+        ->withCookie(Cookie::forget('XSRF-TOKEN', '/', null));
+})->name('session.reset');
 Route::get('/tv', function () { 
     $item = tv::where('active', 1)->first();
     return view('tv', compact('item'));

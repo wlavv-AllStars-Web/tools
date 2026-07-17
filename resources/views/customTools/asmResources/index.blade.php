@@ -171,7 +171,7 @@
         display: block;
         width: auto;
         height: auto;
-        max-width: none;
+        max-width: 700px;
         max-height: none;
         object-fit: none;
         border: 1px solid rgba(0,0,0,.08);

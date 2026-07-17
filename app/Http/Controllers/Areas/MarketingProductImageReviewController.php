@@ -51,18 +51,23 @@ class MarketingProductImageReviewController extends Controller
             ->join($prefix.'product_shop as ps', fn ($join) => $join->on('ps.id_product', '=', 'p.id_product')->where('ps.id_shop', $shopId))
             ->leftJoin($prefix.'product_lang as pl', fn ($join) => $join->on('pl.id_product', '=', 'p.id_product')->where('pl.id_shop', $shopId)->where('pl.id_lang', $languageId))
             ->where('p.id_manufacturer', $manufacturerId)
-            ->select('p.id_product', 'p.reference', 'pl.name')
+            ->select('p.id_product', 'p.reference', 'pl.name', 'pl.link_rewrite')
             ->orderByRaw("CASE WHEN p.reference IS NULL OR TRIM(p.reference) = '' THEN 1 ELSE 0 END")
             ->orderBy('p.reference')->orderBy('p.id_product');
 
         $total = (clone $query)->count();
         $products = $query->forPage($page, self::PAGE_SIZE)->get();
-        $images = $this->imagesByProduct($products->pluck('id_product')->map(fn ($id) => (int) $id)->all());
+        $images = $this->imagesByProduct(
+            $products->pluck('id_product')->map(fn ($id) => (int) $id)->all(),
+            $products->mapWithKeys(fn ($product) => [
+                (int) $product->id_product => trim((string) $product->link_rewrite),
+            ])->all()
+        );
 
         return response()->json([
             'data' => $products->map(fn ($product) => [
                 'id_product' => (int) $product->id_product,
-                'reference' => trim((string) $product->reference) ?: '—',
+                'reference' => trim((string) $product->reference) ?: "\u{2014}",
                 'name' => trim((string) $product->name) ?: trans('messages.product_image_review_missing_english_name'),
                 'front_url' => $this->frontProductUrl((int) $product->id_product),
                 'images' => $images->get((int) $product->id_product, collect())->values()->all(),
@@ -88,7 +93,7 @@ class MarketingProductImageReviewController extends Controller
             ->where('m.active', 1);
     }
 
-    private function imagesByProduct(array $productIds)
+    private function imagesByProduct(array $productIds, array $linkRewrites)
     {
         if ($productIds === []) return collect();
         $prefix = $this->prefix();
@@ -102,7 +107,11 @@ class MarketingProductImageReviewController extends Controller
                 'id_image' => (int) $image->id_image,
                 'position' => (int) $image->position,
                 'cover' => (bool) $image->cover,
-                'thumbnail_url' => $this->imageUrl((int) $image->id_image, 'large_default'),
+                'thumbnail_url' => $this->friendlyImageUrl(
+                    (int) $image->id_image,
+                    'tm_medium_default',
+                    $linkRewrites[(int) $image->id_product] ?? ''
+                ),
                 'large_url' => $this->imageUrl((int) $image->id_image, 'large_default'),
             ]));
     }
@@ -116,6 +125,16 @@ class MarketingProductImageReviewController extends Controller
     {
         $path = implode('/', str_split((string) $idImage));
         return rtrim((string) config('allstars.stores.ASM.base_url'), '/').'/img/p/'.$path.'/'.$idImage.'-'.$type.'.jpg';
+    }
+
+    private function friendlyImageUrl(int $idImage, string $type, string $linkRewrite): string
+    {
+        if ($linkRewrite === '') {
+            return $this->imageUrl($idImage, $type);
+        }
+
+        return rtrim((string) config('allstars.stores.ASM.base_url'), '/')
+            .'/'.$idImage.'-'.$type.'/'.$linkRewrite.'.jpg';
     }
 
     private function englishLanguageId(): int

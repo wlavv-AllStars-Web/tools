@@ -287,7 +287,7 @@ class PrestashopAdminLinkService
     {
         $store = static::normalizeStore($store);
 
-        return (bool) config("prestashop.stores.{$store}.bridge_use_hmac", false);
+        return static::bridgeHmacSecret($store) !== '';
     }
 
     public static function bridgeHmacSecret(string $store = 'ASM'): string

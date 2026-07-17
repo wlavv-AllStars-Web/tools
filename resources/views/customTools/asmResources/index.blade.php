@@ -126,7 +126,7 @@
         top: 50%;
         left: calc(100% + 10px);
         transform: translateY(-50%);
-        width: 360px;
+        width: max-content;
         padding: 10px;
         border: 1px solid rgba(0,0,0,.15);
         border-radius: 5px;
@@ -169,9 +169,11 @@
 
     .asm-preview-image {
         display: block;
-        width: 100%;
-        max-height: 150px;
-        object-fit: contain;
+        width: auto;
+        height: auto;
+        max-width: none;
+        max-height: none;
+        object-fit: none;
         border: 1px solid rgba(0,0,0,.08);
         border-radius: 4px;
         background: #f8f9fa;
@@ -210,9 +212,6 @@
             overflow-x: auto;
         }
 
-        .asm-brand-banners-preview {
-            width: 280px;
-        }
 
         .asm-image-box {
             width: 180px;
@@ -249,6 +248,7 @@
                         <tr>
                             <th style="width: 8%;">Logo</th>
                             <th style="width: 12%;">Brand</th>
+                            <th style="width: 8%;">Preview</th>
                             <th style="width: 15%;">Image EN</th>
                             <th style="width: 15%;">Image ES</th>
                             <th style="width: 15%;">Image FR</th>
@@ -279,7 +279,9 @@
                                             <span class="badge bg-secondary ms-1">Inactive</span>
                                         @endif
                                     </div>
+                                </td>
 
+                                <td>
                                     <span class="asm-brand-preview-trigger" title="Preview EN, ES and FR banners">
                                         <i class="fa-solid fa-eye"></i>
 
@@ -363,7 +365,7 @@
 
                         @if($brands->isEmpty())
                             <tr>
-                                <td colspan="6" class="text-center text-muted p-4">
+                                <td colspan="7" class="text-center text-muted p-4">
                                     No brands found for shop 2.
                                 </td>
                             </tr>

@@ -103,19 +103,21 @@
     }
 
 
-    .asm-image-ok {
-        color: #198754;
-        text-align: center;
+    .asm-language-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 58px;
+        padding: 8px 12px;
+        border-radius: 5px;
+        color: #fff;
         font-weight: 700;
-        font-size: 12px;
+        transition: .15s ease-in-out;
     }
 
-    .asm-image-ok i {
-        display: block;
-        font-size: 30px;
-        margin-bottom: 5px;
-    }
-
+    .asm-language-status.is-present { background: #198754; }
+    .asm-language-status.is-missing { background: #dc3545; }
+    .asm-language-status:hover { filter: brightness(.92); transform: translateY(-1px); }
     .asm-youtube-form {
         display: flex;
         gap: 6px;
@@ -215,25 +217,14 @@
                                         >
                                             @csrf
 
-                                            <label class="asm-image-upload-label" for="{{ $inputId }}" title="Click to upload {{ $lang }} banner">
-                                                <div class="asm-image-box">
-                                                    <span class="asm-language-badge">{{ $lang }}</span>
-
-                                                    @if($bannerExists)
-                                                        <div class="asm-image-ok">
-                                                            <i class="fa-solid fa-circle-check"></i>
-                                                        </div>
-                                                        <span class="asm-upload-overlay">
-                                                            <i class="fa-solid fa-upload me-1"></i>
-                                                            Replace
-                                                        </span>
-                                                    @else
-                                                        <div class="asm-placeholder">
-                                                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                                                            Upload {{ $lang }}
-                                                        </div>
-                                                    @endif
-                                                </div>
+                                            <label
+                                                class="asm-image-upload-label"
+                                                for="{{ $inputId }}"
+                                                title="{{ $bannerExists ? 'Click to replace' : 'Click to upload' }} {{ $lang }} banner"
+                                            >
+                                                <span class="asm-language-status {{ $bannerExists ? 'is-present' : 'is-missing' }}">
+                                                    {{ $lang }}
+                                                </span>
                                             </label>
 
                                             <input

@@ -102,6 +102,25 @@
         display: none;
     }
 
+
+    .asm-image-ok {
+        color: #198754;
+        text-align: center;
+        font-weight: 700;
+        font-size: 12px;
+    }
+
+    .asm-image-ok i {
+        display: block;
+        font-size: 30px;
+        margin-bottom: 5px;
+    }
+
+    .asm-youtube-form {
+        display: flex;
+        gap: 6px;
+        min-width: 260px;
+    }
     @media (max-width: 992px) {
         .asm-image-box {
             width: 180px;
@@ -137,9 +156,10 @@
                     <thead>
                         <tr>
                             <th style="width: 10%;">Brand</th>
-                            <th style="width: 30%;">Image EN</th>
-                            <th style="width: 30%;">Image ES</th>
-                            <th style="width: 30%;">Image FR</th>
+                            <th style="width: 15%;">Image EN</th>
+                            <th style="width: 15%;">Image ES</th>
+                            <th style="width: 15%;">Image FR</th>
+                            <th style="width: 45%;">YouTube</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -181,10 +201,10 @@
                                                     <span class="asm-language-badge">{{ $lang }}</span>
 
                                                     @if($bannerExists)
-                                                        <img
-                                                            src="{{ asset($bannerPath) }}?v={{ filemtime($bannerFullPath) }}"
-                                                            alt="{{ $brand->name }} {{ $lang }}"
-                                                        >
+                                                        <div class="asm-image-ok">
+                                                            <i class="fa-solid fa-circle-check"></i>
+                                                            Image available
+                                                        </div>
                                                         <span class="asm-upload-overlay">
                                                             <i class="fa-solid fa-upload me-1"></i>
                                                             Replace
@@ -209,12 +229,22 @@
                                         </form>
                                     </td>
                                 @endforeach
+
+                                <td>
+                                    <form method="POST" action="{{ route('marketing.resources.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
+                                        @csrf
+                                        <input type="text" name="youtube" class="form-control form-control-sm" value="{{ old('youtube', $brand->youtube) }}" placeholder="YouTube URL or code">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Save YouTube">
+                                            <i class="fa-brands fa-youtube"></i>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         @endforeach
 
                         @if($brands->isEmpty())
                             <tr>
-                                <td colspan="4" class="text-center text-muted p-4">
+                                <td colspan="5" class="text-center text-muted p-4">
                                     No brands found for shop 2.
                                 </td>
                             </tr>

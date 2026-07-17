@@ -665,6 +665,7 @@ Route::get('/api/gallery/events/{id}', [asgEventsController::class, 'apiShow'])-
 Route::middleware(['web', 'auth'])->prefix('marketing/asm/resources')->name('marketing.resources.')->group(function () {
     Route::get('/', [asmResourcesController::class, 'index'])->name('index');
     Route::post('/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('upload');
+    Route::post('/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('youtube');
 });
 
 Route::prefix('customTools/asg-cars')

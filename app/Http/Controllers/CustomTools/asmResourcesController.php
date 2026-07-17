@@ -26,8 +26,9 @@ class asmResourcesController extends Controller
 
         $brands = DB::connection('mysql2')
             ->table('ps_manufacturer as m')
-            ->select('m.id_manufacturer', 'm.name', 'm.active')
+            ->select('m.id_manufacturer', 'm.name', 'm.active', 'cm.youtube')
             ->join('ps_manufacturer_shop as ms', 'ms.id_manufacturer', '=', 'm.id_manufacturer')
+            ->leftJoin('ps_custom_manufacturer as cm', 'cm.id_manufacturer', '=', 'm.id_manufacturer')
             ->where('ms.id_shop', $this->shopId)
             ->orderBy('m.name')
             ->get();
@@ -43,8 +44,9 @@ class asmResourcesController extends Controller
     {
         $brands = DB::connection('mysql2')
             ->table('ps_manufacturer as m')
-            ->select('m.id_manufacturer', 'm.name', 'm.active')
+            ->select('m.id_manufacturer', 'm.name', 'm.active', 'cm.youtube')
             ->join('ps_manufacturer_shop as ms', 'ms.id_manufacturer', '=', 'm.id_manufacturer')
+            ->leftJoin('ps_custom_manufacturer as cm', 'cm.id_manufacturer', '=', 'm.id_manufacturer')
             ->where('ms.id_shop', $this->shopId)
             ->where('m.active', 1)
             ->orderBy('m.name')
@@ -54,6 +56,7 @@ class asmResourcesController extends Controller
             return [
                 'id_manufacturer' => (int) $brand->id_manufacturer,
                 'name' => $brand->name,
+                'youtube' => $brand->youtube,
                 'banners' => collect($this->languages)
                     ->mapWithKeys(fn ($lang) => [
                         strtolower($lang) => $this->bannerUrlOrNull((int) $brand->id_manufacturer, $lang),
@@ -93,12 +96,30 @@ class asmResourcesController extends Controller
             ->with('success', $lang . ' banner uploaded successfully for ' . $brand->name . '.');
     }
 
+    public function updateYoutube(Request $request, int $id_manufacturer)
+    {
+        $brand = $this->getShopBrandOrFail($id_manufacturer);
+        $data = $request->validate([
+            'youtube' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        DB::connection('mysql2')->table('ps_custom_manufacturer')->updateOrInsert(
+            ['id_manufacturer' => (int) $brand->id_manufacturer],
+            ['youtube' => trim((string) ($data['youtube'] ?? ''))]
+        );
+
+        return redirect()
+            ->route('marketing.resources.index')
+            ->with('success', 'YouTube updated successfully for ' . $brand->name . '.');
+    }
+
     private function getShopBrandOrFail(int $idManufacturer)
     {
         $brand = DB::connection('mysql2')
             ->table('ps_manufacturer as m')
-            ->select('m.id_manufacturer', 'm.name', 'm.active')
+            ->select('m.id_manufacturer', 'm.name', 'm.active', 'cm.youtube')
             ->join('ps_manufacturer_shop as ms', 'ms.id_manufacturer', '=', 'm.id_manufacturer')
+            ->leftJoin('ps_custom_manufacturer as cm', 'cm.id_manufacturer', '=', 'm.id_manufacturer')
             ->where('ms.id_shop', $this->shopId)
             ->where('m.id_manufacturer', $idManufacturer)
             ->first();

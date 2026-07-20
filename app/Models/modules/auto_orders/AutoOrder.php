@@ -55,6 +55,7 @@ class AutoOrder extends Model
             ->leftJoin($manufacturerTable . ' as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
             ->leftJoin($productLangTable . ' as pl', function ($join) {
                 $join->on('pl.id_product', '=', 'p.id_product')
+                    ->on('pl.id_shop', '=', 'o.id_shop')
                     ->where('pl.id_lang', 1);
             })
             ->leftJoin($customProductTable . ' as cp', 'cp.id_product', '=', 'p.id_product')
@@ -145,8 +146,9 @@ class AutoOrder extends Model
                     ->where('pa.id_product_attribute', $idProductAttribute);
             })
             ->leftJoin($manufacturerTable . ' as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
-            ->leftJoin($productLangTable . ' as pl', function ($join) {
+            ->leftJoin($productLangTable . ' as pl', function ($join) use ($sourceRow) {
                 $join->on('pl.id_product', '=', 'p.id_product')
+                    ->where('pl.id_shop', (int) $sourceRow['id_shop'])
                     ->where('pl.id_lang', 1);
             })
             ->leftJoin($customProductTable . ' as cp', 'cp.id_product', '=', 'p.id_product')

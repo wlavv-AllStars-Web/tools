@@ -15,7 +15,11 @@ class AutoOrdersCandidate extends Model
     public static function getAllBrands(){
 
         $data = new AutoOrdersCandidate();
-        $brands = $data->select('id_manufacturer', 'manufacturer')->groupBy('manufacturer')->orderBy('manufacturer')->get();
+        $brands = $data
+            ->select('id_manufacturer', 'manufacturer')
+            ->groupBy('id_manufacturer', 'manufacturer')
+            ->orderBy('manufacturer')
+            ->get();
 
         $dataRows = array();
 
@@ -24,8 +28,8 @@ class AutoOrdersCandidate extends Model
             $brand_rows = new AutoOrdersCandidate();
             
             $data_brand_Rows = $brand_rows
-                ->select('*', DB::raw('SUM(quantity) as quantity'))
-                ->where('manufacturer', '=', $brand->manufacturer)
+                ->select('reference', 'attr_reference')
+                ->where('id_manufacturer', '=', $brand->id_manufacturer)
                 ->groupBy('reference', 'attr_reference')
                 ->orderBy('reference')
                 ->get();

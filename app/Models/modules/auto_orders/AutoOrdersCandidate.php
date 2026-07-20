@@ -17,6 +17,7 @@ class AutoOrdersCandidate extends Model
         $data = new AutoOrdersCandidate();
         $brands = $data
             ->select('id_manufacturer', 'manufacturer')
+            ->where('ordered', 0)
             ->groupBy('id_manufacturer', 'manufacturer')
             ->orderBy('manufacturer')
             ->get();
@@ -30,6 +31,7 @@ class AutoOrdersCandidate extends Model
             $data_brand_Rows = $brand_rows
                 ->select('reference', 'attr_reference')
                 ->where('id_manufacturer', '=', $brand->id_manufacturer)
+                ->where('ordered', 0)
                 ->groupBy('reference', 'attr_reference')
                 ->orderBy('reference')
                 ->get();
@@ -52,7 +54,8 @@ class AutoOrdersCandidate extends Model
             $attrReference = (string) ($row['attr_reference'] ?? '');
             $reference = (string) ($row['reference'] ?? '');
 
-            $query = AutoOrdersCandidate::where('reference', $reference);
+            $query = AutoOrdersCandidate::where('reference', $reference)
+                ->where('ordered', 0);
 
             if (strlen($attrReference) > 0) {
                 $query->where('attr_reference', $attrReference);
@@ -82,6 +85,7 @@ class AutoOrdersCandidate extends Model
                 $insert->id_product = $row['id_product'];
                 $insert->id_product_attribute = $row['id_product_attribute'];
                 $insert->creation_date = date('Y-m-d');
+                $insert->ordered = 0;
                 $insert->reference = '' . $row['reference'];
                 $insert->attr_reference = '' . $row['attr_reference'];
                 $insert->name = $row['product_name'];

@@ -63,7 +63,7 @@ class autoOrdersController extends Controller
     public function store(Request $request){ echo "autoOrdersController STORE";   exit; }
 
     public function cleanBranditems(Request $request){ 
-        AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->delete();
+        AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->delete();
         return response()->json([ 'success' => true ]);
     }
 
@@ -83,10 +83,10 @@ class autoOrdersController extends Controller
 
         if($request->manufacturer == 'full'){
             $columns = [ 'MANUFACTURER', 'REFERENCE', 'ATTRIBUTE', 'Qtity' ];
-            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute', 'manufacturer')->orderBy('manufacturer', 'ASC')->get();
+            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute', 'manufacturer')->where('ordered', 0)->orderBy('manufacturer', 'ASC')->get();
         }else{
             $columns = [ 'SKU', 'Qtity' ];
-            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute')->where('manufacturer', $request->manufacturer)->get();
+            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute')->where('manufacturer', $request->manufacturer)->where('ordered', 0)->get();
         }
 
 
@@ -139,7 +139,10 @@ class autoOrdersController extends Controller
                 $insert->save();
             }
 
-            AutoOrdersCandidate::where('id', $request->id)->delete();
+            AutoOrdersCandidate::where('id', $request->id)->update([
+                'ordered' => 1,
+                'ordered_date' => now()->toDateString(),
+            ]);
 
             return response()->json([ 'success' => true ]);
 
@@ -235,7 +238,7 @@ class autoOrdersController extends Controller
     
     public function getProductsInfo(Request $request){
 
-        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->get();
+        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->get();
         $prefix = env('DB2_DB_prefix', 'ps_');
         
         $data = [];
@@ -293,7 +296,7 @@ class autoOrdersController extends Controller
 
         }
 
-        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->get();
+        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->get();
         
         $viewRendered = view('customTools/autoOrders/includes/products_table', compact('products'))->render();
 

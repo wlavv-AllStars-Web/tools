@@ -82,7 +82,7 @@ return [
             'intval',
             array_filter(explode(',', env('AUTO_ORDERS_PAID_ORDER_STATES', '2,3,4,5,15,16,28')))
         ),
-        'import_from' => env('AUTO_ORDERS_IMPORT_FROM'),
+        'import_from' => env('AUTO_ORDERS_IMPORT_FROM', '2026-05-12 00:00:00'),
         'shop_codes' => [
             (int) env('ASM_SHOP_ID', 2) => 'ASM',
             (int) env('ASD_SHOP_ID', 3) => 'ASD',

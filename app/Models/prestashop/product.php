@@ -1297,9 +1297,11 @@ public static function dashboard_end_of_life($type)
 
                         
         foreach ($bd_data as $item) {
-            $data[] = [
+            $idProduct = (int) $item->id_product;
+
+            $data[$idProduct] = [
                 'id_product' => $item->id_product,
-                'reference'  => is_null($item->attr_reference) ? $item->reference : $item->attr_reference,
+                'reference'  => $item->reference ?: $item->attr_reference,
                 'url'        => PrestashopAdminLinkService::dashboardProductAdminUrl($item->id_product, 'ASM'),
             ];
         }
@@ -1309,7 +1311,7 @@ public static function dashboard_end_of_life($type)
             $type,
             'end_of_life_without_stock',
             ['id_product', 'reference'],
-            $data
+            array_values($data)
         );
     }
     

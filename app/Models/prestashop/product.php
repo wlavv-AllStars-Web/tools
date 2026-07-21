@@ -2410,6 +2410,8 @@ public static function dashboard_end_of_life($type)
 
         $productStockRows = self::join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->where($productTable . '.active', 1)
+            ->whereNotNull($productTable . '.reference')
+            ->whereRaw('TRIM(' . $productTable . '.reference) <> ?', [''])
             ->where($stockTable . '.id_product_attribute', 0)
             ->select(
                 $productTable . '.id_product',
@@ -2439,18 +2441,22 @@ public static function dashboard_end_of_life($type)
 
         $attributeStockRows = product_attribute::join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+            ->whereNotNull($productAttributeTable . '.reference')
+            ->whereRaw('TRIM(' . $productAttributeTable . '.reference) <> ?', [''])
             ->where($stockTable . '.id_product_attribute', '>', 0)
             ->select(
                 $productTable . '.id_product',
                 $productAttributeTable . '.id_product_attribute',
                 $productAttributeTable . '.reference',
+                DB::raw($productTable . '.reference AS product_reference'),
                 DB::raw('MAX(' . $stockTable . '.quantity) AS quantity')
             )
             ->orderBy($productAttributeTable . '.reference')
             ->groupBy(
                 $productTable . '.id_product',
                 $productAttributeTable . '.id_product_attribute',
-                $productAttributeTable . '.reference'
+                $productAttributeTable . '.reference',
+                $productTable . '.reference'
             )
             ->get();
 
@@ -2478,7 +2484,7 @@ public static function dashboard_end_of_life($type)
         foreach ($bd_attr as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
-                'reference' => $item->reference
+                'reference' => $item->product_reference ?: $item->reference
             ];
         }
 

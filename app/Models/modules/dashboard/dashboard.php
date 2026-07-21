@@ -840,66 +840,55 @@ class dashboard extends Model
             ->values()
             ->toArray();
 
-        $rows = collect();
+        $shopId = self::shopId('ASD');
 
-        foreach (['ASM', 'ASD'] as $store) {
-            $shopId = self::shopId($store);
-
-            $storeRows = DB::connection('mysql2')
-                ->table($prefix . 'product as p')
-                ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
-                    $join->on('ps.id_product', '=', 'p.id_product')
-                        ->where('ps.id_shop', '=', $shopId);
-                })
-                ->leftJoin($prefix . 'specific_price as sp', function ($join) use ($shopId, $now) {
-                    $join->on('sp.id_product', '=', 'p.id_product')
-                        ->where(function ($query) use ($shopId) {
-                            $query->where('sp.id_shop', '=', 0)
-                                ->orWhere('sp.id_shop', '=', $shopId);
-                        })
-                        ->where(function ($query) {
-                            $query->where('sp.reduction', '>', 0)
-                                ->orWhere('sp.price', '>=', 0);
-                        })
-                        ->where(function ($query) use ($now) {
-                            $query->whereNull('sp.from')
-                                ->orWhere('sp.from', '0000-00-00 00:00:00')
-                                ->orWhere('sp.from', '<=', $now);
-                        })
-                        ->where(function ($query) use ($now) {
-                            $query->whereNull('sp.to')
-                                ->orWhere('sp.to', '0000-00-00 00:00:00')
-                                ->orWhere('sp.to', '>=', $now);
-                        });
-                })
-                ->whereNull('sp.id_specific_price')
-                ->where('ps.active', 1)
-                ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('p.id_product', $exceptions))
-                ->select(['p.id_product', 'p.reference'])
-                ->orderBy('p.id_product', 'ASC')
-                ->get()
-                ->map(function ($item) use ($store) {
-                    $item->store = $store;
-                    return $item;
-                });
-
-            $rows = $rows->merge($storeRows);
-        }
+        $rows = DB::connection('mysql2')
+            ->table($prefix . 'product as p')
+            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
+                $join->on('ps.id_product', '=', 'p.id_product')
+                    ->where('ps.id_shop', '=', $shopId);
+            })
+            ->leftJoin($prefix . 'specific_price as sp', function ($join) use ($shopId, $now) {
+                $join->on('sp.id_product', '=', 'p.id_product')
+                    ->where(function ($query) use ($shopId) {
+                        $query->where('sp.id_shop', '=', 0)
+                            ->orWhere('sp.id_shop', '=', $shopId);
+                    })
+                    ->where(function ($query) {
+                        $query->where('sp.reduction', '>', 0)
+                            ->orWhere('sp.price', '>=', 0);
+                    })
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('sp.from')
+                            ->orWhere('sp.from', '0000-00-00 00:00:00')
+                            ->orWhere('sp.from', '<=', $now);
+                    })
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('sp.to')
+                            ->orWhere('sp.to', '0000-00-00 00:00:00')
+                            ->orWhere('sp.to', '>=', $now);
+                    });
+            })
+            ->whereNull('sp.id_specific_price')
+            ->where('ps.active', 1)
+            ->when(!empty($exceptions), fn ($query) => $query->whereNotIn('p.id_product', $exceptions))
+            ->select(['p.id_product', 'p.reference'])
+            ->orderBy('p.id_product', 'ASC')
+            ->get();
     
         return self::dashboardPanel(
             trans('dashboard.PRODUCTS WITHOUT DISCOUNT'),
             'counter',
             'products_without_discount',
-            ['clean', 'store', 'id_product', 'reference'],
+            ['clean', 'id_product', 'reference'],
             $rows->map(fn ($item) => [
-                'clean' => $item->store . '_' . $item->id_product,
-                'store' => $item->store,
+                'clean' => $item->id_product,
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
                 'extra' => 0,
-                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, $item->store),
+                'url' => \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, 'ASD'),
             ]),
-            ['exception_fields' => ['products_without_discounts', 'store', 'id_product', 'reference', 'extra']],
+            ['exception_fields' => ['products_without_discounts', 'id_product', 'reference', 'extra']],
             null
         );
     }

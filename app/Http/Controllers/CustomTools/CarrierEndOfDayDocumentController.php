@@ -190,6 +190,13 @@ class CarrierEndOfDayDocumentController extends Controller
         );
 
         return collect($rows)->map(function ($row) {
+            $row->carrier_name = match (strtoupper(trim($row->carrier_name))) {
+                'DPD' => 'DPD',
+                'INPOST', 'MONDIAL RELAY' => 'MONDIAL RELAY',
+                'NACEX' => 'NACEX',
+                'UPS', 'UPS DISTRIBUTION' => 'UPS',
+                default => $row->carrier_name,
+            };
             $row->store_code = ((int) ($row->id_shop ?? 0)) === (int) config('shops.ASM.id') ? 'ASM' : 'ASD';
             $row->order_admin_url = PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $row->order_id, $row->store_code);
 

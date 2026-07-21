@@ -1184,6 +1184,7 @@ public static function dashboard_end_of_life($type)
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where(function ($query) use ($customProductTable) {
                 $query->whereNull($customProductTable . '.nc')

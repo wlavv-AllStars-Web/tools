@@ -363,6 +363,7 @@ class orders extends PrestashopModel
         $excludedOrderIds = self::excludedIdsFromBoard('duplicated_order');
     
         $duplicateGroups = self::select( 'id_customer', 'payment', 'total_paid', DB::raw('DATE(date_add) AS order_date'), DB::raw('COUNT(*) AS repeated') )
+            ->where('id_order', '>=', 113324)
             ->when(!empty($excludedOrderIds), function ($query) use ($excludedOrderIds) {
                 $query->whereNotIn('id_order', $excludedOrderIds);
             })
@@ -379,6 +380,7 @@ class orders extends PrestashopModel
                     'payment',
                     'date_add'
                 )
+                ->where('id_order', '>=', 113324)
                 ->where('id_customer', $group->id_customer)
                 ->where('payment', $group->payment)
                 ->where('total_paid', $group->total_paid)
@@ -419,7 +421,7 @@ class orders extends PrestashopModel
         $data = [];
         $excludedOrderIds = self::excludedIdsFromBoard('duplicated_status');
 
-        $bd_data = order_history::getPanelInfo($excludedOrderIds);
+        $bd_data = order_history::getPanelInfo($excludedOrderIds, 113324);
 
         foreach ($bd_data as $item) {
             $data[] = [

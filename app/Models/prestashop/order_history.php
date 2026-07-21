@@ -18,7 +18,7 @@ class order_history extends PrestashopModel{
         $this->table = self::tableName('order_history');
     }
     
-    public static function getPanelInfo($array){
+    public static function getPanelInfo($array, ?int $minimumOrderId = null){
         
         $orderHistoryTable = self::tableName('order_history');
         $ordersTable = self::tableName('orders');
@@ -42,6 +42,9 @@ class order_history extends PrestashopModel{
             })
             ->when(!empty($array), function ($query) use ($array, $orderHistoryTable) {
                 $query->whereNotIn($orderHistoryTable . '.id_order', $array);
+            })
+            ->when($minimumOrderId !== null, function ($query) use ($minimumOrderId, $orderHistoryTable) {
+                $query->where($orderHistoryTable . '.id_order', '>=', $minimumOrderId);
             })
             ->groupBy(
                 $orderHistoryTable . '.id_order',

@@ -75,6 +75,7 @@ class AutoOrder extends Model
             })
             ->where('od.product_quantity', '>', 0)
             ->where('p.id_manufacturer', '>', 0)
+            ->where('p.id_manufacturer', '<>', 202)
             ->where('m.name', '<>', 'Technical Products')
             ->whereNotNull('od.product_reference')
             ->where('od.product_reference', '<>', '')
@@ -163,6 +164,7 @@ class AutoOrder extends Model
                     ->where('sa.id_shop', (int) $sourceRow['id_shop']);
             })
             ->where('p.id_product', $idProduct)
+            ->where('p.id_manufacturer', '<>', 202)
             ->where('m.name', '<>', 'Technical Products')
             ->select(
                 DB::raw('p.id_manufacturer as id_manufacturer'),

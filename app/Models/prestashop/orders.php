@@ -312,6 +312,7 @@ class orders extends PrestashopModel
             )
             ->join($orderStateLangTable, $ordersTable . '.current_state', '=', $orderStateLangTable . '.id_order_state')
             ->join($orderCarrierTable, $ordersTable . '.id_order', '=', $orderCarrierTable . '.id_order')
+            ->where($ordersTable . '.id_order', '>=', 113324)
             ->where($orderStateLangTable . '.id_lang', 1)
             ->where(function ($query) use ($orderCarrierTable) {
                 $query->whereNull($orderCarrierTable . '.tracking_number')

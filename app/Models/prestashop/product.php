@@ -812,6 +812,7 @@ class product extends PrestashopModel
             )
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->where($productTable . '.ean13', '')
             ->where($stockTable . '.quantity', '>', 0)
             ->groupBy(
@@ -832,6 +833,7 @@ class product extends PrestashopModel
                     ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product');
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->where($productAttributeTable . '.ean13', '')
             ->where($stockTable . '.quantity', '>', 0)
             ->groupBy(
@@ -895,6 +897,7 @@ class product extends PrestashopModel
             )
             ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where(function ($q) use ($customProductTable) {
                 $q->whereNull($customProductTable . '.dim_verify')
@@ -942,6 +945,7 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->where(function ($query) use ($productTable) {
                 $query->whereNull($productTable . '.weight')
                     ->orWhere($productTable . '.weight', 0);

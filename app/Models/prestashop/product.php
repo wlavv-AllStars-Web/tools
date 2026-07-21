@@ -1697,9 +1697,11 @@ public static function dashboard_end_of_life($type)
             ->get();
 
         foreach ($bd_data_attr as $item) {
-            $rows['attribute-' . (int) $item->id_product_attribute] = [
+            $idProduct = (int) $item->id_product;
+
+            $rows[$idProduct] = [
                 'id_product' => $item->id_product,
-                'reference' => $item->attribute_reference ?: $item->product_reference,
+                'reference' => $item->product_reference ?: $item->attribute_reference,
                 'brand' => $item->brand,
             ];
         }

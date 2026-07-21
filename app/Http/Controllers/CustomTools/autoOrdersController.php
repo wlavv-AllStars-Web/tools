@@ -253,22 +253,27 @@ class autoOrdersController extends Controller
 
             $productData = DB::connection('mysql2')
                 ->table($prefix . 'product as p')
-                ->leftJoin($prefix . 'product_attribute as pa', function ($join) use ($product) {
+                ->leftJoin($prefix . 'product_attribute as pa', function ($join) use ($ref) {
                     $join->on('pa.id_product', '=', 'p.id_product')
-                        ->where('pa.id_product_attribute', (int) $product->id_product_attribute);
+                        ->where('pa.reference', $ref);
                 })
                 ->leftJoin($prefix . 'supplier as s', 's.id_supplier', '=', 'p.id_supplier')
                 ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
-                ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) use ($product) {
+                ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
                     $join->on('cpa.id_product', '=', 'p.id_product')
-                        ->where('cpa.id_product_attribute', (int) $product->id_product_attribute);
+                        ->on('cpa.id_product_attribute', '=', 'pa.id_product_attribute');
                 })
-                ->leftJoin($prefix . 'stock_available as sa', function ($join) use ($product) {
+                ->leftJoin($prefix . 'stock_available as sa', function ($join) {
                     $join->on('sa.id_product', '=', 'p.id_product')
-                        ->where('sa.id_product_attribute', (int) $product->id_product_attribute);
+                        ->whereRaw('sa.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
                 })
-                ->where('p.id_product', (int) $product->id_product)
+                ->where(function ($query) use ($ref) {
+                    $query->where('p.reference', $ref)
+                        ->orWhere('pa.reference', $ref);
+                })
                 ->select(
+                    'p.id_product',
+                    DB::raw('COALESCE(pa.id_product_attribute, 0) as id_product_attribute'),
                     DB::raw('COALESCE(p.id_supplier, 0) as id_supplier'),
                     DB::raw('COALESCE(s.name, "Unknown") as supplier'),
                     DB::raw('COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) as deprecated'),
@@ -282,12 +287,14 @@ class autoOrdersController extends Controller
 
             if(!is_null($productData)){
                 AutoOrdersCandidate::where('id', $product->id)->update([
+                    'id_product'     => $productData->id_product,
+                    'id_product_attribute' => $productData->id_product_attribute,
                     'id_supplier'    => $productData->id_supplier,
                     'supplier'       => $productData->supplier,
                     'sold'           => $sold,
                     'end_of_life'    => $productData->deprecated,
                     'qtd_in_stock'   => $productData->quantity,
-                    'stock_arrive'   => ((int) $product->id_product_attribute > 0) ? 0 : $productData->stock_arrive,
+                    'stock_arrive'   => ((int) $productData->id_product_attribute > 0) ? 0 : $productData->stock_arrive,
                     'stock_arrivepa' => $productData->stock_arrivepa,
                     'not_to_order'   => $productData->not_to_order,
                     'notes'          => $productData->notes
@@ -490,4 +497,3 @@ class autoOrdersController extends Controller
     }
 
 }
-

@@ -18,6 +18,7 @@ class AutoOrdersCandidate extends Model
         $brands = $data
             ->select('id_manufacturer', 'manufacturer')
             ->where('ordered', 0)
+            ->where('manufacturer', '<>', 'Technical Products')
             ->groupBy('id_manufacturer', 'manufacturer')
             ->orderBy('manufacturer')
             ->get();
@@ -107,4 +108,3 @@ class AutoOrdersCandidate extends Model
         return;
     }
 }
-

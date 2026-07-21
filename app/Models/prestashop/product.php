@@ -2366,15 +2366,13 @@ public static function dashboard_end_of_life($type)
             ->orderBy($productTable . '.reference')
             ->get();
 
-        foreach ($bdData as $item) {
+        foreach ($bdData->groupBy('id_product') as $productRows) {
+            $item = $productRows->first();
+
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference' => isset($item->attr_ref) ? $item->attr_ref : $item->prod_ref,
                 'brand' => $item->brand_name ?? '',
-                'id_shop' => $item->id_shop,
-                'id_shop_group' => $item->id_shop_group,
-                'parent_stock' => (int) $item->parent_quantity,
-                'children_stock' => (int) $item->children_quantity,
             ];
         }
 
@@ -2382,7 +2380,7 @@ public static function dashboard_end_of_life($type)
             trans('dashboard.Locked with stock'),
             $type,
             'locked_products_with_stock',
-            ['id_product', 'reference', 'brand', 'id_shop', 'id_shop_group', 'parent_stock', 'children_stock'],
+            ['id_product', 'reference', 'brand'],
             $data
         );
     }

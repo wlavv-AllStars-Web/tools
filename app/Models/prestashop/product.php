@@ -825,6 +825,7 @@ class product extends PrestashopModel
         $bd_data_attribute = product_attribute::select(
                 $productAttributeTable . '.id_product',
                 $productAttributeTable . '.reference',
+                DB::raw($productTable . '.reference AS product_reference'),
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
@@ -839,6 +840,7 @@ class product extends PrestashopModel
             ->groupBy(
                 $productAttributeTable . '.id_product',
                 $productAttributeTable . '.reference',
+                $productTable . '.reference',
                 $manufacturerTable . '.name'
             )
             ->get();
@@ -854,7 +856,7 @@ class product extends PrestashopModel
         foreach ($bd_data_attribute as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
-                'reference' => $item->reference,
+                'reference' => $item->reference ?: $item->product_reference,
                 'brand' => $item->brand
             ];
         }

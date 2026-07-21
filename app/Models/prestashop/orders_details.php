@@ -29,45 +29,45 @@ class orders_details extends PrestashopModel
         return $this->hasMany(product_attribute::class, 'id_product_attribute', 'product_attribute_id');
     }
 
-    protected static function soldBaseQuery()
+    protected static function soldSnapshotQuery()
     {
-        $orderDetailTable = self::tableName('order_detail');
-        $ordersTable = self::tableName('orders');
-
         return DB::connection('mysql2')
-            ->table($orderDetailTable)
-            ->join($ordersTable, $ordersTable . '.id_order', '=', $orderDetailTable . '.id_order')
-            ->where($ordersTable . '.date_add', '>', date('Y-m-d', strtotime('-1 year')))
-            ->whereIn($ordersTable . '.current_state', [2, 3, 4, 5, 15, 16, 28]);
+            ->table(self::tableName('custom_sold'));
     }
 
     public static function getSoldOf($product_reference, $attr_reference = '')
     {
-        $reference = strlen($attr_reference) > 0 ? $attr_reference : $product_reference;
-        $orderDetailTable = self::tableName('order_detail');
+        if (strlen((string) $attr_reference) > 0) {
+            return self::soldSnapshotQuery()
+                ->where('attribute_reference', $attr_reference)
+                ->sum('quantity_sold');
+        }
 
-        return self::soldBaseQuery()
-            ->where($orderDetailTable . '.product_reference', $reference)
-            ->sum($orderDetailTable . '.product_quantity');
+        return self::soldSnapshotQuery()
+            ->where('reference', $product_reference)
+            ->where('id_product_attribute', 0)
+            ->sum('quantity_sold');
     }
 
     public static function getSoldByIDOf($id_product, $id_product_attribute = 0)
     {
-        $orderDetailTable = self::tableName('order_detail');
-
-        return self::soldBaseQuery()
-            ->where($orderDetailTable . '.product_id', $id_product)
-            ->where($orderDetailTable . '.product_attribute_id', $id_product_attribute)
-            ->sum($orderDetailTable . '.product_quantity');
+        return self::soldSnapshotQuery()
+            ->where('id_product', $id_product)
+            ->where('id_product_attribute', $id_product_attribute)
+            ->sum('quantity_sold');
     }
 
     public static function getSoldByRefOf($reference)
     {
-        $orderDetailTable = self::tableName('order_detail');
-
-        return self::soldBaseQuery()
-            ->where($orderDetailTable . '.product_reference', $reference)
-            ->sum($orderDetailTable . '.product_quantity');
+        return self::soldSnapshotQuery()
+            ->where(function ($query) use ($reference) {
+                $query->where('attribute_reference', $reference)
+                    ->orWhere(function ($query) use ($reference) {
+                        $query->where('reference', $reference)
+                            ->where('id_product_attribute', 0);
+                    });
+            })
+            ->sum('quantity_sold');
     }
 
     public static function getProductsOfOrder($id_order)

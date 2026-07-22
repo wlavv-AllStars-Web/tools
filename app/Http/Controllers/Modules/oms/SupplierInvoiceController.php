@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Modules\oms;
 use App\Http\Controllers\Controller;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\SupplierInvoice;
+use App\Models\modules\oms\BilledOrderLine;
 use App\Models\modules\oms\OmsDocumentLineHistory;
 use App\Models\modules\shipping\shipping;
 use App\Models\modules\shipping_erp\shipping_erp;
@@ -12,6 +13,7 @@ use App\Services\oms\ExportService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
 use App\Services\oms\BilledOrderDisplayService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SupplierInvoiceController extends Controller
 {
@@ -172,6 +174,113 @@ class SupplierInvoiceController extends Controller
         }
 
         return back()->with('success', 'Invoice name updated successfully.');
+    }
+
+    public function updateLine(Request $request, SupplierInvoice $invoice, BilledOrderLine $line)
+    {
+        $billedOrder = $line->billedOrder()->with('orderNote')->firstOrFail();
+
+        if ((int) $billedOrder->supplier_invoice_id !== (int) $invoice->id) {
+            abort(404);
+        }
+
+        if (($invoice->status ?? 'draft') === 'cancelled') {
+            return response()->json(['success' => false, 'message' => 'Cancelled invoices cannot be edited.'], 422);
+        }
+
+        $data = $request->validate([
+            'qty_billed' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $orderNoteLine = $line->orderNoteLine;
+        if (!$orderNoteLine && $billedOrder->orderNote) {
+            $orderNoteLine = $billedOrder->orderNote->lines()
+                ->where('product_id', (int) $line->product_id)
+                ->where(function ($query) use ($line) {
+                    $attributeId = (int) ($line->product_attribute_id ?? 0);
+                    $attributeId > 0
+                        ? $query->where('product_attribute_id', $attributeId)
+                        : $query->where(function ($attributeQuery) {
+                            $attributeQuery->whereNull('product_attribute_id')->orWhere('product_attribute_id', 0);
+                        });
+                })
+                ->first();
+        }
+
+        if (!$orderNoteLine) {
+            return response()->json(['success' => false, 'message' => 'The related order note line could not be found.'], 422);
+        }
+
+        $received = max((int) ($line->qty_received ?? 0), (int) $line->qty_received_calculated);
+        $otherBilled = (int) DB::table('oms_billed_order_lines as other')
+            ->join('oms_billed_orders as bo', 'bo.id', '=', 'other.billed_order_id')
+            ->leftJoin('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
+            ->where(function ($query) use ($orderNoteLine, $line, $billedOrder) {
+                $query->where('other.order_note_line_id', (int) $orderNoteLine->id)
+                    ->orWhere(function ($fallback) use ($line, $billedOrder) {
+                        $fallback->whereNull('other.order_note_line_id')
+                            ->where('bo.order_note_id', (int) $billedOrder->order_note_id)
+                            ->where('other.product_id', (int) $line->product_id)
+                            ->where(function ($attributeQuery) use ($line) {
+                                $attributeId = (int) ($line->product_attribute_id ?? 0);
+                                $attributeId > 0
+                                    ? $attributeQuery->where('other.product_attribute_id', $attributeId)
+                                    : $attributeQuery->where(function ($emptyAttribute) {
+                                        $emptyAttribute->whereNull('other.product_attribute_id')->orWhere('other.product_attribute_id', 0);
+                                    });
+                            });
+                    });
+            })
+            ->where('other.id', '<>', (int) $line->id)
+            ->where(function ($query) {
+                $query->whereNull('si.status')->orWhere('si.status', '<>', 'cancelled');
+            })
+            ->sum('other.qty_billed');
+
+        $maximum = max($received, (int) $orderNoteLine->qty_ordered - $otherBilled);
+        $qtyBilled = (int) $data['qty_billed'];
+
+        if ($qtyBilled < $received) {
+            return response()->json(['success' => false, 'message' => 'Billed quantity cannot be lower than the quantity already received (' . $received . ').'], 422);
+        }
+
+        if ($qtyBilled > $maximum) {
+            return response()->json(['success' => false, 'message' => 'Billed quantity cannot exceed the available ordered quantity (' . $maximum . ').'], 422);
+        }
+
+        $line->update([
+            'order_note_line_id' => (int) $orderNoteLine->id,
+            'qty_billed' => $qtyBilled,
+        ]);
+
+        $this->workflowService->refreshOrderNoteStatus($billedOrder->orderNote->fresh(['lines', 'billedOrders']));
+
+        return response()->json(['success' => true, 'message' => 'Invoice line updated successfully.']);
+    }
+
+    public function destroyLine(Request $request, SupplierInvoice $invoice, BilledOrderLine $line)
+    {
+        $billedOrder = $line->billedOrder()->with('orderNote')->firstOrFail();
+
+        if ((int) $billedOrder->supplier_invoice_id !== (int) $invoice->id) {
+            abort(404);
+        }
+
+        if (($invoice->status ?? 'draft') === 'cancelled') {
+            return response()->json(['success' => false, 'message' => 'Cancelled invoices cannot be edited.'], 422);
+        }
+
+        if (max((int) ($line->qty_received ?? 0), (int) $line->qty_received_calculated) > 0) {
+            return response()->json(['success' => false, 'message' => 'This invoice line cannot be removed because it already has received quantities.'], 422);
+        }
+
+        $line->delete();
+
+        if ($billedOrder->orderNote) {
+            $this->workflowService->refreshOrderNoteStatus($billedOrder->orderNote->fresh(['lines', 'billedOrders']));
+        }
+
+        return response()->json(['success' => true, 'message' => 'Invoice line removed successfully.']);
     }
 
     public function saveShipmentRelation(Request $request, SupplierInvoice $invoice)

@@ -212,9 +212,10 @@
                                                             <tr>
                                                                 <th>Reference</th>
                                                                 <th>Product</th>
-                                                                <th class="text-center">Qty</th>
+                                                                <th class="text-center">Billed</th>
                                                                 <th class="text-end">Unit Price</th>
                                                                 <th class="text-end">Unit Price EUR</th>
+                                                                <th class="text-end">Actions</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -226,13 +227,25 @@
                                                                     $unitPriceEur = (float) data_get($lineHistory, 'unit_price_eur', 0);
                                                                     $lineCurrencyIso = data_get($lineHistory, 'invoice_currency_iso')
                                                                         ?: ($invoice->currency_iso ?: 'EUR');
+                                                                    $lineReceived = (int) ($line->qty_received_calculated ?? $line->qty_received ?? 0);
                                                                 @endphp
                                                                 <tr>
                                                                     <td><span class="oms-copyable" data-copy="{{ $line->display_reference ?: '' }}">{{ $line->display_reference ?: '-' }}</span></td>
                                                                     <td>{{ $line->display_product_name ?: ('Product #' . $line->product_id) }}</td>
-                                                                    <td class="text-center">{{ $line->qty_billed }}</td>
+                                                                    <td class="text-center">
+                                                                        @if($status !== 'cancelled')
+                                                                            <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-line" data-line-id="{{ $line->id }}" data-quantity="{{ $line->qty_billed }}" data-minimum="{{ $lineReceived }}">{{ $line->qty_billed }} <i class="fa-solid fa-pen ms-1 small"></i></button>
+                                                                        @else
+                                                                            {{ $line->qty_billed }}
+                                                                        @endif
+                                                                    </td>
                                                                     <td class="text-end">{{ number_format($unitPriceInvoiceCurrency, 2, '.', '') }} {{ $lineCurrencyIso }}</td>
                                                                     <td class="text-end">{{ number_format($unitPriceEur, 2, '.', '') }} EUR</td>
+                                                                    <td class="text-end">
+                                                                        @if($status !== 'cancelled' && $lineReceived === 0)
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger oms-btn-icon js-remove-invoice-line" data-line-id="{{ $line->id }}" title="Remove line"><i class="fa-solid fa-trash"></i></button>
+                                                                        @endif
+                                                                    </td>
                                                                 </tr>
                                                             @endforeach
                                                         </tbody>
@@ -334,6 +347,57 @@ document.addEventListener('DOMContentLoaded', function () {
                     const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null;
                     throw new Error(validationMessage || data.message || 'Unable to save the change.');
                 }
+                window.location.reload();
+            } catch (error) { Swal.fire('Error', error.message, 'error'); }
+        });
+    });
+    async function invoiceLineRequest(url, method, payload) {
+        const response = await fetch(url, {
+            method,
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload || {}),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null;
+            throw new Error(validationMessage || data.message || 'Unable to save the change.');
+        }
+        return data;
+    }
+
+    document.querySelectorAll('.js-edit-invoice-line').forEach(function (button) {
+        button.addEventListener('click', async function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const minimum = Math.max(1, Number(this.dataset.minimum || 0));
+            const result = await Swal.fire({
+                title: 'Edit billed quantity', input: 'number', inputValue: this.dataset.quantity || 1,
+                inputAttributes: { min: minimum, step: 1 }, showCancelButton: true,
+                confirmButtonText: 'Save', cancelButtonText: 'Cancel',
+                inputValidator: value => {
+                    const quantity = Number(value);
+                    if (!Number.isInteger(quantity) || quantity < minimum) return 'Quantity must be an integer equal to or greater than ' + minimum + '.';
+                },
+            });
+            if (!result.isConfirmed) return;
+            try {
+                await invoiceLineRequest(window.location.pathname + '/lines/' + this.dataset.lineId, 'PATCH', { qty_billed: Number(result.value) });
+                window.location.reload();
+            } catch (error) { Swal.fire('Error', error.message, 'error'); }
+        });
+    });
+
+    document.querySelectorAll('.js-remove-invoice-line').forEach(function (button) {
+        button.addEventListener('click', async function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const result = await Swal.fire({
+                title: 'Remove invoice line?', icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Remove', cancelButtonText: 'Cancel', confirmButtonColor: '#dc3545',
+            });
+            if (!result.isConfirmed) return;
+            try {
+                await invoiceLineRequest(window.location.pathname + '/lines/' + this.dataset.lineId, 'DELETE');
                 window.location.reload();
             } catch (error) { Swal.fire('Error', error.message, 'error'); }
         });

@@ -220,6 +220,8 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/invoices', [SupplierInvoiceController::class, 'index'])->name('invoices.index');
             Route::get('/invoices/{invoice}', [SupplierInvoiceController::class, 'show'])->name('invoices.show');
             Route::patch('/invoices/{invoice}', [SupplierInvoiceController::class, 'update'])->name('invoices.update');
+            Route::patch('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'updateLine'])->name('invoices.lines.update');
+            Route::delete('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'destroyLine'])->name('invoices.lines.destroy');
             Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
             Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
             Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
@@ -625,6 +627,8 @@ Route::middleware(['web', 'auth'])
         Route::get('/invoices', [SupplierInvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [SupplierInvoiceController::class, 'show'])->name('invoices.show');
         Route::patch('/invoices/{invoice}', [SupplierInvoiceController::class, 'update'])->name('invoices.update');
+        Route::patch('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'updateLine'])->name('invoices.lines.update');
+        Route::delete('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'destroyLine'])->name('invoices.lines.destroy');
         Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
         Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
         Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');

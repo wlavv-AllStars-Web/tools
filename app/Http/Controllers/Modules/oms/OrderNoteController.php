@@ -201,10 +201,6 @@ class OrderNoteController extends Controller
 
     public function addLine(Request $request, OrderNote $orderNote)
     {
-        if (!$this->canMutateLines($orderNote)) {
-            return $this->lineMutationBlockedResponse($request, 'This order note can no longer be edited because billing already exists.');
-        }
-
         $data = $request->validate([
             'product_id' => ['required', 'integer'],
             'product_attribute_id' => ['nullable', 'integer'],
@@ -248,6 +244,7 @@ class OrderNoteController extends Controller
         }
 
         $this->adjustCustomStockArrive($productId, $productAttributeId, $qtyOrdered);
+        $this->refreshOrderNoteStatus($orderNote);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(array_merge([

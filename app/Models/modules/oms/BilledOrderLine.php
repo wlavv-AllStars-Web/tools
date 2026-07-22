@@ -41,9 +41,11 @@ class BilledOrderLine extends BaseOmsModel
 
     public function getQtyReceivedCalculatedAttribute(): int
     {
-        return (int) DB::table('oms_reception_lines as rl')
+        $fromReceptions = (int) DB::table('oms_reception_lines as rl')
             ->where('rl.billed_order_line_id', $this->id)
             ->sum('rl.qty_received');
+
+        return max((int) ($this->qty_received ?? 0), $fromReceptions);
     }
 
     public function getQtyMissingToReceiveAttribute(): int

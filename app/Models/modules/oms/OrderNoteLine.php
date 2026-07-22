@@ -59,8 +59,7 @@ class OrderNoteLine extends BaseOmsModel
 
     public function getQtyReceivedTotalAttribute(): int
     {
-        return (int) DB::table('oms_reception_lines as rl')
-            ->join('oms_billed_order_lines as bol', 'bol.id', '=', 'rl.billed_order_line_id')
+        return (int) DB::table('oms_billed_order_lines as bol')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
             ->leftJoin('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
             ->where('bo.order_note_id', $this->order_note_id)
@@ -82,7 +81,7 @@ class OrderNoteLine extends BaseOmsModel
                 $query->whereNull('si.status')
                     ->orWhere('si.status', '!=', 'cancelled');
             })
-            ->sum('rl.qty_received');
+            ->sum('bol.qty_received');
     }
 
     public function getRemainingToBillAttribute(): int

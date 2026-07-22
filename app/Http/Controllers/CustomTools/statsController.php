@@ -58,6 +58,13 @@ class statsController extends Controller
         $counters = order_payment::getCounters();
         $goals = order_payment::projection(1);
 
+        // Use the configured monthly objective for the daily target. The
+        // projection total is based on last year's homologous sales.
+        $currentMonthObjective = self::$monthlyObjectives2026[(int) date('n')] ?? 0;
+        $goals->totalMonthObjectivoValue = $currentMonthObjective;
+        $goals->totalMonthObjectivo = number_format($currentMonthObjective, 2, ',', ' ')
+            . ' ' . html_entity_decode('&euro;');
+
         $asdValue = $asdActual->actual ?? 0;
 
         $actualUntilToday = $counters->getActual + $asdValue;
@@ -177,6 +184,11 @@ class statsController extends Controller
         $dailyGoal = $daysInMonth > 0
             ? $monthGoal / $daysInMonth
             : 0;
+
+        // The KPI forecast represents the configured daily objective, using
+        // the same source and calculation as the Daily dashboard.
+        $today_forcast = $dailyGoal;
+        $yesterday_forcast = $dailyGoal;
     
         $objectiveUntilToday = $dailyGoal * $currentDay;
     

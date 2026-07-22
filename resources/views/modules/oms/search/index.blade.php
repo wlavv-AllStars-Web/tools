@@ -62,6 +62,7 @@
     </div>
 </div>
 <style>
+.oms-search-results{background:#fff;border:1px solid rgba(20,33,61,.10);border-radius:5px;box-shadow:0 8px 24px rgba(15,23,42,.06);padding:16px!important;margin-top:10px}
 .oms-search-results .accordion-item,.oms-search-results .accordion-button,.oms-search-results .table{border-radius:5px!important}
 .oms-search-results .accordion-item{margin-bottom:10px;border:1px solid rgba(20,33,61,.10);overflow:hidden}
 .oms-search-results .accordion-button:not(.collapsed){background:#eff6ff;color:#1d4ed8}

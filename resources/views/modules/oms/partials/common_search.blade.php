@@ -11,6 +11,6 @@
     </form>
 </div>
 <style>
-.oms-global-search{margin:10px 0 0;padding:10px;background:#fff;border:1px solid rgba(20,33,61,.10);box-shadow:0 4px 14px rgba(15,23,42,.05)}
+.oms-global-search{margin:10px 0 0;padding:14px;background:#fff;border:1px solid rgba(20,33,61,.10);border-radius:5px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
 .oms-global-search .form-control,.oms-global-search .input-group-text,.oms-global-search .btn{border-radius:5px}
 </style>

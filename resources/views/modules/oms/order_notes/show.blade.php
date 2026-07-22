@@ -1236,7 +1236,6 @@
             bindCopyOnClick();
             bindLineSelection();
 
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
             const notesUrl = @json(route('erp.oms.order_notes.notes.save', $orderNote));
 
             function saveNotes(payload, onDone) {

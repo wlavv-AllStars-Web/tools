@@ -40,7 +40,7 @@
                 <a href="{{ route('erp.oms.history.invoice.prices', $invoice->id) }}" style="padding-top: .1rem;padding-bottom: .1rem;" class="btn btn-outline-primary oms-btn-icon"> <i class="fa-solid fa-chart-line"></i> Price History </a>
             </div>
             <div class="fw-semibold text-truncate oms-current-selection">
-                <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-reference">{{ $invoice->invoice_reference }} <i class="fa-solid fa-pen ms-1 small"></i></button> | {{ $supplierName }}
+                <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-reference" data-update-url="{{ route('erp.oms.invoices.update', $invoice) }}">{{ $invoice->invoice_reference }} <i class="fa-solid fa-pen ms-1 small"></i></button> | {{ $supplierName }}
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('erp.oms.receptions.invoice_history', $invoice) }}" class="btn btn-outline-primary btn-sm rounded-2 oms-btn-icon">
@@ -71,7 +71,7 @@
                     </div>
                     <div class="oms-card-body">
                         <div class="oms-summary-list">
-                            <div class="oms-summary-row"><div class="oms-summary-key">Reference</div><div class="oms-summary-value"><button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-reference">{{ $invoice->invoice_reference }} <i class="fa-solid fa-pen ms-1 small"></i></button></div></div>
+                            <div class="oms-summary-row"><div class="oms-summary-key">Reference</div><div class="oms-summary-value"><button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-reference" data-update-url="{{ route('erp.oms.invoices.update', $invoice) }}">{{ $invoice->invoice_reference }} <i class="fa-solid fa-pen ms-1 small"></i></button></div></div>
                             <div class="oms-summary-row"><div class="oms-summary-key">Supplier</div><div class="oms-summary-value">{{ $supplierName }}</div></div>
                             <div class="oms-summary-row"><div class="oms-summary-key">Status</div><div class="oms-summary-value">{{ ucfirst($status) }}</div></div>
                             <div class="oms-summary-row"><div class="oms-summary-key">Currency</div><div class="oms-summary-value">{{ $invoice->currency_iso ?: 'EUR' }}</div></div>
@@ -234,7 +234,7 @@
                                                                     <td>{{ $line->display_product_name ?: ('Product #' . $line->product_id) }}</td>
                                                                     <td class="text-center">
                                                                         @if($status !== 'cancelled')
-                                                                            <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-line" data-line-id="{{ $line->id }}" data-quantity="{{ $line->qty_billed }}" data-minimum="{{ $lineReceived }}">{{ $line->qty_billed }} <i class="fa-solid fa-pen ms-1 small"></i></button>
+                                                                            <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-line" data-line-id="{{ $line->id }}" data-update-url="{{ route('erp.oms.invoices.lines.update', [$invoice, $line]) }}" data-quantity="{{ $line->qty_billed }}" data-minimum="{{ $lineReceived }}">{{ $line->qty_billed }} <i class="fa-solid fa-pen ms-1 small"></i></button>
                                                                         @else
                                                                             {{ $line->qty_billed }}
                                                                         @endif
@@ -243,7 +243,7 @@
                                                                     <td class="text-end">{{ number_format($unitPriceEur, 2, '.', '') }} EUR</td>
                                                                     <td class="text-end">
                                                                         @if($status !== 'cancelled' && $lineReceived === 0)
-                                                                            <button type="button" class="btn btn-sm btn-outline-danger oms-btn-icon js-remove-invoice-line" data-line-id="{{ $line->id }}" title="Remove line"><i class="fa-solid fa-trash"></i></button>
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger oms-btn-icon js-remove-invoice-line" data-line-id="{{ $line->id }}" data-delete-url="{{ route('erp.oms.invoices.lines.destroy', [$invoice, $line]) }}" title="Remove line"><i class="fa-solid fa-trash"></i></button>
                                                                         @endif
                                                                     </td>
                                                                 </tr>
@@ -322,7 +322,7 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+function initOmsInvoiceActions() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     document.querySelectorAll('.js-edit-invoice-reference').forEach(function (button) {
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (!result.isConfirmed) return;
             try {
-                const response = await fetch(window.location.pathname, {
+                const response = await fetch(this.dataset.updateUrl, {
                     method: 'PATCH',
                     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                     body: JSON.stringify({ invoice_reference: String(result.value).trim() }),
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (!result.isConfirmed) return;
             try {
-                await invoiceLineRequest(window.location.pathname + '/lines/' + this.dataset.lineId, 'PATCH', { qty_billed: Number(result.value) });
+                await invoiceLineRequest(this.dataset.updateUrl, 'PATCH', { qty_billed: Number(result.value) });
                 window.location.reload();
             } catch (error) { Swal.fire('Error', error.message, 'error'); }
         });
@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (!result.isConfirmed) return;
             try {
-                await invoiceLineRequest(window.location.pathname + '/lines/' + this.dataset.lineId, 'DELETE');
+                await invoiceLineRequest(this.dataset.deleteUrl, 'DELETE');
                 window.location.reload();
             } catch (error) { Swal.fire('Error', error.message, 'error'); }
         });
@@ -420,6 +420,12 @@ document.addEventListener('DOMContentLoaded', function () {
             navigator.clipboard?.writeText(value);
         });
     });
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initOmsInvoiceActions, { once: true });
+} else {
+    initOmsInvoiceActions();
+}
 </script>
 @endsection

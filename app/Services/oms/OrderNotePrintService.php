@@ -61,7 +61,12 @@ class OrderNotePrintService
                 ->first();
         }
 
-        $reference = $attribute->supplier_reference ?? $product->supplier_reference ?? $attribute->reference ?? $product->reference ?? '';
+        $reference = collect([
+            $attribute->supplier_reference ?? null,
+            $product->supplier_reference ?? null,
+            $attribute->reference ?? null,
+            $product->reference ?? null,
+        ])->first(fn ($value) => trim((string) $value) !== '') ?? '';
         $price = (float) ($attribute->wholesale_price_base_currency ?? 0);
         if ($price <= 0) $price = (float) ($product->wholesale_price_base_currency ?? 0);
         if ($price <= 0) $price = (float) ($attribute->wholesale_price ?? 0);

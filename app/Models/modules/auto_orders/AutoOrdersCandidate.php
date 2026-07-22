@@ -11,6 +11,26 @@ class AutoOrdersCandidate extends Model
 {
     use HasFactory;
     protected $table = 'auto_orders_candidates';
+
+    public const TECHNICAL_PRODUCTS_MANUFACTURER_ID = 202;
+
+    private const EXCLUDED_MANUFACTURER_NAMES = [
+        'technical products',
+        'tecnical products',
+    ];
+
+    public function scopeWithoutTechnicalProducts($query)
+    {
+        return $query
+            ->where('id_manufacturer', '<>', self::TECHNICAL_PRODUCTS_MANUFACTURER_ID)
+            ->whereNotIn(DB::raw('LOWER(TRIM(manufacturer))'), self::EXCLUDED_MANUFACTURER_NAMES);
+    }
+
+    public static function isTechnicalProducts($idManufacturer, $manufacturer): bool
+    {
+        return (int) $idManufacturer === self::TECHNICAL_PRODUCTS_MANUFACTURER_ID
+            || in_array(strtolower(trim((string) $manufacturer)), self::EXCLUDED_MANUFACTURER_NAMES, true);
+    }
     
     public static function getAllBrands(){
 
@@ -18,8 +38,7 @@ class AutoOrdersCandidate extends Model
         $brands = $data
             ->select('id_manufacturer', 'manufacturer')
             ->where('ordered', 0)
-            ->where('id_manufacturer', '<>', 202)
-            ->where('manufacturer', '<>', 'Technical Products')
+            ->withoutTechnicalProducts()
             ->groupBy('id_manufacturer', 'manufacturer')
             ->orderBy('manufacturer')
             ->get();
@@ -53,6 +72,10 @@ class AutoOrdersCandidate extends Model
     public static function insert($data, $origin){
 
         foreach($data AS $row){
+            if (self::isTechnicalProducts($row['id_manufacturer'] ?? 0, $row['name'] ?? '')) {
+                continue;
+            }
+
             $attrReference = (string) ($row['attr_reference'] ?? '');
             $reference = (string) ($row['reference'] ?? '');
 

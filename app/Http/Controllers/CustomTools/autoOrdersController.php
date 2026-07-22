@@ -83,10 +83,10 @@ class autoOrdersController extends Controller
 
         if($request->manufacturer == 'full'){
             $columns = [ 'MANUFACTURER', 'REFERENCE', 'ATTRIBUTE', 'Qtity' ];
-            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute', 'manufacturer')->where('ordered', 0)->orderBy('manufacturer', 'ASC')->get();
+            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute', 'manufacturer')->where('ordered', 0)->withoutTechnicalProducts()->orderBy('manufacturer', 'ASC')->get();
         }else{
             $columns = [ 'SKU', 'Qtity' ];
-            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute')->where('manufacturer', $request->manufacturer)->where('ordered', 0)->get();
+            $array = AutoOrdersCandidate::select('reference', 'attr_reference', 'quantity', 'id_product_attribute')->where('manufacturer', $request->manufacturer)->where('ordered', 0)->withoutTechnicalProducts()->get();
         }
 
 
@@ -118,6 +118,10 @@ class autoOrdersController extends Controller
     public function setAsOrdered(Request $request){
 
         $row = AutoOrdersCandidate::find($request->id);
+
+        if (is_null($row) || AutoOrdersCandidate::isTechnicalProducts($row->id_manufacturer, $row->manufacturer)) {
+            return response()->json([ 'success' => false ], 422);
+        }
 
         $reference = $row['reference'];
 
@@ -154,13 +158,13 @@ class autoOrdersController extends Controller
     public function getProductInfo(Request $request){
 
         $attr    = product_attribute::select('reference', 'id_product', 'id_product_attribute')->where('reference', 'LIKE', '%' . $request->reference . '%')->groupBy('reference')->get();
-        $product = product::select('reference', 'id_product', 'id_supplier')->where('id_supplier', $request->id_supplier)->where('reference', 'LIKE', '%' . $request->reference . '%')->groupBy('reference')->get();
+        $product = product::select('reference', 'id_product', 'id_supplier')->where('id_supplier', $request->id_supplier)->where('id_manufacturer', '<>', AutoOrdersCandidate::TECHNICAL_PRODUCTS_MANUFACTURER_ID)->where('reference', 'LIKE', '%' . $request->reference . '%')->groupBy('reference')->get();
         
         $item = array();
 
         foreach($attr AS $attr_item){
             
-            $exist = product::select('id_supplier')->where('id_supplier', $request->id_supplier)->where('id_product', $attr_item->id_product)->count();
+            $exist = product::select('id_supplier')->where('id_supplier', $request->id_supplier)->where('id_product', $attr_item->id_product)->where('id_manufacturer', '<>', AutoOrdersCandidate::TECHNICAL_PRODUCTS_MANUFACTURER_ID)->count();
 
             if($exist > 0){
                 $supplier = suppliers::select('id_supplier', 'name')->where('id_supplier', $request->id_supplier)->first();
@@ -238,7 +242,7 @@ class autoOrdersController extends Controller
     
     public function getProductsInfo(Request $request){
 
-        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->get();
+        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->withoutTechnicalProducts()->get();
         $prefix = env('DB2_DB_prefix', 'ps_');
         
         $data = [];
@@ -303,7 +307,7 @@ class autoOrdersController extends Controller
 
         }
 
-        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->get();
+        $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->withoutTechnicalProducts()->get();
         
         $viewRendered = view('customTools/autoOrders/includes/products_table', compact('products'))->render();
 
@@ -455,7 +459,7 @@ class autoOrdersController extends Controller
     
     public function loadProducts(Request $request){
         
-        $products = product::select('id_product', 'reference')->where('id_supplier', $request->id_supplier)->groupBy('reference')->get();
+        $products = product::select('id_product', 'reference')->where('id_supplier', $request->id_supplier)->where('id_manufacturer', '<>', AutoOrdersCandidate::TECHNICAL_PRODUCTS_MANUFACTURER_ID)->groupBy('reference')->get();
         
         $html= '<select id="selectProductListOfSuppliers" name="selectProductListOfSuppliers" onchange="loadAttributesOfBrand()" style="width: calc(100% - 20px );">';
             foreach($products AS $product) $html.= '<option value="' . $product->id_product . '">' . $product->reference . '</option>';
@@ -474,6 +478,14 @@ class autoOrdersController extends Controller
     }
     
     public function saveNewOrderFromScratch(Request $request){
+
+        $isTechnicalProduct = product::where('id_product', $request->id_product)
+            ->where('id_manufacturer', AutoOrdersCandidate::TECHNICAL_PRODUCTS_MANUFACTURER_ID)
+            ->exists();
+
+        if ($isTechnicalProduct) {
+            return response()->json([ 'success' => false ], 422);
+        }
         
         $supplier = suppliers::where('id_supplier', $request->id_supplier)->value('name');
         

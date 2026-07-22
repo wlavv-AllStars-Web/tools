@@ -38,6 +38,7 @@ class statsController extends Controller
         $byMonth = order_payment::objectiveByMonth();
 
         $asdActual = order_payment::getASDActual();
+        $asdHomologo = order_payment::getASDHomologo();
 
         $months = [
             0  => self::getMonthlyValue($byMonth[1],  'January',   null, 1),
@@ -68,12 +69,14 @@ class statsController extends Controller
         $asdValue = $asdActual->actual ?? 0;
 
         $actualUntilToday = $counters->getActual + $asdValue;
+        $lastYearUntilToday = $counters->getAcumuladoAnoAnteriorHomologo
+            + ($asdHomologo->actual ?? 0);
         $objectiveUntilTodayValue = self::getObjectiveUntilToday();
 
         $side = (object)[
             'until_today' => number_format($actualUntilToday, 2, ',', ' ') . ' €',
-            'accumulated_last_year_until_now' => '-',
-            'difference' => number_format(($actualUntilToday - $objectiveUntilTodayValue), 2, ',', ' ') . ' €',
+            'accumulated_last_year_until_now' => number_format($lastYearUntilToday, 2, ',', ' ') . ' ' . html_entity_decode('&euro;'),
+            'difference' => number_format(($actualUntilToday - $lastYearUntilToday), 2, ',', ' ') . ' ' . html_entity_decode('&euro;'),
             'objective_until_today' => number_format($objectiveUntilTodayValue, 2, ',', ' ') . ' €',
             'difference_objective_until_today' => number_format(($actualUntilToday - $objectiveUntilTodayValue), 2, ',', ' ') . ' €',
             'objective' => number_format(self::$objective2026, 2, ',', ' ') . ' €',

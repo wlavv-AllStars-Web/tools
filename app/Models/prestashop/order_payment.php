@@ -34,7 +34,8 @@ class order_payment extends PrestashopModel
 
             $row_this_year = self::getTotalsByShops($dateString, $lastDateOfMonth, [self::SHOP_ASM, self::SHOP_ASD])
                 + self::getLegacyASMTotal($dateString, $lastDateOfMonth);
-            $row_last_year = self::getTotalsByShops($lastYearDateString, $lastYearlastDateOfMonth, [self::SHOP_ASM, self::SHOP_ASD]);
+            $row_last_year = self::getTotalsByShops($lastYearDateString, $lastYearlastDateOfMonth, [self::SHOP_ASM, self::SHOP_ASD])
+                + self::getLegacyASMTotal($lastYearDateString, $lastYearlastDateOfMonth);
 
             $objectivosByMonth[$i + 1] = (object) [
                 'current' => $row_this_year + 0,
@@ -116,7 +117,8 @@ class order_payment extends PrestashopModel
         $start_last_year = date('Y', strtotime('-1 years')) . '-01-01';
         $end_last_year = date('Y', strtotime('-1 years')) . '-12-31';
 
-        return self::getTotalsByShop($start_last_year, $end_last_year, self::SHOP_ASM);
+        return self::getTotalsByShop($start_last_year, $end_last_year, self::SHOP_ASM)
+            + self::getLegacyASMTotal($start_last_year, $end_last_year);
     }
 
     private static function getASMAcumuladoAnoAnteriorHomologo()
@@ -124,7 +126,8 @@ class order_payment extends PrestashopModel
         $start_last_year = date('Y', strtotime('-1 years')) . '-01-01';
         $current_day_last_year = date('Y', strtotime('-1 years')) . '-' . date('m-d');
 
-        return self::getTotalsByShop($start_last_year, $current_day_last_year, self::SHOP_ASM);
+        return self::getTotalsByShop($start_last_year, $current_day_last_year, self::SHOP_ASM)
+            + self::getLegacyASMTotal($start_last_year, $current_day_last_year);
     }
 
     private static function getASMAcumuladoAnoAnteriorHomologoCurrentMonth()
@@ -132,7 +135,8 @@ class order_payment extends PrestashopModel
         $start_last_year = date('Y', strtotime('-1 years')) . '-' . date('m') . '-01';
         $current_day_last_year = date('Y', strtotime('-1 years')) . '-' . date('m-d');
 
-        return self::getTotalsByShop($start_last_year, $current_day_last_year, self::SHOP_ASM);
+        return self::getTotalsByShop($start_last_year, $current_day_last_year, self::SHOP_ASM)
+            + self::getLegacyASMTotal($start_last_year, $current_day_last_year);
     }
 
     private static function getTotalsByShop($start_date, $end_date, $shopId)
@@ -153,16 +157,17 @@ class order_payment extends PrestashopModel
 
         $orderHistoryTable = self::tableName('order_history');
         $ordersTable = self::tableName('orders');
-        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
-        $countableCurrentStates = array_values(array_unique(array_merge($paidStates, [30, 31])));
+        // Match the Old Tools: sales enter the dashboard through state 2.
+        $paidStates = [2];
+        $countableCurrentStates = [2, 3, 4, 5, 15, 16, 28, 30, 31];
 
         $ids_order = $db->table($orderHistoryTable . ' as oh')
             ->join($ordersTable . ' as o', 'o.id_order', '=', 'oh.id_order')
             ->whereIn('oh.id_order_state', $paidStates)
             ->whereIn('o.id_shop', $shopIds)
+            ->where('oh.date_add', '>', $start_date . ' 00:00:00')
+            ->where('oh.date_add', '<', $end_date . ' 23:59:59')
             ->groupBy('oh.id_order')
-            ->havingRaw('MIN(oh.date_add) > ?', [$start_date . ' 00:00:00'])
-            ->havingRaw('MIN(oh.date_add) < ?', [$end_date . ' 23:59:59'])
             ->pluck('oh.id_order')
             ->toArray();
 
@@ -218,6 +223,9 @@ class order_payment extends PrestashopModel
                 date('Y', strtotime('-1 years')) . '-' . date('m') . '-' . $day,
                 date('Y', strtotime('-1 years')) . '-' . date('m') . '-' . $day,
                 self::SHOP_ASM
+            ) + self::getLegacyASMTotal(
+                date('Y', strtotime('-1 years')) . '-' . date('m') . '-' . $day,
+                date('Y', strtotime('-1 years')) . '-' . date('m') . '-' . $day
             );
 
             $ASD_stream = self::getASDday($day);
@@ -314,8 +322,10 @@ class order_payment extends PrestashopModel
             $day = date('Y-m-d', strtotime('-1 day'));
         }
 
-        $homologue = self::getTotalsByShop($homologue_day, $homologue_day, self::SHOP_ASM);
-        $current = self::getTotalsByShop($day, $day, self::SHOP_ASM);
+        $homologue = self::getTotalsByShop($homologue_day, $homologue_day, self::SHOP_ASM)
+            + self::getLegacyASMTotal($homologue_day, $homologue_day);
+        $current = self::getTotalsByShop($day, $day, self::SHOP_ASM)
+            + self::getLegacyASMTotal($day, $day);
 
         return (object) [
             'day' => $current,

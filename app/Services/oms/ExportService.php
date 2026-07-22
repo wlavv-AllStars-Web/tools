@@ -6,11 +6,6 @@ use App\Models\modules\oms\BilledOrder;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\SupplierInvoice;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportService
@@ -18,46 +13,90 @@ class ExportService
     public function streamXlsx(string $filename, array $headers, iterable $rows): StreamedResponse
     {
         return response()->streamDownload(function () use ($headers, $rows) {
-            $spreadsheet = new Spreadsheet();
-            $sheet = $spreadsheet->getActiveSheet();
-            $sheet->setTitle('OMS Export');
+            $path = tempnam(sys_get_temp_dir(), 'oms-xlsx-');
+            $zip = new \ZipArchive();
 
-            foreach ($headers as $column => $header) {
-                $sheet->setCellValueExplicit([$column + 1, 1], $header, DataType::TYPE_STRING);
+            if ($path === false || $zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                throw new \RuntimeException('Unable to create XLSX export.');
             }
 
-            $rowNumber = 2;
-            foreach ($rows as $row) {
-                foreach ($this->normalizeRow($row, $headers) as $column => $value) {
-                    $coordinate = [$column + 1, $rowNumber];
+            $zip->addFromString('[Content_Types].xml', $this->xlsxContentTypes());
+            $zip->addFromString('_rels/.rels', $this->xlsxRootRelationships());
+            $zip->addFromString('xl/workbook.xml', $this->xlsxWorkbook());
+            $zip->addFromString('xl/_rels/workbook.xml.rels', $this->xlsxWorkbookRelationships());
+            $zip->addFromString('xl/styles.xml', $this->xlsxStyles());
+            $zip->addFromString('xl/worksheets/sheet1.xml', $this->xlsxWorksheet($headers, $rows));
+            $zip->close();
 
-                    if (is_int($value) || is_float($value)) {
-                        $sheet->setCellValue($coordinate, $value);
-                    } else {
-                        $sheet->setCellValueExplicit($coordinate, $value ?? '', DataType::TYPE_STRING);
-                    }
-                }
-                $rowNumber++;
-            }
-
-            $lastColumn = $sheet->getHighestColumn();
-            $sheet->freezePane('A2');
-            $sheet->setAutoFilter('A1:' . $lastColumn . '1');
-            $sheet->getStyle('A1:' . $lastColumn . '1')->applyFromArray([
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1F4E78']],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-            ]);
-
-            foreach (range('A', $lastColumn) as $column) {
-                $sheet->getColumnDimension($column)->setAutoSize(true);
-            }
-
-            (new Xlsx($spreadsheet))->save('php://output');
-            $spreadsheet->disconnectWorksheets();
+            readfile($path);
+            @unlink($path);
         }, preg_replace('/\.csv$/i', '.xlsx', $filename), [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    private function xlsxWorksheet(array $headers, iterable $rows): string
+    {
+        $allRows = [$headers];
+        foreach ($rows as $row) $allRows[] = $this->normalizeRow($row, $headers);
+
+        $sheetRows = '';
+        foreach ($allRows as $rowIndex => $values) {
+            $cells = '';
+            foreach (array_values($values) as $columnIndex => $value) {
+                $reference = $this->xlsxColumnName($columnIndex + 1) . ($rowIndex + 1);
+                if ($rowIndex > 0 && (is_int($value) || is_float($value))) {
+                    $cells .= '<c r="' . $reference . '"><v>' . $value . '</v></c>';
+                } else {
+                    $cells .= '<c r="' . $reference . '" t="inlineStr"' . ($rowIndex === 0 ? ' s="1"' : '') . '><is><t xml:space="preserve">' . $this->xlsxEscape($value ?? '') . '</t></is></c>';
+                }
+            }
+            $sheetRows .= '<row r="' . ($rowIndex + 1) . '">' . $cells . '</row>';
+        }
+
+        $lastColumn = $this->xlsxColumnName(count($headers));
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="' . count($headers) . '" width="20" customWidth="1"/></cols><sheetData>' . $sheetRows . '</sheetData><autoFilter ref="A1:' . $lastColumn . '1"/></worksheet>';
+    }
+
+    private function xlsxColumnName(int $index): string
+    {
+        $name = '';
+        while ($index > 0) {
+            $index--;
+            $name = chr(65 + ($index % 26)) . $name;
+            $index = intdiv($index, 26);
+        }
+        return $name;
+    }
+
+    private function xlsxEscape($value): string
+    {
+        return htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    }
+
+    private function xlsxContentTypes(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+    }
+
+    private function xlsxRootRelationships(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+    }
+
+    private function xlsxWorkbook(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="OMS Export" sheetId="1" r:id="rId1"/></sheets></workbook>';
+    }
+
+    private function xlsxWorkbookRelationships(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+    }
+
+    private function xlsxStyles(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font/><font><b/><color rgb="FFFFFFFF"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F4E78"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf></cellXfs></styleSheet>';
     }
 
     public function exportOrderNoteXlsx(OrderNote $orderNote): StreamedResponse

@@ -165,11 +165,20 @@ class OrderNoteController extends Controller
     public function update(Request $request, OrderNote $orderNote)
     {
         $data = $request->validate([
+            'reference' => ['sometimes', 'required', 'string', 'max:191'],
             'internal_note' => ['nullable', 'string'],
             'logistic_note' => ['nullable', 'string'],
         ]);
 
         $orderNote->update($data);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order note name updated successfully.',
+                'reference' => $orderNote->reference,
+            ]);
+        }
 
         return redirect()->route('erp.oms.order_notes.show', $orderNote)
             ->with('success', 'Order note updated successfully.');
@@ -259,16 +268,21 @@ class OrderNoteController extends Controller
             abort(404);
         }
 
-        if (!$this->canMutateLines($orderNote)) {
-            return $this->lineMutationBlockedResponse($request, 'This order note can no longer be edited because billing already exists.');
-        }
-
         $validated = $request->validate([
             'qty_ordered' => ['required', 'integer', 'min:0'],
         ]);
 
         $oldQtyOrdered = (int) $line->qty_ordered;
         $qtyOrdered = (int) $validated['qty_ordered'];
+        $minimumQty = max((int) $line->qty_billed_total, (int) $line->qty_received_total);
+
+        if ($qtyOrdered < $minimumQty) {
+            return $this->lineMutationBlockedResponse(
+                $request,
+                'Ordered quantity cannot be lower than the quantity already invoiced or received (' . $minimumQty . ').'
+            );
+        }
+
         $deltaStockArrive = $qtyOrdered - $oldQtyOrdered;
 
         if ($qtyOrdered <= 0) {
@@ -283,6 +297,7 @@ class OrderNoteController extends Controller
             $line->product_attribute_id ? (int) $line->product_attribute_id : null,
             $deltaStockArrive
         );
+        $this->refreshOrderNoteStatus($orderNote);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(array_merge([
@@ -300,8 +315,14 @@ class OrderNoteController extends Controller
             abort(404);
         }
 
-        if (!$this->canMutateLines($orderNote)) {
-            return $this->lineMutationBlockedResponse($request, 'This order note can no longer be edited because billing already exists.');
+        $qtyBilled = (int) $line->qty_billed_total;
+        $qtyReceived = (int) $line->qty_received_total;
+
+        if ($qtyBilled > 0 || $qtyReceived > 0) {
+            return $this->lineMutationBlockedResponse(
+                $request,
+                'This line cannot be removed because it already has invoiced or received quantities.'
+            );
         }
 
         $this->adjustCustomStockArrive(
@@ -311,6 +332,7 @@ class OrderNoteController extends Controller
         );
 
         $line->delete();
+        $this->refreshOrderNoteStatus($orderNote);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(array_merge([
@@ -1093,6 +1115,23 @@ class OrderNoteController extends Controller
     protected function canMutateLines(OrderNote $orderNote): bool
     {
         return $orderNote->status === 'order_note' && !$orderNote->billedOrders()->exists();
+    }
+
+    protected function refreshOrderNoteStatus(OrderNote $orderNote): void
+    {
+        $orderNote->load('lines');
+
+        $totalOrdered = (int) $orderNote->lines->sum('qty_ordered');
+        $totalBilled = (int) $orderNote->lines->sum(fn (OrderNoteLine $line) => (int) $line->qty_billed_total);
+        $totalReceived = (int) $orderNote->lines->sum(fn (OrderNoteLine $line) => (int) $line->qty_received_total);
+
+        $status = $totalOrdered > 0 && $totalReceived >= $totalOrdered
+            ? 'closed'
+            : ($totalOrdered > 0 && $totalBilled >= $totalOrdered ? 'billed' : 'order_note');
+
+        if ($orderNote->status !== $status) {
+            $orderNote->update(['status' => $status]);
+        }
     }
 
     protected function lineMutationBlockedResponse(Request $request, string $message)

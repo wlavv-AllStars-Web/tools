@@ -155,6 +155,25 @@ class SupplierInvoiceController extends Controller
         ));
     }
 
+    public function update(Request $request, SupplierInvoice $invoice)
+    {
+        $data = $request->validate([
+            'invoice_reference' => ['required', 'string', 'max:100'],
+        ]);
+
+        $invoice->update($data);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice name updated successfully.',
+                'invoice_reference' => $invoice->invoice_reference,
+            ]);
+        }
+
+        return back()->with('success', 'Invoice name updated successfully.');
+    }
+
     public function saveShipmentRelation(Request $request, SupplierInvoice $invoice)
     {
         $data = $request->validate([

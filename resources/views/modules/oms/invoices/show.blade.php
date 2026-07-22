@@ -40,7 +40,7 @@
                 <a href="{{ route('erp.oms.history.invoice.prices', $invoice->id) }}" style="padding-top: .1rem;padding-bottom: .1rem;" class="btn btn-outline-primary oms-btn-icon"> <i class="fa-solid fa-chart-line"></i> Price History </a>
             </div>
             <div class="fw-semibold text-truncate oms-current-selection">
-                {{ $invoice->invoice_reference }} | {{ $supplierName }}
+                <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-reference">{{ $invoice->invoice_reference }} <i class="fa-solid fa-pen ms-1 small"></i></button> | {{ $supplierName }}
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('erp.oms.receptions.invoice_history', $invoice) }}" class="btn btn-outline-primary btn-sm rounded-2 oms-btn-icon">
@@ -71,7 +71,7 @@
                     </div>
                     <div class="oms-card-body">
                         <div class="oms-summary-list">
-                            <div class="oms-summary-row"><div class="oms-summary-key">Reference</div><div class="oms-summary-value oms-copyable" data-copy="{{ $invoice->invoice_reference }}">{{ $invoice->invoice_reference }}</div></div>
+                            <div class="oms-summary-row"><div class="oms-summary-key">Reference</div><div class="oms-summary-value"><button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-invoice-reference">{{ $invoice->invoice_reference }} <i class="fa-solid fa-pen ms-1 small"></i></button></div></div>
                             <div class="oms-summary-row"><div class="oms-summary-key">Supplier</div><div class="oms-summary-value">{{ $supplierName }}</div></div>
                             <div class="oms-summary-row"><div class="oms-summary-key">Status</div><div class="oms-summary-value">{{ ucfirst($status) }}</div></div>
                             <div class="oms-summary-row"><div class="oms-summary-key">Currency</div><div class="oms-summary-value">{{ $invoice->currency_iso ?: 'EUR' }}</div></div>
@@ -310,6 +310,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    document.querySelectorAll('.js-edit-invoice-reference').forEach(function (button) {
+        button.addEventListener('click', async function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const result = await Swal.fire({
+                title: 'Edit invoice name', input: 'text', inputValue: this.textContent.trim(),
+                inputAttributes: { maxlength: 100 }, showCancelButton: true,
+                confirmButtonText: 'Save', cancelButtonText: 'Cancel',
+                inputValidator: value => !String(value || '').trim() ? 'The name is required.' : undefined,
+            });
+            if (!result.isConfirmed) return;
+            try {
+                const response = await fetch(window.location.pathname, {
+                    method: 'PATCH',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ invoice_reference: String(result.value).trim() }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) {
+                    const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null;
+                    throw new Error(validationMessage || data.message || 'Unable to save the change.');
+                }
+                window.location.reload();
+            } catch (error) { Swal.fire('Error', error.message, 'error'); }
+        });
+    });
     document.querySelectorAll('.oms-toggle-row').forEach(function (row) {
         row.addEventListener('click', function (e) {
             if (e.target.closest('.actions')) return;

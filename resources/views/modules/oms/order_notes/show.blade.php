@@ -412,7 +412,7 @@
             <div class="oms-topbar-block flex-grow-1 justify-content-center">
                 <div class="oms-selected-chip">
                     <i class="fa-solid fa-file-lines text-primary"></i>
-                    <span>{{ $orderNote->reference }}</span>
+                    <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-order-note-reference">{{ $orderNote->reference }} <i class="fa-solid fa-pen ms-1 small"></i></button>
                     <span class="text-muted">·</span>
                     <span>{{ $supplierName }}</span>
                 </div>
@@ -654,7 +654,7 @@
                                                 </span>
                                             </td>
                                             <td>{{ $lineName }}</td>
-                                            <td class="text-center fw-semibold">{{ $lineOrdered }}</td>
+                                            <td class="text-center fw-semibold"><button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-order-note-line" data-line-id="{{ $line->id }}" data-quantity="{{ $lineOrdered }}" data-minimum="{{ max($lineBilled, $lineReceived) }}">{{ $lineOrdered }} <i class="fa-solid fa-pen ms-1 small"></i></button></td>
                                             <td class="text-center">
                                                 {{ $lineBilled }}
                                                 <span class="oms-status-square {{ $billStatus }}">
@@ -680,6 +680,9 @@
                                                         onclick="generateBarcode({{ $ordered }}, 0, {{ $line->product_id }}, {{ $line->product_attribute_id ?? 0 }})">
                                                         <i class="fa-solid fa-barcode"></i>
                                                     </button>
+                                                @endif
+                                                @if($lineBilled === 0 && $lineReceived === 0)
+                                                    <button type="button" class="btn btn-sm btn-outline-danger oms-btn-icon js-remove-order-note-line" data-line-id="{{ $line->id }}" title="Remove line"><i class="fa-solid fa-trash"></i></button>
                                                 @endif
                                             </td>
                                         </tr>
@@ -1035,6 +1038,78 @@
 
     <script>
         (function() {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            async function omsRequest(url, method, payload) {
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify(payload || {}),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) {
+                    const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null;
+                    throw new Error(validationMessage || data.message || 'Unable to save the change.');
+                }
+                return data;
+            }
+
+            document.querySelectorAll('.js-edit-order-note-reference').forEach(button => {
+                button.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const currentValue = this.textContent.trim();
+                    const result = await Swal.fire({
+                        title: 'Edit order note name', input: 'text', inputValue: currentValue,
+                        inputAttributes: { maxlength: 191 }, showCancelButton: true,
+                        confirmButtonText: 'Save', cancelButtonText: 'Cancel',
+                        inputValidator: value => !String(value || '').trim() ? 'The name is required.' : undefined,
+                    });
+                    if (!result.isConfirmed) return;
+                    try {
+                        await omsRequest(window.location.pathname, 'PUT', { reference: String(result.value).trim() });
+                        window.location.reload();
+                    } catch (error) { Swal.fire('Error', error.message, 'error'); }
+                });
+            });
+
+            document.querySelectorAll('.js-edit-order-note-line').forEach(button => {
+                button.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const minimum = Number(this.dataset.minimum || 0);
+                    const result = await Swal.fire({
+                        title: 'Edit ordered quantity', input: 'number', inputValue: this.dataset.quantity || 0,
+                        inputAttributes: { min: minimum, step: 1 }, showCancelButton: true,
+                        confirmButtonText: 'Save', cancelButtonText: 'Cancel',
+                        inputValidator: value => {
+                            const quantity = Number(value);
+                            if (!Number.isInteger(quantity) || quantity < minimum) return 'Quantity must be an integer equal to or greater than ' + minimum + '.';
+                        },
+                    });
+                    if (!result.isConfirmed) return;
+                    try {
+                        await omsRequest(window.location.pathname + '/lines/' + this.dataset.lineId, 'PATCH', { qty_ordered: Number(result.value) });
+                        window.location.reload();
+                    } catch (error) { Swal.fire('Error', error.message, 'error'); }
+                });
+            });
+
+            document.querySelectorAll('.js-remove-order-note-line').forEach(button => {
+                button.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const result = await Swal.fire({
+                        title: 'Remove order note line?', icon: 'warning', showCancelButton: true,
+                        confirmButtonText: 'Remove', cancelButtonText: 'Cancel', confirmButtonColor: '#dc3545',
+                    });
+                    if (!result.isConfirmed) return;
+                    try {
+                        await omsRequest(window.location.pathname + '/lines/' + this.dataset.lineId, 'DELETE');
+                        window.location.reload();
+                    } catch (error) { Swal.fire('Error', error.message, 'error'); }
+                });
+            });
             const detailSearch = document.getElementById('omsDetailSearch');
             if (detailSearch) {
                 detailSearch.addEventListener('input', function() {

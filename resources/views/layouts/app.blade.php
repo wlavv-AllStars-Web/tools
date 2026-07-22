@@ -98,7 +98,12 @@
                         <div id="mainMenuMobile"> @include('includes.mobileMenu') </div>
                         <div id="mobileAction">   @include('includes.mobileAction') </div>
 
-                        <div id="yieldContent" style="width: calc(100% - 20px);margin: 0 10px;display: inline-grid;"> @yield('content') </div>
+                        <div id="yieldContent" style="width: calc(100% - 20px);margin: 0 10px;display: inline-grid;">
+                            @if(request()->routeIs('erp.oms.*', 'admin.tools.oms.*'))
+                                @include('modules.oms.partials.common_search')
+                            @endif
+                            @yield('content')
+                        </div>
                     </div>
                 @endauth
             @endguest

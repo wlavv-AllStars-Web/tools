@@ -71,6 +71,7 @@ use App\Http\Controllers\Modules\oms\SupplierInvoiceController;
 use App\Http\Controllers\Modules\oms\SupplierTermLevelController;
 use App\Http\Controllers\Modules\oms\LogisticContainerController;
 use App\Http\Controllers\Modules\oms\HistoryController;
+use App\Http\Controllers\Modules\oms\OmsSearchController;
 
 use App\Models\modules\checklist\daily_checklist;
 
@@ -173,6 +174,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         Route::prefix('oms')->name('oms.')->group(function () {
             Route::get('/', [OmsDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/search', [OmsSearchController::class, 'index'])->name('search');
             Route::get('/fragments/documents', [OmsDashboardController::class, 'documentsFragment'])->name('dashboard.fragments.documents');
             Route::get('/fragments/summary', [OmsDashboardController::class, 'summaryFragment'])->name('dashboard.fragments.summary');
             Route::get('/fragments/stats', [OmsDashboardController::class, 'statsFragment'])->name('dashboard.fragments.stats');
@@ -217,6 +219,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
             Route::get('/invoices', [SupplierInvoiceController::class, 'index'])->name('invoices.index');
             Route::get('/invoices/{invoice}', [SupplierInvoiceController::class, 'show'])->name('invoices.show');
+            Route::patch('/invoices/{invoice}', [SupplierInvoiceController::class, 'update'])->name('invoices.update');
             Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
             Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
             Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
@@ -576,6 +579,7 @@ Route::middleware(['web', 'auth'])
     ->name('erp.oms.')
     ->group(function () {
         Route::get('/', [OmsDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/search', [OmsSearchController::class, 'index'])->name('search');
         Route::get('/fragments/documents', [OmsDashboardController::class, 'documentsFragment'])->name('dashboard.fragments.documents');
         Route::get('/fragments/summary', [OmsDashboardController::class, 'summaryFragment'])->name('dashboard.fragments.summary');
         Route::get('/fragments/stats', [OmsDashboardController::class, 'statsFragment'])->name('dashboard.fragments.stats');
@@ -620,6 +624,7 @@ Route::middleware(['web', 'auth'])
 
         Route::get('/invoices', [SupplierInvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [SupplierInvoiceController::class, 'show'])->name('invoices.show');
+        Route::patch('/invoices/{invoice}', [SupplierInvoiceController::class, 'update'])->name('invoices.update');
         Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
         Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
         Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');

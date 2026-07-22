@@ -25,9 +25,9 @@
             <div class="accordion-item">
                 <h2 class="accordion-header" id="heading-{{ $section['id'] }}">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $section['id'] }}" aria-expanded="false">
+                        <span class="badge text-bg-primary me-2">{{ $section['rows']->count() }}</span>
                         <i class="fa-solid {{ $section['icon'] }} me-2"></i>
                         <span>{{ $section['title'] }}</span>
-                        <span class="badge text-bg-primary ms-2">{{ $section['rows']->count() }}</span>
                     </button>
                 </h2>
                 <div id="collapse-{{ $section['id'] }}" class="accordion-collapse collapse" data-bs-parent="#omsSearchAccordion">

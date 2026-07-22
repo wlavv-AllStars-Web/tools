@@ -426,8 +426,10 @@
                     </button>
                 @endif
 
-                <a href="{{ route('erp.oms.order_notes.export.csv', $orderNote) }}" class="btn btn-sm btn-outline-success oms-compact-btn">
-                    <i class="fa-solid fa-file-csv me-1"></i> Export CSV
+                <a href="{{ route('erp.oms.order_notes.export.xlsx', $orderNote) }}" class="btn btn-sm btn-outline-success oms-compact-btn">
+                    <i class="fa-solid fa-file-excel me-1"></i> Export XLSX
+                </a>                <a href="{{ route('erp.oms.order_notes.export.pdf', $orderNote) }}" class="btn btn-sm btn-outline-danger oms-compact-btn">
+                    <i class="fa-solid fa-file-pdf me-1"></i> PRINT
                 </a>
                 
 

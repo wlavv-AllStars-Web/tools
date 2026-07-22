@@ -178,7 +178,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/fragments/documents', [OmsDashboardController::class, 'documentsFragment'])->name('dashboard.fragments.documents');
             Route::get('/fragments/summary', [OmsDashboardController::class, 'summaryFragment'])->name('dashboard.fragments.summary');
             Route::get('/fragments/stats', [OmsDashboardController::class, 'statsFragment'])->name('dashboard.fragments.stats');
-            Route::get('/dashboard/export/csv', [OmsDashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
+            Route::get('/dashboard/export/xlsx', [OmsDashboardController::class, 'exportXlsx'])->name('dashboard.export.xlsx');
 
             Route::get('/order-notes', [OrderNoteController::class, 'index'])->name('order_notes.index');
             Route::get('/order-notes/create', [OrderNoteController::class, 'create'])->name('order_notes.create');
@@ -197,7 +197,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/order-notes/{orderNote}/import/csv/confirm', [OrderNoteController::class, 'importCsvConfirm'])->name('order_notes.import.confirm');
             Route::post('/order-notes/{orderNote}/notes', [OrderNoteController::class, 'saveNotes'])->name('order_notes.notes.save');
             Route::post('/order-notes/{orderNote}/lines/{line}/notes', [OrderNoteController::class, 'saveLineNotes'])->name('order_notes.lines.notes.save');
-            Route::get('/order-notes/{orderNote}/export/csv', [OrderNoteController::class, 'exportCsv'])->name('order_notes.export.csv');
+            Route::get('/order-notes/{orderNote}/export/xlsx', [OrderNoteController::class, 'exportXlsx'])->name('order_notes.export.xlsx');
             Route::get('/order-notes/{orderNote}/export/pdf', [OrderNoteController::class, 'exportPdf'])->name('order_notes.export.pdf');
             Route::get('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'create'])->name('invoices.create');
             Route::post('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'store'])->name('invoices.store');
@@ -208,14 +208,14 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/billed-orders/{billedOrder}/notes', [BilledOrderController::class, 'saveNotes'])->name('billed_orders.notes.save');
             Route::post('/billed-orders/{billedOrder}/lines/{line}/notes', [BilledOrderController::class, 'saveLineNotes'])->name('billed_orders.lines.notes.save');
             Route::post('/billed-orders/{billedOrder}/shipment', [BilledOrderController::class, 'saveShipmentRelation'])->name('billed_orders.shipment.save');
-            Route::get('/billed-orders/{billedOrder}/export/csv', [BilledOrderController::class, 'exportCsv'])->name('billed_orders.export.csv');
+            Route::get('/billed-orders/{billedOrder}/export/xlsx', [BilledOrderController::class, 'exportXlsx'])->name('billed_orders.export.xlsx');
             Route::get('/billed-orders/{billedOrder}/export/pdf', [BilledOrderController::class, 'exportPdf'])->name('billed_orders.export.pdf');
 
             Route::get('/receptions', [ReceptionController::class, 'index'])->name('receptions.index');
             Route::post('/billed-orders/{billedOrder}/receive', [ReceptionController::class, 'store'])->name('receptions.store');
             Route::get('/billed-orders/{billedOrder}/receptions', [ReceptionController::class, 'history'])->name('receptions.history');
             Route::get('/invoices/{invoice}/receptions', [ReceptionController::class, 'invoiceHistory'])->name('receptions.invoice_history');
-            Route::get('/receptions/export/csv', [ReceptionController::class, 'exportCsv'])->name('receptions.export.csv');
+            Route::get('/receptions/export/xlsx', [ReceptionController::class, 'exportXlsx'])->name('receptions.export.xlsx');
 
             Route::get('/invoices', [SupplierInvoiceController::class, 'index'])->name('invoices.index');
             Route::get('/invoices/{invoice}', [SupplierInvoiceController::class, 'show'])->name('invoices.show');
@@ -225,7 +225,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
             Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
             Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
-            Route::get('/invoices/{invoice}/export/csv', [SupplierInvoiceController::class, 'exportCsv'])->name('invoices.export.csv');
+            Route::get('/invoices/{invoice}/export/xlsx', [SupplierInvoiceController::class, 'exportXlsx'])->name('invoices.export.xlsx');
             Route::get('/invoices/{invoice}/export/pdf', [SupplierInvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');
 
             Route::get('/supplier-terms/{supplierId}', [SupplierTermLevelController::class, 'index'])->name('supplier_terms.index');
@@ -359,7 +359,7 @@ Route::middleware(['web', 'auth'])->group(function () {
                 Route::post('/verification/comment/{count}', [LogisticsInventoryController::class, 'saveVerificationComment'])->name('verification.comment');
                 Route::post('/verification/{schedule}', [LogisticsInventoryController::class, 'verify'])->name('verification.verify');
                 Route::get('/report', [LogisticsInventoryController::class, 'report'])->name('report');
-                Route::get('/report/csv', [LogisticsInventoryController::class, 'reportCsv'])->name('report.csv');
+                Route::get('/report/csv', [LogisticsInventoryController::class, 'reportCsv'])->name('report.xlsx');
                 Route::get('/report/pdf', [LogisticsInventoryController::class, 'reportPdf'])->name('report.pdf');
             });
         });
@@ -585,7 +585,7 @@ Route::middleware(['web', 'auth'])
         Route::get('/fragments/documents', [OmsDashboardController::class, 'documentsFragment'])->name('dashboard.fragments.documents');
         Route::get('/fragments/summary', [OmsDashboardController::class, 'summaryFragment'])->name('dashboard.fragments.summary');
         Route::get('/fragments/stats', [OmsDashboardController::class, 'statsFragment'])->name('dashboard.fragments.stats');
-        Route::get('/dashboard/export/csv', [OmsDashboardController::class, 'exportCsv'])->name('dashboard.export.csv');
+        Route::get('/dashboard/export/xlsx', [OmsDashboardController::class, 'exportXlsx'])->name('dashboard.export.xlsx');
 
         Route::get('/order-notes', [OrderNoteController::class, 'index'])->name('order_notes.index');
         Route::get('/order-notes/create', [OrderNoteController::class, 'create'])->name('order_notes.create');
@@ -604,7 +604,7 @@ Route::middleware(['web', 'auth'])
         Route::post('/order-notes/{orderNote}/import/csv/confirm', [OrderNoteController::class, 'importCsvConfirm'])->name('order_notes.import.confirm');
         Route::post('/order-notes/{orderNote}/notes', [OrderNoteController::class, 'saveNotes'])->name('order_notes.notes.save');
         Route::post('/order-notes/{orderNote}/lines/{line}/notes', [OrderNoteController::class, 'saveLineNotes'])->name('order_notes.lines.notes.save');
-        Route::get('/order-notes/{orderNote}/export/csv', [OrderNoteController::class, 'exportCsv'])->name('order_notes.export.csv');
+        Route::get('/order-notes/{orderNote}/export/xlsx', [OrderNoteController::class, 'exportXlsx'])->name('order_notes.export.xlsx');
         Route::get('/order-notes/{orderNote}/export/pdf', [OrderNoteController::class, 'exportPdf'])->name('order_notes.export.pdf');
         Route::get('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'create'])->name('invoices.create');
         Route::post('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'store'])->name('invoices.store');
@@ -615,14 +615,14 @@ Route::middleware(['web', 'auth'])
         Route::post('/billed-orders/{billedOrder}/notes', [BilledOrderController::class, 'saveNotes'])->name('billed_orders.notes.save');
         Route::post('/billed-orders/{billedOrder}/lines/{line}/notes', [BilledOrderController::class, 'saveLineNotes'])->name('billed_orders.lines.notes.save');
         Route::post('/billed-orders/{billedOrder}/shipment', [BilledOrderController::class, 'saveShipmentRelation'])->name('billed_orders.shipment.save');
-        Route::get('/billed-orders/{billedOrder}/export/csv', [BilledOrderController::class, 'exportCsv'])->name('billed_orders.export.csv');
+        Route::get('/billed-orders/{billedOrder}/export/xlsx', [BilledOrderController::class, 'exportXlsx'])->name('billed_orders.export.xlsx');
         Route::get('/billed-orders/{billedOrder}/export/pdf', [BilledOrderController::class, 'exportPdf'])->name('billed_orders.export.pdf');
 
         Route::get('/receptions', [ReceptionController::class, 'index'])->name('receptions.index');
         Route::post('/billed-orders/{billedOrder}/receive', [ReceptionController::class, 'store'])->name('receptions.store');
         Route::get('/billed-orders/{billedOrder}/receptions', [ReceptionController::class, 'history'])->name('receptions.history');
         Route::get('/invoices/{invoice}/receptions', [ReceptionController::class, 'invoiceHistory'])->name('receptions.invoice_history');
-        Route::get('/receptions/export/csv', [ReceptionController::class, 'exportCsv'])->name('receptions.export.csv');
+        Route::get('/receptions/export/xlsx', [ReceptionController::class, 'exportXlsx'])->name('receptions.export.xlsx');
 
         Route::get('/invoices', [SupplierInvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [SupplierInvoiceController::class, 'show'])->name('invoices.show');
@@ -632,7 +632,7 @@ Route::middleware(['web', 'auth'])
         Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
         Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
         Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
-        Route::get('/invoices/{invoice}/export/csv', [SupplierInvoiceController::class, 'exportCsv'])->name('invoices.export.csv');
+        Route::get('/invoices/{invoice}/export/xlsx', [SupplierInvoiceController::class, 'exportXlsx'])->name('invoices.export.xlsx');
         Route::get('/invoices/{invoice}/export/pdf', [SupplierInvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');
 
         Route::get('/supplier-terms/{supplierId}', [SupplierTermLevelController::class, 'index'])->name('supplier_terms.index');

@@ -48,7 +48,7 @@
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ route('erp.oms.billed_orders.show', $doc) }}" class="btn btn-outline-primary"><i class="fa-solid fa-eye"></i></a>
                                         <a href="{{ route('erp.oms.receptions.history', $doc) }}" class="btn btn-outline-secondary"><i class="fa-solid fa-box-open"></i></a>
-                                        <a href="{{ route('erp.oms.billed_orders.export.csv', $doc) }}" class="btn btn-outline-secondary"><i class="fa-solid fa-file-csv"></i></a>
+                                        <a href="{{ route('erp.oms.billed_orders.export.xlsx', $doc) }}" class="btn btn-outline-secondary"><i class="fa-solid fa-file-excel"></i></a>
                                     </div>
                                 </td>
                             </tr>

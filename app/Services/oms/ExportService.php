@@ -6,28 +6,61 @@ use App\Models\modules\oms\BilledOrder;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\SupplierInvoice;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportService
 {
-    public function streamCsv(string $filename, array $headers, iterable $rows): StreamedResponse
+    public function streamXlsx(string $filename, array $headers, iterable $rows): StreamedResponse
     {
         return response()->streamDownload(function () use ($headers, $rows) {
-            $handle = fopen('php://output', 'w');
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('OMS Export');
 
-            fputcsv($handle, $headers, ';');
-
-            foreach ($rows as $row) {
-                fputcsv($handle, $this->normalizeRow($row, $headers), ';');
+            foreach ($headers as $column => $header) {
+                $sheet->setCellValueExplicit([$column + 1, 1], $header, DataType::TYPE_STRING);
             }
 
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            $rowNumber = 2;
+            foreach ($rows as $row) {
+                foreach ($this->normalizeRow($row, $headers) as $column => $value) {
+                    $coordinate = [$column + 1, $rowNumber];
+
+                    if (is_int($value) || is_float($value)) {
+                        $sheet->setCellValue($coordinate, $value);
+                    } else {
+                        $sheet->setCellValueExplicit($coordinate, $value ?? '', DataType::TYPE_STRING);
+                    }
+                }
+                $rowNumber++;
+            }
+
+            $lastColumn = $sheet->getHighestColumn();
+            $sheet->freezePane('A2');
+            $sheet->setAutoFilter('A1:' . $lastColumn . '1');
+            $sheet->getStyle('A1:' . $lastColumn . '1')->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1F4E78']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
+
+            foreach (range('A', $lastColumn) as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, preg_replace('/\.csv$/i', '.xlsx', $filename), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 
-    public function exportOrderNoteCsv(OrderNote $orderNote): StreamedResponse
+    public function exportOrderNoteXlsx(OrderNote $orderNote): StreamedResponse
     {
         $headers = [
             'order_note_reference',
@@ -74,10 +107,10 @@ class ExportService
             ];
         });
 
-        return $this->streamCsv('order-note-' . $orderNote->id . '.csv', $headers, $rows);
+        return $this->streamXlsx('order-note-' . $orderNote->id . '.xlsx', $headers, $rows);
     }
 
-    public function exportBilledOrderCsv(BilledOrder $billedOrder): StreamedResponse
+    public function exportBilledOrderXlsx(BilledOrder $billedOrder): StreamedResponse
     {
         $headers = [
             'billed_order_reference',
@@ -124,10 +157,10 @@ class ExportService
             ];
         });
 
-        return $this->streamCsv('billed-order-' . $billedOrder->id . '.csv', $headers, $rows);
+        return $this->streamXlsx('billed-order-' . $billedOrder->id . '.xlsx', $headers, $rows);
     }
 
-    public function exportInvoiceCsv(SupplierInvoice $invoice): StreamedResponse
+    public function exportInvoiceXlsx(SupplierInvoice $invoice): StreamedResponse
     {
         $headers = [
             'invoice_reference',
@@ -176,7 +209,7 @@ class ExportService
             }
         }
 
-        return $this->streamCsv('supplier-invoice-' . $invoice->id . '.csv', $headers, $rows);
+        return $this->streamXlsx('supplier-invoice-' . $invoice->id . '.xlsx', $headers, $rows);
     }
 
     protected function resolveProductMeta(int $productId, ?int $productAttributeId = null): array

@@ -59,8 +59,8 @@
                     <a href="{{ route('erp.oms.invoices.show', $invoice) }}" class="btn btn-outline-primary oms-btn-icon">
                         <i class="fa-solid fa-angle-left"></i> Invoice
                     </a>
-                    <a href="{{ route('erp.oms.receptions.export.csv', ['invoice_id' => $invoice->id]) }}" class="btn btn-outline-success oms-btn-icon">
-                        <i class="fa-solid fa-file-csv"></i> Export CSV
+                    <a href="{{ route('erp.oms.receptions.export.xlsx', ['invoice_id' => $invoice->id]) }}" class="btn btn-outline-success oms-btn-icon">
+                        <i class="fa-solid fa-file-excel"></i> Export XLSX
                     </a>
                 </div>
             </div>

@@ -328,11 +328,11 @@ class SupplierInvoiceController extends Controller
         return back()->with('success', 'Invoice cancelled. Operational invoiced quantities were reverted.');
     }
 
-    public function exportCsv(SupplierInvoice $invoice)
+    public function exportXlsx(SupplierInvoice $invoice)
     {
         $invoice->load(['billedOrders.lines', 'billedOrders.orderNote']);
 
-        return $this->exportService->exportInvoiceCsv($invoice);
+        return $this->exportService->exportInvoiceXlsx($invoice);
     }
 
     public function exportPdf(SupplierInvoice $invoice)

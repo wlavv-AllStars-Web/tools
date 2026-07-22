@@ -88,8 +88,8 @@
                     <a href="{{ route('erp.oms.receptions.history', $billedOrder) }}" class="btn btn-outline-primary oms-btn-icon">
                         <i class="fa-solid fa-box-open"></i> Reception History
                     </a>
-                    <a href="{{ route('erp.oms.billed_orders.export.csv', $billedOrder) }}" class="btn btn-outline-success oms-btn-icon">
-                        <i class="fa-solid fa-file-csv"></i> Export CSV
+                    <a href="{{ route('erp.oms.billed_orders.export.xlsx', $billedOrder) }}" class="btn btn-outline-success oms-btn-icon">
+                        <i class="fa-solid fa-file-excel"></i> Export XLSX
                     </a>
                 </div>
             </div>

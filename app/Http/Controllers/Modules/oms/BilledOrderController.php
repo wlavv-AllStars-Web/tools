@@ -177,11 +177,11 @@ class BilledOrderController extends Controller
         return back()->with('success', 'Shipment relation saved successfully.');
     }
 
-    public function exportCsv(BilledOrder $billedOrder)
+    public function exportXlsx(BilledOrder $billedOrder)
     {
         $billedOrder->load(['orderNote', 'invoice', 'lines']);
 
-        return $this->exportService->exportBilledOrderCsv($billedOrder);
+        return $this->exportService->exportBilledOrderXlsx($billedOrder);
     }
 
     public function exportPdf(BilledOrder $billedOrder)

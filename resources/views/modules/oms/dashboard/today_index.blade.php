@@ -97,8 +97,8 @@
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ route('erp.oms.dashboard.export.csv', request()->query()) }}" class="btn btn-outline-success oms-btn-icon">
-                            <i class="fa-solid fa-file-csv"></i> Export
+                        <a href="{{ route('erp.oms.dashboard.export.xlsx', request()->query()) }}" class="btn btn-outline-success oms-btn-icon">
+                            <i class="fa-solid fa-file-excel"></i> Export
                         </a>
 
                         @if($selectedSupplierId)

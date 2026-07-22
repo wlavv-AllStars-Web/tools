@@ -86,7 +86,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function exportCsv(Request $request)
+    public function exportXlsx(Request $request)
     {
         $state = $this->dashboardQueryService->resolveState($request->all());
         $documents = $this->dashboardQueryService->getDocumentsPane($state);
@@ -131,8 +131,8 @@ class DashboardController extends Controller
             ]);
         }
 
-        return $this->exportService->streamCsv(
-            'oms-dashboard.csv',
+        return $this->exportService->streamXlsx(
+            'oms-dashboard.xlsx',
             ['type', 'reference', 'supplier', 'created_at', 'items', 'ordered_units', 'billed_units', 'received_units'],
             $rows
         );

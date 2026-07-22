@@ -46,8 +46,8 @@
                 <a href="{{ route('erp.oms.receptions.invoice_history', $invoice) }}" class="btn btn-outline-primary btn-sm rounded-2 oms-btn-icon">
                     <i class="fa-solid fa-box-open me-1"></i> Reception History
                 </a>
-                <a href="{{ route('erp.oms.invoices.export.csv', $invoice) }}" class="btn btn-outline-success btn-sm rounded-2 oms-btn-icon">
-                    <i class="fa-solid fa-file-csv me-1"></i> Export CSV
+                <a href="{{ route('erp.oms.invoices.export.xlsx', $invoice) }}" class="btn btn-outline-success btn-sm rounded-2 oms-btn-icon">
+                    <i class="fa-solid fa-file-excel me-1"></i> Export XLSX
                 </a>
                 @if($status !== 'cancelled')
                     <form action="{{ route('erp.oms.invoices.cancel', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel invoice? This will revert operational invoiced quantities, but will not revert product costs.');">

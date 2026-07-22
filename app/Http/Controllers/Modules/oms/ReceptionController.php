@@ -289,12 +289,12 @@ class ReceptionController extends Controller
         return view('modules.oms.receptions.invoice_history', compact('invoice', 'rows'));
     }
 
-    public function exportCsv(Request $request)
+    public function exportXlsx(Request $request)
     {
         $rows = $this->receptionHistoryService->getFlatExportRows($request->all());
 
-        return $this->exportService->streamCsv(
-            'oms-receptions.csv',
+        return $this->exportService->streamXlsx(
+            'oms-receptions.xlsx',
             ['reception_id','created_at','created_by','supplier_id','order_note_reference','billed_order_reference','invoice_reference','product_id','product_attribute_id','qty_received'],
             $rows
         );

@@ -99,7 +99,8 @@
                 <div class="d-flex flex-wrap gap-2 justify-content-end">
                     @if($orderNote)
                         <a href="{{ route('erp.oms.order_notes.show', $orderNote) }}" class="btn btn-sm btn-outline-primary oms-btn-icon"><i class="fa-solid fa-up-right-from-square"></i> Open</a>
-                        <a href="{{ route('erp.oms.order_notes.export.csv', $orderNote) }}" class="btn btn-sm btn-outline-success oms-btn-icon"><i class="fa-solid fa-file-csv"></i> Export</a>
+                        <a href="{{ route('erp.oms.order_notes.export.xlsx', $orderNote) }}" class="btn btn-sm btn-outline-success oms-btn-icon"><i class="fa-solid fa-file-excel"></i> Export</a>
+                        <a href="{{ route('erp.oms.order_notes.export.pdf', $orderNote) }}" class="btn btn-sm btn-outline-danger oms-btn-icon"><i class="fa-solid fa-file-pdf"></i> PRINT</a>
                     @endif
                 </div>
             </div>

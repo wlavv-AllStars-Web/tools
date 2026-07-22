@@ -162,8 +162,8 @@
                                         <a href="{{ route('erp.oms.receptions.invoice_history', $invoice) }}" class="btn btn-sm btn-outline-warning oms-btn-icon" title="Receptions">
                                             <i class="fa-solid fa-box-open"></i>
                                         </a>
-                                        <a href="{{ route('erp.oms.invoices.export.csv', $invoice) }}" class="btn btn-sm btn-outline-success oms-btn-icon" title="Export CSV">
-                                            <i class="fa-solid fa-file-csv"></i>
+                                        <a href="{{ route('erp.oms.invoices.export.xlsx', $invoice) }}" class="btn btn-sm btn-outline-success oms-btn-icon" title="Export XLSX">
+                                            <i class="fa-solid fa-file-excel"></i>
                                         </a>
                                     </div>
                                 </td>

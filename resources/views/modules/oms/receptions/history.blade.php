@@ -79,8 +79,8 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 justify-content-end">
-                    <a href="{{ route('erp.oms.billed_orders.export.csv', $billedOrder) }}" class="btn btn-outline-success oms-btn-icon">
-                        <i class="fa-solid fa-file-csv"></i> Export CSV
+                    <a href="{{ route('erp.oms.billed_orders.export.xlsx', $billedOrder) }}" class="btn btn-outline-success oms-btn-icon">
+                        <i class="fa-solid fa-file-excel"></i> Export XLSX
                     </a>
                 </div>
             </div>

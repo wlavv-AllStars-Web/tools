@@ -11,6 +11,7 @@ use App\Services\oms\DocumentCommentService;
 use App\Services\oms\DocumentLineNoteService;
 use App\Services\oms\ExportService;
 use App\Services\oms\OrderNoteLogisticsService;
+use App\Services\oms\OrderNotePrintService;
 use App\Services\oms\SupplierMapService;
 use App\Services\oms\StockArriveService;
 use App\Services\oms\SupplierTermsService;
@@ -31,6 +32,7 @@ class OrderNoteController extends Controller
         protected StockArriveService $stockArriveService,
         protected SupplierTermsService $supplierTermsService,
         protected OrderNoteLogisticsService $orderNoteLogisticsService,
+        protected OrderNotePrintService $orderNotePrintService,
     ) {
         $this->middleware('auth');
     }
@@ -851,16 +853,19 @@ class OrderNoteController extends Controller
         return back()->with('success', 'Order note line notes updated successfully.');
     }
 
-    public function exportCsv(OrderNote $orderNote)
+    public function exportXlsx(OrderNote $orderNote)
     {
         $orderNote->load(['lines', 'supplier', 'billedOrders']);
 
-        return $this->exportService->exportOrderNoteCsv($orderNote);
+        return $this->exportService->exportOrderNoteXlsx($orderNote);
     }
 
     public function exportPdf(OrderNote $orderNote)
     {
-        return back()->with('warning', 'PDF export is not implemented yet in this tranche.');
+        $orderNote->load(['lines', 'supplier']);
+        $supplierMap = $this->supplierMapService->getSummaryBySupplierId((int) $orderNote->supplier_id);
+
+        return $this->orderNotePrintService->download($orderNote, $supplierMap);
     }
 
     protected function buildBuilderPayload(OrderNote $orderNote, Request $request): array

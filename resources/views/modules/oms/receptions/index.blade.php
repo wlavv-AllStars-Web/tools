@@ -20,7 +20,7 @@
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <a href="{{ route('erp.oms.history.reception.stock', $selected['id']) }}" class="btn btn-outline-primary oms-btn-icon"> <i class="fa-solid fa-boxes-stacked"></i> Stock History </a>
-                <a href="{{ route('erp.oms.receptions.export.csv') }}" class="btn btn-sm btn-outline-success rounded-2 oms-btn-icon">  <i class="fa-solid fa-file-csv me-1"></i> Export CSV </a>
+                <a href="{{ route('erp.oms.receptions.export.xlsx') }}" class="btn btn-sm btn-outline-success rounded-2 oms-btn-icon">  <i class="fa-solid fa-file-excel me-1"></i> Export XLSX </a>
             </div>
         </div>
     </div>

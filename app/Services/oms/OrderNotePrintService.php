@@ -17,8 +17,8 @@ class OrderNotePrintService
         $currency = strtoupper(trim((string) ($supplierMap['currency'] ?? 'EUR')));
         $symbol = match ($currency) {
             'USD' => '$',
-            'GBP' => '£',
-            'EUR' => '€',
+            'GBP' => html_entity_decode('&pound;'),
+            'EUR' => html_entity_decode('&euro;'),
             default => $currency,
         };
         $totalQuantity = (int) $rows->sum('quantity');
@@ -30,11 +30,9 @@ class OrderNotePrintService
         $pdf->SetTitle('PO ' . $orderNote->reference);
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);
-        $pdf->SetMargins(18, 16, 18);
-        $pdf->SetAutoPageBreak(true, 20);
+        $pdf->SetMargins(10, 8, 10);
+        $pdf->SetAutoPageBreak(true, 10);
         $pdf->AddPage();
-        $pdf->Image(public_path('images/oms/logo_asd.png'), 18, 12, 45, 0, 'PNG');
-        $pdf->SetY(31);
         $pdf->SetFont('dejavusans', '', 9);
         $pdf->writeHTML($this->html($orderNote, $supplierMap, $rows->all(), $symbol, $totalQuantity, $total), true, false, true, false, '');
 
@@ -62,6 +60,7 @@ class OrderNotePrintService
                 ->select('pa.reference', 'pa.supplier_reference', 'pa.wholesale_price', 'cpa.wholesale_price_base_currency')
                 ->first();
         }
+
         $reference = $attribute->supplier_reference ?? $product->supplier_reference ?? $attribute->reference ?? $product->reference ?? '';
         $price = (float) ($attribute->wholesale_price_base_currency ?? 0);
         if ($price <= 0) $price = (float) ($product->wholesale_price_base_currency ?? 0);
@@ -77,19 +76,33 @@ class OrderNotePrintService
         $date = optional($orderNote->created_at)->format('Y-m-d') ?: now()->format('Y-m-d');
         $email = $supplierMap['email'] ?? '';
         $incoterm = $supplierMap['incoterm'] ?? 'Ex Works';
+        $logo = $escape(public_path('images/oms/logo_asd.png'));
         $body = '';
+
         foreach ($rows as $row) {
-            $body .= '<tr><td>' . $escape($row['reference']) . '</td><td class="qty">' . $row['quantity'] . '</td><td class="price">' . number_format($row['unit_price'], 2, '.', ' ') . ' ' . $escape($symbol) . '</td></tr>';
+            $body .= '<tr nobr="true"><td width="34%" align="center">' . $escape($row['reference']) . '</td><td width="34%" align="center"><b>' . $row['quantity'] . '</b></td><td width="32%" align="right">' . number_format($row['unit_price'], 2, '.', ' ') . ' ' . $escape($symbol) . '</td></tr>';
         }
 
         return '<style>
-            body{font-family:dejavusans;color:#252525;font-size:9pt}.contact{color:#777;font-size:8pt;text-align:right}.meta{width:100%;margin-top:8px;margin-bottom:14px}.meta td{padding:3px 4px}.meta-label{font-size:8pt;color:#666;font-weight:bold;width:22%}.po-value{font-size:13pt;font-weight:bold}.items{width:100%;border-collapse:collapse}.items th{background-color:#333333;color:#ffffff;font-weight:bold;padding:7px 8px;border:1px solid #333333}.items td{padding:6px 8px;border-bottom:1px solid #d7d7d7}.sku{width:54%}.qty{text-align:center;width:16%}.price{text-align:right;width:30%}.summary-wrap{width:100%;margin-top:12px}.summary-spacer{width:54%}.summary{width:46%}.summary td{padding:4px 6px;border-bottom:1px solid #dddddd}.summary .value{text-align:right;font-weight:bold}.summary .grand td{font-size:11pt;border-top:1px solid #333333;border-bottom:0}.shipping{width:100%;margin-top:20px;border-top:1px solid #333333}.shipping td{padding-top:8px}.shipping-title{font-size:8pt;font-weight:bold;color:#555}.shipping-value{font-size:10pt}.footer{margin-top:28px;color:#777;font-size:8pt;text-align:center;border-top:1px solid #dddddd;padding-top:8px}
+            body{font-family:dejavusans;color:#000;font-size:9.5pt}.email{text-align:center;font-size:9pt}.meta{text-align:center;line-height:1.8}.po{text-align:center;font-size:10pt}.separator{background-color:#e5e5e5}.items th{background-color:#f2f2f2;font-weight:normal;text-align:center}.items td{line-height:1.05}.totals td{text-align:center}.footer{text-align:center}
         </style>
-        <div class="contact">' . $escape($email) . '</div>
-        <table class="meta" cellpadding="0"><tr><td class="meta-label">DATE:</td><td>' . $date . '</td></tr><tr><td class="meta-label">VALID FOR:</td><td>30 DAYS</td></tr><tr><td class="meta-label">PO:</td><td class="po-value"># ' . $escape($orderNote->reference) . '</td></tr></table>
-        <table class="items" cellpadding="0"><thead><tr><th class="sku">SKU</th><th class="qty">Qtity</th><th class="price">BRP</th></tr></thead><tbody>' . $body . '</tbody></table>
-        <table class="summary-wrap"><tr><td class="summary-spacer"></td><td><table class="summary"><tr><td>TOTAL SKUs:</td><td class="value">' . count($rows) . '</td></tr><tr><td>TOTAL QTITY:</td><td class="value">' . $totalQuantity . '</td></tr><tr class="grand"><td>TOTAL:</td><td class="value">' . number_format($total, 2, '.', ' ') . ' ' . $escape($symbol) . '</td></tr></table></td></tr></table>
-        <table class="shipping"><tr><td><span class="shipping-title">SHIPPING METHOD</span><br><span class="shipping-value">' . $escape($incoterm) . '</span></td></tr></table>
-        <div class="footer">All Stars Distribution · Z.I. Gandra · 4930-311 Valença · Portugal</div>';
+        <table border="1" cellpadding="5" cellspacing="0">
+            <tr>
+                <td width="34%" align="center"><br><img src="' . $logo . '" width="175"><br></td>
+                <td width="66%">
+                    <table border="0" cellpadding="5" cellspacing="0">
+                        <tr><td class="email" colspan="2">' . $escape($email) . '</td></tr>
+                        <tr><td class="meta" width="50%"><b>DATE: ' . $date . '</b><br><b>VALID FOR 30 DAYS</b></td><td class="po" width="50%"><br><b>PO: # ' . $escape($orderNote->reference) . '</b></td></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table class="separator" border="1" cellpadding="2" cellspacing="0"><tr><td>&nbsp;</td></tr></table>
+        <table class="items" border="1" cellpadding="2" cellspacing="0"><thead><tr><th width="34%">SKU</th><th width="34%">Qtity</th><th width="32%" align="right">BRP</th></tr></thead><tbody>' . $body . '</tbody></table>
+        <table class="separator" border="1" cellpadding="2" cellspacing="0"><tr><td>&nbsp;</td></tr></table>
+        <table class="totals" border="1" cellpadding="3" cellspacing="0"><tr><td width="34%">TOTAL SKUs: ' . count($rows) . '</td><td width="34%">TOTAL QTITY: ' . $totalQuantity . '</td><td width="32%" align="right">TOTAL: ' . number_format($total, 2, '.', ' ') . ' ' . $escape($symbol) . '</td></tr></table>
+        <table class="separator" border="1" cellpadding="2" cellspacing="0"><tr><td>&nbsp;</td></tr></table>
+        <table border="1" cellpadding="4" cellspacing="0"><tr><td width="34%" align="center">SHIPPING METHOD</td><td width="66%" align="center">' . $escape($incoterm) . '</td></tr></table>
+        <table border="1" cellpadding="7" cellspacing="0"><tr><td class="footer">All Stars Distribution - Z.I Gandra 4930-311 Valenca - Portugal</td></tr></table>';
     }
 }

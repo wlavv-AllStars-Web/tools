@@ -32,7 +32,8 @@ class order_payment extends PrestashopModel
             $lastYearDateString = date('Y', strtotime('-1 years')) . '-' . sprintf('%02d', $i + 1) . '-01';
             $lastYearlastDateOfMonth = date('Y-m-t', strtotime($lastYearDateString));
 
-            $row_this_year = self::getTotalsByShops($dateString, $lastDateOfMonth, [self::SHOP_ASM, self::SHOP_ASD]);
+            $row_this_year = self::getTotalsByShops($dateString, $lastDateOfMonth, [self::SHOP_ASM, self::SHOP_ASD])
+                + self::getLegacyASMTotal($dateString, $lastDateOfMonth);
             $row_last_year = self::getTotalsByShops($lastYearDateString, $lastYearlastDateOfMonth, [self::SHOP_ASM, self::SHOP_ASD]);
 
             $objectivosByMonth[$i + 1] = (object) [
@@ -83,7 +84,8 @@ class order_payment extends PrestashopModel
         $current_year = date('Y-m') . '-01';
         $current_day = date('Y-m-d');
 
-        return self::getTotalsByShop($current_year, $current_day, self::SHOP_ASM);
+        return self::getTotalsByShop($current_year, $current_day, self::SHOP_ASM)
+            + self::getLegacyASMTotal($current_year, $current_day);
     }
 
     public static function getActualCurrentMonthForShops(array $shopIds)
@@ -91,7 +93,13 @@ class order_payment extends PrestashopModel
         $current_year = date('Y-m') . '-01';
         $current_day = date('Y-m-d');
 
-        return self::getTotalsByShops($current_year, $current_day, $shopIds);
+        $total = self::getTotalsByShops($current_year, $current_day, $shopIds);
+
+        if (in_array(self::SHOP_ASM, $shopIds, true)) {
+            $total += self::getLegacyASMTotal($current_year, $current_day);
+        }
+
+        return $total;
     }
 
     private static function getASMActual()
@@ -99,7 +107,8 @@ class order_payment extends PrestashopModel
         $current_year = date('Y') . '-01-01';
         $current_day = date('Y-m-d');
 
-        return self::getTotalsByShop($current_year, $current_day, self::SHOP_ASM);
+        return self::getTotalsByShop($current_year, $current_day, self::SHOP_ASM)
+            + self::getLegacyASMTotal($current_year, $current_day);
     }
 
     private static function getASMAcumuladoAnoAnterior()
@@ -129,6 +138,13 @@ class order_payment extends PrestashopModel
     private static function getTotalsByShop($start_date, $end_date, $shopId)
     {
         return self::getTotalsByShops($start_date, $end_date, [$shopId]);
+    }
+
+    private static function getLegacyASMTotal(string $startDate, string $endDate): float
+    {
+        return (float) DB::table('ps_custom_daily_sales')
+            ->whereBetween('sale_date', [$startDate, $endDate])
+            ->sum('total_tax_excl');
     }
 
     private static function getTotalsByShops($start_date, $end_date, array $shopIds)
@@ -196,7 +212,8 @@ class order_payment extends PrestashopModel
             $day = sprintf('%02d', $i + 1);
             $date = date('Y') . '-' . date('m') . '-' . $day;
 
-            $currentASM = self::getTotalsByShop($date, $date, self::SHOP_ASM);
+            $currentASM = self::getTotalsByShop($date, $date, self::SHOP_ASM)
+                + self::getLegacyASMTotal($date, $date);
             $homologueASM = self::getTotalsByShop(
                 date('Y', strtotime('-1 years')) . '-' . date('m') . '-' . $day,
                 date('Y', strtotime('-1 years')) . '-' . date('m') . '-' . $day,

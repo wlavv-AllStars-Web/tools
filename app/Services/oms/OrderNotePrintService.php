@@ -74,7 +74,7 @@ class OrderNotePrintService
     {
         $escape = fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $date = optional($orderNote->created_at)->format('Y-m-d') ?: now()->format('Y-m-d');
-        $email = $supplierMap['email'] ?? '';
+        $email = 'purchase@all-stars-distribution.com';
         $incoterm = $supplierMap['incoterm'] ?? 'Ex Works';
         $logo = $escape(public_path('images/oms/logo_asd.png'));
         $body = '';

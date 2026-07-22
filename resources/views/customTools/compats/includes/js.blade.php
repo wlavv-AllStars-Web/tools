@@ -10,6 +10,68 @@
         window.location.href = "{{ route('admin.tools.compats.update_menu') }}";
     }
 
+    function clearFrontofficeMenu(){
+        const brands = @json($options->pluck('name', 'id_option'));
+
+        Swal.fire({
+            title: 'Clear frontoffice menu cache',
+            text: 'Select the brand whose frontoffice menu cache should be cleared.',
+            input: 'select',
+            inputOptions: brands,
+            inputPlaceholder: 'Select a brand',
+            showCancelButton: true,
+            confirmButtonText: 'Continue',
+            cancelButtonText: 'Cancel',
+            inputValidator: (value) => !value ? 'Please select a brand.' : undefined
+        }).then((selection) => {
+            if (!selection.isConfirmed) {
+                return;
+            }
+
+            const brandId = selection.value;
+            const brandName = brands[brandId];
+
+            Swal.fire({
+                title: 'Confirm cache cleanup?',
+                text: 'The frontoffice menu cache for ' + brandName + ' will be removed.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, clear it',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((confirmation) => {
+                if (!confirmation.isConfirmed) {
+                    return;
+                }
+
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ route('admin.tools.compats.clear_frontoffice_menu') }}",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        brand_id: brandId
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            title: 'Cache cleared',
+                            text: response.deleted + ' cache row(s) removed for ' + response.brand + '.',
+                            icon: 'success'
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            title: 'Unable to clear cache',
+                            text: (xhr.responseJSON && xhr.responseJSON.message)
+                                ? xhr.responseJSON.message
+                                : 'An unexpected error occurred.',
+                            icon: 'error'
+                        });
+                    }
+                });
+            });
+        });
+    }
+
     function createOption(){
         
         $('#compatsList').css('display', 'none');

@@ -254,6 +254,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/compats/edit/logo', [compatsController::class, 'editImage'])->name('compats.edit_image');
         Route::post('/compats/options/edit/options', [compatsController::class, 'setData'])->name('compats.set_data');
         Route::post('/compats/remove/compat', [compatsController::class, 'removeCompat'])->name('compats.remove_compat');
+        Route::post('/compats/menu/clear-frontoffice', [compatsController::class, 'clearFrontofficeMenu'])->name('compats.clear_frontoffice_menu');
         Route::get('/compats/menu/update-menu', [compatsController::class, 'updateMenu'])->name('compats.update_menu');
         Route::post('/compats/menu/set-order', [compatsController::class, 'setOrder'])->name('compats.set_order');
     });
@@ -835,7 +836,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('customTools/compats/options/edit/options',[compatsController::class, 'setData'])->name('compats.setData');
     
     Route::post('customTools/compats/remove/comapt',[compatsController::class, 'removeCompat'])->name('compats.removeCompat');
-    
+    Route::post('customTools/compats/menu/clearFrontoffice',[compatsController::class, 'clearFrontofficeMenu'])->name('compats.clearFrontofficeMenu');
+
     Route::get('customTools/compats/menu/updateMenu',[compatsController::class, 'updateMenu'])->name('compats.updateMenu');
     Route::post('customTools/compats/menu/setOrder',[compatsController::class, 'setOrder'])->name('compats.setOrder');
 

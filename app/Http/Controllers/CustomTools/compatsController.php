@@ -7,6 +7,7 @@ use App\Models\modules\compats\compats;
 use App\Models\modules\compats\compats_options;
 use App\Models\modules\compats\compats_product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 
 class compatsController extends Controller
@@ -134,6 +135,37 @@ class compatsController extends Controller
         compats::where('id_compat', $idCompat)->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    public function clearFrontofficeMenu(Request $request)
+    {
+        $validated = $request->validate([
+            'brand_id' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $brandId = (int) $validated['brand_id'];
+        $brand = compats_options::where('id_option', $brandId)
+            ->where('type', 1)
+            ->first();
+
+        if (!$brand) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid compatibility brand.',
+            ], 422);
+        }
+
+        $prefix = env('DB2_prefix') ?: env('DB2_DB_prefix', 'ps_');
+        $deleted = DB::connection('mysql2')
+            ->table($prefix . 'custom_api_cache')
+            ->where('request_url', 'like', '%/api/get/brand/' . $brandId . '/%')
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'brand' => $brand->name,
+            'deleted' => $deleted,
+        ]);
     }
 
     public function updateMenu()

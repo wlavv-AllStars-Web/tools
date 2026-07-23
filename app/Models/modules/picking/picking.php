@@ -36,14 +36,17 @@ class picking extends Model
 
         $array_order = array();
         foreach($data_order AS $order){
+            $orderMain = orders::where('id_order', $order->id_order)->first();
+            $languageId = (int) ($orderMain->id_lang ?? 1);
+
             $array_order[] = (object)[
                 'id_order' => $order->id_order,
                 'carrier' => $order->carrier,
-                'order_main' => orders::where('id_order', $order->id_order)->first(),
+                'order_main' => $orderMain,
                 'order' => self::where('id_order', $order->id_order)
                     ->where('row_done', 0)
                     ->get()
-                    ->map(function ($row) {
+                    ->map(function ($row) use ($languageId) {
                         $row->housing = self::resolveHousing(
                             (int) $row->id_product,
                             (int) $row->id_product_attribute,
@@ -54,6 +57,10 @@ class picking extends Model
                             (int) $row->id_product,
                             (int) $row->id_product_attribute
                         );
+                        $row->combination_value = self::combinationValue(
+                            (int) $row->id_product_attribute,
+                            $languageId
+                        );
 
                         return $row;
                     }),
@@ -61,6 +68,30 @@ class picking extends Model
         }
         
         return (object)[ 'counter' => count($array_order),  'data' => (object)$array_order ];
+    }
+
+    private static function combinationValue(int $idProductAttribute, int $idLang): string
+    {
+        if ($idProductAttribute <= 0) {
+            return '';
+        }
+
+        $values = DB::connection('mysql2')
+            ->table(self::psTable('product_attribute_combination').' as pac')
+            ->join(self::psTable('attribute').' as a', 'a.id_attribute', '=', 'pac.id_attribute')
+            ->join(self::psTable('attribute_lang').' as al', function ($join) use ($idLang) {
+                $join->on('al.id_attribute', '=', 'a.id_attribute')
+                    ->where('al.id_lang', $idLang);
+            })
+            ->where('pac.id_product_attribute', $idProductAttribute)
+            ->orderBy('a.position')
+            ->pluck('al.name')
+            ->map(static fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $values->implode(' / ');
     }
         
     public static function add(){

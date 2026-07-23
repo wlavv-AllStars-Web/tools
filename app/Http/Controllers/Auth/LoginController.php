@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use App\Services\Security\TrustedAccessPolicy;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class LoginController extends Controller
 {
@@ -38,4 +41,22 @@ class LoginController extends Controller
         $this->middleware('guest')->except('logout');
     }
 
+    protected function attemptLogin(Request $request): bool
+    {
+        $authenticated = $this->guard()->attempt(
+            $this->credentials($request),
+            $request->boolean('remember')
+        );
+        if (! $authenticated) {
+            return false;
+        }
+        $user = $this->guard()->user();
+        if (app(TrustedAccessPolicy::class)->allows($user, $request->ip())) {
+            return true;
+        }
+        Log::warning('Login blocked by trusted access policy.', ['user_id' => $user?->getAuthIdentifier(), 'ip' => $request->ip()]);
+        $this->guard()->logout();
+
+        return false;
+    }
 }

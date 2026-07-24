@@ -157,8 +157,8 @@
                                         <th class="text-center">Remaining</th>
                                         <th class="text-center">Qty to invoice</th>
                                         <th class="text-end">Purchase price ({{ $currencyMeta['currency_iso'] }})</th>
-                                        <th class="text-end">Sale price ({{ $currencyMeta['currency_iso'] }})</th>
                                         <th class="text-end">Margin</th>
+                                        <th class="text-end">Sale price ({{ $currencyMeta['currency_iso'] }})</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -204,17 +204,17 @@
                                                 </div>
                                             </td>
                                             <td class="text-end">
-                                                <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control form-control-sm price-input js-sale-price ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
-                                                <div class="small text-muted mt-1 js-sale-eur">
-                                                    {{ number_format($saleEur, 2, ',', ' ') }} EUR
-                                                </div>
-                                            </td>
-                                            <td class="text-end">
                                                 <div class="fw-semibold js-margin-percent {{ $marginSupplierCurrency >= 0 ? 'text-success' : 'text-danger' }}">
                                                     {{ number_format($marginPercent, 2, ',', ' ') }}%
                                                 </div>
                                                 <div class="small text-muted mt-1 js-margin-eur">
                                                     {{ number_format($marginSupplierCurrency, 2, ',', ' ') }} {{ $currencyMeta['currency_iso'] }}
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control form-control-sm price-input js-sale-price ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <div class="small text-muted mt-1 js-sale-eur">
+                                                    {{ number_format($saleEur, 2, ',', ' ') }} EUR
                                                 </div>
                                             </td>
                                         </tr>
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
         purchaseInput?.addEventListener('input', function () {
             const supplierPrice = Number.parseFloat(this.value || '0') || 0;
             const purchaseRate = Number.parseFloat(row.dataset.purchaseRate || '1') || 1;
-            const purchaseEur = supplierPrice * purchaseRate;
+            const purchaseEur = supplierPrice / purchaseRate;
 
             row.dataset.purchaseEur = purchaseEur.toString();
             row.querySelector('.js-purchase-eur').textContent = eurFormatter.format(purchaseEur) + ' EUR';
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
         saleInput?.addEventListener('input', function () {
             const supplierPrice = Number.parseFloat(this.value || '0') || 0;
             const saleRate = Number.parseFloat(row.dataset.saleRate || '1') || 1;
-            const saleEur = supplierPrice * saleRate;
+            const saleEur = supplierPrice / saleRate;
 
             row.dataset.saleEur = saleEur.toString();
             row.querySelector('.js-sale-eur').textContent = eurFormatter.format(saleEur) + ' EUR';

@@ -365,9 +365,9 @@ class SupplierInvoiceWorkflowService
                 */
                 $unitPriceInvoice = round((float) $linePayload['unit_price'], 6);
 
-                $unitPriceEur = $isEur
+                $unitPriceEur = $isEur || $purchaseConversionRate <= 0
                     ? $unitPriceInvoice
-                    : round($unitPriceInvoice * $purchaseConversionRate, 6);
+                    : round($unitPriceInvoice / $purchaseConversionRate, 6);
 
                 $oldPurchaseSupplierCurrency = round((float) ($invoiceable->current_purchase_supplier_currency ?? 0), 6);
                 $oldPurchaseEur = round((float) ($invoiceable->current_purchase_eur ?? 0), 6);
@@ -391,9 +391,9 @@ class SupplierInvoiceWorkflowService
                 $salePriceChanged = abs($newSaleSupplierCurrency - $oldSaleSupplierCurrency) > 0.0000005;
 
                 $newSaleEur = $salePriceChanged
-                    ? ($isEur
+                    ? (($isEur || $saleConversionRate <= 0)
                         ? $newSaleSupplierCurrency
-                        : round($newSaleSupplierCurrency * $saleConversionRate, 6))
+                        : round($newSaleSupplierCurrency / $saleConversionRate, 6))
                     : $oldSaleEur;
 
                 $billedOrderLine = BilledOrderLine::create([

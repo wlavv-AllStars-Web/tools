@@ -27,6 +27,8 @@
         .oms-invoice-builder .oms-selected-chip { min-width:280px; justify-content:center; }
         .oms-invoice-builder .table tbody tr.is-selected { background:#eff6ff; }
         .oms-invoice-builder .qty-input, .oms-invoice-builder .price-input { min-width:90px; }
+        .oms-invoice-builder .oms-product-column { width:38%; max-width:420px; }
+        .oms-invoice-builder .oms-product-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .oms-invoice-builder .oms-margin-column { min-width:140px !important; width:140px !important; }
         .oms-invoice-builder .js-margin-eur { display:inline-block; min-width:max-content; white-space:nowrap !important; word-break:normal !important; overflow-wrap:normal !important; }
         .oms-invoice-builder .copyable { cursor:pointer; }
@@ -153,11 +155,11 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Reference</th>
-                                        <th>Product</th>
+                                        <th class="oms-product-column">Product</th>
                                         <th class="text-center">Ordered</th>
                                         <th class="text-center">Invoiced</th>
                                         <th class="text-center">Remaining</th>
-                                        <th class="text-center">Qty to invoice</th>
+                                        <th class="text-center">Qty</th>
                                         <th class="text-end">Purchase price</th>
                                         <th class="text-end oms-margin-column">Margin</th>
                                         <th class="text-end">Sale price</th>
@@ -188,8 +190,8 @@
                                                     <div class="small text-warning"><i class="fa-solid fa-layer-group me-1"></i>Attribute</div>
                                                 @endif
                                             </td>
-                                            <td>
-                                                <div class="fw-semibold">{{ $line->product_name }}</div>
+                                            <td class="oms-product-column">
+                                                <div class="fw-semibold oms-product-name" title="{{ $line->product_name }}">{{ $line->product_name }}</div>
                                                 <div class="small text-muted">#{{ $line->product_id }}@if($line->product_attribute_id) | {{ $line->product_attribute_id }}@endif · Stock {{ $line->current_stock }}</div>
                                             </td>
                                             <td class="text-center align-top">{{ $line->qty_ordered }}</td>

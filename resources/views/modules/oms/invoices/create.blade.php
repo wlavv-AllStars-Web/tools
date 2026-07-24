@@ -158,11 +158,28 @@
                                         <th class="text-center">Qty to invoice</th>
                                         <th class="text-end">Purchase price ({{ $currencyMeta['currency_iso'] }})</th>
                                         <th class="text-end">Sale price ({{ $currencyMeta['currency_iso'] }})</th>
+                                        <th class="text-end">Margin</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($invoiceableLines as $line)
-                                        <tr class="{{ $line->qty_remaining > 0 ? '' : 'table-light text-muted' }}">
+                                        @php
+                                            $purchaseEur = (float) $line->current_purchase_eur;
+                                            $saleEur = (float) $line->current_sale_eur;
+                                            $purchaseSupplierPrice = (float) $line->current_purchase_supplier_currency;
+                                            $saleSupplierPrice = (float) $line->current_sale_supplier_currency;
+                                            $marginSupplierCurrency = $saleSupplierPrice - $purchaseSupplierPrice;
+                                            $marginPercent = $saleSupplierPrice > 0
+                                                ? ($marginSupplierCurrency / $saleSupplierPrice) * 100
+                                                : 0;
+                                        @endphp
+                                        <tr
+                                            class="js-price-row {{ $line->qty_remaining > 0 ? '' : 'table-light text-muted' }}"
+                                            data-purchase-rate="{{ (float) $currencyMeta['purchase_conversion_rate'] }}"
+                                            data-sale-rate="{{ (float) $currencyMeta['sale_conversion_rate'] }}"
+                                            data-purchase-eur="{{ $purchaseEur }}"
+                                            data-sale-eur="{{ $saleEur }}"
+                                        >
                                             <td>
                                                 <span class="copyable fw-semibold" data-copy="{{ $line->reference }}">{{ $line->reference ?: '-' }}</span>
                                                 @if($line->product_attribute_id)
@@ -181,23 +198,29 @@
                                                 <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                             </td>
                                             <td class="text-end">
-                                                <input type="number" min="0" step="0.000001" name="lines[{{ $loop->index }}][unit_price]" class="form-control form-control-sm price-input ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_wholesale_price, 6, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
-                                                <div class="small text-muted mt-1">
-                                                    {{ number_format((float) $line->current_purchase_eur, 2, ',', ' ') }} EUR
+                                                <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][unit_price]" class="form-control form-control-sm price-input js-purchase-price ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_wholesale_price, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <div class="small text-muted mt-1 js-purchase-eur">
+                                                    {{ number_format($purchaseEur, 2, ',', ' ') }} EUR
                                                 </div>
                                             </td>
                                             <td class="text-end">
-                                                <div class="fw-semibold">
-                                                    {{ number_format((float) $line->current_sale_supplier_currency, 6, '.', '') }}
+                                                <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control form-control-sm price-input js-sale-price ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <div class="small text-muted mt-1 js-sale-eur">
+                                                    {{ number_format($saleEur, 2, ',', ' ') }} EUR
                                                 </div>
-                                                <div class="small text-muted mt-1">
-                                                    {{ number_format((float) $line->current_sale_eur, 2, ',', ' ') }} EUR
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="fw-semibold js-margin-percent {{ $marginSupplierCurrency >= 0 ? 'text-success' : 'text-danger' }}">
+                                                    {{ number_format($marginPercent, 2, ',', ' ') }}%
+                                                </div>
+                                                <div class="small text-muted mt-1 js-margin-eur">
+                                                    {{ number_format($marginSupplierCurrency, 2, ',', ' ') }} {{ $currencyMeta['currency_iso'] }}
                                                 </div>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">No invoiceable lines available for this order note.</td>
+                                            <td colspan="9" class="text-center text-muted py-4">No invoiceable lines available for this order note.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -212,6 +235,50 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const eurFormatter = new Intl.NumberFormat('pt-PT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+    function updateMargin(row) {
+        const purchasePrice = Number.parseFloat(row.querySelector('.js-purchase-price')?.value || '0') || 0;
+        const salePrice = Number.parseFloat(row.querySelector('.js-sale-price')?.value || '0') || 0;
+        const margin = salePrice - purchasePrice;
+        const marginPercent = salePrice > 0 ? (margin / salePrice) * 100 : 0;
+        const marginPercentElement = row.querySelector('.js-margin-percent');
+        const supplierCurrency = @json($currencyMeta['currency_iso']);
+
+        row.querySelector('.js-margin-eur').textContent = eurFormatter.format(margin) + ' ' + supplierCurrency;
+        marginPercentElement.textContent = eurFormatter.format(marginPercent) + '%';
+        marginPercentElement.classList.toggle('text-success', margin >= 0);
+        marginPercentElement.classList.toggle('text-danger', margin < 0);
+    }
+
+    document.querySelectorAll('.js-price-row').forEach(function (row) {
+        const purchaseInput = row.querySelector('.js-purchase-price');
+        const saleInput = row.querySelector('.js-sale-price');
+
+        purchaseInput?.addEventListener('input', function () {
+            const supplierPrice = Number.parseFloat(this.value || '0') || 0;
+            const purchaseRate = Number.parseFloat(row.dataset.purchaseRate || '1') || 1;
+            const purchaseEur = supplierPrice * purchaseRate;
+
+            row.dataset.purchaseEur = purchaseEur.toString();
+            row.querySelector('.js-purchase-eur').textContent = eurFormatter.format(purchaseEur) + ' EUR';
+            updateMargin(row);
+        });
+
+        saleInput?.addEventListener('input', function () {
+            const supplierPrice = Number.parseFloat(this.value || '0') || 0;
+            const saleRate = Number.parseFloat(row.dataset.saleRate || '1') || 1;
+            const saleEur = supplierPrice * saleRate;
+
+            row.dataset.saleEur = saleEur.toString();
+            row.querySelector('.js-sale-eur').textContent = eurFormatter.format(saleEur) + ' EUR';
+            updateMargin(row);
+        });
+    });
+
     document.querySelectorAll('.copyable').forEach(function (el) {
         el.addEventListener('click', function (e) {
             e.preventDefault();

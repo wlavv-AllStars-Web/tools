@@ -86,6 +86,7 @@ class SupplierInvoiceController extends Controller
             'lines.*.order_note_line_id' => ['required', 'integer'],
             'lines.*.qty_billed' => ['nullable', 'integer', 'min:0'],
             'lines.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'lines.*.sale_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $invoice = $this->workflowService->confirmInvoiceForOrderNote($orderNote, $data);

@@ -379,21 +379,22 @@ class SupplierInvoiceWorkflowService
 
                 /*
                 |--------------------------------------------------------------------------
-                | Sale price recalculation
+                | Sale price from the dedicated form input
                 |--------------------------------------------------------------------------
-                | If purchase cost changes, sale price follows the same percentage.
-                | ps_product / ps_product_attribute = EUR.
-                | ps_custom_product / ps_custom_product_attribute = supplier currency.
+                | Purchase and sale prices are independent. Changing the purchase price
+                | must never recalculate the sale price.
                 */
-                $costVariationFactor = $oldPurchaseEur > 0
-                    ? ($newPurchaseEur / $oldPurchaseEur)
-                    : 1.0;
+                $newSaleSupplierCurrency = round(
+                    (float) ($linePayload['sale_price'] ?? $oldSaleSupplierCurrency),
+                    6
+                );
+                $salePriceChanged = abs($newSaleSupplierCurrency - $oldSaleSupplierCurrency) > 0.0000005;
 
-                $newSaleEur = round($oldSaleEur * $costVariationFactor, 6);
-
-                $newSaleSupplierCurrency = $isEur
-                    ? $newSaleEur
-                    : round($newSaleEur / $saleConversionRate, 6);
+                $newSaleEur = $salePriceChanged
+                    ? ($isEur
+                        ? $newSaleSupplierCurrency
+                        : round($newSaleSupplierCurrency * $saleConversionRate, 6))
+                    : $oldSaleEur;
 
                 $billedOrderLine = BilledOrderLine::create([
                     'billed_order_id' => (int) $billedOrder->id,
@@ -523,77 +524,178 @@ class SupplierInvoiceWorkflowService
             throw new \RuntimeException('Cannot update PrestaShop prices. Invalid id_product: ' . $productId);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Base product - PrestaShop EUR
-        |--------------------------------------------------------------------------
-        */
-        product::query()
-            ->where('id_product', $productId)
-            ->update([
-                'wholesale_price' => $purchaseEur,
-                'price' => $saleEur,
-            ]);
+        $prefix = $this->psPrefix();
+        $isAttribute = $productAttributeId && $productAttributeId > 0;
 
-        product_shop::query()
-            ->where('id_product', $productId)
-            ->update([
-                'wholesale_price' => $purchaseEur,
-                'price' => $saleEur,
-            ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Base product - custom supplier currency
-        |--------------------------------------------------------------------------
-        */
-        $this->ensureCustomProductRow($productId);
-
-        DB::connection('mysql2')
-            ->table($this->psPrefix() . 'custom_product')
-            ->where('id_product', $productId)
-            ->update([
-                'wholesale_price_base_currency' => $purchaseSupplierCurrency,
-                'price_base_currency' => $saleSupplierCurrency,
-                'price_display_base_currency' => $saleSupplierCurrency,
-            ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Attribute - PrestaShop EUR + supplier currency
-        |--------------------------------------------------------------------------
-        */
-        if ($productAttributeId && $productAttributeId > 0) {
-            if (!$this->prestashopProductAttributeExists($productId, $productAttributeId)) {
-                throw new \RuntimeException('Cannot update PrestaShop attribute prices. Invalid id_product_attribute: ' . $productAttributeId);
-            }
-
-            DB::connection('mysql2')
-                ->table($this->psPrefix() . 'product_attribute')
+        if (!$isAttribute) {
+            /* Standard product: purchase and sale remain independent. */
+            product::query()
                 ->where('id_product', $productId)
-                ->where('id_product_attribute', $productAttributeId)
                 ->update([
                     'wholesale_price' => $purchaseEur,
-
-                    /*
-                     * Keep the attribute sale price impact neutral.
-                     * Base sale price is updated on ps_product / ps_product_shop.
-                     */
-                    'price' => 0,
+                    'price' => $saleEur,
                 ]);
 
-            $this->ensureCustomProductAttributeRow($productId, $productAttributeId);
+            product_shop::query()
+                ->where('id_product', $productId)
+                ->update([
+                    'wholesale_price' => $purchaseEur,
+                    'price' => $saleEur,
+                ]);
+
+            $this->ensureCustomProductRow($productId);
 
             DB::connection('mysql2')
-                ->table($this->psPrefix() . 'custom_product_attribute')
-                ->where('id_product_attribute', $productAttributeId)
+                ->table($prefix . 'custom_product')
+                ->where('id_product', $productId)
                 ->update([
-                    'id_product' => $productId,
                     'wholesale_price_base_currency' => $purchaseSupplierCurrency,
                     'price_base_currency' => $saleSupplierCurrency,
                     'price_display_base_currency' => $saleSupplierCurrency,
                 ]);
+
+            return;
         }
+
+        if (!$this->prestashopProductAttributeExists($productId, (int) $productAttributeId)) {
+            throw new \RuntimeException('Cannot update PrestaShop attribute prices. Invalid id_product_attribute: ' . $productAttributeId);
+        }
+
+        $productPricing = DB::connection('mysql2')
+            ->table($prefix . 'product')
+            ->where('id_product', $productId)
+            ->first(['price', 'cache_default_attribute']);
+
+        $baseSaleEur = (float) ($productPricing->price ?? 0);
+        $defaultAttributeId = (int) ($productPricing->cache_default_attribute ?? 0);
+        $isDefaultAttribute = $defaultAttributeId === (int) $productAttributeId;
+
+        if ($isDefaultAttribute) {
+            /*
+             * The default combination defines the base product sale price and must
+             * always have an impact of zero. Preserve every other combination total
+             * by recalculating its impact against the new base price.
+             */
+            $attributeTotals = DB::connection('mysql2')
+                ->table($prefix . 'product_attribute')
+                ->where('id_product', $productId)
+                ->get(['id_product_attribute', 'price'])
+                ->mapWithKeys(fn ($attribute) => [
+                    (int) $attribute->id_product_attribute => round($baseSaleEur + (float) $attribute->price, 6),
+                ]);
+
+            $shopAttributeTotals = DB::connection('mysql2')
+                ->table($prefix . 'product_attribute_shop as pas')
+                ->join($prefix . 'product_shop as ps', function ($join) {
+                    $join->on('ps.id_product', '=', 'pas.id_product')
+                        ->on('ps.id_shop', '=', 'pas.id_shop');
+                })
+                ->where('pas.id_product', $productId)
+                ->get([
+                    'pas.id_product_attribute',
+                    'pas.id_shop',
+                    'pas.price as attribute_price_impact',
+                    'ps.price as base_price',
+                ]);
+
+            product::query()
+                ->where('id_product', $productId)
+                ->update(['price' => $saleEur]);
+
+            product_shop::query()
+                ->where('id_product', $productId)
+                ->update(['price' => $saleEur]);
+
+            foreach ($attributeTotals as $attributeId => $attributeTotal) {
+                DB::connection('mysql2')
+                    ->table($prefix . 'product_attribute')
+                    ->where('id_product', $productId)
+                    ->where('id_product_attribute', (int) $attributeId)
+                    ->update([
+                        'price' => (int) $attributeId === (int) $productAttributeId
+                            ? 0
+                            : round((float) $attributeTotal - $saleEur, 6),
+                    ]);
+            }
+
+            foreach ($shopAttributeTotals as $shopAttribute) {
+                $attributeId = (int) $shopAttribute->id_product_attribute;
+                $attributeTotal = (float) $shopAttribute->base_price
+                    + (float) $shopAttribute->attribute_price_impact;
+
+                DB::connection('mysql2')
+                    ->table($prefix . 'product_attribute_shop')
+                    ->where('id_product', $productId)
+                    ->where('id_product_attribute', $attributeId)
+                    ->where('id_shop', (int) $shopAttribute->id_shop)
+                    ->update([
+                        'price' => $attributeId === (int) $productAttributeId
+                            ? 0
+                            : round($attributeTotal - $saleEur, 6),
+                    ]);
+            }
+
+            $this->ensureCustomProductRow($productId);
+
+            DB::connection('mysql2')
+                ->table($prefix . 'custom_product')
+                ->where('id_product', $productId)
+                ->update([
+                    'price_base_currency' => $saleSupplierCurrency,
+                    'price_display_base_currency' => $saleSupplierCurrency,
+                ]);
+        } else {
+            /* Non-default combination: store only its difference from the base. */
+            DB::connection('mysql2')
+                ->table($prefix . 'product_attribute')
+                ->where('id_product', $productId)
+                ->where('id_product_attribute', $productAttributeId)
+                ->update(['price' => round($saleEur - $baseSaleEur, 6)]);
+
+            $shopBasePrices = DB::connection('mysql2')
+                ->table($prefix . 'product_shop')
+                ->where('id_product', $productId)
+                ->pluck('price', 'id_shop');
+
+            foreach ($shopBasePrices as $shopId => $shopBasePrice) {
+                DB::connection('mysql2')
+                    ->table($prefix . 'product_attribute_shop')
+                    ->where('id_product', $productId)
+                    ->where('id_product_attribute', $productAttributeId)
+                    ->where('id_shop', (int) $shopId)
+                    ->update(['price' => round($saleEur - (float) $shopBasePrice, 6)]);
+            }
+        }
+
+        /* Purchase price remains scoped to the selected combination. */
+        DB::connection('mysql2')
+            ->table($prefix . 'product_attribute')
+            ->where('id_product', $productId)
+            ->where('id_product_attribute', $productAttributeId)
+            ->update(['wholesale_price' => $purchaseEur]);
+
+        DB::connection('mysql2')
+            ->table($prefix . 'product_attribute_shop')
+            ->where('id_product', $productId)
+            ->where('id_product_attribute', $productAttributeId)
+            ->update(['wholesale_price' => $purchaseEur]);
+
+        $this->ensureCustomProductAttributeRow($productId, (int) $productAttributeId);
+
+        $attributePriceUpdate = [
+            'wholesale_price_base_currency' => $purchaseSupplierCurrency,
+            'price_base_currency' => $saleSupplierCurrency,
+            'price_display_base_currency' => $saleSupplierCurrency,
+        ];
+
+        if ($this->customAttributeHasProductId()) {
+            $attributePriceUpdate['id_product'] = $productId;
+        }
+
+        DB::connection('mysql2')
+            ->table($prefix . 'custom_product_attribute')
+            ->where('id_product_attribute', $productAttributeId)
+            ->update($attributePriceUpdate);
     }
 
     protected function ensureCustomProductRow(int $productId): void

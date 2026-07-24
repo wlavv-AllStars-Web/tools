@@ -156,7 +156,8 @@
                                         <th class="text-center">Invoiced</th>
                                         <th class="text-center">Remaining</th>
                                         <th class="text-center">Qty to invoice</th>
-                                        <th class="text-end">Unit price ({{ $currencyMeta['currency_iso'] }})</th>
+                                        <th class="text-end">Purchase price ({{ $currencyMeta['currency_iso'] }})</th>
+                                        <th class="text-end">Sale price ({{ $currencyMeta['currency_iso'] }})</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -181,11 +182,22 @@
                                             </td>
                                             <td class="text-end">
                                                 <input type="number" min="0" step="0.000001" name="lines[{{ $loop->index }}][unit_price]" class="form-control form-control-sm price-input ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_wholesale_price, 6, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <div class="small text-muted mt-1">
+                                                    {{ number_format((float) $line->current_purchase_eur, 2, ',', ' ') }} EUR
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="fw-semibold">
+                                                    {{ number_format((float) $line->current_sale_supplier_currency, 6, '.', '') }}
+                                                </div>
+                                                <div class="small text-muted mt-1">
+                                                    {{ number_format((float) $line->current_sale_eur, 2, ',', ' ') }} EUR
+                                                </div>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">No invoiceable lines available for this order note.</td>
+                                            <td colspan="8" class="text-center text-muted py-4">No invoiceable lines available for this order note.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

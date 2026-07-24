@@ -27,8 +27,8 @@
         .oms-invoice-builder .oms-selected-chip { min-width:280px; justify-content:center; }
         .oms-invoice-builder .table tbody tr.is-selected { background:#eff6ff; }
         .oms-invoice-builder .qty-input, .oms-invoice-builder .price-input { min-width:90px; }
-        .oms-invoice-builder .oms-margin-column { min-width:120px; width:120px; }
-        .oms-invoice-builder .js-margin-eur { white-space:nowrap; }
+        .oms-invoice-builder .oms-margin-column { min-width:140px !important; width:140px !important; }
+        .oms-invoice-builder .js-margin-eur { display:inline-block; min-width:max-content; white-space:nowrap !important; word-break:normal !important; overflow-wrap:normal !important; }
         .oms-invoice-builder .copyable { cursor:pointer; }
         .oms-invoice-builder .copyable:hover { color:#2563eb; }
         .oms-invoice-builder .actions { white-space: nowrap; width:1%; }

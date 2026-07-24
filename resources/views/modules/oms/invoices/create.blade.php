@@ -192,11 +192,7 @@
                                             <td class="oms-product-column">
                                                 <div class="fw-semibold oms-product-name" title="{{ $line->product_name }}">{{ $line->product_name }}</div>
                                                 <div class="small text-muted">#{{ $line->product_id }}@if($line->product_attribute_id) | {{ $line->product_attribute_id }}@endif · Stock {{ $line->current_stock }}</div>
-                                                @if(($line->other_combinations ?? collect())->isNotEmpty())
-                                                    <button type="button" class="btn btn-link btn-sm p-0 mt-1 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#other-combinations-{{ $line->order_note_line_id }}" aria-expanded="false">
-                                                        <i class="fa-solid fa-chevron-down me-1"></i>{{ $line->other_combinations->count() }} other combinations
-                                                    </button>
-                                                @endif
+
                                             </td>
                                             <td class="text-center align-top">{{ $line->qty_ordered }}</td>
                                             <td class="text-center align-top">{{ $line->qty_billed }}</td>
@@ -227,8 +223,15 @@
                                                     <span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span>
                                                     <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control price-input js-sale-price" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                                 </div>
-                                                <div class="small text-muted mt-1 js-sale-eur">
-                                                    {{ number_format($saleEur, 2, ',', ' ') }} EUR
+                                                <div class="d-flex justify-content-end align-items-center gap-2 mt-1">
+                                                    <div class="small text-muted js-sale-eur">
+                                                        {{ number_format($saleEur, 2, ',', ' ') }} EUR
+                                                    </div>
+                                                    @if(($line->other_combinations ?? collect())->isNotEmpty())
+                                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#other-combinations-{{ $line->order_note_line_id }}" aria-expanded="false" title="Show combinations" aria-label="Show combinations">
+                                                            <i class="fa-solid fa-chevron-down"></i>
+                                                        </button>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>

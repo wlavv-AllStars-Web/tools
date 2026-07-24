@@ -27,6 +27,9 @@
         .oms-invoice-builder .oms-selected-chip { min-width:280px; justify-content:center; }
         .oms-invoice-builder .table tbody tr.is-selected { background:#eff6ff; }
         .oms-invoice-builder .qty-input, .oms-invoice-builder .price-input { min-width:90px; }
+        .oms-invoice-builder .oms-price-column { min-width:140px !important; width:140px !important; }
+        .oms-invoice-builder .oms-price-group { flex-wrap:nowrap !important; width:130px; max-width:130px; }
+        .oms-invoice-builder .oms-price-group .price-input { min-width:0; width:95px; }
         .oms-invoice-builder .oms-product-column { width:38%; max-width:420px; }
         .oms-invoice-builder .oms-product-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .oms-invoice-builder .oms-margin-column { min-width:140px !important; width:140px !important; }
@@ -160,9 +163,9 @@
                                         <th class="text-center">Invoiced</th>
                                         <th class="text-center">Remaining</th>
                                         <th class="text-center">Qty</th>
-                                        <th class="text-end">Purchase price</th>
+                                        <th class="text-end oms-price-column">Purchase price</th>
                                         <th class="text-end oms-margin-column">Margin</th>
-                                        <th class="text-end">Sale price</th>
+                                        <th class="text-end oms-price-column">Sale price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -201,8 +204,8 @@
                                                 <input type="hidden" name="lines[{{ $loop->index }}][order_note_line_id]" value="{{ $line->order_note_line_id }}">
                                                 <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                             </td>
-                                            <td class="text-end">
-                                                <div class="input-group input-group-sm ms-auto" style="max-width:155px;">
+                                            <td class="text-end oms-price-column">
+                                                <div class="input-group input-group-sm oms-price-group ms-auto">
                                                     <span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span>
                                                     <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][unit_price]" class="form-control price-input js-purchase-price" value="{{ number_format((float) $line->current_wholesale_price, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                                 </div>
@@ -218,8 +221,8 @@
                                                     {{ number_format($marginSupplierCurrency, 2, ',', ' ') }} {{ $currencyMeta['currency_iso'] }}
                                                 </div>
                                             </td>
-                                            <td class="text-end">
-                                                <div class="input-group input-group-sm ms-auto" style="max-width:155px;">
+                                            <td class="text-end oms-price-column">
+                                                <div class="input-group input-group-sm oms-price-group ms-auto">
                                                     <span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span>
                                                     <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control price-input js-sale-price" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                                 </div>

@@ -31,7 +31,7 @@
                     @if( !empty($product->is_new) ) <div title="Enviar para marketing: menos de 5 fotos" style="margin: 3px;width: 15px; height: 15px; border-radius: 15px;background-color: #000; border: 1px solid #000;float: left;"> </div> @endif
                     {{$product->reference}}
                     @if(!empty($product->combination_value))
-                        ({{$product->combination_value}})
+                        <span style="color: dodgerblue;">({{$product->combination_value}})</span>
                     @endif
                 </td>
                 <td style="width: 90px;">

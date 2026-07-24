@@ -136,7 +136,8 @@ class SupplierInvoiceWorkflowService
                 | Sale supplier currency comes from ps_custom_*.
                 */
                 $currentSaleSupplierCurrency = $isAttribute
-                    ? (float) ($attribute->custom_attribute_price_base_currency ?? 0)
+                    ? (float) ($product->custom_price_base_currency ?? 0)
+                        + (float) ($attribute->custom_attribute_price_base_currency ?? 0)
                     : (float) ($product->custom_price_base_currency ?? 0);
 
                 $currentSaleEur = (float) (
@@ -573,6 +574,12 @@ class SupplierInvoiceWorkflowService
         $defaultAttributeId = (int) ($productPricing->cache_default_attribute ?? 0);
         $isDefaultAttribute = $defaultAttributeId === (int) $productAttributeId;
 
+        $this->ensureCustomProductRow($productId);
+        $baseSaleSupplierCurrency = (float) DB::connection('mysql2')
+            ->table($prefix . 'custom_product')
+            ->where('id_product', $productId)
+            ->value('price_base_currency');
+
         if ($isDefaultAttribute) {
             /*
              * The default combination defines the base product sale price and must
@@ -585,6 +592,21 @@ class SupplierInvoiceWorkflowService
                 ->get(['id_product_attribute', 'price'])
                 ->mapWithKeys(fn ($attribute) => [
                     (int) $attribute->id_product_attribute => round($baseSaleEur + (float) $attribute->price, 6),
+                ]);
+
+            $attributeSupplierCurrencyTotals = DB::connection('mysql2')
+                ->table($prefix . 'product_attribute as pa')
+                ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+                ->where('pa.id_product', $productId)
+                ->get([
+                    'pa.id_product_attribute',
+                    'cpa.price_base_currency as attribute_price_impact',
+                ])
+                ->mapWithKeys(fn ($attribute) => [
+                    (int) $attribute->id_product_attribute => round(
+                        $baseSaleSupplierCurrency + (float) ($attribute->attribute_price_impact ?? 0),
+                        6
+                    ),
                 ]);
 
             $shopAttributeTotals = DB::connection('mysql2')
@@ -638,8 +660,6 @@ class SupplierInvoiceWorkflowService
                     ]);
             }
 
-            $this->ensureCustomProductRow($productId);
-
             DB::connection('mysql2')
                 ->table($prefix . 'custom_product')
                 ->where('id_product', $productId)
@@ -647,6 +667,26 @@ class SupplierInvoiceWorkflowService
                     'price_base_currency' => $saleSupplierCurrency,
                     'price_display_base_currency' => $saleSupplierCurrency,
                 ]);
+
+            foreach ($attributeSupplierCurrencyTotals as $attributeId => $attributeTotal) {
+                $this->ensureCustomProductAttributeRow($productId, (int) $attributeId);
+                $attributeImpact = (int) $attributeId === (int) $productAttributeId
+                    ? 0
+                    : round((float) $attributeTotal - $saleSupplierCurrency, 6);
+                $attributeSaleUpdate = [
+                    'price_base_currency' => $attributeImpact,
+                    'price_display_base_currency' => $attributeImpact,
+                ];
+
+                if ($this->customAttributeHasProductId()) {
+                    $attributeSaleUpdate['id_product'] = $productId;
+                }
+
+                DB::connection('mysql2')
+                    ->table($prefix . 'custom_product_attribute')
+                    ->where('id_product_attribute', (int) $attributeId)
+                    ->update($attributeSaleUpdate);
+            }
         } else {
             /* Non-default combination: store only its difference from the base. */
             DB::connection('mysql2')
@@ -687,9 +727,16 @@ class SupplierInvoiceWorkflowService
 
         $attributePriceUpdate = [
             'wholesale_price_base_currency' => $purchaseSupplierCurrency,
-            'price_base_currency' => $saleSupplierCurrency,
-            'price_display_base_currency' => $saleSupplierCurrency,
         ];
+
+        if (!$isDefaultAttribute) {
+            $saleSupplierCurrencyImpact = round(
+                $saleSupplierCurrency - $baseSaleSupplierCurrency,
+                6
+            );
+            $attributePriceUpdate['price_base_currency'] = $saleSupplierCurrencyImpact;
+            $attributePriceUpdate['price_display_base_currency'] = $saleSupplierCurrencyImpact;
+        }
 
         if ($this->customAttributeHasProductId()) {
             $attributePriceUpdate['id_product'] = $productId;

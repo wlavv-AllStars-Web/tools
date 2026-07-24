@@ -190,10 +190,10 @@
                                                 <div class="fw-semibold">{{ $line->product_name }}</div>
                                                 <div class="small text-muted">#{{ $line->product_id }}@if($line->product_attribute_id) | {{ $line->product_attribute_id }}@endif · Stock {{ $line->current_stock }}</div>
                                             </td>
-                                            <td class="text-center">{{ $line->qty_ordered }}</td>
-                                            <td class="text-center">{{ $line->qty_billed }}</td>
-                                            <td class="text-center fw-semibold">{{ $line->qty_remaining }}</td>
-                                            <td class="text-center">
+                                            <td class="text-center align-middle">{{ $line->qty_ordered }}</td>
+                                            <td class="text-center align-middle">{{ $line->qty_billed }}</td>
+                                            <td class="text-center align-middle fw-semibold">{{ $line->qty_remaining }}</td>
+                                            <td class="text-center align-middle">
                                                 <input type="hidden" name="lines[{{ $loop->index }}][order_note_line_id]" value="{{ $line->order_note_line_id }}">
                                                 <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                             </td>

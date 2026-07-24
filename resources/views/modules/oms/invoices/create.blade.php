@@ -27,6 +27,8 @@
         .oms-invoice-builder .oms-selected-chip { min-width:280px; justify-content:center; }
         .oms-invoice-builder .table tbody tr.is-selected { background:#eff6ff; }
         .oms-invoice-builder .qty-input, .oms-invoice-builder .price-input { min-width:90px; }
+        .oms-invoice-builder .oms-margin-column { min-width:120px; width:120px; }
+        .oms-invoice-builder .js-margin-eur { white-space:nowrap; }
         .oms-invoice-builder .copyable { cursor:pointer; }
         .oms-invoice-builder .copyable:hover { color:#2563eb; }
         .oms-invoice-builder .actions { white-space: nowrap; width:1%; }
@@ -157,7 +159,7 @@
                                         <th class="text-center">Remaining</th>
                                         <th class="text-center">Qty to invoice</th>
                                         <th class="text-end">Purchase price</th>
-                                        <th class="text-end">Margin</th>
+                                        <th class="text-end oms-margin-column">Margin</th>
                                         <th class="text-end">Sale price</th>
                                     </tr>
                                 </thead>
@@ -190,10 +192,10 @@
                                                 <div class="fw-semibold">{{ $line->product_name }}</div>
                                                 <div class="small text-muted">#{{ $line->product_id }}@if($line->product_attribute_id) | {{ $line->product_attribute_id }}@endif · Stock {{ $line->current_stock }}</div>
                                             </td>
-                                            <td class="text-center align-middle">{{ $line->qty_ordered }}</td>
-                                            <td class="text-center align-middle">{{ $line->qty_billed }}</td>
-                                            <td class="text-center align-middle fw-semibold">{{ $line->qty_remaining }}</td>
-                                            <td class="text-center align-middle">
+                                            <td class="text-center align-top">{{ $line->qty_ordered }}</td>
+                                            <td class="text-center align-top">{{ $line->qty_billed }}</td>
+                                            <td class="text-center align-top fw-semibold">{{ $line->qty_remaining }}</td>
+                                            <td class="text-center align-top">
                                                 <input type="hidden" name="lines[{{ $loop->index }}][order_note_line_id]" value="{{ $line->order_note_line_id }}">
                                                 <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                             </td>
@@ -206,7 +208,7 @@
                                                     {{ number_format($purchaseEur, 2, ',', ' ') }} EUR
                                                 </div>
                                             </td>
-                                            <td class="text-end">
+                                            <td class="text-end oms-margin-column">
                                                 <div class="fw-semibold js-margin-percent {{ $marginSupplierCurrency >= 0 ? 'text-success' : 'text-danger' }}">
                                                     {{ number_format($marginPercent, 2, ',', ' ') }}%
                                                 </div>

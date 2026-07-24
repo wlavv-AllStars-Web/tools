@@ -156,9 +156,9 @@
                                         <th class="text-center">Invoiced</th>
                                         <th class="text-center">Remaining</th>
                                         <th class="text-center">Qty to invoice</th>
-                                        <th class="text-end">Purchase price ({{ $currencyMeta['currency_iso'] }})</th>
+                                        <th class="text-end">Purchase price</th>
                                         <th class="text-end">Margin</th>
-                                        <th class="text-end">Sale price ({{ $currencyMeta['currency_iso'] }})</th>
+                                        <th class="text-end">Sale price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -198,7 +198,10 @@
                                                 <input type="number" min="0" max="{{ $line->qty_remaining }}" name="lines[{{ $loop->index }}][qty_billed]" class="form-control form-control-sm qty-input mx-auto" style="max-width:95px;" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
                                             </td>
                                             <td class="text-end">
-                                                <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][unit_price]" class="form-control form-control-sm price-input js-purchase-price ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_wholesale_price, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <div class="input-group input-group-sm ms-auto" style="max-width:155px;">
+                                                    <span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span>
+                                                    <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][unit_price]" class="form-control price-input js-purchase-price" value="{{ number_format((float) $line->current_wholesale_price, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                </div>
                                                 <div class="small text-muted mt-1 js-purchase-eur">
                                                     {{ number_format($purchaseEur, 2, ',', ' ') }} EUR
                                                 </div>
@@ -212,7 +215,10 @@
                                                 </div>
                                             </td>
                                             <td class="text-end">
-                                                <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control form-control-sm price-input js-sale-price ms-auto" style="max-width:130px;" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                <div class="input-group input-group-sm ms-auto" style="max-width:155px;">
+                                                    <span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span>
+                                                    <input type="number" min="0" step="0.01" name="lines[{{ $loop->index }}][sale_price]" class="form-control price-input js-sale-price" value="{{ number_format((float) $line->current_sale_supplier_currency, 2, '.', '') }}" {{ $line->qty_remaining > 0 ? '' : 'disabled' }}>
+                                                </div>
                                                 <div class="small text-muted mt-1 js-sale-eur">
                                                     {{ number_format($saleEur, 2, ',', ' ') }} EUR
                                                 </div>

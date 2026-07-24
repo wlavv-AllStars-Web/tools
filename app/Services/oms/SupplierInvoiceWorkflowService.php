@@ -211,10 +211,13 @@ class SupplierInvoiceWorkflowService
             }
         }
 
+        $currencySymbol = $this->resolveCurrencySymbol($currencyId, $currencyIso);
+
         return [
             'manufacturer_id' => $manufacturerId,
             'currency_id' => $currencyId,
             'currency_iso' => $currencyIso,
+            'currency_symbol' => $currencySymbol,
 
             /*
              * Legacy key kept for compatibility.
@@ -759,6 +762,26 @@ class SupplierInvoiceWorkflowService
         return (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
     }
 
+    protected function resolveCurrencySymbol(int $currencyId, string $currencyIso): string
+    {
+        $symbol = DB::connection('mysql2')
+            ->table($this->psPrefix() . 'currency_lang')
+            ->where('id_currency', $currencyId)
+            ->where('id_lang', 1)
+            ->value('symbol');
+
+        if (is_string($symbol) && trim($symbol) !== '') {
+            return trim($symbol);
+        }
+
+        return match (strtoupper($currencyIso)) {
+            'EUR' => '€',
+            'USD' => '$',
+            'GBP' => '£',
+            'JPY' => '¥',
+            default => strtoupper($currencyIso),
+        };
+    }
     protected function resolvePurchaseConversionRate(?string $currencyIso): float
     {
         $currencyIso = strtolower(trim((string) $currencyIso));

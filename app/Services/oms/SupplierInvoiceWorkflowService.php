@@ -34,9 +34,6 @@ class SupplierInvoiceWorkflowService
     {
         $orderNote->loadMissing('lines');
 
-        $currencyMeta = $this->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
-        $saleConversionRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1.0);
-
         $prefix = $this->psPrefix();
         $lineMap = $orderNote->lines->keyBy('id');
         $productIds = $lineMap->pluck('product_id')->filter()->unique()->values()->all();
@@ -98,7 +95,7 @@ class SupplierInvoiceWorkflowService
 
         return $orderNote->lines
             ->sortBy('id')
-            ->map(function (OrderNoteLine $line) use ($products, $attributes, $saleConversionRate) {
+            ->map(function (OrderNoteLine $line) use ($products, $attributes) {
                 $product = $products->get($line->product_id);
                 $attribute = $line->product_attribute_id
                     ? $attributes->get($line->product_attribute_id)
@@ -138,19 +135,13 @@ class SupplierInvoiceWorkflowService
                 | Sale EUR comes from PrestaShop core.
                 | Sale supplier currency comes from ps_custom_*.
                 */
-                $productSaleEur = (float) ($product->product_sale_price ?? 0);
-                $storedSaleSupplierCurrency = (float) ($product->custom_price_base_currency ?? 0);
-                $baseSaleSupplierCurrency = $storedSaleSupplierCurrency > 0
-                    ? $storedSaleSupplierCurrency
-                    : round($productSaleEur * $saleConversionRate, 6);
-
                 $currentSaleSupplierCurrency = $isAttribute
-                    ? $baseSaleSupplierCurrency
+                    ? (float) ($product->custom_price_base_currency ?? 0)
                         + (float) ($attribute->custom_attribute_price_base_currency ?? 0)
-                    : $baseSaleSupplierCurrency;
+                    : (float) ($product->custom_price_base_currency ?? 0);
 
                 $currentSaleEur = (float) (
-                    ($productSaleEur + ($attribute->attribute_price_impact ?? 0))
+                    (($product->product_sale_price ?? 0) + ($attribute->attribute_price_impact ?? 0))
                 );
 
                 return (object) [
@@ -465,8 +456,7 @@ class SupplierInvoiceWorkflowService
                     $newPurchaseSupplierCurrency,
                     $newPurchaseEur,
                     $newSaleSupplierCurrency,
-                    $newSaleEur,
-                    $saleConversionRate
+                    $newSaleEur
                 );
             }
 
@@ -532,8 +522,7 @@ class SupplierInvoiceWorkflowService
         float $purchaseSupplierCurrency,
         float $purchaseEur,
         float $saleSupplierCurrency,
-        float $saleEur,
-        float $saleConversionRate
+        float $saleEur
     ): void {
         if (!$this->prestashopProductExists($productId)) {
             throw new \RuntimeException('Cannot update PrestaShop prices. Invalid id_product: ' . $productId);
@@ -586,18 +575,10 @@ class SupplierInvoiceWorkflowService
         $isDefaultAttribute = $defaultAttributeId === (int) $productAttributeId;
 
         $this->ensureCustomProductRow($productId);
-        $storedBaseSaleSupplierCurrency = DB::connection('mysql2')
+        $baseSaleSupplierCurrency = (float) DB::connection('mysql2')
             ->table($prefix . 'custom_product')
             ->where('id_product', $productId)
             ->value('price_base_currency');
-        $baseSaleSupplierCurrency = (float) $storedBaseSaleSupplierCurrency;
-
-        if ($baseSaleSupplierCurrency <= 0) {
-            $baseSaleSupplierCurrency = round(
-                $baseSaleEur * ($saleConversionRate > 0 ? $saleConversionRate : 1.0),
-                6
-            );
-        }
 
         if ($isDefaultAttribute) {
             /*

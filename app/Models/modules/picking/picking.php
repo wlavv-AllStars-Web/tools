@@ -61,6 +61,9 @@ class picking extends Model
                             (int) $row->id_product_attribute,
                             $languageId
                         );
+                        $row->special_messages = self::getSpecialMessages(
+                            (int) $row->id_product_attribute
+                        );
 
                         return $row;
                     }),
@@ -94,6 +97,56 @@ class picking extends Model
         return $values->implode(' / ');
     }
         
+    public static function getSpecialMessages(int $idProductAttribute): array
+    {
+        if ($idProductAttribute <= 0) {
+            return [];
+        }
+
+        $attributeEans = [
+            228 => '9999999999102', 229 => '9999999999103', 244 => '9999999999148',
+            248 => '9999999999127', 332 => '9999999999189', 333 => '9999999999179',
+            340 => '9999999999195', 341 => '9999999999204', 342 => '9999999999185',
+            343 => '9999999999182', 344 => '9999999999110', 345 => '9999999999141',
+            346 => '9999999999113', 349 => '9999999999143', 353 => '9999999999192',
+            364 => '9999999999114', 365 => '9999999999115', 366 => '9999999999131',
+            368 => '9999999999145', 377 => '9999999999109', 381 => '9999999999153',
+            386 => '9999999999191', 387 => '9999999999150', 388 => '9999999999151',
+            389 => '9999999999152', 395 => '9999999999163', 396 => '9999999999158',
+            1476 => '9999999999159', 3896 => '9999999999119', 3946 => '9999999999120',
+        ];
+
+        $attributes = DB::connection('mysql2')
+            ->table(self::psTable('product_attribute_combination').' as pac')
+            ->join(self::psTable('attribute').' as a', 'a.id_attribute', '=', 'pac.id_attribute')
+            ->where('pac.id_product_attribute', $idProductAttribute)
+            ->get(['a.id_attribute', 'a.id_attribute_group']);
+
+        return $attributes
+            ->flatMap(function ($attribute) use ($attributeEans) {
+                $attributeId = (int) $attribute->id_attribute;
+                $groupId = (int) $attribute->id_attribute_group;
+                $messages = [];
+
+                if (in_array($groupId, [28, 33], true)) {
+                    $messages[] = ['type' => $attributeEans[$attributeId] ?? '0', 'message' => 'Por favor confirme as ponteiras'];
+                }
+                if (in_array($attributeId, [184, 185, 186, 187], true)) {
+                    $messages[] = ['type' => '9999999999925', 'message' => 'Por favor confirme a cor das molas'];
+                }
+                if ($attributeId === 175) {
+                    $messages[] = ['type' => '9999999999932', 'message' => 'Por favor confirme que o produto tem abraçadeiras'];
+                }
+                if ($attributeId === 3280) {
+                    $messages[] = ['type' => '9999999999949', 'message' => 'Por favor confirme que o produto tem parafusos'];
+                }
+
+                return $messages;
+            })
+            ->unique('message')
+            ->values()
+            ->all();
+    }
     public static function add(){
         self::classifyPaymentAcceptedOrders();
         self::removeNonPreparationPickingRows();

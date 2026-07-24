@@ -33,6 +33,12 @@
                     @if(!empty($product->combination_value))
                         <span style="color: dodgerblue;">({{$product->combination_value}})</span>
                     @endif
+                    @foreach(($product->special_messages ?? []) as $specialMessage)
+                        <div style="color: #dc3545; font-weight: 700;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            {{ $specialMessage['message'] }}
+                        </div>
+                    @endforeach
                 </td>
                 <td style="width: 90px;">
                     <div style="border-left: 1px solid #bbb;text-align: right;float: right;padding-left: 5px;"> {{$product->housing}} </div>

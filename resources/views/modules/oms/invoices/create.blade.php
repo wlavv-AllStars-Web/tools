@@ -4,9 +4,8 @@
 @php
     $supplierName = optional($orderNote->supplier)->name ?: ('Supplier #' . $orderNote->supplier_id);
     $draftCount = $draftInvoices->count();
-    $attributeWarning = $invoiceableLines->contains(fn($line) => !empty($line->product_attribute_id));
 @endphp
-<div class="container-fluid py-3 oms-invoice-builder">
+<div class="container-fluid py-3 px-0 oms-invoice-builder">
     <style>
         .oms-invoice-builder .oms-card,
         .oms-invoice-builder .card,
@@ -38,6 +37,9 @@
         .oms-invoice-builder .copyable:hover { color:#2563eb; }
         .oms-invoice-builder .actions { white-space: nowrap; width:1%; }
         .oms-invoice-builder .oms-help-box { border:1px solid rgba(245,158,11,.22); background:rgba(255,251,235,.95); border-radius:5px; padding:.75rem .85rem; font-size:.84rem; color:#92400e; }
+        .oms-invoice-builder .oms-combinations-panel { background:#f8fafc; border-top:1px solid #e5e7eb; }
+        .oms-invoice-builder .oms-combinations-table th { font-size:.72rem; text-transform:uppercase; color:#64748b; }
+        .oms-invoice-builder .oms-combinations-table td { vertical-align:middle; }
     </style>
 
     <div style="border: 1px solid rgba(20, 33, 61, .08); background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .05); padding: 10px;margin-bottom: 10px;">
@@ -68,7 +70,7 @@
     <form action="{{ route('erp.oms.invoices.store', $orderNote) }}" method="POST" id="invoiceBuilderForm">
         @csrf
         <div class="row g-3">
-            <div class="col-lg-4">
+            <div class="col-lg-2">
                 <div class="oms-card h-100">
                     <div class="oms-card-header">
                         <div class="oms-soft-label">Invoice Header</div>
@@ -92,17 +94,17 @@
                                 <label class="form-label fw-semibold">Invoice reference</label>
                                 <input type="text" name="invoice_reference" class="form-control" value="{{ old('invoice_reference') }}" placeholder="Supplier invoice reference">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label class="form-label fw-semibold">Invoice date</label>
                                 <input type="date" name="invoice_date" class="form-control" value="{{ old('invoice_date', now()->toDateString()) }}">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label class="form-label fw-semibold">Due date</label>
                                 <input type="date" name="due_date" class="form-control" value="{{ old('due_date') }}">
                             </div>
                         </div>
 
-                        <div class="row g-2 mb-3">
+                        <div class="row g-2 mb-3 text-center">
                             <div class="col-md-4">
                                 <div class="oms-soft-label">Supplier Currency</div>
                                 <div class="fw-semibold">{{ $currencyMeta['currency_iso'] }}</div>
@@ -117,12 +119,6 @@
                             </div>
                         </div>
 
-                        @if($attributeWarning)
-                            <div class="alert alert-warning py-2 small mb-3">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                                Attribute lines detected. Saving the invoice will update the parent product cost in PrestaShop.
-                            </div>
-                        @endif
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Internal note</label>
@@ -136,7 +132,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-8">
+            <div class="col-lg-10">
                 <div class="oms-card h-100">
                     <div class="oms-card-header d-flex justify-content-between align-items-center">
                         <div>
@@ -196,6 +192,11 @@
                                             <td class="oms-product-column">
                                                 <div class="fw-semibold oms-product-name" title="{{ $line->product_name }}">{{ $line->product_name }}</div>
                                                 <div class="small text-muted">#{{ $line->product_id }}@if($line->product_attribute_id) | {{ $line->product_attribute_id }}@endif · Stock {{ $line->current_stock }}</div>
+                                                @if(($line->other_combinations ?? collect())->isNotEmpty())
+                                                    <button type="button" class="btn btn-link btn-sm p-0 mt-1 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#other-combinations-{{ $line->order_note_line_id }}" aria-expanded="false">
+                                                        <i class="fa-solid fa-chevron-down me-1"></i>{{ $line->other_combinations->count() }} other combinations
+                                                    </button>
+                                                @endif
                                             </td>
                                             <td class="text-center align-top">{{ $line->qty_ordered }}</td>
                                             <td class="text-center align-top">{{ $line->qty_billed }}</td>
@@ -231,6 +232,26 @@
                                                 </div>
                                             </td>
                                         </tr>
+                                        @if(($line->other_combinations ?? collect())->isNotEmpty())
+                                            <tr class="border-0"><td colspan="9" class="p-0 border-0">
+                                                <div class="collapse oms-combinations-panel" id="other-combinations-{{ $line->order_note_line_id }}"><div class="p-3">
+                                                    <div class="small fw-semibold text-muted mb-2"><i class="fa-solid fa-layer-group me-1"></i>Other combinations</div>
+                                                    <div class="table-responsive"><table class="table table-sm oms-combinations-table mb-0">
+                                                        <thead><tr><th>Reference</th><th>Combination</th><th class="text-end">Purchase price</th><th class="text-end">Margin</th><th class="text-end">Sale price</th><th></th></tr></thead><tbody>
+                                                        @foreach($line->other_combinations as $combination)
+                                                            <tr class="js-combination-price-row" data-product-id="{{ $combination->product_id }}" data-purchase-rate="{{ (float) $currencyMeta['purchase_conversion_rate'] }}" data-sale-rate="{{ (float) $currencyMeta['sale_conversion_rate'] }}" data-update-url="{{ route('erp.oms.invoices.combination-prices.update', [$orderNote, $combination->product_attribute_id]) }}">
+                                                                <td><span class="fw-semibold">{{ $combination->reference ?: '-' }}</span><div class="small text-muted">#{{ $combination->product_attribute_id }}</div></td>
+                                                                <td>{{ $combination->combination_label }} @if($combination->is_default)<span class="badge bg-primary ms-1">Base</span>@endif</td>
+                                                                <td class="text-end oms-price-column"><div class="input-group input-group-sm oms-price-group ms-auto"><span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span><input type="number" min="0" step="0.01" class="form-control price-input js-combination-purchase" value="{{ number_format($combination->purchase_supplier_currency, 2, '.', '') }}"></div><div class="small text-muted mt-1 js-combination-purchase-eur">{{ number_format($combination->purchase_eur, 2, ',', ' ') }} EUR</div></td>
+                                                                <td class="text-end oms-margin-column"><div class="fw-semibold js-combination-margin-percent {{ $combination->margin_supplier_currency >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($combination->margin_percent, 2, ',', ' ') }}%</div><div class="small text-muted mt-1 js-combination-margin-value">{{ number_format($combination->margin_supplier_currency, 2, ',', ' ') }} {{ $currencyMeta['currency_iso'] }}</div></td>
+                                                                <td class="text-end oms-price-column"><div class="input-group input-group-sm oms-price-group ms-auto"><span class="input-group-text">{{ $currencyMeta['currency_symbol'] }}</span><input type="number" min="0" step="0.01" class="form-control price-input js-combination-sale" value="{{ number_format($combination->sale_supplier_currency, 2, '.', '') }}"></div><div class="small text-muted mt-1 js-combination-sale-eur">{{ number_format($combination->sale_eur, 2, ',', ' ') }} EUR</div></td>
+                                                                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary js-save-combination-price"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button></td>
+                                                            </tr>
+                                                        @endforeach
+                                                        </tbody></table></div>
+                                                </div></div>
+                                            </td></tr>
+                                        @endif
                                     @empty
                                         <tr>
                                             <td colspan="9" class="text-center text-muted py-4">No invoiceable lines available for this order note.</td>
@@ -292,6 +313,55 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    function refreshCombinationRow(row) {
+        const purchase = Number.parseFloat(row.querySelector('.js-combination-purchase').value || '0') || 0;
+        const sale = Number.parseFloat(row.querySelector('.js-combination-sale').value || '0') || 0;
+        const purchaseRate = Number.parseFloat(row.dataset.purchaseRate || '1') || 1;
+        const saleRate = Number.parseFloat(row.dataset.saleRate || '1') || 1;
+        const margin = sale - purchase;
+        const percent = sale > 0 ? (margin / sale) * 100 : 0;
+        const percentElement = row.querySelector('.js-combination-margin-percent');
+        row.querySelector('.js-combination-purchase-eur').textContent = eurFormatter.format(purchase / purchaseRate) + ' EUR';
+        row.querySelector('.js-combination-sale-eur').textContent = eurFormatter.format(sale / saleRate) + ' EUR';
+        row.querySelector('.js-combination-margin-value').textContent = eurFormatter.format(margin) + ' ' + @json($currencyMeta['currency_iso']);
+        percentElement.textContent = eurFormatter.format(percent) + '%';
+        percentElement.classList.toggle('text-success', margin >= 0);
+        percentElement.classList.toggle('text-danger', margin < 0);
+    }
+
+    document.querySelectorAll('.js-combination-price-row').forEach(function (row) {
+        row.querySelectorAll('.js-combination-purchase, .js-combination-sale').forEach(function (input) {
+            input.addEventListener('input', () => refreshCombinationRow(row));
+        });
+        row.querySelector('.js-save-combination-price').addEventListener('click', async function () {
+            const button = this;
+            button.disabled = true;
+            try {
+                const response = await fetch(row.dataset.updateUrl, {
+                    method: 'PATCH',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        product_id: Number.parseInt(row.dataset.productId, 10),
+                        purchase_price: Number.parseFloat(row.querySelector('.js-combination-purchase').value || '0') || 0,
+                        sale_price: Number.parseFloat(row.querySelector('.js-combination-sale').value || '0') || 0,
+                    }),
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || Object.values(result.errors || {}).flat().join(' ') || 'Unable to save combination prices.');
+                refreshCombinationRow(row);
+                if (window.Swal) Swal.fire({ icon: 'success', title: 'Prices saved', text: result.message, timer: 1400, showConfirmButton: false });
+            } catch (error) {
+                if (window.Swal) Swal.fire({ icon: 'error', title: 'Unable to save', text: error.message });
+                else alert(error.message);
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
     document.querySelectorAll('.copyable').forEach(function (el) {
         el.addEventListener('click', function (e) {
             e.preventDefault();

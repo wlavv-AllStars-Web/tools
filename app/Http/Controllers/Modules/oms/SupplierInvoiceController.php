@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Modules\oms;
 
 use App\Http\Controllers\Controller;
-use App\Models\modules\oms\OrderNote;
-use App\Models\modules\oms\SupplierInvoice;
 use App\Models\modules\oms\BilledOrderLine;
 use App\Models\modules\oms\OmsDocumentLineHistory;
+use App\Models\modules\oms\OrderNote;
+use App\Models\modules\oms\SupplierInvoice;
 use App\Models\modules\shipping\shipping;
 use App\Models\modules\shipping_erp\shipping_erp;
+use App\Services\oms\BilledOrderDisplayService;
 use App\Services\oms\ExportService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
-use App\Services\oms\BilledOrderDisplayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -31,7 +31,7 @@ class SupplierInvoiceController extends Controller
             ->with(['supplier', 'billedOrders']);
 
         if ($request->filled('ref')) {
-            $query->where('invoice_reference', 'like', '%' . trim((string) $request->get('ref')) . '%');
+            $query->where('invoice_reference', 'like', '%'.trim((string) $request->get('ref')).'%');
         }
 
         if ($request->filled('status')) {
@@ -42,7 +42,7 @@ class SupplierInvoiceController extends Controller
             $supplierTerm = trim((string) $request->get('supplier'));
 
             $query->whereHas('supplier', function ($q) use ($supplierTerm) {
-                $q->where('name', 'like', '%' . $supplierTerm . '%');
+                $q->where('name', 'like', '%'.$supplierTerm.'%');
             });
         }
 
@@ -63,6 +63,13 @@ class SupplierInvoiceController extends Controller
         $invoiceableLines = $this->workflowService->getInvoiceableLines($orderNote);
         $draftInvoices = $this->workflowService->getDraftInvoicesForSupplier((int) $orderNote->supplier_id);
         $currencyMeta = $this->workflowService->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
+        $combinationPrices = $this->workflowService->getOtherCombinationPrices($invoiceableLines);
+
+        $invoiceableLines->each(function ($line) use ($combinationPrices) {
+            $line->other_combinations = collect($combinationPrices->get((int) $line->product_id, []))
+                ->reject(fn ($combination) => (int) $combination->product_attribute_id === (int) ($line->product_attribute_id ?? 0))
+                ->values();
+        });
 
         return view('modules.oms.invoices.create', compact(
             'orderNote',
@@ -70,6 +77,29 @@ class SupplierInvoiceController extends Controller
             'draftInvoices',
             'currencyMeta'
         ));
+    }
+
+    public function updateCombinationPrice(Request $request, OrderNote $orderNote, int $productAttributeId)
+    {
+        $data = $request->validate([
+            'product_id' => ['required', 'integer', 'min:1'],
+            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'sale_price' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $prices = $this->workflowService->updateCombinationPrices(
+            $orderNote,
+            (int) $data['product_id'],
+            $productAttributeId,
+            round((float) $data['purchase_price'], 6),
+            round((float) $data['sale_price'], 6)
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Combination prices updated successfully.',
+            'prices' => $prices,
+        ]);
     }
 
     public function store(Request $request, OrderNote $orderNote)
@@ -104,13 +134,13 @@ class SupplierInvoiceController extends Controller
 
             $redirect->with(
                 'warning',
-                'The following products were not marked as invoiced because their purchase price was invalid (must be greater than zero): ' . $references
+                'The following products were not marked as invoiced because their purchase price was invalid (must be greater than zero): '.$references
             );
         }
 
         return $redirect;
     }
-    
+
     public function show(SupplierInvoice $invoice)
     {
         $invoice->load(['supplier', 'billedOrders.lines.orderNoteLine', 'billedOrders.orderNote']);
@@ -121,13 +151,13 @@ class SupplierInvoiceController extends Controller
                 $this->billedOrderDisplayService->hydrateLines($billedOrder->lines)
             );
         });
-    
+
         $lineIds = $invoice->billedOrders
             ->flatMap(fn ($billedOrder) => $billedOrder->lines->pluck('id'))
             ->map(fn ($id) => (int) $id)
             ->filter()
             ->values();
-    
+
         $lineHistoryMap = OmsDocumentLineHistory::query()
             ->where('context_type', 'billed_order_line')
             ->whereIn('context_id', $lineIds->all())
@@ -135,7 +165,7 @@ class SupplierInvoiceController extends Controller
             ->get()
             ->groupBy('context_id')
             ->map(fn ($rows) => $rows->first());
-            
+
         $linkedShipmentIds = shipping_erp::getShippingIdsForErp((int) $invoice->id)
             ->map(fn ($id) => (int) $id)
             ->values();
@@ -194,7 +224,7 @@ class SupplierInvoiceController extends Controller
         ]);
 
         $orderNoteLine = $line->orderNoteLine;
-        if (!$orderNoteLine && $billedOrder->orderNote) {
+        if (! $orderNoteLine && $billedOrder->orderNote) {
             $orderNoteLine = $billedOrder->orderNote->lines()
                 ->where('product_id', (int) $line->product_id)
                 ->where(function ($query) use ($line) {
@@ -208,7 +238,7 @@ class SupplierInvoiceController extends Controller
                 ->first();
         }
 
-        if (!$orderNoteLine) {
+        if (! $orderNoteLine) {
             return response()->json(['success' => false, 'message' => 'The related order note line could not be found.'], 422);
         }
 
@@ -242,11 +272,11 @@ class SupplierInvoiceController extends Controller
         $qtyBilled = (int) $data['qty_billed'];
 
         if ($qtyBilled < $received) {
-            return response()->json(['success' => false, 'message' => 'Billed quantity cannot be lower than the quantity already received (' . $received . ').'], 422);
+            return response()->json(['success' => false, 'message' => 'Billed quantity cannot be lower than the quantity already received ('.$received.').'], 422);
         }
 
         if ($qtyBilled > $maximum) {
-            return response()->json(['success' => false, 'message' => 'Billed quantity cannot exceed the available ordered quantity (' . $maximum . ').'], 422);
+            return response()->json(['success' => false, 'message' => 'Billed quantity cannot exceed the available ordered quantity ('.$maximum.').'], 422);
         }
 
         $line->update([
@@ -290,7 +320,7 @@ class SupplierInvoiceController extends Controller
             'shipment_id' => ['nullable', 'integer'],
         ]);
 
-        $shipmentId = !empty($data['shipment_id']) ? (int) $data['shipment_id'] : null;
+        $shipmentId = ! empty($data['shipment_id']) ? (int) $data['shipment_id'] : null;
 
         if ($shipmentId !== null) {
             $shipment = shipping::query()
@@ -299,7 +329,7 @@ class SupplierInvoiceController extends Controller
                 ->whereIn('status', [1, 2])
                 ->first();
 
-            if (!$shipment) {
+            if (! $shipment) {
                 return back()->with('error', 'Selected shipment is not valid for this invoice supplier or is no longer open.');
             }
         }

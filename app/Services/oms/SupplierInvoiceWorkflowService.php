@@ -41,18 +41,18 @@ class SupplierInvoiceWorkflowService
 
         $products = collect();
 
-        if (!empty($productIds)) {
+        if (! empty($productIds)) {
             $products = DB::connection('mysql2')
-                ->table($prefix . 'product as p')
-                ->leftJoin($prefix . 'product_lang as pl', function ($join) {
+                ->table($prefix.'product as p')
+                ->leftJoin($prefix.'product_lang as pl', function ($join) {
                     $join->on('pl.id_product', '=', 'p.id_product')
                         ->where('pl.id_lang', 1);
                 })
-                ->leftJoin($prefix . 'stock_available as sa', function ($join) {
+                ->leftJoin($prefix.'stock_available as sa', function ($join) {
                     $join->on('sa.id_product', '=', 'p.id_product')
                         ->where('sa.id_product_attribute', 0);
                 })
-                ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+                ->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
                 ->whereIn('p.id_product', $productIds)
                 ->select([
                     'p.id_product',
@@ -73,10 +73,10 @@ class SupplierInvoiceWorkflowService
 
         $attributes = collect();
 
-        if (!empty($attributeIds)) {
+        if (! empty($attributeIds)) {
             $attributes = DB::connection('mysql2')
-                ->table($prefix . 'product_attribute as pa')
-                ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+                ->table($prefix.'product_attribute as pa')
+                ->leftJoin($prefix.'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
                 ->whereIn('pa.id_product_attribute', $attributeIds)
                 ->select([
                     'pa.id_product_attribute',
@@ -108,7 +108,7 @@ class SupplierInvoiceWorkflowService
                 $currentStock = (int) ($product->current_stock ?? 0);
                 $qtyBilled = (int) $line->qty_billed_total;
                 $remaining = max(0, (int) $line->qty_ordered - $qtyBilled);
-                $isAttribute = !empty($line->product_attribute_id);
+                $isAttribute = ! empty($line->product_attribute_id);
                 $manufacturerId = (int) ($product->id_manufacturer ?? 0);
 
                 /*
@@ -152,7 +152,7 @@ class SupplierInvoiceWorkflowService
                     'product_reference_snapshot' => $productReference,
                     'attribute_reference_snapshot' => $attributeReference,
                     'display_reference_snapshot' => $reference,
-                    'product_name' => $product->product_name ?? ('Product #' . $line->product_id),
+                    'product_name' => $product->product_name ?? ('Product #'.$line->product_id),
                     'ean13' => $ean13,
                     'qty_ordered' => (int) $line->qty_ordered,
                     'qty_billed' => $qtyBilled,
@@ -164,7 +164,7 @@ class SupplierInvoiceWorkflowService
                     'current_purchase_eur' => $currentPurchaseEur,
                     'current_sale_supplier_currency' => $currentSaleSupplierCurrency,
                     'current_sale_eur' => $currentSaleEur,
-                    
+
                     // Compatibilidade com a view atual.
                     // A view usa este campo para preencher o input "Purchase Unit Price (Supplier Currency)".
                     'current_wholesale_price' => $currentPurchaseSupplierCurrency,
@@ -172,6 +172,56 @@ class SupplierInvoiceWorkflowService
                 ];
             })
             ->values();
+    }
+
+    public function getOtherCombinationPrices(Collection $invoiceableLines): Collection
+    {
+        $ids = $invoiceableLines->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values();
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+        $prefix = $this->psPrefix();
+        $products = DB::connection('mysql2')->table($prefix.'product as p')->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')->whereIn('p.id_product', $ids)->get(['p.id_product', 'p.price', 'p.cache_default_attribute', 'cp.price_base_currency'])->keyBy('id_product');
+        $labels = DB::connection('mysql2')->table($prefix.'product_attribute_combination as pac')->join($prefix.'attribute as a', 'a.id_attribute', '=', 'pac.id_attribute')->join($prefix.'attribute_lang as al', fn ($j) => $j->on('al.id_attribute', '=', 'a.id_attribute')->where('al.id_lang', 1))->join($prefix.'product_attribute as pa', 'pa.id_product_attribute', '=', 'pac.id_product_attribute')->whereIn('pa.id_product', $ids)->orderBy('a.position')->get(['pac.id_product_attribute', 'al.name'])->groupBy('id_product_attribute')->map(fn ($rows) => $rows->pluck('name')->implode(' / '));
+
+        return DB::connection('mysql2')->table($prefix.'product_attribute as pa')->leftJoin($prefix.'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')->whereIn('pa.id_product', $ids)->get(['pa.id_product', 'pa.id_product_attribute', 'pa.reference', 'pa.wholesale_price', 'pa.price', 'cpa.wholesale_price_base_currency', 'cpa.price_base_currency'])->map(function ($a) use ($products, $labels) {
+            $p = $products->get($a->id_product);
+            $purchase = (float) ($a->wholesale_price_base_currency ?? 0);
+            $sale = (float) ($p->price_base_currency ?? 0) + (float) ($a->price_base_currency ?? 0);
+            $margin = $sale - $purchase;
+
+            return (object) ['product_id' => (int) $a->id_product, 'product_attribute_id' => (int) $a->id_product_attribute, 'reference' => (string) ($a->reference ?? ''), 'combination_label' => (string) ($labels->get($a->id_product_attribute) ?: 'Combination #'.$a->id_product_attribute), 'is_default' => (int) ($p->cache_default_attribute ?? 0) === (int) $a->id_product_attribute, 'purchase_supplier_currency' => $purchase, 'purchase_eur' => (float) ($a->wholesale_price ?? 0), 'sale_supplier_currency' => $sale, 'sale_eur' => (float) ($p->price ?? 0) + (float) ($a->price ?? 0), 'margin_supplier_currency' => $margin, 'margin_percent' => $sale > 0 ? ($margin / $sale) * 100 : 0];
+        })->groupBy('product_id');
+    }
+
+    public function updateCombinationPrices(OrderNote $orderNote, int $productId, int $attributeId, float $purchase, float $sale): array
+    {
+        if (! $orderNote->lines()->where('product_id', $productId)->exists() || ! $this->prestashopProductAttributeExists($productId, $attributeId)) {
+            throw ValidationException::withMessages(['product_attribute_id' => 'Invalid combination for this order note.']);
+        }
+        $meta = $this->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
+        $purchaseRate = (float) ($meta['purchase_conversion_rate'] ?? 1);
+        $saleRate = (float) ($meta['sale_conversion_rate'] ?? 1);
+        $isEur = (bool) ($meta['is_eur'] ?? false);
+        $purchaseEur = $isEur || $purchaseRate <= 0 ? $purchase : round($purchase / $purchaseRate, 6);
+        $saleEur = $isEur || $saleRate <= 0 ? $sale : round($sale / $saleRate, 6);
+        $prefix = $this->psPrefix();
+        $old = DB::connection('mysql2')->table($prefix.'product_attribute as pa')->join($prefix.'product as p', 'p.id_product', '=', 'pa.id_product')->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')->leftJoin($prefix.'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')->where('pa.id_product', $productId)->where('pa.id_product_attribute', $attributeId)->first(['p.reference as product_reference', 'p.price as product_price', 'cp.price_base_currency as product_supplier_price', 'pa.reference as attribute_reference', 'pa.wholesale_price', 'pa.price as attribute_price', 'cpa.wholesale_price_base_currency', 'cpa.price_base_currency as attribute_supplier_price']);
+        if (! $old) {
+            throw ValidationException::withMessages(['product_attribute_id' => 'Combination not found.']);
+        }
+        $oldPurchase = (float) ($old->wholesale_price_base_currency ?? 0);
+        $oldPurchaseEur = (float) ($old->wholesale_price ?? 0);
+        $oldSale = (float) ($old->product_supplier_price ?? 0) + (float) ($old->attribute_supplier_price ?? 0);
+        $oldSaleEur = (float) ($old->product_price ?? 0) + (float) ($old->attribute_price ?? 0);
+        $user = $this->getUserSnapshot();
+        DB::transaction(function () use ($orderNote, $productId, $attributeId, $purchase, $purchaseEur, $sale, $saleEur, $meta, $purchaseRate, $saleRate, $old, $oldPurchase, $oldPurchaseEur, $oldSale, $oldSaleEur, $user) {
+            $this->updatePrestashopPrices($productId, $attributeId, $purchase, $purchaseEur, $sale, $saleEur);
+            DB::table('oms_document_line_history')->insert(['context_type' => 'combination_price_update', 'context_id' => $attributeId, 'order_note_id' => (int) $orderNote->id, 'billed_order_id' => null, 'supplier_invoice_id' => null, 'reception_id' => null, 'product_id' => $productId, 'product_attribute_id' => $attributeId, 'product_reference_snapshot' => $old->product_reference ?: null, 'attribute_reference_snapshot' => $old->attribute_reference ?: null, 'display_reference_snapshot' => $old->attribute_reference ?: $old->product_reference, 'invoice_currency_id' => (int) $meta['currency_id'], 'invoice_currency_iso' => (string) $meta['currency_iso'], 'conversion_rate_used' => $purchaseRate, 'purchase_conversion_rate_used' => $purchaseRate, 'sale_conversion_rate_used' => $saleRate, 'unit_price_invoice_currency' => $purchase, 'unit_price_eur' => $purchaseEur, 'qty' => 0, 'old_purchase_supplier_currency' => $oldPurchase, 'new_purchase_supplier_currency' => $purchase, 'old_purchase_eur' => $oldPurchaseEur, 'new_purchase_eur' => $purchaseEur, 'old_sale_supplier_currency' => $oldSale, 'new_sale_supplier_currency' => $sale, 'old_sale_eur' => $oldSaleEur, 'new_sale_eur' => $saleEur, 'old_wholesale_price_eur' => $oldPurchaseEur, 'new_wholesale_price_eur' => $purchaseEur, 'user_id' => $user['user_id'], 'user_name_snapshot' => $user['user_name_snapshot'], 'user_email_snapshot' => $user['user_email_snapshot'], 'created_at' => now()]);
+        });
+        $margin = $sale - $purchase;
+
+        return ['purchase_supplier_currency' => $purchase, 'purchase_eur' => $purchaseEur, 'sale_supplier_currency' => $sale, 'sale_eur' => $saleEur, 'margin_supplier_currency' => $margin, 'margin_percent' => $sale > 0 ? ($margin / $sale) * 100 : 0];
     }
 
     public function resolveCurrencyForOrderNote(OrderNote $orderNote, ?Collection $selectedLines = null): array
@@ -185,7 +235,7 @@ class SupplierInvoiceWorkflowService
 
         $manufacturerId = 0;
 
-        if (!empty($productIds)) {
+        if (! empty($productIds)) {
             $manufacturerId = (int) product::query()
                 ->whereIn('id_product', $productIds)
                 ->orderBy('id_product')
@@ -257,7 +307,7 @@ class SupplierInvoiceWorkflowService
             $unitPrice = (float) ($linePayload['unit_price'] ?? 0);
             $line = $invoiceableLines->get($orderNoteLineId);
 
-            if (!$line) {
+            if (! $line) {
                 throw ValidationException::withMessages([
                     'lines' => 'One or more selected lines are invalid.',
                 ]);
@@ -272,7 +322,7 @@ class SupplierInvoiceWorkflowService
             if ($unitPrice <= 0) {
                 $skippedInvalidPriceLines->push([
                     'order_note_line_id' => $orderNoteLineId,
-                    'reference' => (string) ($line->reference ?: ('Product #' . $line->product_id)),
+                    'reference' => (string) ($line->reference ?: ('Product #'.$line->product_id)),
                     'qty_billed' => $qtyBilled,
                     'unit_price' => $unitPrice,
                 ]);
@@ -287,7 +337,7 @@ class SupplierInvoiceWorkflowService
             $references = $skippedInvalidPriceLines->pluck('reference')->filter()->implode(', ');
 
             throw ValidationException::withMessages([
-                'lines' => 'No product was marked as invoiced because the selected purchase price was invalid (must be greater than zero): ' . $references,
+                'lines' => 'No product was marked as invoiced because the selected purchase price was invalid (must be greater than zero): '.$references,
             ]);
         }
 
@@ -312,7 +362,7 @@ class SupplierInvoiceWorkflowService
                     ->findOrFail($existingInvoiceId);
             }
 
-            if (!$invoice && $invoiceReference !== '') {
+            if (! $invoice && $invoiceReference !== '') {
                 $invoice = SupplierInvoice::query()
                     ->where('supplier_id', (int) $orderNote->supplier_id)
                     ->where('status', 'draft')
@@ -320,10 +370,10 @@ class SupplierInvoiceWorkflowService
                     ->first();
             }
 
-            if (!$invoice) {
+            if (! $invoice) {
                 $invoice = SupplierInvoice::create([
                     'supplier_id' => (int) $orderNote->supplier_id,
-                    'invoice_reference' => $invoiceReference !== '' ? $invoiceReference : ('INV-' . now()->format('YmdHis')),
+                    'invoice_reference' => $invoiceReference !== '' ? $invoiceReference : ('INV-'.now()->format('YmdHis')),
                     'invoice_date' => $payload['invoice_date'] ?? now()->toDateString(),
                     'due_date' => $payload['due_date'] ?? null,
                     'currency_id' => (int) $currencyMeta['currency_id'],
@@ -345,7 +395,7 @@ class SupplierInvoiceWorkflowService
             $billedOrder = BilledOrder::create([
                 'order_note_id' => (int) $orderNote->id,
                 'supplier_invoice_id' => (int) $invoice->id,
-                'reference' => 'BO-' . $orderNote->reference . '-' . now()->format('His'),
+                'reference' => 'BO-'.$orderNote->reference.'-'.now()->format('His'),
                 'status' => 'billed',
                 'internal_note' => null,
                 'logistic_note' => null,
@@ -494,6 +544,7 @@ class SupplierInvoiceWorkflowService
         if ($orderNote->lines->isEmpty()) {
             $orderNote->status = 'order_note';
             $orderNote->save();
+
             return;
         }
 
@@ -505,7 +556,7 @@ class SupplierInvoiceWorkflowService
             return (int) ($line->qty_received_total ?? 0) >= (int) $line->qty_ordered;
         });
 
-        if (!$allBilled) {
+        if (! $allBilled) {
             $orderNote->status = 'order_note';
         } elseif ($allReceived) {
             $orderNote->status = 'closed';
@@ -524,14 +575,14 @@ class SupplierInvoiceWorkflowService
         float $saleSupplierCurrency,
         float $saleEur
     ): void {
-        if (!$this->prestashopProductExists($productId)) {
-            throw new \RuntimeException('Cannot update PrestaShop prices. Invalid id_product: ' . $productId);
+        if (! $this->prestashopProductExists($productId)) {
+            throw new \RuntimeException('Cannot update PrestaShop prices. Invalid id_product: '.$productId);
         }
 
         $prefix = $this->psPrefix();
         $isAttribute = $productAttributeId && $productAttributeId > 0;
 
-        if (!$isAttribute) {
+        if (! $isAttribute) {
             /* Standard product: purchase and sale remain independent. */
             product::query()
                 ->where('id_product', $productId)
@@ -550,7 +601,7 @@ class SupplierInvoiceWorkflowService
             $this->ensureCustomProductRow($productId);
 
             DB::connection('mysql2')
-                ->table($prefix . 'custom_product')
+                ->table($prefix.'custom_product')
                 ->where('id_product', $productId)
                 ->update([
                     'wholesale_price_base_currency' => $purchaseSupplierCurrency,
@@ -561,12 +612,12 @@ class SupplierInvoiceWorkflowService
             return;
         }
 
-        if (!$this->prestashopProductAttributeExists($productId, (int) $productAttributeId)) {
-            throw new \RuntimeException('Cannot update PrestaShop attribute prices. Invalid id_product_attribute: ' . $productAttributeId);
+        if (! $this->prestashopProductAttributeExists($productId, (int) $productAttributeId)) {
+            throw new \RuntimeException('Cannot update PrestaShop attribute prices. Invalid id_product_attribute: '.$productAttributeId);
         }
 
         $productPricing = DB::connection('mysql2')
-            ->table($prefix . 'product')
+            ->table($prefix.'product')
             ->where('id_product', $productId)
             ->first(['price', 'cache_default_attribute']);
 
@@ -576,7 +627,7 @@ class SupplierInvoiceWorkflowService
 
         $this->ensureCustomProductRow($productId);
         $baseSaleSupplierCurrency = (float) DB::connection('mysql2')
-            ->table($prefix . 'custom_product')
+            ->table($prefix.'custom_product')
             ->where('id_product', $productId)
             ->value('price_base_currency');
 
@@ -587,7 +638,7 @@ class SupplierInvoiceWorkflowService
              * by recalculating its impact against the new base price.
              */
             $attributeTotals = DB::connection('mysql2')
-                ->table($prefix . 'product_attribute')
+                ->table($prefix.'product_attribute')
                 ->where('id_product', $productId)
                 ->get(['id_product_attribute', 'price'])
                 ->mapWithKeys(fn ($attribute) => [
@@ -595,8 +646,8 @@ class SupplierInvoiceWorkflowService
                 ]);
 
             $attributeSupplierCurrencyTotals = DB::connection('mysql2')
-                ->table($prefix . 'product_attribute as pa')
-                ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+                ->table($prefix.'product_attribute as pa')
+                ->leftJoin($prefix.'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
                 ->where('pa.id_product', $productId)
                 ->get([
                     'pa.id_product_attribute',
@@ -610,8 +661,8 @@ class SupplierInvoiceWorkflowService
                 ]);
 
             $shopAttributeTotals = DB::connection('mysql2')
-                ->table($prefix . 'product_attribute_shop as pas')
-                ->join($prefix . 'product_shop as ps', function ($join) {
+                ->table($prefix.'product_attribute_shop as pas')
+                ->join($prefix.'product_shop as ps', function ($join) {
                     $join->on('ps.id_product', '=', 'pas.id_product')
                         ->on('ps.id_shop', '=', 'pas.id_shop');
                 })
@@ -633,7 +684,7 @@ class SupplierInvoiceWorkflowService
 
             foreach ($attributeTotals as $attributeId => $attributeTotal) {
                 DB::connection('mysql2')
-                    ->table($prefix . 'product_attribute')
+                    ->table($prefix.'product_attribute')
                     ->where('id_product', $productId)
                     ->where('id_product_attribute', (int) $attributeId)
                     ->update([
@@ -649,7 +700,7 @@ class SupplierInvoiceWorkflowService
                     + (float) $shopAttribute->attribute_price_impact;
 
                 DB::connection('mysql2')
-                    ->table($prefix . 'product_attribute_shop')
+                    ->table($prefix.'product_attribute_shop')
                     ->where('id_product', $productId)
                     ->where('id_product_attribute', $attributeId)
                     ->where('id_shop', (int) $shopAttribute->id_shop)
@@ -661,7 +712,7 @@ class SupplierInvoiceWorkflowService
             }
 
             DB::connection('mysql2')
-                ->table($prefix . 'custom_product')
+                ->table($prefix.'custom_product')
                 ->where('id_product', $productId)
                 ->update([
                     'price_base_currency' => $saleSupplierCurrency,
@@ -683,26 +734,26 @@ class SupplierInvoiceWorkflowService
                 }
 
                 DB::connection('mysql2')
-                    ->table($prefix . 'custom_product_attribute')
+                    ->table($prefix.'custom_product_attribute')
                     ->where('id_product_attribute', (int) $attributeId)
                     ->update($attributeSaleUpdate);
             }
         } else {
             /* Non-default combination: store only its difference from the base. */
             DB::connection('mysql2')
-                ->table($prefix . 'product_attribute')
+                ->table($prefix.'product_attribute')
                 ->where('id_product', $productId)
                 ->where('id_product_attribute', $productAttributeId)
                 ->update(['price' => round($saleEur - $baseSaleEur, 6)]);
 
             $shopBasePrices = DB::connection('mysql2')
-                ->table($prefix . 'product_shop')
+                ->table($prefix.'product_shop')
                 ->where('id_product', $productId)
                 ->pluck('price', 'id_shop');
 
             foreach ($shopBasePrices as $shopId => $shopBasePrice) {
                 DB::connection('mysql2')
-                    ->table($prefix . 'product_attribute_shop')
+                    ->table($prefix.'product_attribute_shop')
                     ->where('id_product', $productId)
                     ->where('id_product_attribute', $productAttributeId)
                     ->where('id_shop', (int) $shopId)
@@ -712,13 +763,13 @@ class SupplierInvoiceWorkflowService
 
         /* Purchase price remains scoped to the selected combination. */
         DB::connection('mysql2')
-            ->table($prefix . 'product_attribute')
+            ->table($prefix.'product_attribute')
             ->where('id_product', $productId)
             ->where('id_product_attribute', $productAttributeId)
             ->update(['wholesale_price' => $purchaseEur]);
 
         DB::connection('mysql2')
-            ->table($prefix . 'product_attribute_shop')
+            ->table($prefix.'product_attribute_shop')
             ->where('id_product', $productId)
             ->where('id_product_attribute', $productAttributeId)
             ->update(['wholesale_price' => $purchaseEur]);
@@ -729,7 +780,7 @@ class SupplierInvoiceWorkflowService
             'wholesale_price_base_currency' => $purchaseSupplierCurrency,
         ];
 
-        if (!$isDefaultAttribute) {
+        if (! $isDefaultAttribute) {
             $saleSupplierCurrencyImpact = round(
                 $saleSupplierCurrency - $baseSaleSupplierCurrency,
                 6
@@ -743,7 +794,7 @@ class SupplierInvoiceWorkflowService
         }
 
         DB::connection('mysql2')
-            ->table($prefix . 'custom_product_attribute')
+            ->table($prefix.'custom_product_attribute')
             ->where('id_product_attribute', $productAttributeId)
             ->update($attributePriceUpdate);
     }
@@ -751,7 +802,7 @@ class SupplierInvoiceWorkflowService
     protected function ensureCustomProductRow(int $productId): void
     {
         DB::connection('mysql2')
-            ->table($this->psPrefix() . 'custom_product')
+            ->table($this->psPrefix().'custom_product')
             ->updateOrInsert(
                 ['id_product' => $productId],
                 ['id_product' => $productId]
@@ -769,7 +820,7 @@ class SupplierInvoiceWorkflowService
         }
 
         DB::connection('mysql2')
-            ->table($this->psPrefix() . 'custom_product_attribute')
+            ->table($this->psPrefix().'custom_product_attribute')
             ->updateOrInsert(
                 ['id_product_attribute' => $productAttributeId],
                 $payload
@@ -784,13 +835,13 @@ class SupplierInvoiceWorkflowService
 
         return $this->customAttributeHasProductId = DB::connection('mysql2')
             ->getSchemaBuilder()
-            ->hasColumn($this->psPrefix() . 'custom_product_attribute', 'id_product');
+            ->hasColumn($this->psPrefix().'custom_product_attribute', 'id_product');
     }
 
     protected function prestashopProductExists(int $productId): bool
     {
         return DB::connection('mysql2')
-            ->table($this->psPrefix() . 'product')
+            ->table($this->psPrefix().'product')
             ->where('id_product', $productId)
             ->exists();
     }
@@ -798,7 +849,7 @@ class SupplierInvoiceWorkflowService
     protected function prestashopProductAttributeExists(int $productId, int $productAttributeId): bool
     {
         return DB::connection('mysql2')
-            ->table($this->psPrefix() . 'product_attribute')
+            ->table($this->psPrefix().'product_attribute')
             ->where('id_product', $productId)
             ->where('id_product_attribute', $productAttributeId)
             ->exists();
@@ -812,7 +863,7 @@ class SupplierInvoiceWorkflowService
     protected function resolveCurrencySymbol(int $currencyId, string $currencyIso): string
     {
         $symbol = DB::connection('mysql2')
-            ->table($this->psPrefix() . 'currency_lang')
+            ->table($this->psPrefix().'currency_lang')
             ->where('id_currency', $currencyId)
             ->where('id_lang', 1)
             ->value('symbol');
@@ -829,6 +880,7 @@ class SupplierInvoiceWorkflowService
             default => strtoupper($currencyIso),
         };
     }
+
     protected function resolvePurchaseConversionRate(?string $currencyIso): float
     {
         $currencyIso = strtolower(trim((string) $currencyIso));

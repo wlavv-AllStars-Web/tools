@@ -30,11 +30,22 @@ class ProductStoreVisibilityController extends Controller
         $manufacturers = DB::connection('mysql2')
             ->table($prefix . 'manufacturer as m')
             ->join($prefix . 'product as p', 'p.id_manufacturer', '=', 'm.id_manufacturer')
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->whereExists(function ($query) use ($prefix, $asmShopId, $asdShopId) {
                 $query->selectRaw('1')
                     ->from($prefix . 'product_shop as visible_ps')
                     ->whereColumn('visible_ps.id_product', 'p.id_product')
                     ->whereIn('visible_ps.id_shop', [$asmShopId, $asdShopId]);
+            })
+            ->where(function ($query) use ($prefix, $asmShopId, $asdShopId) {
+                $query->whereRaw('COALESCE(cp.wmdeprecated, 0) <> 1')
+                    ->orWhereExists(function ($stockQuery) use ($prefix, $asmShopId, $asdShopId) {
+                        $stockQuery->selectRaw('1')
+                            ->from($prefix . 'stock_available as available_stock')
+                            ->whereColumn('available_stock.id_product', 'p.id_product')
+                            ->whereIn('available_stock.id_shop', [0, $asmShopId, $asdShopId])
+                            ->where('available_stock.quantity', '>', 0);
+                    });
             })
             ->select('m.id_manufacturer', 'm.name')
             ->selectRaw('COUNT(DISTINCT p.id_product) AS product_count')
@@ -61,11 +72,22 @@ class ProductStoreVisibilityController extends Controller
                     $join->on('asd_ps.id_product', '=', 'p.id_product')
                         ->where('asd_ps.id_shop', $asdShopId);
                 })
+                ->where(function ($query) use ($prefix, $asmShopId, $asdShopId) {
+                    $query->whereRaw('COALESCE(cp.wmdeprecated, 0) <> 1')
+                        ->orWhereExists(function ($stockQuery) use ($prefix, $asmShopId, $asdShopId) {
+                            $stockQuery->selectRaw('1')
+                                ->from($prefix . 'stock_available as available_stock')
+                                ->whereColumn('available_stock.id_product', 'p.id_product')
+                                ->whereIn('available_stock.id_shop', [0, $asmShopId, $asdShopId])
+                                ->where('available_stock.quantity', '>', 0);
+                        });
+                })
                 ->where('p.id_manufacturer', $manufacturerId)
                 ->where(function ($query) {
                     $query->whereNotNull('asm_ps.id_product')
                         ->orWhereNotNull('asd_ps.id_product');
                 })
+                ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
                 ->select([
                     'p.id_product',
                     'p.reference',

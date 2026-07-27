@@ -10,6 +10,7 @@ return [
     'Compatibilities exceptions' => 'COMPAT EXCEPTION',
     'Product without brand' => 'NO BRAND',
     'Product without category' => 'NO CATEGORY',
+    'Products without search tags' => 'NO SEARCH TAGS',
     'No instructions' => 'NO INSTRUCTIONS',
     'No real photos' => 'NO REAL PHOTOS',
     'PRODUCTS - No 5 photos' => 'NO 5 PICS',

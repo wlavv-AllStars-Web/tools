@@ -564,6 +564,46 @@ class product extends PrestashopModel
         );
     }
 
+    public static function dashboard_without_search_tags($type)
+    {
+        $data = [];
+        $shopId = (int) config('allstars.stores.ASM.id_shop', 2);
+        $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
+        $productTagTable = self::tableName('product_tag');
+
+        $products = self::with('manufacturer')
+            ->select($productTable . '.*')
+            ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $shopId) {
+                $join->on($productTable . '.id_product', '=', $productShopTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', $shopId);
+            })
+            ->whereNotExists(function ($query) use ($productTable, $productTagTable) {
+                $query->select(DB::raw(1))
+                    ->from($productTagTable)
+                    ->whereColumn($productTagTable . '.id_product', $productTable . '.id_product');
+            })
+            ->orderBy($productTable . '.id_product')
+            ->get();
+
+        foreach ($products as $item) {
+            $data[] = [
+                'id_product' => $item->id_product,
+                'reference' => $item->reference,
+                'brand' => $item->manufacturer->name ?? '',
+            ];
+        }
+
+        return self::productDashboardResponse(
+            trans('dashboard.Products without search tags'),
+            $type,
+            'without_search_tags',
+            ['id_product', 'reference', 'brand'],
+            $data,
+            ['store' => 'ASM']
+        );
+    }
+
     /*
     |--------------------------------------------------------------------------
     | DASHBOARDS - COMPATIBILITIES / ATTACHMENTS

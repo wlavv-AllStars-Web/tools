@@ -10,6 +10,7 @@ return [
     'Compatibilities exceptions' => 'EXCEÇÕES DE COMPATIBILIDADES',
     'Product without brand' => 'PRODUTOS SEM MARCA',
     'Product without category' => 'PRODUTOS SEM CATEGORIA',
+    'Products without search tags' => 'PRODUTOS SEM TAGS DE PESQUISA',
     'No instructions' => 'SEM INSTRUÇÕES',
     'No real photos' => 'SEM FOTOS REAIS',
     'PRODUCTS - No 5 photos' => 'PRODUTOS - < 5 FOTOS',

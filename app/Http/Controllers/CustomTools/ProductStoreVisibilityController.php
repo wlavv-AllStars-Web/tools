@@ -113,6 +113,10 @@ class ProductStoreVisibilityController extends Controller
             'selectedManufacturer' => $selectedManufacturer,
             'products' => $products,
             'visibilities' => self::VISIBILITIES,
+            'storeFrontUrls' => [
+                'ASM' => $this->storeFrontUrl('ASM'),
+                'ASD' => $this->storeFrontUrl('ASD'),
+            ],
             'breadcrumbs' => [
                 ['name' => trans('sales'), 'url' => route('sales.index')],
                 ['name' => 'Product visibility', 'url' => route('sales.tools.product_visibility.index')],
@@ -170,5 +174,25 @@ class ProductStoreVisibilityController extends Controller
         $path = implode('/', str_split((string) $imageId));
         return rtrim((string) config('allstars.stores.ASD.base_url'), '/')
             . '/img/p/' . $path . '/' . $imageId . '.jpg';
+    }
+
+    private function storeFrontUrl(string $store): string
+    {
+        $shopUrl = DB::connection('mysql2')
+            ->table($this->prefix() . 'shop_url')
+            ->where('id_shop', $this->shopId($store))
+            ->orderByDesc('main')
+            ->first(['domain', 'domain_ssl', 'physical_uri', 'virtual_uri']);
+
+        if (! $shopUrl) {
+            return rtrim((string) config('allstars.stores.' . $store . '.base_url'), '/');
+        }
+
+        $domain = trim((string) ($shopUrl->domain_ssl ?: $shopUrl->domain));
+        $path = trim((string) $shopUrl->physical_uri, '/');
+        $virtualPath = trim((string) $shopUrl->virtual_uri, '/');
+        $segments = array_values(array_filter([$path, $virtualPath]));
+
+        return 'https://' . $domain . ($segments ? '/' . implode('/', $segments) : '');
     }
 }

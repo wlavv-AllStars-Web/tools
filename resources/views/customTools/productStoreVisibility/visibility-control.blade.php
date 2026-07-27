@@ -17,7 +17,7 @@
         <a
             class="frontoffice-link"
             data-store="{{ $store }}"
-            href="{{ rtrim((string) config('allstars.stores.' . $store . '.base_url'), '/') }}/index.php?id_product={{ $product->id_product }}&controller=product"
+            href="{{ $storeFrontUrls[$store] }}/index.php?id_product={{ $product->id_product }}&controller=product"
             target="_blank"
             rel="noopener noreferrer"
             title="Open product in {{ $store }} frontoffice"

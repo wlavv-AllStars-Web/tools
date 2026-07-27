@@ -72,7 +72,9 @@
                     </tbody>
                 </table>
             </div>
-            <div class="visibility-pagination">{{ $products->links() }}</div>
+            <div class="visibility-pagination">
+                {{ $products->links('vendor.pagination.bootstrap-5') }}
+            </div>
         @else
             <div class="empty-brand-state">
                 <i class="fa-solid fa-tags"></i>
@@ -107,7 +109,9 @@
         .frontoffice-link[data-store="ASM"]{color:#d32f2f}.frontoffice-link[data-store="ASD"]{color:dodgerblue}
         .frontoffice-link:hover{filter:brightness(.8);text-decoration:none}
         .visibility-option:disabled{cursor:wait;opacity:.6}.visibility-unavailable{color:#999;display:block;font-size:12px;text-align:center}
-        .visibility-pagination{display:flex;justify-content:center;padding-top:16px}
+        .visibility-pagination{display:flex;justify-content:center;padding-top:16px;width:100%}
+        .visibility-pagination nav{display:flex;justify-content:center;width:100%}
+        .visibility-pagination .pagination{margin:0}
         .empty-brand-state{align-items:center;color:#6c757d;display:flex;flex-direction:column;font-size:17px;gap:10px;padding:70px 20px;width:100%}
         .empty-brand-state i{font-size:40px}
         @media(max-width:900px){.visibility-header{align-items:stretch;flex-direction:column}.brand-selector{min-width:0;width:100%}}

@@ -1,0 +1,174 @@
+<?php
+
+namespace App\Http\Controllers\CustomTools;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View;
+use Illuminate\Validation\Rule;
+
+class ProductStoreVisibilityController extends Controller
+{
+    private const VISIBILITIES = ['both', 'catalog', 'search', 'none'];
+    private const PER_PAGE = 100;
+
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    public function index(Request $request)
+    {
+        $manufacturerId = max(0, (int) $request->query('manufacturer_id', 0));
+        $prefix = $this->prefix();
+        $asmShopId = $this->shopId('ASM');
+        $asdShopId = $this->shopId('ASD');
+
+        $manufacturers = DB::connection('mysql2')
+            ->table($prefix . 'manufacturer as m')
+            ->join($prefix . 'product as p', 'p.id_manufacturer', '=', 'm.id_manufacturer')
+            ->whereExists(function ($query) use ($prefix, $asmShopId, $asdShopId) {
+                $query->selectRaw('1')
+                    ->from($prefix . 'product_shop as visible_ps')
+                    ->whereColumn('visible_ps.id_product', 'p.id_product')
+                    ->whereIn('visible_ps.id_shop', [$asmShopId, $asdShopId]);
+            })
+            ->select('m.id_manufacturer', 'm.name')
+            ->selectRaw('COUNT(DISTINCT p.id_product) AS product_count')
+            ->groupBy('m.id_manufacturer', 'm.name')
+            ->orderBy('m.name')
+            ->get();
+
+        $products = null;
+        $selectedManufacturer = null;
+
+        if ($manufacturerId > 0) {
+            $selectedManufacturer = $manufacturers->first(
+                fn ($manufacturer) => (int) $manufacturer->id_manufacturer === $manufacturerId
+            );
+            abort_unless($selectedManufacturer, 404);
+
+            $products = DB::connection('mysql2')
+                ->table($prefix . 'product as p')
+                ->leftJoin($prefix . 'product_shop as asm_ps', function ($join) use ($asmShopId) {
+                    $join->on('asm_ps.id_product', '=', 'p.id_product')
+                        ->where('asm_ps.id_shop', $asmShopId);
+                })
+                ->leftJoin($prefix . 'product_shop as asd_ps', function ($join) use ($asdShopId) {
+                    $join->on('asd_ps.id_product', '=', 'p.id_product')
+                        ->where('asd_ps.id_shop', $asdShopId);
+                })
+                ->where('p.id_manufacturer', $manufacturerId)
+                ->where(function ($query) {
+                    $query->whereNotNull('asm_ps.id_product')
+                        ->orWhereNotNull('asd_ps.id_product');
+                })
+                ->select([
+                    'p.id_product',
+                    'p.reference',
+                    'asm_ps.visibility as asm_visibility',
+                    'asd_ps.visibility as asd_visibility',
+                ])
+                ->selectSub(function ($query) use ($prefix) {
+                    $query->from($prefix . 'image as image_count')
+                        ->whereColumn('image_count.id_product', 'p.id_product')
+                        ->selectRaw('COUNT(*)');
+                }, 'image_count')
+                ->selectSub(function ($query) use ($prefix, $asdShopId, $asmShopId) {
+                    $query->from($prefix . 'image as cover_image')
+                        ->leftJoin($prefix . 'image_shop as cover_asd', function ($join) use ($asdShopId) {
+                            $join->on('cover_asd.id_image', '=', 'cover_image.id_image')
+                                ->where('cover_asd.id_shop', $asdShopId);
+                        })
+                        ->leftJoin($prefix . 'image_shop as cover_asm', function ($join) use ($asmShopId) {
+                            $join->on('cover_asm.id_image', '=', 'cover_image.id_image')
+                                ->where('cover_asm.id_shop', $asmShopId);
+                        })
+                        ->whereColumn('cover_image.id_product', 'p.id_product')
+                        ->orderByRaw('CASE WHEN cover_asd.cover = 1 THEN 0 WHEN cover_asm.cover = 1 THEN 1 ELSE 2 END')
+                        ->orderBy('cover_image.position')
+                        ->orderBy('cover_image.id_image')
+                        ->limit(1)
+                        ->select('cover_image.id_image');
+                }, 'cover_image_id')
+                ->orderByRaw("CASE WHEN p.reference IS NULL OR TRIM(p.reference) = '' THEN 1 ELSE 0 END")
+                ->orderBy('p.reference')
+                ->orderBy('p.id_product')
+                ->paginate(self::PER_PAGE)
+                ->withQueryString();
+
+            $products->getCollection()->transform(function ($product) {
+                $product->cover_url = $this->coverUrl(
+                    $product->cover_image_id ? (int) $product->cover_image_id : null
+                );
+                return $product;
+            });
+        }
+
+        return View::make('customTools.productStoreVisibility.index', [
+            'manufacturers' => $manufacturers,
+            'manufacturerId' => $manufacturerId,
+            'selectedManufacturer' => $selectedManufacturer,
+            'products' => $products,
+            'visibilities' => self::VISIBILITIES,
+            'breadcrumbs' => [
+                ['name' => trans('sales'), 'url' => route('sales.index')],
+                ['name' => 'Product visibility', 'url' => route('sales.tools.product_visibility.index')],
+            ],
+            'actions' => [],
+        ]);
+    }
+
+    public function update(Request $request, int $productId, string $store): JsonResponse
+    {
+        $validated = $request->validate([
+            'visibility' => ['required', 'string', Rule::in(self::VISIBILITIES)],
+        ]);
+
+        $store = strtoupper($store);
+        abort_unless(in_array($store, ['ASM', 'ASD'], true), 404);
+
+        $query = DB::connection('mysql2')
+            ->table($this->prefix() . 'product_shop')
+            ->where('id_product', $productId)
+            ->where('id_shop', $this->shopId($store));
+
+        if (! $query->exists()) {
+            return response()->json([
+                'message' => "Product {$productId} is not assigned to {$store}.",
+            ], 422);
+        }
+
+        $query->update(['visibility' => $validated['visibility']]);
+
+        return response()->json([
+            'message' => "{$store} visibility updated.",
+            'product_id' => $productId,
+            'store' => $store,
+            'visibility' => $validated['visibility'],
+        ]);
+    }
+
+    private function prefix(): string
+    {
+        return (string) env('DB2_DB_prefix', 'ps_');
+    }
+
+    private function shopId(string $store): int
+    {
+        return (int) config('allstars.stores.' . strtoupper($store) . '.id_shop');
+    }
+
+    private function coverUrl(?int $imageId): ?string
+    {
+        if (! $imageId) {
+            return null;
+        }
+
+        $path = implode('/', str_split((string) $imageId));
+        return rtrim((string) config('allstars.stores.ASD.base_url'), '/')
+            . '/img/p/' . $path . '/' . $imageId . '.jpg';
+    }
+}

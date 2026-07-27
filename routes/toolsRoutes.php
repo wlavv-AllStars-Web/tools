@@ -58,6 +58,7 @@ use App\Http\Controllers\CustomTools\asmResourcesController;
 use App\Http\Controllers\CustomTools\asgCarsController;
 use App\Http\Controllers\CustomTools\asgEventsController;
 use App\Http\Controllers\CustomTools\PaymentLinkRequestController;
+use App\Http\Controllers\CustomTools\ProductStoreVisibilityController;
 use App\Http\Controllers\CustomTools\AsdAlertController;
 use App\Http\Controllers\CustomTools\ToolsMigrationController;
 
@@ -545,6 +546,12 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('sales')->name('sales.tools.')->group(function () {
+        Route::get('/product-visibility', [ProductStoreVisibilityController::class, 'index'])->name('product_visibility.index');
+        Route::patch('/product-visibility/{productId}/{store}', [ProductStoreVisibilityController::class, 'update'])
+            ->whereNumber('productId')
+            ->whereIn('store', ['asm', 'asd'])
+            ->name('product_visibility.update');
+
         Route::resource('/backorders', backordersController::class)->only(['index'])->names('backorders');
         Route::get('/product-issues', [productIssuesController::class, 'index'])->name('product_issues.index');
         Route::get('/quotes', [quotesController::class, 'index'])->name('quotes.index');

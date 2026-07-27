@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
+use App\Services\Logs\LogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -134,24 +135,50 @@ class ProductStoreVisibilityController extends Controller
         $store = strtoupper($store);
         abort_unless(in_array($store, ['ASM', 'ASD'], true), 404);
 
-        $query = DB::connection('mysql2')
-            ->table($this->prefix() . 'product_shop')
-            ->where('id_product', $productId)
-            ->where('id_shop', $this->shopId($store));
+        $prefix = $this->prefix();
+        $shopId = $this->shopId($store);
+        $current = DB::connection('mysql2')
+            ->table($prefix . 'product_shop as ps')
+            ->join($prefix . 'product as p', 'p.id_product', '=', 'ps.id_product')
+            ->where('ps.id_product', $productId)
+            ->where('ps.id_shop', $shopId)
+            ->first(['ps.visibility', 'p.reference']);
 
-        if (! $query->exists()) {
+        if (! $current) {
             return response()->json([
                 'message' => "Product {$productId} is not assigned to {$store}.",
             ], 422);
         }
 
-        $query->update(['visibility' => $validated['visibility']]);
+        $newVisibility = $validated['visibility'];
+
+        if ($current->visibility !== $newVisibility) {
+            DB::connection('mysql2')
+                ->table($prefix . 'product_shop')
+                ->where('id_product', $productId)
+                ->where('id_shop', $shopId)
+                ->update(['visibility' => $newVisibility]);
+
+            LogService::create(
+                'UPDATE',
+                'PRODUCT_VISIBILITY',
+                'info',
+                implode(' | ', [
+                    'id_product=' . $productId,
+                    'reference=' . (trim((string) $current->reference) ?: 'n/a'),
+                    'store=' . $store,
+                    'id_shop=' . $shopId,
+                    'visibility_from=' . $current->visibility,
+                    'visibility_to=' . $newVisibility,
+                ])
+            );
+        }
 
         return response()->json([
             'message' => "{$store} visibility updated.",
             'product_id' => $productId,
             'store' => $store,
-            'visibility' => $validated['visibility'],
+            'visibility' => $newVisibility,
         ]);
     }
 

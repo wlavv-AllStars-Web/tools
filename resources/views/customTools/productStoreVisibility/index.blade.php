@@ -96,12 +96,16 @@
         .product-id{font-weight:700;width:90px}.product-reference{font-weight:700;min-width:180px}
         .image-count{font-size:16px;font-weight:700;width:90px}.store-heading{min-width:315px}
         .asm-heading{color:#d32f2f}.asd-heading{color:dodgerblue}
+        .store-visibility-tools{align-items:center;display:flex;gap:8px;justify-content:center}
         .visibility-control{display:flex;gap:4px;justify-content:center}
         .visibility-option{background:#fff;border:1px solid #adb5bd;border-radius:4px;color:#495057;cursor:pointer;font-size:12px;font-weight:700;padding:7px 9px;text-transform:uppercase;transition:.15s}
         .visibility-control[data-store="ASM"] .visibility-option:hover{border-color:#d32f2f;color:#d32f2f}
         .visibility-control[data-store="ASM"] .visibility-option.is-selected{background:#d32f2f;border-color:#d32f2f;color:#fff}
         .visibility-control[data-store="ASD"] .visibility-option:hover{border-color:dodgerblue;color:dodgerblue}
         .visibility-control[data-store="ASD"] .visibility-option.is-selected{background:dodgerblue;border-color:dodgerblue;color:#fff}
+        .frontoffice-link{align-items:center;border:1px solid currentColor;border-radius:4px;display:inline-flex;font-size:12px;font-weight:700;gap:5px;padding:7px 8px;text-decoration:none;white-space:nowrap}
+        .frontoffice-link[data-store="ASM"]{color:#d32f2f}.frontoffice-link[data-store="ASD"]{color:dodgerblue}
+        .frontoffice-link:hover{filter:brightness(.8);text-decoration:none}
         .visibility-option:disabled{cursor:wait;opacity:.6}.visibility-unavailable{color:#999;display:block;font-size:12px;text-align:center}
         .visibility-pagination{display:flex;justify-content:center;padding-top:16px}
         .empty-brand-state{align-items:center;color:#6c757d;display:flex;flex-direction:column;font-size:17px;gap:10px;padding:70px 20px;width:100%}

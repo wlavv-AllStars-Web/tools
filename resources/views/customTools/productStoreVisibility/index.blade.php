@@ -39,7 +39,10 @@
                     </thead>
                     <tbody>
                         @forelse($products as $product)
-                            <tr data-product-id="{{ $product->id_product }}">
+                            <tr
+                                data-product-id="{{ $product->id_product }}"
+                                @class(['alert alert-danger' => (int) $product->image_count < 5])
+                            >
                                 <td class="cover-cell">
                                     @if($product->cover_url)
                                         <img src="{{ $product->cover_url }}" alt="{{ $product->reference ?: 'Product ' . $product->id_product }}" loading="lazy"
@@ -94,7 +97,10 @@
         .asm-heading{color:#d32f2f}.asd-heading{color:dodgerblue}
         .visibility-control{display:flex;gap:4px;justify-content:center}
         .visibility-option{background:#fff;border:1px solid #adb5bd;border-radius:4px;color:#495057;cursor:pointer;font-size:12px;font-weight:700;padding:7px 9px;text-transform:uppercase;transition:.15s}
-        .visibility-option:hover{border-color:#198754;color:#198754}.visibility-option.is-selected{background:#198754;border-color:#198754;color:#fff}
+        .visibility-control[data-store="ASM"] .visibility-option:hover{border-color:#d32f2f;color:#d32f2f}
+        .visibility-control[data-store="ASM"] .visibility-option.is-selected{background:#d32f2f;border-color:#d32f2f;color:#fff}
+        .visibility-control[data-store="ASD"] .visibility-option:hover{border-color:dodgerblue;color:dodgerblue}
+        .visibility-control[data-store="ASD"] .visibility-option.is-selected{background:dodgerblue;border-color:dodgerblue;color:#fff}
         .visibility-option:disabled{cursor:wait;opacity:.6}.visibility-unavailable{color:#999;display:block;font-size:12px;text-align:center}
         .visibility-pagination{display:flex;justify-content:center;padding-top:16px}
         .empty-brand-state{align-items:center;color:#6c757d;display:flex;flex-direction:column;font-size:17px;gap:10px;padding:70px 20px;width:100%}

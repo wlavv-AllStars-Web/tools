@@ -41,7 +41,7 @@
                         @forelse($products as $product)
                             <tr
                                 data-product-id="{{ $product->id_product }}"
-                                @class(['alert alert-danger' => (int) $product->image_count < 5])
+                                @class(['alert alert-danger product-image-alert' => (int) $product->image_count < 5])
                             >
                                 <td class="cover-cell">
                                     @if($product->cover_url)
@@ -90,6 +90,7 @@
         .visibility-summary span{background:#e9ecef;border-radius:999px;padding:4px 10px}
         .product-visibility-table{margin-bottom:0;min-width:1050px;width:100%}
         .product-visibility-table th{vertical-align:middle}.cover-cell{text-align:center;width:92px}
+        .product-visibility-table tr.product-image-alert > td{background-color:#f8d7da !important;border-color:#f1aeb5}
         .cover-cell img{background:#fff;border:1px solid #ddd;border-radius:5px;height:64px;object-fit:contain;width:64px}
         .cover-placeholder{align-items:center;background:#f2f2f2;border:1px solid #ddd;border-radius:5px;color:#999;height:64px;justify-content:center;width:64px}
         .product-id{font-weight:700;width:90px}.product-reference{font-weight:700;min-width:180px}

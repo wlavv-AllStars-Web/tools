@@ -578,6 +578,7 @@ class product extends PrestashopModel
                 $join->on($productTable . '.id_product', '=', $productShopTable . '.id_product')
                     ->where($productShopTable . '.id_shop', $shopId);
             })
+            ->where($productShopTable . '.visibility', '<>', 'none')
             ->whereNotExists(function ($query) use ($productTable, $productTagTable) {
                 $query->select(DB::raw(1))
                     ->from($productTagTable)

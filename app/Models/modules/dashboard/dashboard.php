@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 use Illuminate\Support\Facades\Config;
 use App\Services\Prestashop\PrestashopAdminLinkService;
@@ -146,6 +148,19 @@ class dashboard extends Model
                     $result = self::callDashboardMethod($modelClass, $method, $panel);
                     $counter = (int) ($result['counter'] ?? 0);
                     $calculated = true;
+
+                    try {
+                        Cache::put(
+                            self::panelContentCacheKey($panel),
+                            $result,
+                            now()->addMinutes(2)
+                        );
+                    } catch (\Throwable $cacheException) {
+                        \Log::warning('Dashboard panel cache write failed', [
+                            'panel' => $panel->panel,
+                            'error' => $cacheException->getMessage(),
+                        ]);
+                    }
                 } catch (\Throwable $e) {
                     $counter = 0;
                     $error = $e->getMessage();
@@ -215,6 +230,17 @@ class dashboard extends Model
             3 => $modelClass::$method($panel->tab, $panel->store, $panel),
             default => $modelClass::$method($panel),
         };
+    }
+
+    protected static function panelContentCacheKey($panel): string
+    {
+        return implode(':', [
+            'dashboard-panel-content',
+            (int) (Auth::id() ?? 0),
+            (string) $panel->tab,
+            (string) $panel->store,
+            (string) $panel->panel,
+        ]);
     }
 
     protected static function resolveDashboardCallable($callable): array
@@ -296,7 +322,20 @@ class dashboard extends Model
         }
 
         try {
-            $result = self::callDashboardContentMethod($modelClass, $method, $panel);
+            try {
+                $result = Cache::pull(self::panelContentCacheKey($panel));
+            } catch (\Throwable $cacheException) {
+                \Log::warning('Dashboard panel cache read failed', [
+                    'panel' => $panel->panel,
+                    'error' => $cacheException->getMessage(),
+                ]);
+                $result = null;
+            }
+
+            if (!is_array($result)) {
+                $result = self::callDashboardContentMethod($modelClass, $method, $panel);
+            }
+
             $content = (object) $result;
         } catch (\Throwable $e) {
             \Log::error('Dashboard panel content failed: ' . ($panel->function ?? 'null'), [

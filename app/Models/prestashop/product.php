@@ -630,10 +630,6 @@ class product extends PrestashopModel
             );
         }
 
-        $compatProductIds = compats_product::where('store', $compatStoreId)
-            ->pluck('id_product')
-            ->toArray();
-
         $productTable = self::tableName('product');
         $customProductTable = self::tableName('custom_product');
 
@@ -641,20 +637,42 @@ class product extends PrestashopModel
             ->select($productTable . '.*')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($productTable . '.active', 1)
-            ->where(function ($q) use ($customProductTable) {
-                $q->whereNull($customProductTable . '.universal')
-                  ->orWhere($customProductTable . '.universal', 0);
+            ->where(function ($query) use ($customProductTable) {
+                $query->whereNull($customProductTable . '.universal')
+                    ->orWhere($customProductTable . '.universal', 0);
             })
-            ->where($productTable . '.visibility', '<>', 'none')
-            ->when(!empty($compatProductIds), function ($query) use ($productTable, $compatProductIds) {
-                $query->whereNotIn($productTable . '.id_product', $compatProductIds);
-            });
+            ->where($productTable . '.visibility', '<>', 'none');
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);
         }
 
-        foreach ($query->get() as $item) {
+        $candidates = $query->get();
+        $candidateIds = $candidates
+            ->pluck('id_product')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $compatProductIds = collect($candidateIds)
+            ->chunk(5000)
+            ->flatMap(function ($ids) use ($compatStoreId) {
+                return compats_product::query()
+                    ->where('store', $compatStoreId)
+                    ->whereIn('id_product', $ids->all())
+                    ->distinct()
+                    ->pluck('id_product');
+            })
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->all();
+
+        $compatLookup = array_fill_keys($compatProductIds, true);
+
+        foreach ($candidates as $item) {
+            if (isset($compatLookup[(int) $item->id_product])) {
+                continue;
+            }
+
             $data[] = [
                 'clean' => $item->id_product,
                 'id_product' => $item->id_product,
@@ -674,7 +692,6 @@ class product extends PrestashopModel
             ]
         );
     }
-
     public static function dashboard_no_instructions($type)
     {
         $data = [];
@@ -1852,66 +1869,61 @@ public static function dashboard_end_of_life($type)
 
     public static function dashboard_recommended_products($type)
     {
-        $data = [];
-
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');
         $accessoryTable = self::tableName('accessory');
         $stockTable = self::tableName('stock_available');
         $customProductTable = self::tableName('custom_product');
 
-        $bd_data = self::select(
-                $productTable . '.id_product',
-                $productTable . '.reference',
-                DB::raw($manufacturerTable . '.name AS brand'),
-                $productTable . '.date_add'
+        $stockByProduct = DB::connection('mysql2')
+            ->table($stockTable)
+            ->select(
+                'id_product',
+                DB::raw('MAX(quantity) AS max_quantity')
             )
-            ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-            ->where($productTable . '.active', 1)
-            ->where(function ($q) use ($customProductTable) {
-                $q->whereNull($customProductTable . '.wmdeprecated')
-                  ->orWhere($customProductTable . '.wmdeprecated', 0);
+            ->groupBy('id_product');
+
+        $data = DB::connection('mysql2')
+            ->table($productTable . ' AS source_product')
+            ->leftJoin($manufacturerTable . ' AS source_manufacturer', 'source_manufacturer.id_manufacturer', '=', 'source_product.id_manufacturer')
+            ->leftJoin($customProductTable . ' AS source_custom', 'source_custom.id_product', '=', 'source_product.id_product')
+            ->leftJoin($accessoryTable . ' AS accessory', 'accessory.id_product_1', '=', 'source_product.id_product')
+            ->leftJoin($productTable . ' AS recommended_product', 'recommended_product.id_product', '=', 'accessory.id_product_2')
+            ->leftJoin($customProductTable . ' AS recommended_custom', 'recommended_custom.id_product', '=', 'recommended_product.id_product')
+            ->leftJoinSub($stockByProduct, 'recommended_stock', function ($join) {
+                $join->on('recommended_stock.id_product', '=', 'recommended_product.id_product');
             })
-            ->where($productTable . '.visibility', 'NOT LIKE', 'none')
-            ->orderBy($productTable . '.date_add', 'ASC')
-            ->get();
-
-        foreach ($bd_data as $item) {
-            $validRecommended = [];
-
-            $data_2 = accessory::select(
-                    $productTable . '.id_product',
-                    $productTable . '.active',
-                    DB::raw($customProductTable . '.wmdeprecated AS wmdeprecated'),
-                    $stockTable . '.quantity'
-                )
-                ->leftJoin($productTable, $accessoryTable . '.id_product_2', '=', $productTable . '.id_product')
-                ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-                ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
-                ->where($accessoryTable . '.id_product_1', $item->id_product)
-                ->get();
-
-            $count = 0;
-
-            foreach ($data_2 as $item_2) {
-                if (!$item_2->id_product || isset($validRecommended[$item_2->id_product])) {
-                    continue;
-                }
-
-                if ((($item_2->active) && ($item_2->wmdeprecated == 1) && ($item_2->quantity > 0)) || (($item_2->active) && ($item_2->wmdeprecated == 0))) {
-                    $validRecommended[$item_2->id_product] = true;
-                }
-            }
-
-            if (count($validRecommended) < 4) {
-                $data[] = [
-                    'id_product' => $item->id_product,
-                    'reference' => $item->reference,
-                    'brand' => $item->brand
-                ];
-            }
-        }
+            ->where('source_product.active', 1)
+            ->where(function ($query) {
+                $query->whereNull('source_custom.wmdeprecated')
+                    ->orWhere('source_custom.wmdeprecated', 0);
+            })
+            ->where('source_product.visibility', '<>', 'none')
+            ->groupBy(
+                'source_product.id_product',
+                'source_product.reference',
+                'source_manufacturer.name',
+                'source_product.date_add'
+            )
+            ->havingRaw(
+                'COUNT(DISTINCT CASE '
+                . 'WHEN recommended_product.active = 1 '
+                . 'AND ((recommended_custom.wmdeprecated = 1 AND COALESCE(recommended_stock.max_quantity, 0) > 0) '
+                . 'OR recommended_custom.wmdeprecated = 0) '
+                . 'THEN recommended_product.id_product END) < 4'
+            )
+            ->orderBy('source_product.date_add', 'ASC')
+            ->get([
+                'source_product.id_product',
+                'source_product.reference',
+                DB::raw('source_manufacturer.name AS brand'),
+            ])
+            ->map(fn ($item) => [
+                'id_product' => $item->id_product,
+                'reference' => $item->reference,
+                'brand' => $item->brand,
+            ])
+            ->all();
 
         return self::productDashboardResponse(
             trans('dashboard.RECOMMENDED PRODUCTS MISSING'),
@@ -1921,7 +1933,6 @@ public static function dashboard_end_of_life($type)
             $data
         );
     }
-
     public static function dashboard_packs($type)
     {
         $data = [];

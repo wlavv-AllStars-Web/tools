@@ -18,14 +18,17 @@ class asm_email_alert extends PrestashopModel{
 
     public static function dashboard_product_request($type)
     {
-        $data = [];
-
         $alertTable = self::tableName('asm_email_alert');
         $productTable = self::tableName('product');
         $productAttributeTable = self::tableName('product_attribute');
+        $combinationTable = self::tableName('product_attribute_combination');
+        $attributeLangTable = self::tableName('attribute_lang');
         $stockTable = self::tableName('stock_available');
+        $packTable = self::tableName('pack');
+        $shopId = (int) config('allstars.stores.ASM.id_shop', 2);
+        $languageId = (int) (config('app.id_lang') ?: 1);
 
-        $clients_request = self::select(
+        $requests = self::select(
                 $alertTable . '.*',
                 DB::raw($productTable . '.reference AS product_reference'),
                 DB::raw($productAttributeTable . '.reference AS attr_reference'),
@@ -34,61 +37,113 @@ class asm_email_alert extends PrestashopModel{
             )
             ->leftJoin($productTable, $alertTable . '.id_product', '=', $productTable . '.id_product')
             ->leftJoin($productAttributeTable, $alertTable . '.id_combination', '=', $productAttributeTable . '.id_product_attribute')
-            ->leftJoin($stockTable, function ($join) use ($alertTable, $stockTable) {
-                $join->on($alertTable . '.id_product', '=', $stockTable . '.id_product');
-                $join->on($alertTable . '.id_combination', '=', $stockTable . '.id_product_attribute');
-            })
-            ->orderBy($stockTable . '.quantity', 'DESC')
             ->get();
 
-        foreach ($clients_request as $request) {
-            $combination = '';
+        $combinationIds = $requests
+            ->pluck('id_combination')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
 
-            $reference = is_null($request->attr_reference) ? $request->product_reference : $request->attr_reference;
+        $combinationNames = $combinationIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table($combinationTable . ' AS pac')
+                ->join($attributeLangTable . ' AS al', function ($join) use ($languageId) {
+                    $join->on('al.id_attribute', '=', 'pac.id_attribute')
+                        ->where('al.id_lang', $languageId);
+                })
+                ->whereIn('pac.id_product_attribute', $combinationIds->all())
+                ->orderBy('pac.id_product_attribute')
+                ->orderBy('pac.id_attribute')
+                ->get(['pac.id_product_attribute', 'al.name'])
+                ->groupBy('id_product_attribute')
+                ->map(fn ($rows) => $rows->pluck('name')->filter()->implode(' | '));
 
-            if ($request->id_combination > 0) {
-                $combination_data = product_attribute_combination::with('attribute_lang')
-                    ->where('id_product_attribute', $request->id_combination)
-                    ->orderBy('id_product_attribute', 'DESC')
-                    ->get();
+        $packProductIds = $requests
+            ->filter(fn ($request) => (int) $request->cache_is_pack === 1)
+            ->pluck('id_product')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
-                foreach ($combination_data as $attr) {
-                    $combination .= $attr->attribute_lang->name . ' | ';
+        $packs = $packProductIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table($packTable)
+                ->whereIn('id_product_pack', $packProductIds->all())
+                ->orderBy('id_product_pack')
+                ->orderBy('id_product_item')
+                ->get(['id_product_pack', 'quantity', 'id_product_item', 'id_product_attribute_item'])
+                ->groupBy('id_product_pack')
+                ->map(fn ($rows) => $rows->first());
+
+        $stockKeys = $requests
+            ->map(function ($request) use ($packs) {
+                $pack = $packs->get((int) $request->id_product);
+
+                if ((int) $request->cache_is_pack === 1 && $pack) {
+                    return (int) $pack->id_product_item . ':' . (int) $pack->id_product_attribute_item;
                 }
 
-                $combination = substr($combination, 0, -3);
-            }
+                return (int) $request->id_product . ':' . (int) $request->id_combination;
+            })
+            ->unique()
+            ->values();
 
-            $pack = pack::select('quantity', 'id_product_item', 'id_product_attribute_item')->where('id_product_pack', $request->id_product)->first();
+        $stockProductIds = $stockKeys
+            ->map(fn ($key) => (int) explode(':', $key, 2)[0])
+            ->unique()
+            ->values();
 
-            if ((int) $request->cache_is_pack === 1 && $pack) {
-                $stock = stock_available::select('quantity')->where('id_product', $pack->id_product_item)->where('id_product_attribute', $pack->id_product_attribute_item)->first();
-            } else {
-                $stock = stock_available::select('quantity')->where('id_product', $request->id_product)->where('id_product_attribute', $request->id_combination)->first();
-            }
+        $stocks = $stockProductIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table($stockTable)
+                ->where('id_shop', $shopId)
+                ->whereIn('id_product', $stockProductIds->all())
+                ->get(['id_product', 'id_product_attribute', 'quantity'])
+                ->keyBy(fn ($row) => (int) $row->id_product . ':' . (int) $row->id_product_attribute);
 
-            $date = date_create($request->alert_date_add);
+        $data = $requests
+            ->map(function ($request) use ($combinationNames, $packs, $stocks) {
+                $pack = $packs->get((int) $request->id_product);
+                $isPack = (int) $request->cache_is_pack === 1;
+                $stockKey = $isPack && $pack
+                    ? (int) $pack->id_product_item . ':' . (int) $pack->id_product_attribute_item
+                    : (int) $request->id_product . ':' . (int) $request->id_combination;
+                $stockQuantity = (int) ($stocks->get($stockKey)->quantity ?? 0);
+                $combination = (string) $combinationNames->get((int) $request->id_combination, '');
+                $reference = $request->attr_reference ?: $request->product_reference;
+                $date = date_create($request->alert_date_add);
 
-            $combination = strlen($combination)
-                ? ' - <span style="color: red;">' . $combination . '</span>'
-                : '';
+                if ($combination !== '') {
+                    $combination = ' - <span style="color: red;">' . $combination . '</span>';
+                }
 
-            $product = [
-                'delete' => $request->id,
-                'id_product' => $request->id_product,
-                'reference' => $reference . $combination,
-                'cache_is_pack' => $request->cache_is_pack,
-                'stock' => ((int) $request->cache_is_pack === 1)
-                    ? (($pack->quantity ?? 0) . ' <span style="color: red;">( ' . ($stock->quantity ?? 0) . ' )</span> ')
-                    : ($stock->quantity ?? 0),
-                'pack_quantity' => $pack->quantity ?? 0,
-                'date' => $date ? date_format($date, "Y-m-d") : '',
-                'send_email' => $request->id,
-                'email' => $request->email,
-            ];
-
-            $data[] = $product;
-        }
+                return [
+                    'delete' => $request->id,
+                    'id_product' => $request->id_product,
+                    'reference' => $reference . $combination,
+                    'cache_is_pack' => $request->cache_is_pack,
+                    'stock' => $isPack
+                        ? (($pack->quantity ?? 0) . ' <span style="color: red;">( ' . $stockQuantity . ' )</span> ')
+                        : $stockQuantity,
+                    'pack_quantity' => $pack->quantity ?? 0,
+                    'date' => $date ? date_format($date, 'Y-m-d') : '',
+                    'send_email' => $request->id,
+                    'email' => $request->email,
+                    '_stock_quantity' => $stockQuantity,
+                ];
+            })
+            ->sortByDesc('_stock_quantity')
+            ->map(function ($row) {
+                unset($row['_stock_quantity']);
+                return $row;
+            })
+            ->values()
+            ->all();
 
         return [
             'name' => trans('dashboard.Products requested'),

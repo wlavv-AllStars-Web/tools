@@ -4,11 +4,13 @@ namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
 use App\Services\Logs\LogService;
+use App\Services\oms\ExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductStoreVisibilityController extends Controller
 {
@@ -202,6 +204,63 @@ class ProductStoreVisibilityController extends Controller
             'store' => $store,
             'visibility' => $newVisibility,
         ]);
+    }
+
+    public function exportNone(string $store, ExportService $exportService): StreamedResponse
+    {
+        $store = strtoupper($store);
+        abort_unless(in_array($store, ['ASM', 'ASD'], true), 404);
+
+        $prefix = $this->prefix();
+        $shopId = $this->shopId($store);
+        $headers = [
+            'store',
+            'id_product',
+            'reference',
+            'product',
+            'brand',
+            'active',
+            'visibility',
+            'images',
+        ];
+
+        $rows = DB::connection('mysql2')
+            ->table($prefix . 'product as p')
+            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
+                $join->on('ps.id_product', '=', 'p.id_product')
+                    ->where('ps.id_shop', $shopId);
+            })
+            ->leftJoin($prefix . 'product_lang as pl', function ($join) use ($shopId) {
+                $join->on('pl.id_product', '=', 'p.id_product')
+                    ->where('pl.id_shop', $shopId)
+                    ->where('pl.id_lang', 1);
+            })
+            ->leftJoin($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
+            ->where('ps.visibility', 'none')
+            ->select([
+                'p.id_product',
+                'p.reference',
+                'pl.name as product',
+                'm.name as brand',
+                'ps.active',
+                'ps.visibility',
+            ])
+            ->selectRaw('? AS store', [$store])
+            ->selectSub(function ($query) use ($prefix) {
+                $query->from($prefix . 'image as image_count')
+                    ->whereColumn('image_count.id_product', 'p.id_product')
+                    ->selectRaw('COUNT(*)');
+            }, 'images')
+            ->orderByRaw("CASE WHEN p.reference IS NULL OR TRIM(p.reference) = '' THEN 1 ELSE 0 END")
+            ->orderBy('p.reference')
+            ->orderBy('p.id_product')
+            ->cursor();
+
+        return $exportService->streamXlsx(
+            'products-visibility-none-' . strtolower($store) . '-' . now()->format('Y-m-d') . '.xlsx',
+            $headers,
+            $rows
+        );
     }
 
     private function prefix(): string

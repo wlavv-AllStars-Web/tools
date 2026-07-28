@@ -6,6 +6,22 @@
             <div>
                 <h5>Product visibility by store</h5>
                 <div class="text-muted">Select a brand and change each product directly in ASM or ASD.</div>
+                <div class="visibility-exports">
+                    <a
+                        href="{{ route('sales.tools.product_visibility.export_none', ['store' => 'asm']) }}"
+                        class="btn btn-sm visibility-export visibility-export-asm"
+                    >
+                        <i class="fa-solid fa-file-excel"></i>
+                        Products visibility none in ASM
+                    </a>
+                    <a
+                        href="{{ route('sales.tools.product_visibility.export_none', ['store' => 'asd']) }}"
+                        class="btn btn-sm visibility-export visibility-export-asd"
+                    >
+                        <i class="fa-solid fa-file-excel"></i>
+                        Products visibility none in ASD
+                    </a>
+                </div>
             </div>
             <form method="GET" action="{{ route('sales.tools.product_visibility.index') }}" class="brand-selector">
                 <label for="manufacturer_id">Brand</label>
@@ -87,6 +103,10 @@
         .product-visibility-panel{display:block;padding:18px;width:100%}
         .visibility-header{align-items:end;display:flex;gap:24px;justify-content:space-between;width:100%}
         .visibility-header h5{font-size:22px;margin:0 0 4px}.brand-selector{min-width:340px}
+        .visibility-exports{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+        .visibility-export{align-items:center;background:#fff;border:1px solid currentColor;display:inline-flex;gap:7px;font-weight:700}
+        .visibility-export-asm{color:#d32f2f}.visibility-export-asd{color:dodgerblue}
+        .visibility-export:hover{color:#fff}.visibility-export-asm:hover{background:#d32f2f}.visibility-export-asd:hover{background:dodgerblue}
         .brand-selector label{display:block;font-weight:700;margin-bottom:5px}
         .visibility-summary{align-items:center;border-top:1px solid #ddd;display:flex;gap:10px;margin-top:18px;padding:14px 0 10px}
         .visibility-summary span{background:#e9ecef;border-radius:999px;padding:4px 10px}

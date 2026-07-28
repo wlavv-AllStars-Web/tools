@@ -547,6 +547,9 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::prefix('sales')->name('sales.tools.')->group(function () {
         Route::get('/product-visibility', [ProductStoreVisibilityController::class, 'index'])->name('product_visibility.index');
+        Route::get('/product-visibility/export/{store}', [ProductStoreVisibilityController::class, 'exportNone'])
+            ->whereIn('store', ['asm', 'asd'])
+            ->name('product_visibility.export_none');
         Route::patch('/product-visibility/{productId}/{store}', [ProductStoreVisibilityController::class, 'update'])
             ->whereNumber('productId')
             ->whereIn('store', ['asm', 'asd'])

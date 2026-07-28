@@ -135,7 +135,10 @@ class product_attribute extends PrestashopModel
                 $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 DB::raw('COUNT(DISTINCT ' . $productAttributeImageTable . '.id_image) AS nr_images'),
-                $productAttributeTable . '.reference',
+                DB::raw(
+                    'COALESCE(NULLIF(TRIM(' . $productAttributeTable . '.reference), \'\'), '
+                    . $productTable . '.reference) AS reference'
+                ),
                 DB::raw($customProductAttributeTable . '.location AS housing'),
                 DB::raw($manufacturerTable . '.name AS brand')
             )
@@ -170,6 +173,7 @@ class product_attribute extends PrestashopModel
                 $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 $productAttributeTable . '.reference',
+                $productTable . '.reference',
                 $customProductAttributeTable . '.location',
                 $manufacturerTable . '.name',
                 $productShopTable . '.id_shop'

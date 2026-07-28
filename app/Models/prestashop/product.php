@@ -794,10 +794,20 @@ class product extends PrestashopModel
         $stockTable = self::tableName('stock_available');
         $customProductTable = self::tableName('custom_product');
         $productShopTable = self::tableName('product_shop');
+        $manufacturerTable = self::tableName('manufacturer');
         $asmShopId = PrestashopAdminLinkService::shopId('ASM') ?: 2;
 
-        $bd_data = self::select($productTable . '.id_product', $productTable . '.reference')
-            ->with('manufacturer')
+        $bd_data = self::select(
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                DB::raw($manufacturerTable . '.name AS brand')
+            )
+            ->leftJoin(
+                $manufacturerTable,
+                $productTable . '.id_manufacturer',
+                '=',
+                $manufacturerTable . '.id_manufacturer'
+            )
             ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $asmShopId) {
                 $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
                     ->where($productShopTable . '.id_shop', $asmShopId)
@@ -820,14 +830,18 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->orderBy($productTable . '.id_product')
-            ->groupBy($productTable . '.id_product', $productTable . '.reference')
+            ->groupBy(
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                $manufacturerTable . '.name'
+            )
             ->get();
 
         foreach ($bd_data as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
-                'brand' => $item->manufacturer->name ?? ''
+                'brand' => $item->brand ?? ''
             ];
         }
 
@@ -1923,6 +1937,8 @@ public static function dashboard_end_of_life($type)
         $accessoryTable = self::tableName('accessory');
         $stockTable = self::tableName('stock_available');
         $customProductTable = self::tableName('custom_product');
+        $productShopTable = self::tableName('product_shop');
+        $asmShopId = PrestashopAdminLinkService::shopId('ASM') ?: 2;
 
         $stockByProduct = DB::connection('mysql2')
             ->table($stockTable)
@@ -1934,6 +1950,10 @@ public static function dashboard_end_of_life($type)
 
         $data = DB::connection('mysql2')
             ->table($productTable . ' AS source_product')
+            ->join($productShopTable . ' AS source_product_shop', function ($join) use ($asmShopId) {
+                $join->on('source_product_shop.id_product', '=', 'source_product.id_product')
+                    ->where('source_product_shop.id_shop', $asmShopId);
+            })
             ->leftJoin($manufacturerTable . ' AS source_manufacturer', 'source_manufacturer.id_manufacturer', '=', 'source_product.id_manufacturer')
             ->leftJoin($customProductTable . ' AS source_custom', 'source_custom.id_product', '=', 'source_product.id_product')
             ->leftJoin($accessoryTable . ' AS accessory', 'accessory.id_product_1', '=', 'source_product.id_product')
@@ -1942,12 +1962,12 @@ public static function dashboard_end_of_life($type)
             ->leftJoinSub($stockByProduct, 'recommended_stock', function ($join) {
                 $join->on('recommended_stock.id_product', '=', 'recommended_product.id_product');
             })
-            ->where('source_product.active', 1)
+            ->where('source_product_shop.active', 1)
+            ->where('source_product_shop.visibility', 'both')
             ->where(function ($query) {
                 $query->whereNull('source_custom.wmdeprecated')
                     ->orWhere('source_custom.wmdeprecated', 0);
             })
-            ->where('source_product.visibility', '<>', 'none')
             ->groupBy(
                 'source_product.id_product',
                 'source_product.reference',

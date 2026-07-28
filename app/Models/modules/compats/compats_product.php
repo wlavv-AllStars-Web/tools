@@ -175,12 +175,11 @@ class compats_product extends Model
             ->all();
     }
 
-    public static function removeCompat(int $id_compat, int $store): int
+    public static function removeCompat(int $id_compat, int $id_product, int $store): int
     {
-        self::where('id_compat', $id_compat)
+        return self::where('id_compat', $id_compat)
+            ->where('id_product', $id_product)
             ->where('store', $store)
             ->delete();
-
-        return 1;
     }
 }

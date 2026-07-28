@@ -345,9 +345,13 @@ public function getProductCompatDetails(Request $request)
         
         self::validateBOtoken($request->token);
         
-        $created = compats_product::removeCompat($request->compat, $request->store);
+        $removed = compats_product::removeCompat(
+            (int) $request->compat,
+            (int) $request->product,
+            (int) $request->store
+        );
 
-        if( $created == 1 ){
+        if ($removed === 1) {
             $data = [ 'status' => 'SUCCESS', 'message' => 'COMPAT REMOVED!' ];
         }else{
             $data = [ 'status' => 'FAIL',    'message' => 'COMPAT FAIL TO REMOVE!' ];

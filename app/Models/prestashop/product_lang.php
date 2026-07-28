@@ -39,6 +39,7 @@ class product_lang extends PrestashopModel
     public static function dashboard_no_availability_text($type)
     {
         $data = [];
+        $shopId = PrestashopAdminLinkService::shopId('ASM');
 
         $productLangTable = self::tableName('product_lang');
         $productTable = self::tableName('product');
@@ -52,35 +53,34 @@ class product_lang extends PrestashopModel
             ->leftJoin($productTable, $productLangTable . '.id_product', '=', $productTable . '.id_product')
             ->join($productShopTable, function ($join) use ($productLangTable, $productShopTable) {
                 $join->on($productShopTable . '.id_product', '=', $productLangTable . '.id_product')
-                    ->where($productShopTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'));
+                    ->on($productShopTable . '.id_shop', '=', $productLangTable . '.id_shop');
             })
+            ->where($productLangTable . '.id_shop', $shopId)
+            ->where($productShopTable . '.active', 1)
+            ->where($productShopTable . '.visibility', '<>', 'none')
             ->where(function ($query) use ($productLangTable) {
-                $query->where($productLangTable . '.available_now', '=', '')
-                    ->orWhere($productLangTable . '.available_later', '=', '')
-                    ->orWhere($productLangTable . '.available_soon_text', '=', '');
+                $query->whereNull($productLangTable . '.available_now')
+                    ->orWhere($productLangTable . '.available_now', '')
+                    ->orWhereNull($productLangTable . '.available_later')
+                    ->orWhere($productLangTable . '.available_later', '')
+                    ->orWhereNull($productLangTable . '.available_soon_text')
+                    ->orWhere($productLangTable . '.available_soon_text', '');
             })
             ->where($productTable . '.reference', 'not like', 'VAT-%')
             ->where($productTable . '.reference', 'not like', '%parts')
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
-            ->groupBy(
-                $productLangTable . '.id_product',
-                $productTable . '.id_product',
-                $productTable . '.reference',
-                $productLangTable . '.name',
-                $productShopTable . '.id_shop'
-            )
             ->get();
 
-        foreach ($bd_data as $item) {
+        foreach ($bd_data->unique('id_product') as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
                 'name' => $item->name
             ];
         }
-        
+
         return [
             'name' => trans('dashboard.No availability text'),
             'col' => 4,
@@ -91,7 +91,6 @@ class product_lang extends PrestashopModel
             'data' => $data
         ];
     }
-    
     public static function dashboard_double_spaces($type)
     {
         $data = [];

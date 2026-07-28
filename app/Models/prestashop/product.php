@@ -546,8 +546,49 @@ class product extends PrestashopModel
     public static function dashboard_without_category($type)
     {
         $data = [];
+        $shopId = (int) config('allstars.stores.ASM.id_shop', 2);
+        $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
+        $categoryProductTable = self::tableName('category_product');
+        $categoryShopTable = self::tableName('category_shop');
 
-        foreach (self::with('manufacturer')->where('id_category_default', 0)->get() as $item) {
+        $products = self::with('manufacturer')
+            ->select($productTable . '.*')
+            ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $shopId) {
+                $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', $shopId);
+            })
+            ->where($productShopTable . '.active', 1)
+            ->where($productShopTable . '.visibility', '<>', 'none')
+            ->where(function ($query) use (
+                $productTable,
+                $productShopTable,
+                $categoryProductTable,
+                $categoryShopTable,
+                $shopId
+            ) {
+                $query->whereNull($productShopTable . '.id_category_default')
+                    ->orWhere($productShopTable . '.id_category_default', 0)
+                    ->orWhereNotExists(function ($categoryQuery) use (
+                        $productTable,
+                        $productShopTable,
+                        $categoryProductTable,
+                        $categoryShopTable,
+                        $shopId
+                    ) {
+                        $categoryQuery->select(DB::raw(1))
+                            ->from($categoryProductTable . ' as category_product')
+                            ->join($categoryShopTable . ' as category_shop', function ($join) use ($shopId) {
+                                $join->on('category_shop.id_category', '=', 'category_product.id_category')
+                                    ->where('category_shop.id_shop', $shopId);
+                            })
+                            ->whereColumn('category_product.id_product', $productTable . '.id_product')
+                            ->whereColumn('category_product.id_category', $productShopTable . '.id_category_default');
+                    });
+            })
+            ->get();
+
+        foreach ($products as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
@@ -563,7 +604,6 @@ class product extends PrestashopModel
             $data
         );
     }
-
     public static function dashboard_without_search_tags($type)
     {
         $data = [];

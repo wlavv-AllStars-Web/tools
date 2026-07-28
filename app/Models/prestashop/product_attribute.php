@@ -153,7 +153,7 @@ class product_attribute extends PrestashopModel
             })
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
-            ->where($productTable . '.visibility', '<>', 'none')
+            ->where($productShopTable . '.visibility', 'both')
             ->where($productAttributeTable . '.reference', 'not like', 'VAT-%')
             ->where($productAttributeTable . '.reference', 'not like', '%parts')
             ->where($productAttributeTable . '.reference', 'not like', 'shipping%')

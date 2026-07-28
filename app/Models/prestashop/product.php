@@ -793,17 +793,27 @@ class product extends PrestashopModel
         $productTable = self::tableName('product');
         $stockTable = self::tableName('stock_available');
         $customProductTable = self::tableName('custom_product');
+        $productShopTable = self::tableName('product_shop');
+        $asmShopId = PrestashopAdminLinkService::shopId('ASM') ?: 2;
 
         $bd_data = self::select($productTable . '.id_product', $productTable . '.reference')
             ->with('manufacturer')
-            ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+            ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $asmShopId) {
+                $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', $asmShopId)
+                    ->where($productShopTable . '.active', 1)
+                    ->where($productShopTable . '.visibility', 'both');
+            })
+            ->join($stockTable, function ($join) use ($productTable, $stockTable, $asmShopId) {
+                $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->where($stockTable . '.id_shop', $asmShopId);
+            })
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($stockTable . '.quantity', '>', 0)
-            ->where(function ($q) use ($customProductTable) {
-                $q->whereNull($customProductTable . '.real_photos')
-                  ->orWhere($customProductTable . '.real_photos', 0);
+            ->where(function ($query) use ($customProductTable) {
+                $query->whereNull($customProductTable . '.real_photos')
+                    ->orWhere($customProductTable . '.real_photos', 0);
             })
-            ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.reference', 'not like', 'VAT-%')
             ->where($productTable . '.reference', 'not like', '%parts')
             ->where($productTable . '.reference', 'not like', 'shipping%')
@@ -829,7 +839,6 @@ class product extends PrestashopModel
             $data
         );
     }
-
     public static function dashboard_product_less_then_5_pics($type)
     {
         $productTable = self::tableName('product');
@@ -855,7 +864,7 @@ class product extends PrestashopModel
                     ->where($productShopTable . '.id_shop', $asmShopId)
                     ->where($productShopTable . '.active', 1);
             })
-            ->where($productTable . '.visibility', '<>', 'none')
+            ->where($productShopTable . '.visibility', 'both')
             ->where($productTable . '.id_category_default', '<>', 526)
             ->where($productTable . '.reference', 'not like', 'VAT-%')
             ->where($productTable . '.reference', 'not like', '%parts')

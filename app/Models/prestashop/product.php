@@ -1956,6 +1956,9 @@ public static function dashboard_end_of_life($type)
             })
             ->leftJoin($manufacturerTable . ' AS source_manufacturer', 'source_manufacturer.id_manufacturer', '=', 'source_product.id_manufacturer')
             ->leftJoin($customProductTable . ' AS source_custom', 'source_custom.id_product', '=', 'source_product.id_product')
+            ->leftJoinSub($stockByProduct, 'source_stock', function ($join) {
+                $join->on('source_stock.id_product', '=', 'source_product.id_product');
+            })
             ->leftJoin($accessoryTable . ' AS accessory', 'accessory.id_product_1', '=', 'source_product.id_product')
             ->leftJoin($productTable . ' AS recommended_product', 'recommended_product.id_product', '=', 'accessory.id_product_2')
             ->leftJoin($customProductTable . ' AS recommended_custom', 'recommended_custom.id_product', '=', 'recommended_product.id_product')
@@ -1966,7 +1969,8 @@ public static function dashboard_end_of_life($type)
             ->where('source_product_shop.visibility', 'both')
             ->where(function ($query) {
                 $query->whereNull('source_custom.wmdeprecated')
-                    ->orWhere('source_custom.wmdeprecated', 0);
+                    ->orWhere('source_custom.wmdeprecated', 0)
+                    ->orWhere('source_stock.max_quantity', '>', 0);
             })
             ->groupBy(
                 'source_product.id_product',

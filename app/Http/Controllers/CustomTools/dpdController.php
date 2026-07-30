@@ -92,9 +92,10 @@ class dpdController extends Controller
     private static function recipientName($address): string
     {
         $company = trim((string) ($address->company ?? ''));
+        $company = trim($company, " \t\n\r\0\x0B|-/");
         $name = trim((string) ($address->firstname ?? '') . ' ' . (string) ($address->lastname ?? ''));
 
-        return trim($company !== '' ? $company . ' ' . $name : $name);
+        return $company !== '' ? trim($name . ' (' . $company . ')') : $name;
     }
 
     private static function dpdText($value): string

@@ -46,10 +46,10 @@ class dpdController extends Controller
 
             $data[] = $dpdpais;
             $data[] = $order->customer->id_customer;
-            $data[] = strip_tags(iconv('UTF-8', 'ISO-8859-1', $order->delivery->firstname . ' ' . $order->delivery->lastname));
-            $data[] = strip_tags(iconv('UTF-8', 'ISO-8859-1', $order->delivery->address1 . ' ' . $order->delivery->address2));
+            $data[] = self::dpdText(self::recipientName($order->delivery));
+            $data[] = self::dpdText($order->delivery->address1 . ' ' . $order->delivery->address2);
             $data[] = $order->delivery->postcode;
-            $data[] = strip_tags(iconv('UTF-8', 'ISO-8859-1', $order->delivery->city));
+            $data[] = self::dpdText($order->delivery->city);
             $data[] = $iso_code;
             $data[] = $order->delivery->phone;
             $data[] = $order->delivery->phone_mobile;
@@ -63,7 +63,7 @@ class dpdController extends Controller
             
             if( ($order->recyclable == 1 ) ){
 
-                $data[] = strip_tags(iconv('UTF-8', 'ISO-8859-1', $order->invoice->firstname . ' ' . $order->invoice->lastname));
+                $data[] = self::dpdText(self::recipientName($order->invoice));
                 $data[] = "ZONA INDUSTRIAL DE GANDRA,LOTE 6";
                 $data[] = "4930-311";
                 $data[] = "VALENCA";
@@ -77,7 +77,7 @@ class dpdController extends Controller
 
             }
             
-            fputs($csv, implode(';',$data));
+            fputcsv($csv, $data, ';');
 					
         }
         
@@ -87,5 +87,28 @@ class dpdController extends Controller
         ];
 
         return Response::download($path.$file, $file, $headers);
+    }
+
+    private static function recipientName($address): string
+    {
+        $company = trim((string) ($address->company ?? ''));
+        $name = trim((string) ($address->firstname ?? '') . ' ' . (string) ($address->lastname ?? ''));
+
+        return trim($company !== '' ? $company . ' ' . $name : $name);
+    }
+
+    private static function dpdText($value): string
+    {
+        $value = html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = preg_replace('/[\r\n\t]+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', trim($value)) ?? trim($value);
+
+        $converted = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $value);
+
+        if ($converted === false) {
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        }
+
+        return $converted === false ? '' : $converted;
     }
 }

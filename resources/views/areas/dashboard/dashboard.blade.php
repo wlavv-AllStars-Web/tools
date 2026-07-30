@@ -77,14 +77,13 @@
             font-size: 22px;
             font-weight: bold;
         }
-
-        .awaiting { background: #FEFFA0; }
+        .awaiting { background: #8A2BE2; color:#fff; }
         .packing { background: #048DCD; color:#fff; }
-        .shipping_area { background: #00AEEF; color:#fff; }
-        .shipped { background: #8A2BE2; color:#fff; }
-        .warranty { background: #EBC5E0; }
+        .shipping_area { background: #E122BC; color:#fff; }
+        .shipped { background: #00644A; color:#fff; }
+        .warranty { background: #EBC5E0; color:#111; }
         .backorders { background: #F78E1F; color:#fff; }
-        .pending { background: #BFBFBF; }
+        .pending { background: #ACACAC; color:#111; }
 
         .title {
             font-size: 28px;
@@ -193,7 +192,7 @@
     <div class="mainContainer">
         <div class="panel top">
             @foreach([
-                ['awaiting',$awaiting],
+                ['awaiting',$awaiting, 'AWAITING CONFIRMATION'],
                 ['packing',$packing],
                 ['shipping_area',$shipping_area, 'SHIPPING AREA'],
                 ['shipped',$shipped],
@@ -227,17 +226,6 @@
                         $statusClass = 'ok';    // verde
                     }
                 @endphp
-
-                <div class="progressText {{ $statusClass }}"> {{ number_format($status,2,',',' ') }} % </div>
-                <div class="goal-result">
-                    <div class="progressText">
-                        GOAL: {{ number_format($objective_until_today,2,',',' ') }} €
-                    </div>
-                
-                    <div class="progressText {{ $realised_until_today > $objective_until_today ? 'ok' : 'nok' }}">
-                        RESULT: {{ number_format($realised_until_today,2,',',' ') }} €
-                    </div>
-                </div>
                 <div class="currency-bar">
                     <div>元 {{$yuan}}</div>
                     <div>£ {{$pound}}</div>

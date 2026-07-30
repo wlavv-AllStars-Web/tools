@@ -525,7 +525,10 @@ class orders extends PrestashopModel
 
         $data = [];
 
-        $data['awaiting'] = 0;
+        $data['awaiting'] = self::query()
+            ->where('id_shop', $id_shop)
+            ->where('current_state', 14)
+            ->count();
 
         $data['packing'] = self::query()
             ->where('id_shop', $id_shop)

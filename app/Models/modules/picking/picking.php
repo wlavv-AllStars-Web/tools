@@ -728,6 +728,108 @@ class picking extends Model
         return 1;
     }
 
+    public static function resolveOrderByContainerBarcode(string $barcode): array
+    {
+        $barcode = trim($barcode);
+        $compactBarcode = preg_replace('/\s+/u', '', $barcode) ?? $barcode;
+
+        if ($compactBarcode === '') {
+            return [
+                'success' => false,
+                'code' => 'invalid_barcode',
+                'message' => 'Barcode is required.',
+            ];
+        }
+
+        $rows = self::query()
+            ->select('id_order', 'id_shop', 'status', 'barcode')
+            ->whereNotNull('barcode')
+            ->where('barcode', '<>', '')
+            ->where(function ($query) use ($barcode, $compactBarcode) {
+                $query->where('barcode', $barcode)
+                    ->orWhereRaw("REPLACE(TRIM(barcode), ' ', '') = ?", [$compactBarcode]);
+            })
+            ->groupBy('id_order', 'id_shop', 'status', 'barcode')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return [
+                'success' => false,
+                'code' => 'not_found',
+                'message' => 'Container barcode not found.',
+                'barcode' => $barcode,
+            ];
+        }
+
+        $preparationRows = $rows
+            ->filter(static fn ($row) => (string) $row->status === 'preparation')
+            ->values();
+
+        if ($preparationRows->isEmpty()) {
+            return [
+                'success' => false,
+                'code' => 'not_active',
+                'message' => 'Container barcode exists but is not assigned to an active picking order.',
+                'barcode' => $barcode,
+                'orders' => $rows->pluck('id_order')->unique()->values()->all(),
+            ];
+        }
+
+        $orderIds = $preparationRows
+            ->pluck('id_order')
+            ->map(static fn ($idOrder) => (int) $idOrder)
+            ->unique()
+            ->values()
+            ->all();
+
+        $orders = orders::whereIn('id_order', $orderIds)
+            ->whereIn('current_state', [3, 35])
+            ->get()
+            ->keyBy('id_order');
+
+        $activeRows = $preparationRows
+            ->filter(static fn ($row) => isset($orders[(int) $row->id_order]))
+            ->values();
+
+        if ($activeRows->isEmpty()) {
+            return [
+                'success' => false,
+                'code' => 'not_active',
+                'message' => 'Container barcode exists but the related order is no longer in picking/packing state.',
+                'barcode' => $barcode,
+                'orders' => $orderIds,
+            ];
+        }
+
+        $activeOrderIds = $activeRows
+            ->pluck('id_order')
+            ->map(static fn ($idOrder) => (int) $idOrder)
+            ->unique()
+            ->values();
+
+        if ($activeOrderIds->count() > 1) {
+            return [
+                'success' => false,
+                'code' => 'ambiguous',
+                'message' => 'Container barcode is assigned to more than one active picking order.',
+                'barcode' => $barcode,
+                'orders' => $activeOrderIds->all(),
+            ];
+        }
+
+        $row = $activeRows->first();
+        $order = $orders[(int) $row->id_order];
+
+        return [
+            'success' => true,
+            'barcode' => (string) $row->barcode,
+            'id_order' => (int) $row->id_order,
+            'id_shop' => (int) $row->id_shop,
+            'order_reference' => (string) ($order->reference ?? ''),
+            'current_state' => (int) ($order->current_state ?? 0),
+            'picking_status' => (string) $row->status,
+        ];
+    }
     private static function orderDone($id_order) {
         
         $rowsOfOrder = self::withoutTechnicalPickingRows(picking::where('id_order', $id_order))->count();

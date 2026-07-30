@@ -30,4 +30,20 @@ class pickingController extends Controller
     public function getEAN(Request $request) {
         return picking::getEAN( (object)$request->all() );
     }
+    public function resolveContainer(Request $request, $barcode = null) {
+        $result = picking::resolveOrderByContainerBarcode((string) ($barcode ?? $request->input('barcode', '')));
+        $status = 200;
+
+        if (($result['success'] ?? false) !== true) {
+            if (($result['code'] ?? '') === 'ambiguous') {
+                $status = 409;
+            } elseif (($result['code'] ?? '') === 'invalid_barcode') {
+                $status = 422;
+            } else {
+                $status = 404;
+            }
+        }
+
+        return response()->json($result, $status);
+    }
 }

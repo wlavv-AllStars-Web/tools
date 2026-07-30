@@ -10,6 +10,7 @@ use App\Http\Controllers\API\HomepageApiController;
 use App\Http\Controllers\API\AsdAlertApiController;
 use App\Http\Controllers\CustomTools\checkVatController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
+use App\Http\Controllers\CustomTools\pickingController;
 
 Route::group([
     'middleware' => ['api', 'cors'],
@@ -28,6 +29,10 @@ Route::group([
     Route::get('/asd/homepage', [HomepageASDAdminController::class, 'api']);   
     Route::get('/asd/alerts/{iso_code}/{token}', [AsdAlertApiController::class, 'index'])->name('api.asd.alerts');
     
+
+    /** PICKING BACKOFFICE API **/
+    Route::post('/picking/container/resolve', [pickingController::class, 'resolveContainer'])->name('api.picking.container.resolve.post');
+    Route::get('/picking/container/{barcode}', [pickingController::class, 'resolveContainer'])->name('api.picking.container.resolve');
     /** COMPATS API **/
     
         /** FRONT **/

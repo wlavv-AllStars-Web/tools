@@ -174,6 +174,7 @@ class picking extends Model
             foreach($orders AS $order){
 
                 $customDetails = self::customOrderDetails($order);
+                $carrierName = (isset($order->carrier->name)) ? $order->carrier->name : 'UNKNOWN';
 
                 foreach($order->order_detail AS $detail){
 
@@ -263,7 +264,7 @@ class picking extends Model
                                     $picking['row_done'] = 0;                      
                                     $picking['id_order'] = $detail->id_order; 
     
-                                    self::insertData( (object)$picking, $picking['product_quantity'], $status, $order->carrier->name);
+                                    self::insertData( (object)$picking, $picking['product_quantity'], $status, $carrierName);
                                     
                                 }
                             }else{
@@ -276,7 +277,7 @@ class picking extends Model
                                 }
 
                                 $quantity = $detail->product_quantity - $qtdSent;
-                                self::insertData($detail, $quantity, $status, $order->carrier->name);
+                                self::insertData($detail, $quantity, $status, $carrierName);
                             }
                         }
                     }

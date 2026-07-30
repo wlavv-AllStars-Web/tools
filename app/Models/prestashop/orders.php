@@ -532,6 +532,11 @@ class orders extends PrestashopModel
             ->where('current_state', 3)
             ->count();
 
+        $data['shipping_area'] = self::query()
+            ->where('id_shop', $id_shop)
+            ->where('current_state', 35)
+            ->count();
+
         $data['shipped'] = self::query()
             ->join($orderHistoryTable, $orderHistoryTable . '.id_order', '=', $ordersTable . '.id_order')
             ->where($ordersTable . '.id_shop', $id_shop)

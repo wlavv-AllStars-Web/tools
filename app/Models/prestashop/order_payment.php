@@ -159,7 +159,7 @@ class order_payment extends PrestashopModel
         $ordersTable = self::tableName('orders');
         // Match the Old Tools: sales enter the dashboard through state 2.
         $paidStates = [2];
-        $countableCurrentStates = [2, 3, 4, 5, 15, 16, 28, 30, 31];
+        $countableCurrentStates = [2, 3, 4, 5, 15, 16, 28, 30, 31, 35];
 
         $ids_order = $db->table($orderHistoryTable . ' as oh')
             ->join($ordersTable . ' as o', 'o.id_order', '=', 'oh.id_order')

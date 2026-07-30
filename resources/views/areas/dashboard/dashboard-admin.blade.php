@@ -80,6 +80,7 @@
 
         .awaiting { background: #FEFFA0; }
         .packing { background: #048DCD; color:#fff; }
+        .shipping_area { background: #00AEEF; color:#fff; }
         .shipped { background: #8A2BE2; color:#fff; }
         .warranty { background: #EBC5E0; }
         .backorders { background: #F78E1F; color:#fff; }
@@ -194,6 +195,7 @@
             @foreach([
                 ['awaiting',$awaiting],
                 ['packing',$packing],
+                ['shipping_area',$shipping_area, 'SHIPPING AREA'],
                 ['shipped',$shipped],
                 ['warranty',$warranty],
                 ['backorders',$backorders],
@@ -201,7 +203,7 @@
             ] as $item)
                 <div class="card">
                     <div class="counter {{ $item[0] }}">{{ $item[1] }}</div>
-                    <div class="label">{{ strtoupper($item[0]) }}</div>
+                    <div class="label">{{ $item[2] ?? strtoupper($item[0]) }}</div>
                 </div>
             @endforeach
         </div>

@@ -222,6 +222,7 @@ class statsController extends Controller
         $data = [
             'awaiting' =>   ($asm->awaiting    + $asd->awaiting    + $er->awaiting     + $em->awaiting),
             'packing' =>    ($asm->packing     + $asd->packing     + $er->packing      + $em->packing),
+            'shipping_area' => ($asm->shipping_area + $asd->shipping_area + $er->shipping_area + $em->shipping_area),
             'shipped' =>    ($asm->shipped     + $asd->shipped     + $er->shipped      + $em->shipped),
             'warranty' =>   ($asm->warranty    + $asd->warranty    + $er->warranty     + $em->warranty),
             'backorders' => ($asm->backorders  + $asd->backorders  + $er->backorders   + $em->backorders),

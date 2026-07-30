@@ -18,6 +18,16 @@ class picking extends Model
     use HasFactory;
     protected $table = "picking";
 
+    private const TECHNICAL_PRODUCT_REFERENCES = [
+        'ccfee',
+        'parts',
+        'vat',
+    ];
+
+    private const TECHNICAL_PRODUCT_REFERENCE_PREFIXES = [
+        'shipping',
+    ];
+
     public static function getOrders(){
         return (object)[
             'asm' => self::mountOrdersArray('preparation', [2]),
@@ -28,7 +38,7 @@ class picking extends Model
         
     public static function mountOrdersArray($status, array $shops = []){
         
-        $data_order = self::where('status', $status)
+        $data_order = self::withoutTechnicalPickingRows(self::where('status', $status))
             ->where('row_done', 0)
             ->when(!empty($shops), fn ($query) => $query->whereIn('id_shop', $shops))
             ->groupBy('id_order')
@@ -43,8 +53,9 @@ class picking extends Model
                 'id_order' => $order->id_order,
                 'carrier' => $order->carrier,
                 'order_main' => $orderMain,
-                'order' => self::where('id_order', $order->id_order)
-                    ->where('row_done', 0)
+                'order' => self::withoutTechnicalPickingRows(
+                    self::where('id_order', $order->id_order)->where('row_done', 0)
+                )
                     ->get()
                     ->map(function ($row) use ($languageId) {
                         $row->housing = self::resolveHousing(
@@ -169,11 +180,21 @@ class picking extends Model
                     $qtdSent = self::qtdSent($detail, $customDetails);
 
                     if($detail->product_quantity > $qtdSent){
+                        if (self::isTechnicalProductRow($detail)) {
+                            continue;
+                        }
                         
                         if( $detail->product_attribute_id == 0){
                             $product = product::where('id_product', $detail->product_id)->first();
                         }else{
                             $product = product_attribute::where('id_product', $detail->product_id)->where('id_product_attribute', $detail->product_attribute_id)->first();
+                        }
+
+                        if ($product && self::isTechnicalProductRow((object) [
+                            'product_reference' => $product->reference ?? $detail->product_reference ?? '',
+                            'product_name' => $detail->product_name ?? '',
+                        ])) {
+                            continue;
                         }
                         
                         if(isset($product->id_product)){
@@ -197,6 +218,13 @@ class picking extends Model
                                     $picking = array();
                                     
                                     $product = product::with('lang')->where('id_product',  $pack_item->id_product_item)->first();
+
+                                    if (!$product || self::isTechnicalProductRow((object) [
+                                        'product_reference' => $product->reference ?? '',
+                                        'product_name' => $product->lang->name ?? '',
+                                    ])) {
+                                        continue;
+                                    }
                                     
                                     $picking['id_shop'] = $detail->id_shop;
                                     $picking['product_name'] = $product->lang->name;
@@ -449,6 +477,9 @@ class picking extends Model
     }
         
     private static function insertData($row, $quantity, $status, $carrier_name){
+        if (self::isTechnicalProductRow($row)) {
+            return;
+        }
         
         $needsMarketingPhotos = self::needsMarketingPhotos((int) $row->product_id, (int) $row->product_attribute_id);
         $housing = self::resolveHousing(
@@ -698,12 +729,59 @@ class picking extends Model
 
     private static function orderDone($id_order) {
         
-        $rowsOfOrder = picking::where('id_order', $id_order)->count();
-        $pickedRowsOfOrder = picking::where('id_order', $id_order)->where('row_done', 1)->count();
+        $rowsOfOrder = self::withoutTechnicalPickingRows(picking::where('id_order', $id_order))->count();
+        $pickedRowsOfOrder = self::withoutTechnicalPickingRows(
+            picking::where('id_order', $id_order)->where('row_done', 1)
+        )->count();
         
         if( $rowsOfOrder == $pickedRowsOfOrder ) return 1;
 
         return 2;
+    }
+
+    private static function withoutTechnicalPickingRows($query)
+    {
+        foreach (self::TECHNICAL_PRODUCT_REFERENCES as $reference) {
+            $query->whereRaw("LOWER(REPLACE(TRIM(COALESCE(reference, '')), ' ', '')) <> ?", [$reference])
+                ->whereRaw("LOWER(REPLACE(TRIM(COALESCE(name, '')), ' ', '')) <> ?", [$reference]);
+        }
+
+        foreach (self::TECHNICAL_PRODUCT_REFERENCE_PREFIXES as $prefix) {
+            $query->whereRaw("LOWER(TRIM(COALESCE(reference, ''))) NOT LIKE ?", [$prefix . '%'])
+                ->whereRaw("LOWER(TRIM(COALESCE(name, ''))) NOT LIKE ?", [$prefix . '%']);
+        }
+
+        return $query;
+    }
+
+    private static function isTechnicalProductRow($row): bool
+    {
+        $reference = (string) ($row->reference ?? $row->product_reference ?? '');
+        $name = (string) ($row->name ?? $row->product_name ?? '');
+
+        return self::isTechnicalProductValue($reference) || self::isTechnicalProductValue($name);
+    }
+
+    private static function isTechnicalProductValue(string $value): bool
+    {
+        $normalized = strtolower(trim($value));
+        $compact = str_replace(' ', '', $normalized);
+
+        if ($compact === '') {
+            return false;
+        }
+
+        if (in_array($compact, self::TECHNICAL_PRODUCT_REFERENCES, true)) {
+            return true;
+        }
+
+        foreach (self::TECHNICAL_PRODUCT_REFERENCE_PREFIXES as $prefix) {
+            if (str_starts_with($normalized, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function getEAN($data) {

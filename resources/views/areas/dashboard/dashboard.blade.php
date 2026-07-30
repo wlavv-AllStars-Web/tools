@@ -192,7 +192,7 @@
     <div class="mainContainer">
         <div class="panel top">
             @foreach([
-                ['awaiting',$awaiting, 'AWAITING CONFIRMATION'],
+                ['awaiting',$awaiting, 'AWAITING'],
                 ['packing',$packing],
                 ['shipping_area',$shipping_area, 'SHIPPING AREA'],
                 ['shipped',$shipped],

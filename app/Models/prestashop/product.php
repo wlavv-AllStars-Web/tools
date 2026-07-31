@@ -743,9 +743,9 @@ class product extends PrestashopModel
 
         $query = self::select(
                 $productTable . '.id_product',
-                $productTable . '.reference'
+                $productTable . '.reference',
+                $manufacturerTable . '.name as brand'
             )
-            ->with('manufacturer')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($productTable . '.visibility', '<>', 'none')
             ->where($productTable . '.reference', 'not like', 'VAT-%')
@@ -765,7 +765,7 @@ class product extends PrestashopModel
                 'clean' => $item->id_product,
                 'id_product' => $item->id_product,
                 'reference' => $item->reference,
-                'brand' => $item->manufacturer->name ?? ''
+                'brand' => $item->brand ?? ''
             ];
         }
 

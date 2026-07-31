@@ -11,6 +11,17 @@
         }
     }
     
+    function setRowAsCheckedFromButton(trigger) {
+        setRowAsChecked(
+            $(trigger).attr('data-panel') || '',
+            $(trigger).attr('data-var-1') || '',
+            $(trigger).attr('data-var-2') || '',
+            $(trigger).attr('data-var-3') || '',
+            $(trigger).attr('data-panel-dom-id') || '',
+            trigger
+        );
+    }
+
 	function setRowAsChecked(panel, var_1, var_2, var_3, panelDomId, trigger){
 
 	    $.ajax({

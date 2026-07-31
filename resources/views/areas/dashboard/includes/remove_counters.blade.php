@@ -30,7 +30,13 @@
                                         <td> {!! $item[$column] !!} </td>
                                     @elseif($column == 'clean') 
                                         <td class="{{$column}}"> 
-                                            <img src="/admin/images/check.png" onclick="setRowAsChecked( '{{$exception_fields[0]}}', '{{$item[$exception_fields[1]]}}', '{{$item[$exception_fields[2]]}}', '{{addslashes($item[$exception_fields[3]])}}', '{{$item_id}}' )">     
+                                            <img src="/admin/images/check.png"
+                                                 data-panel="{{ $exception_fields[0] }}"
+                                                 data-var-1="{{ $item[$exception_fields[1]] }}"
+                                                 data-var-2="{{ $item[$exception_fields[2]] }}"
+                                                 data-var-3="{{ $item[$exception_fields[3]] }}"
+                                                 data-panel-dom-id="{{ $item_id }}"
+                                                 onclick="setRowAsCheckedFromButton(this)">
                                         </td>
                                     @elseif($column == 'delete') 
                                         <td id="delete_{{$item['delete']}}"> <i class="fa-solid fa-trash" onclick="deleteItem({{$item['delete']}}, '{{$table}}')" style="color: red; font-size: 20px; cursor: pointer;"></i> </td>

@@ -106,14 +106,12 @@
                                     @if($hasExceptionFields)
                                         <img
                                             src="/admin/images/check.png"
-                                            onclick="setRowAsChecked(
-                                                '{{ $details->exception_fields[0] }}',
-                                                '{{ $item[$details->exception_fields[1]] ?? '' }}',
-                                                '{{ $item[$details->exception_fields[2]] ?? '' }}',
-                                                '{{ addslashes($item[$details->exception_fields[3]] ?? '') }}',
-                                                '{{ $panelDomId ?? $panel->panel }}',
-                                                this
-                                            )"
+                                            data-panel="{{ $details->exception_fields[0] }}"
+                                            data-var-1="{{ $item[$details->exception_fields[1]] ?? '' }}"
+                                            data-var-2="{{ $item[$details->exception_fields[2]] ?? '' }}"
+                                            data-var-3="{{ $item[$details->exception_fields[3]] ?? '' }}"
+                                            data-panel-dom-id="{{ $panelDomId ?? $panel->panel }}"
+                                            onclick="setRowAsCheckedFromButton(this)"
                                             style="cursor: pointer;"
                                         >
                                     @endif

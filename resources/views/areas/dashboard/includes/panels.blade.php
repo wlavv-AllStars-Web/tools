@@ -31,7 +31,13 @@
                                     <td> {!! $item[$column] !!} </td>
                                 @elseif($column == 'clean') 
                                     <td class="{{$column}}"> 
-                                        <img src="/admin/images/check.png" onclick="setRowAsChecked( '{{$exception_fields[0]}}', '{{$item[$exception_fields[1]]}}', '{{$item[$exception_fields[2]]}}', '{{$item[$exception_fields[3]]}}', '{{$item_id}}' )">     
+                                        <img src="/admin/images/check.png"
+                                             data-panel="{{ $exception_fields[0] }}"
+                                             data-var-1="{{ $item[$exception_fields[1]] }}"
+                                             data-var-2="{{ $item[$exception_fields[2]] }}"
+                                             data-var-3="{{ $item[$exception_fields[3]] }}"
+                                             data-panel-dom-id="{{ $item_id }}"
+                                             onclick="setRowAsCheckedFromButton(this)">
                                     </td>
                                 @elseif($column == 'send_email') 
                                     <td id="send_email_{{$item['send_email']}}"> <i class="fa-solid fa-envelope" onclick="requestedProductSendEmail('{{$item['send_email']}}')" style="color: dodgerblue; font-size: 20px; cursor: pointer;"></i> </td>

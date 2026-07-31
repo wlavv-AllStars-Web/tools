@@ -62,9 +62,18 @@ class customers_backorders extends Model
             $id_product_attribute = (int) $item->id_product_attribute;
             $stock_available = stock_available::where('id_product', $id_product)
                 ->where('id_product_attribute', $id_product_attribute)
-                ->when(self::normalizeStore($item->store) === 'ASM', fn ($query) => $query->where('id_shop', 2))
-                ->when(self::normalizeStore($item->store) === 'ASD', fn ($query) => $query->where('id_shop', 3))
+                ->where('id_shop', 0)
+                ->where('id_shop_group', 1)
                 ->first();
+
+            if (is_null($stock_available)) {
+                $stock_available = stock_available::where('id_product', $id_product)
+                    ->where('id_product_attribute', $id_product_attribute)
+                    ->where('id_shop_group', 0)
+                    ->when(self::normalizeStore($item->store) === 'ASM', fn ($query) => $query->where('id_shop', 2))
+                    ->when(self::normalizeStore($item->store) === 'ASD', fn ($query) => $query->where('id_shop', 3))
+                    ->first();
+            }
 
             $expected_days = product_lang::where('id_product', $id_product)->where('id_lang', 1)->value('available_later');
 

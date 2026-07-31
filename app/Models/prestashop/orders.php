@@ -744,6 +744,10 @@ class orders extends PrestashopModel
                         continue;
                     }
 
+                    if (self::isGoodiesBackorderLine((int) $detail->product_id, (string) $detail->product_reference)) {
+                        continue;
+                    }
+
                     $customDetail = $customDetails->get($detail->id_order_detail);
                     $qtdSent = (int) ($customDetail->qtd_sent ?? 0);
                     $control = (int) ($customDetail->control ?? 0);
@@ -805,6 +809,21 @@ class orders extends PrestashopModel
         }
     
         return $data;
+    }
+
+    private static function isGoodiesBackorderLine(int $idProduct, string $reference): bool
+    {
+        $reference = strtoupper(trim($reference));
+
+        if (in_array($idProduct, [11276, 17452, 20034, 20035, 20036, 20037, 20038, 20039, 20041, 20741], true)) {
+            return true;
+        }
+
+        if (str_starts_with($reference, 'ASMGOODS-')) {
+            return true;
+        }
+
+        return in_array($reference, ['ASAF', 'ASKC', 'FLYERASM', 'STICKERASM', 'ASMSTICKRING'], true);
     }
 
     private static function stockQuantityFor(int $idProduct, int $idProductAttribute, int $idShop): ?int

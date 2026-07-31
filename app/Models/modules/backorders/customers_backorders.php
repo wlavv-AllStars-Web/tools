@@ -60,6 +60,10 @@ class customers_backorders extends Model
 
             $id_product = (int) $item->id_product;
             $id_product_attribute = (int) $item->id_product_attribute;
+
+            if (self::isGoodiesBackorderLine($id_product, (string) $item->reference)) {
+                continue;
+            }
             $stock_available = stock_available::where('id_product', $id_product)
                 ->where('id_product_attribute', $id_product_attribute)
                 ->where('id_shop', 0)
@@ -150,6 +154,21 @@ class customers_backorders extends Model
         return $rows;
     }
     
+    private static function isGoodiesBackorderLine(int $idProduct, string $reference): bool
+    {
+        $reference = strtoupper(trim($reference));
+
+        if (in_array($idProduct, [11276, 17452, 20034, 20035, 20036, 20037, 20038, 20039, 20041, 20741], true)) {
+            return true;
+        }
+
+        if (str_starts_with($reference, 'ASMGOODS-')) {
+            return true;
+        }
+
+        return in_array($reference, ['ASAF', 'ASKC', 'FLYERASM', 'STICKERASM', 'ASMSTICKRING'], true);
+    }
+
     public static function getAllASM(){
         return self::where('customers_backorders.done', 0)->where('store', 'ASM')->get();
     }

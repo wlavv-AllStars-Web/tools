@@ -815,11 +815,23 @@ class orders extends PrestashopModel
 
         $stockTable = self::tableName('stock_available');
 
+        $sharedStock = DB::connection('mysql2')
+            ->table($stockTable)
+            ->where('id_product', $idProduct)
+            ->where('id_product_attribute', $idProductAttribute)
+            ->where('id_shop', 0)
+            ->where('id_shop_group', 1)
+            ->value('quantity');
+
+        if (!is_null($sharedStock)) {
+            return (int) $sharedStock;
+        }
+
         return DB::connection('mysql2')
             ->table($stockTable)
             ->where('id_product', $idProduct)
             ->where('id_product_attribute', $idProductAttribute)
-            ->when($idShop > 0, fn ($query) => $query->where('id_shop', $idShop))
+            ->when($idShop > 0, fn ($query) => $query->where('id_shop', $idShop)->where('id_shop_group', 0))
             ->value('quantity');
     }
 

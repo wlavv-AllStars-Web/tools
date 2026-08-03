@@ -119,7 +119,7 @@ class customers_backorders extends Model
             $stockQuantity = isset($stock_available->quantity) ? (int) $stock_available->quantity : 0;
             $soldQuantity = (int) $item->sold;
 
-            if (max($stockQuantity, 0) >= $soldQuantity) {
+            if ($stockQuantity === 0 || max($stockQuantity, 0) >= $soldQuantity) {
                 continue;
             }
             

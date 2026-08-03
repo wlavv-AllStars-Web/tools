@@ -87,7 +87,7 @@ class backordersController extends Controller
 
         $backorders = customers_backorders::getAll();
         
-        $counters = customers_backorders::getCounters();
+        $counters = customers_backorders::getCounters($backorders);
 
         $data = [
             'backorders' => $backorders,

@@ -292,9 +292,6 @@
                 </thead>
                 <tbody>
                     @foreach($backorders AS $backorder)
-                    
-                        @if($backorder->stock< 1)
-                        
                         <tr class="main_rows_orders tr_{{$backorder->id_order}}_{{$backorder->original_id_product}}_{{$backorder->original_id_product_attribute}}">
                             <td onclick="getOrderDetails({{ $backorder->id_order }})" style="@if($backorder->store == 'ASD') color: dodgerblue; @endif @if($backorder->color != '#FFF') background-color: {{$backorder->color}} @endif cursor: pointer;">
                                 <span> <i class="fa-solid fa-cubes"></i> </span><span style="cursor: pointer;">{{ $backorder->id_order }}</span>
@@ -378,7 +375,6 @@
                                 </div>
                             </td>
                         </tr>
-                        @endif
                     @endforeach
                 </tbody>
             </table>

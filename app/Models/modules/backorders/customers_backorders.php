@@ -115,6 +115,13 @@ class customers_backorders extends Model
             }
             
             $erp_ordered = ( is_null($erp_ordered) ) ? null : $erp_ordered;
+            $erpExpected = (int) ($erp_ordered->expected ?? 0);
+            $stockQuantity = isset($stock_available->quantity) ? (int) $stock_available->quantity : 0;
+            $soldQuantity = (int) $item->sold;
+
+            if ((max($stockQuantity, 0) + $erpExpected) >= $soldQuantity) {
+                continue;
+            }
             
             $country_order = orders::with('delivery', 'delivery.country.lang_en')->where('id_order', $item->id_order)->first();
             $isShipPick = ((int) $item->id_product === 0 && (int) $item->id_product_attribute === 0);
@@ -146,7 +153,7 @@ class customers_backorders extends Model
                     'color'                 => $item->rowColor,
                     'erp_qty_received'      => (isset($erp_ordered->qty_received)) ? $erp_ordered->qty_received : 0,    
                     'erp_qty_invoiced'      => (isset($erp_ordered->invoiced)) ? $erp_ordered->invoiced : 0,    
-                    'erp_qty_expected'      => (isset($erp_ordered->expected)) ? $erp_ordered->expected : 0,
+                    'erp_qty_expected'      => $erpExpected,
                     'id_country'            => (self::normalizeStore($item->store) == 'ASM') ? ($country_order?->delivery?->id_country ?? 0) : 0,
                     'country'               => (self::normalizeStore($item->store) == 'ASM') ? ($country_order?->delivery?->country?->lang_en?->name ?? 'N/D') : 'ASD'
                 ];
@@ -223,7 +230,15 @@ class customers_backorders extends Model
         }
     }
     
-    public static function getCounters(){
+    public static function getCounters($rows = null){
+        if (!is_null($rows)) {
+            $rows = collect($rows);
+
+            return [
+                'asm_backorder' => $rows->where('store', 'ASM')->where('type', 'backorder')->count(),
+                'asd_backorder' => $rows->where('store', 'ASD')->where('type', 'backorder')->count(),
+            ];
+        }
         
         $asm_backorders = self::where('done', 0)->where('store', 'ASM')->where('type', 'backorder')->count();
         $asd_backorders = self::where('done', 0)->where('store', 'ASD')->where('type', 'backorder')->count();
@@ -293,3 +308,4 @@ class customers_backorders extends Model
     }
     
 }
+

@@ -481,15 +481,21 @@ class product extends PrestashopModel
     {
         $data = [];
         $excluded = self::excludedProductIds('compatibilities_exception');
+        $shopId = (int) config('allstars.stores.ASM.id_shop', 2);
 
         $productTable = self::tableName('product');
         $customProductTable = self::tableName('custom_product');
+        $productShopTable = self::tableName('product_shop');
 
         $query = self::with('manufacturer')
             ->select($productTable . '.*')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
+            ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $shopId) {
+                $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
+                    ->where($productShopTable . '.id_shop', $shopId);
+            })
             ->where($customProductTable . '.show_compat_exception', 1)
-            ->where($productTable . '.visibility', '<>', 'none');
+            ->where($productShopTable . '.visibility', '<>', 'none');
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);

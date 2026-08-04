@@ -36,8 +36,6 @@ class salesController extends Controller
 
         $deferredPanels = [
             'dashboard_dropcart_3_days',
-            'dashboard_dropcart_7_days',
-            'dashboard_dropcart_phone',
             'dashboard_order_reviewed',
             'dashboard_order_reviewed_2',
             'no_instructions',

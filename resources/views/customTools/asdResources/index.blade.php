@@ -52,6 +52,7 @@
                             <th style="width: 80px;">ID</th>
                             <th style="width: 70px;">Status</th>
                             <th style="width: 250px;">Resources</th>
+                            <th style="width: 110px;" class="text-center">Missing photos</th>
                             <th>Brand</th>
                             <th style="width: 140px;">Last update</th>
                             <th style="width: 60px;" class="text-end">Action</th>
@@ -141,6 +142,14 @@
                                     
                                     </div>
                                 </td>
+                                <td class="text-center">
+                                    @php
+                                        $missingImagesCount = (int) ($missingImagesByBrand->get($brand->id_manufacturer, 0));
+                                    @endphp
+                                    <span class="badge {{ $missingImagesCount > 0 ? 'bg-danger' : 'bg-success' }}">
+                                        {{ $missingImagesCount }}
+                                    </span>
+                                </td>
                                 <td>
                                     <strong>{{ $brand->name }}</strong>
                                 </td>
@@ -153,7 +162,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     No ASD brands found for shop ID 3.
                                 </td>
                             </tr>

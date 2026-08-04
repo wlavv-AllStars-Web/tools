@@ -36,9 +36,10 @@ class ASDResourcesController extends Controller
             ->get();
             
         $resources = ASDBrandResource::query()->where('id_shop', $this->asdShopId)->get()->keyBy('id_manufacturer');
+        $missingImagesByBrand = $this->getMissingImageCountsByBrand();
         
         $breadcrumbs = $this->breadcrumbs;
-        return view('customTools.asdResources.index', compact('brands', 'resources', 'breadcrumbs'));
+        return view('customTools.asdResources.index', compact('brands', 'resources', 'missingImagesByBrand', 'breadcrumbs'));
     }
 
     public function edit(int $id_manufacturer)
@@ -270,6 +271,7 @@ class ASDResourcesController extends Controller
                     ->where('pl.id_shop', $this->asdShopId);
             })
             ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin('ps_stock_available as sa', fn ($join) => $join->on('sa.id_product', '=', 'p.id_product')->where('sa.id_product_attribute', 0)->where('sa.id_shop', $this->asdShopId))
             ->select(
                 'p.id_product',
                 DB::raw('0 as id_product_attribute'),
@@ -282,6 +284,10 @@ class ASDResourcesController extends Controller
             ->whereNotNull('p.reference')
             ->where('p.reference', '!=', '')
             ->where('p.reference', 'not like', '%-Z');
+        $products->where(function ($query) {
+            $query->whereRaw('COALESCE(cp.wmdeprecated, 0) <> 1')
+                ->orWhereRaw('COALESCE(sa.quantity, 0) > 0');
+        });
 
         $attributes = DB::connection('mysql2')
             ->table('ps_product_attribute as pa')
@@ -295,7 +301,9 @@ class ASDResourcesController extends Controller
                     ->where('pl.id_lang', '=', 1)
                     ->where('pl.id_shop', $this->asdShopId);
             })
+            ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin('ps_custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+            ->leftJoin('ps_stock_available as sa', fn ($join) => $join->on('sa.id_product', '=', 'p.id_product')->on('sa.id_product_attribute', '=', 'pa.id_product_attribute')->where('sa.id_shop', $this->asdShopId))
             ->select(
                 'p.id_product',
                 'pa.id_product_attribute',
@@ -308,6 +316,10 @@ class ASDResourcesController extends Controller
             ->whereNotNull('pa.reference')
             ->where('pa.reference', '!=', '')
             ->where('pa.reference', 'not like', '%-Z');
+        $attributes->where(function ($query) {
+            $query->whereRaw('COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) <> 1')
+                ->orWhereRaw('COALESCE(sa.quantity, 0) > 0');
+        });
 
         return $products
             ->union($attributes)
@@ -315,6 +327,32 @@ class ASDResourcesController extends Controller
             ->get()
             ->unique('reference')
             ->values();
+    }
+
+    private function getMissingImageCountsByBrand()
+    {
+        return AsdImage::query()
+            ->from('ps_custom_asd_images as ai')
+            ->join('ps_product as p', 'p.id_product', '=', 'ai.id_product')
+            ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin('ps_custom_product_attribute as cpa', function ($join) {
+                $join->on('cpa.id_product_attribute', '=', 'ai.id_product_attribute')
+                    ->where('ai.id_product_attribute', '>', 0);
+            })
+            ->leftJoin('ps_stock_available as sa', function ($join) {
+                $join->on('sa.id_product', '=', 'ai.id_product')
+                    ->on('sa.id_product_attribute', '=', 'ai.id_product_attribute')
+                    ->where('sa.id_shop', $this->asdShopId);
+            })
+            ->where('ai.has_image', 0)
+            ->whereNotNull('ai.id_manufacturer')
+            ->where(function ($query) {
+                $query->whereRaw('COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) <> 1')
+                    ->orWhereRaw('COALESCE(sa.quantity, 0) > 0');
+            })
+            ->selectRaw('ai.id_manufacturer, COUNT(*) as missing_images_count')
+            ->groupBy('ai.id_manufacturer')
+            ->pluck('missing_images_count', 'ai.id_manufacturer');
     }
 
     private function imageLookupValue(string $reference, string $imageCode): string

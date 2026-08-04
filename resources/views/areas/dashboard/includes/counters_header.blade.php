@@ -8,6 +8,7 @@
         @foreach($asm as $counter)
             @php
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
+                $isDeferred = isset($counter->calculated) && $counter->calculated === false;
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
@@ -21,8 +22,8 @@
                                 id="{{ $panelDomId }}_header"
                                 @if($counter->counter > 0 && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @elseif($counter->counter > 0)
-                                    onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $panelDomId }}')"
+                                @elseif($counter->counter > 0 || $isDeferred)
+                                    onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
                                 style="
                                     height: 100px;
@@ -31,7 +32,7 @@
                                     color: white;
                                     @if(in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']))
                                         background-color: dodgerblue; cursor: pointer;
-                                    @elseif($counter->counter < 1)
+                                    @elseif($counter->counter < 1 && !$isDeferred)
                                         background-color: #0BDA51; cursor: default;
                                     @else
                                         background-color: red; cursor: pointer;
@@ -68,6 +69,7 @@
         @foreach($asd as $counter)
             @php
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
+                $isDeferred = isset($counter->calculated) && $counter->calculated === false;
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
@@ -80,8 +82,8 @@
                                 id="{{ $panelDomId }}_header"
                                 @if($counter->counter > 0 && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @elseif($counter->counter > 0)
-                                    onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $panelDomId }}')"
+                                @elseif($counter->counter > 0 || $isDeferred)
+                                    onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
                                 style="
                                     height: 100px;
@@ -90,7 +92,7 @@
                                     color: white;
                                     @if(in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']))
                                         background-color: dodgerblue; cursor: pointer;
-                                    @elseif($counter->counter < 1)
+                                    @elseif($counter->counter < 1 && !$isDeferred)
                                         background-color: #0BDA51; cursor: default;
                                     @else
                                         background-color: red; cursor: pointer;
@@ -139,7 +141,7 @@
 </style>
 
 <script>
-    function getPanelContent(tab, panel, panelDomId)
+    function getPanelContent(tab, panel, store, panelDomId)
     {
         let open = $('#' + panelDomId).attr('data-open');
 
@@ -154,7 +156,8 @@
                 data: {
                     _token: "{{ csrf_token() }}",
                     tab: tab,
-                    panel: panel
+                    panel: panel,
+                    store: store
                 },
                 success: function(response) {
                     if (!response.html || !response.html.html) {

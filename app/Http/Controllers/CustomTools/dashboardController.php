@@ -28,7 +28,13 @@ class dashboardController extends Controller
     }
 
     public function getCountersContent(Request $request){
-        return response()->json([ 'html' => dashboard::getCountersContentOfTabPanel( $request->tab, $request->panel) ]);
+        return response()->json([
+            'html' => dashboard::getCountersContentOfTabPanel(
+                $request->tab,
+                $request->panel,
+                $request->store
+            )
+        ]);
     }  
 
 }

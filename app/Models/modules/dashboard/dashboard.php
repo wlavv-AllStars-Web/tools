@@ -291,9 +291,15 @@ class dashboard extends Model
         return dashboard::where('tab', $tab)->where('panel', $panel)->value('counter');
     }
 
-    public static function getCountersContentOfTabPanel( $tab, $panel_name ){
+    public static function getCountersContentOfTabPanel($tab, $panel_name, $store = null){
         
-        $panel = dashboard::where('tab', $tab)->where('panel', $panel_name)->first();
+        $panelQuery = dashboard::where('tab', $tab)->where('panel', $panel_name);
+
+        if (!empty($store)) {
+            $panelQuery->where('store', $store);
+        }
+
+        $panel = $panelQuery->first();
 
         if (!$panel) {
             \Log::warning("Dashboard panel not found for tab {$tab} and panel {$panel_name}");
@@ -356,7 +362,10 @@ class dashboard extends Model
         $dataCount = count($content->data ?? []);
 
         if($dataCount != $panel->counter) {
-            dashboard::where('tab', $tab)->where('panel', $panel_name)->update(['counter' => (int) ($content->counter ?? $dataCount)]);
+            dashboard::where('tab', $tab)
+                ->where('panel', $panel_name)
+                ->where('store', $panel->store)
+                ->update(['counter' => (int) ($content->counter ?? $dataCount)]);
         }
         
         $data = [

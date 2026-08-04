@@ -488,7 +488,8 @@ class product extends PrestashopModel
         $query = self::with('manufacturer')
             ->select($productTable . '.*')
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
-            ->where($customProductTable . '.show_compat_exception', 1); 
+            ->where($customProductTable . '.show_compat_exception', 1)
+            ->where($productTable . '.visibility', '<>', 'none');
 
         if (!empty($excluded)) {
             $query->whereNotIn($productTable . '.id_product', $excluded);

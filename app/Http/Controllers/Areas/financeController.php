@@ -456,27 +456,55 @@ class financeController extends Controller
         
         fputcsv($file, ['FLUXO', 'PERIODO', 'NIF', 'REF', 'NC', 'PAIS', 'PORIGEM', 'REGIAO', 'CODENT', 'NATTRA', 'MODTRA', 'AERPOR', 'MASSA', 'UNSUP', 'VALFAC', 'ADQNIF', 'ERRO'], ';');
 
-        $ps = env('DB2_DB_prefix', 'ps_');
-        $ps = str_contains($ps, '.') ? $ps : config('database.connections.mysql2.database') . '.' . $ps;
+        $receptionLines = DB::table('oms_receptions as receptions')
+            ->join('oms_reception_lines as reception_lines', 'receptions.id', '=', 'reception_lines.reception_id')
+            ->join('oms_billed_order_lines as billed_lines', 'billed_lines.id', '=', 'reception_lines.billed_order_line_id')
+            ->whereMonth('receptions.created_at', $this->month)
+            ->whereYear('receptions.created_at', $this->year)
+            ->select('billed_lines.product_id', 'billed_lines.product_attribute_id', 'reception_lines.qty_received')
+            ->get();
 
-        $data = DB::select("SELECT {$ps}manufacturer.country_code AS iso_code, COALESCE({$ps}product_attribute.reference, {$ps}product.reference) AS reference, oms_reception_lines.qty_received AS qty, {$ps}custom_product.nc, {$ps}product.weight, ({$ps}product.wholesale_price * oms_reception_lines.qty_received) AS wholesale_price
-        FROM oms_receptions
-        LEFT JOIN oms_reception_lines
-        ON oms_receptions.id = oms_reception_lines.reception_id
-        LEFT JOIN oms_billed_order_lines
-        ON oms_billed_order_lines.id = oms_reception_lines.billed_order_line_id
-        LEFT JOIN {$ps}product
-        ON {$ps}product.id_product = oms_billed_order_lines.product_id
-        LEFT JOIN {$ps}product_attribute
-        ON {$ps}product_attribute.id_product_attribute = oms_billed_order_lines.product_attribute_id
-        LEFT JOIN {$ps}custom_product
-        ON {$ps}custom_product.id_product = {$ps}product.id_product
-        LEFT JOIN {$ps}manufacturer
-        ON {$ps}manufacturer.id_manufacturer = {$ps}product.id_manufacturer
-        WHERE MONTH(oms_receptions.created_at) = " . $this->month . "
-        AND YEAR(oms_receptions.created_at) = " . $this->year . "
-        AND {$ps}product.id_manufacturer in (109, 113, 138, 141, 72, 93, 117, 136, 104, 68, 99, 69, 82, 142, 20, 124, 143, 92, 66, 121, 122, 123, 161)");
-        
+        $productIds = $receptionLines->pluck('product_id')->filter()->unique()->values();
+        $attributeIds = $receptionLines->pluck('product_attribute_id')->filter()->unique()->values();
+        $manufacturerIds = [109, 113, 138, 141, 72, 93, 117, 136, 104, 68, 99, 69, 82, 142, 20, 124, 143, 92, 66, 121, 122, 123, 161];
+
+        $products = $productIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table('ps_product as product')
+                ->leftJoin('ps_custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
+                ->leftJoin('ps_manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
+                ->whereIn('product.id_product', $productIds)
+                ->whereIn('product.id_manufacturer', $manufacturerIds)
+                ->select('product.id_product', 'product.reference', 'product.weight', 'product.wholesale_price', 'custom_product.nc', 'manufacturer.country_code as iso_code')
+                ->get()
+                ->keyBy('id_product');
+
+        $attributes = $attributeIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql2')
+                ->table('ps_product_attribute')
+                ->whereIn('id_product_attribute', $attributeIds)
+                ->pluck('reference', 'id_product_attribute');
+
+        $data = $receptionLines->map(function ($line) use ($products, $attributes) {
+            $product = $products->get((int) $line->product_id);
+            if (!$product) {
+                return null;
+            }
+
+            $quantity = (int) $line->qty_received;
+            $attributeReference = $attributes->get((int) $line->product_attribute_id);
+
+            return (object) [
+                'iso_code' => $product->iso_code,
+                'reference' => $attributeReference ?: $product->reference,
+                'qty' => $quantity,
+                'nc' => $product->nc,
+                'weight' => $product->weight,
+                'wholesale_price' => (float) $product->wholesale_price * $quantity,
+            ];
+        })->filter();
         foreach($data AS $row){
         
             $weight = round( $row->weight, 1);

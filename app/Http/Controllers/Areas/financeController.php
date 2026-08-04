@@ -441,7 +441,8 @@ class financeController extends Controller
     
     public function createCHCSV(){ 
 
-        $fileName = 'INTRA-CH-' . $this->year . $this->month . '.csv';
+        $period = sprintf('%04d%02d', (int) $this->year, (int) $this->month);
+        $fileName = 'INTRA-CH-' . $period . '.csv';
         $filePath = public_path() . '/admin/download/' . $fileName;
 
         $headers = array(
@@ -511,7 +512,7 @@ class financeController extends Controller
             $weight = ($weight == 0.0) ? 0.1 : $weight;
             $weight = str_replace(".",",", $weight );
             
-            fputcsv($file, ['INTRA-CH', $this->year . $this->month, '513881387', $row->reference, $row->nc, $row->iso_code, $row->iso_code, '10', 'EXW', '11', '3', '', $weight, $row->qty, intval($row->wholesale_price), '', ''], ";");
+            fputcsv($file, ['INTRA-CH', $period, '513881387', $row->reference, $row->nc, $row->iso_code, $row->iso_code, '10', 'EXW', '11', '3', '', $weight, $row->qty, intval($row->wholesale_price), '', ''], ";");
         }
         
         fclose($file);

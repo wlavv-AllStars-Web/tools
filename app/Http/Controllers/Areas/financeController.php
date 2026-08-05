@@ -390,13 +390,11 @@ class financeController extends Controller
         $total=0;
         $data = array();
         
-        $rates_data = issues::getCurrencyRates();
-        
-        $rates = array();
-        $rates['EUR'] = 1.00;
-        $rates['YEN'] = 0.00588; /** 1/170 - LUDUVINA SET IT ON 03/12/2025**/
-        $rates['GBP'] = 1.15;    /** LUDUVINA SET IT ON 03/12/2025**/
-        $rates['USD'] = 1;
+        $currencyTable = $this->prestashopMysql2Prefix() . 'currency';
+        $rates = DB::connection('mysql2')->table($currencyTable)
+            ->pluck('conversion_rate', 'iso_code')
+            ->mapWithKeys(fn ($rate, $iso) => [strtoupper((string) $iso) => (float) $rate])
+            ->all();
         
         $data = CorrectedInventoryService::build($this->prestashopMysql2Prefix());
         

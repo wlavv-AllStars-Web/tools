@@ -12,6 +12,7 @@ use App\Models\prestashop\CurrencyVariation;
 use App\Models\prestashop\product;
 use App\Models\modules\issues\issues;
 use Illuminate\Support\Facades\DB;
+use App\Services\Finance\CorrectedInventoryService;
 
 use App\Models\modules\dashboard\dashboard;
 
@@ -397,8 +398,7 @@ class financeController extends Controller
         $rates['GBP'] = 1.15;    /** LUDUVINA SET IT ON 03/12/2025**/
         $rates['USD'] = 1;
         
-        $data = self::inventory_father($data, $rates);
-        $data = self::inventory_sons($data, $rates);
+        $data = CorrectedInventoryService::build($this->prestashopMysql2Prefix());
         
         $total = self::createInventoryCSV($data, $rates);
 

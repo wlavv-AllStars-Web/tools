@@ -116,6 +116,38 @@ class customers_backorders extends Model
             
             $erp_ordered = ( is_null($erp_ordered) ) ? null : $erp_ordered;
             $erpExpected = (int) ($erp_ordered->expected ?? 0);
+
+            $omsExpected = DB::table('oms_order_note_lines as onl')
+                ->where('onl.product_id', $id_product)
+                ->where(function ($query) use ($id_product_attribute) {
+                    if ($id_product_attribute > 0) {
+                        $query->where('onl.product_attribute_id', $id_product_attribute);
+                    } else {
+                        $query->whereNull('onl.product_attribute_id')
+                            ->orWhere('onl.product_attribute_id', 0);
+                    }
+                })
+                ->leftJoinSub(
+                    DB::table('oms_billed_order_lines as bol')
+                        ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
+                        ->join('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
+                        ->where('si.status', '<>', 'cancelled')
+                        ->select(
+                            'bol.order_note_line_id',
+                            DB::raw('SUM(bol.qty_received) AS qty_received')
+                        )
+                        ->groupBy('bol.order_note_line_id'),
+                    'received',
+                    'received.order_note_line_id',
+                    '=',
+                    'onl.id'
+                )
+                ->sum(DB::raw(
+                    'GREATEST(COALESCE(onl.qty_ordered, 0) - COALESCE(received.qty_received, 0), 0)'
+                ));
+
+            $erpExpected = (int) $omsExpected;
+
             $stockQuantity = isset($stock_available->quantity) ? (int) $stock_available->quantity : 0;
             $soldQuantity = (int) $item->sold;
 

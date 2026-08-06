@@ -32,8 +32,8 @@
                                     color: white;
                                     @if(in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']))
                                         background-color: dodgerblue; cursor: pointer;
-                                    @elseif($counter->counter < 1 && !$isDeferred)
-                                        background-color: #0BDA51; cursor: default;
+                                    @elseif($counter->counter < 1)
+                                        background-color: #0BDA51; cursor: {{ $isDeferred ? 'pointer' : 'default' }};
                                     @else
                                         background-color: red; cursor: pointer;
                                     @endif
@@ -92,8 +92,8 @@
                                     color: white;
                                     @if(in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']))
                                         background-color: dodgerblue; cursor: pointer;
-                                    @elseif($counter->counter < 1 && !$isDeferred)
-                                        background-color: #0BDA51; cursor: default;
+                                    @elseif($counter->counter < 1)
+                                        background-color: #0BDA51; cursor: {{ $isDeferred ? 'pointer' : 'default' }};
                                     @else
                                         background-color: red; cursor: pointer;
                                     @endif

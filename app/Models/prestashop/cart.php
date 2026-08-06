@@ -5,6 +5,7 @@ namespace App\Models\prestashop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 
 class cart extends PrestashopModel
 {

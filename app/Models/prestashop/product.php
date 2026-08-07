@@ -932,6 +932,7 @@ class product extends PrestashopModel
         $manufacturerTable = self::tableName('manufacturer');
         $productAttributeTable = self::tableName('product_attribute');
         $customProductAttributeTable = self::tableName('custom_product_attribute');
+        $advancedPackTable = self::tableName('pm_advancedpack');
 
         $bd_data_product = self::select(
                 $productTable . '.id_product',
@@ -962,7 +963,9 @@ class product extends PrestashopModel
                     ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product');
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->leftJoin($advancedPackTable, $advancedPackTable . '.id_pack', '=', $productAttributeTable . '.id_product')
             ->where($manufacturerTable . '.name', '<>', 'Technical Products')
+            ->whereNull($advancedPackTable . '.id_pack')
             ->where($productAttributeTable . '.ean13', '')
             ->where($stockTable . '.quantity', '>', 0)
             ->groupBy(

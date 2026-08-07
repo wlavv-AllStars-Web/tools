@@ -53,6 +53,7 @@ class picking extends Model
                 'id_order' => $order->id_order,
                 'carrier' => $order->carrier,
                 'order_main' => $orderMain,
+                'order_messages' => self::orderMessages((int) $order->id_order),
                 'order' => self::withoutTechnicalPickingRows(
                     self::where('id_order', $order->id_order)->where('row_done', 0)
                 )
@@ -82,6 +83,32 @@ class picking extends Model
         }
         
         return (object)[ 'counter' => count($array_order),  'data' => (object)$array_order ];
+    }
+
+    /**
+     * Messages added to an order in PrestaShop are stored separately from the
+     * optional note on ps_orders. They must also be visible to the picker.
+     */
+    private static function orderMessages(int $idOrder): array
+    {
+        $messagesTable = self::psTable('message');
+
+        if ($idOrder <= 0 || !Schema::connection('mysql2')->hasTable($messagesTable)) {
+            return [];
+        }
+
+        return DB::connection('mysql2')
+            ->table($messagesTable)
+            ->where('id_order', $idOrder)
+            ->whereNotNull('message')
+            ->orderBy('date_add')
+            ->orderBy('id_message')
+            ->pluck('message')
+            ->map(static fn ($message) => trim((string) $message))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private static function combinationValue(int $idProductAttribute, int $idLang): string

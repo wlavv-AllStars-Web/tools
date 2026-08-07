@@ -17,6 +17,15 @@
                         <td colspan="3" style="text-align: center;border-bottom: 1px solid #ccc;"><b>ORDER NOTE: </b><span style="color: red;">{{$orderNote}}</span></td>
                     </tr>
                 @endif
+
+                @foreach(($row->order_messages ?? []) as $orderMessage)
+                    <tr>
+                        <td colspan="3" style="text-align: center; border-bottom: 1px solid #ccc; padding: 7px 10px;">
+                            <b>ORDER MESSAGE: </b>
+                            <span style="color: #dc3545; font-weight: 700; white-space: pre-line;">{{ $orderMessage }}</span>
+                        </td>
+                    </tr>
+                @endforeach
                 
             @endif
             
@@ -32,6 +41,9 @@
                     {{$product->reference}}
                     @if(!empty($product->combination_value))
                         <span style="color: dodgerblue;">({{$product->combination_value}})</span>
+                    @endif
+                    @if(!empty($product->name))
+                        <div style="color: #555; font-size: 12px; line-height: 1.25;">{{ $product->name }}</div>
                     @endif
                     @foreach(($product->special_messages ?? []) as $specialMessage)
                         <div style="color: #dc3545; font-weight: 700;">

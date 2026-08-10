@@ -62,9 +62,7 @@ class product_lang extends PrestashopModel
                 $query->whereNull($productLangTable . '.available_now')
                     ->orWhere($productLangTable . '.available_now', '')
                     ->orWhereNull($productLangTable . '.available_later')
-                    ->orWhere($productLangTable . '.available_later', '')
-                    ->orWhereNull($productLangTable . '.available_soon_text')
-                    ->orWhere($productLangTable . '.available_soon_text', '');
+                    ->orWhere($productLangTable . '.available_later', '');
             })
             ->where($productTable . '.reference', 'not like', 'VAT-%')
             ->where($productTable . '.reference', 'not like', '%parts')

@@ -290,10 +290,10 @@ class carrierIssuesController extends Controller
             if(!is_null($shippment)){
                 $row['store'] = $store;
                 $row['id_order'] = $shippment->id_order;
-                $row['weight'] = $shippment->weight ?? 0;
-                $row['width'] = $shippment->width ?? 0;
-                $row['height'] = $shippment->height ?? 0;
-                $row['length'] = $shippment->depth ?? 0;
+                $row['weight'] = round((float) ($shippment->weight ?? 0), 2);
+                $row['width'] = round((float) ($shippment->width ?? 0), 2);
+                $row['height'] = round((float) ($shippment->height ?? 0), 2);
+                $row['length'] = round((float) ($shippment->depth ?? 0), 2);
                 $row['value'] = $shippment->shipping_budget ?? 0;
     
                 $shop_rows[] =$row;

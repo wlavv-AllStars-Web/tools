@@ -481,7 +481,7 @@ class housingController extends Controller
 
     private function queryAttributeHousing(string $value): Collection
     {
-        if ($this->prestashopColumnExists('product_attribute', 'housing')) {
+        if ($this->prestashopColumnExists('product_attribute', 'housing') && !(Schema::connection('mysql2')->hasTable($this->psPrefix() . 'custom_product_attribute') && Schema::connection('mysql2')->hasColumn($this->psPrefix() . 'custom_product_attribute', 'location'))) {
             return $this->queryAttributesBy('housing', $value);
         }
 
@@ -867,7 +867,7 @@ class housingController extends Controller
             return '';
         }
 
-        if ($this->prestashopColumnExists('product_attribute', 'housing')) {
+        if ($this->prestashopColumnExists('product_attribute', 'housing') && !(Schema::connection('mysql2')->hasTable($this->psPrefix() . 'custom_product_attribute') && Schema::connection('mysql2')->hasColumn($this->psPrefix() . 'custom_product_attribute', 'location'))) {
             return (string) (DB::connection('mysql2')
                 ->table($this->psPrefix() . 'product_attribute')
                 ->where('id_product_attribute', $idProductAttribute)
@@ -887,7 +887,7 @@ class housingController extends Controller
 
     private function setAttributeHousing(int $idProduct, int $idProductAttribute, string $housing): void
     {
-        if ($this->prestashopColumnExists('product_attribute', 'housing')) {
+        if ($this->prestashopColumnExists('product_attribute', 'housing') && !(Schema::connection('mysql2')->hasTable($this->psPrefix() . 'custom_product_attribute') && Schema::connection('mysql2')->hasColumn($this->psPrefix() . 'custom_product_attribute', 'location'))) {
             DB::connection('mysql2')
                 ->table($this->psPrefix() . 'product_attribute')
                 ->where('id_product_attribute', $idProductAttribute)

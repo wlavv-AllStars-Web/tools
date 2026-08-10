@@ -237,6 +237,15 @@ class carrierIssuesController extends Controller
                 
                 $shippment = DB::connection('mysql2')->table($prefix . 'orders')
                     ->join(       $prefix . 'order_carrier',     $prefix . 'orders.id_order', '=', $prefix . 'order_carrier.id_order')
+                    ->leftJoin(   $prefix . 'custom_order_carrier', $prefix . 'order_carrier.id_order_carrier', '=', $prefix . 'custom_order_carrier.id_order_carrier')
+                    ->select(
+                        $prefix . 'orders.id_order',
+                        $prefix . 'custom_order_carrier.shipping_budget',
+                        $prefix . 'custom_order_carrier.width',
+                        $prefix . 'custom_order_carrier.height',
+                        $prefix . 'custom_order_carrier.depth',
+                        $prefix . 'custom_order_carrier.weight'
+                    )
                     ->where(      $prefix . 'orders.id_shop', $shopId )
                     ->where(      $prefix . 'orders.reference', $row[1] )
                     ->where(      $prefix . 'order_carrier.tracking_number', $row[0] )
@@ -246,6 +255,15 @@ class carrierIssuesController extends Controller
                 
                 $shippment = DB::connection('mysql2')->table($prefix . 'orders')
                     ->join(       $prefix . 'order_carrier',     $prefix . 'orders.id_order', '=', $prefix . 'order_carrier.id_order')
+                    ->leftJoin(   $prefix . 'custom_order_carrier', $prefix . 'order_carrier.id_order_carrier', '=', $prefix . 'custom_order_carrier.id_order_carrier')
+                    ->select(
+                        $prefix . 'orders.id_order',
+                        $prefix . 'custom_order_carrier.shipping_budget',
+                        $prefix . 'custom_order_carrier.width',
+                        $prefix . 'custom_order_carrier.height',
+                        $prefix . 'custom_order_carrier.depth',
+                        $prefix . 'custom_order_carrier.weight'
+                    )
                     ->where(      $prefix . 'orders.id_shop', $shopId )
                     ->where(      $prefix . 'orders.id_order', str_replace('pedido_', '', $row[6]) )
                     ->where(      $prefix . 'order_carrier.tracking_number', 'LIKE', "%" . str_replace('7490/', '', $row[4]) . '%' )
@@ -254,6 +272,15 @@ class carrierIssuesController extends Controller
             }elseif($by_id_order == 'UPS'){
                 $shippment = DB::connection('mysql2')->table($prefix . 'orders')
                     ->join(       $prefix . 'order_carrier',     $prefix . 'orders.id_order', '=', $prefix . 'order_carrier.id_order')
+                    ->leftJoin(   $prefix . 'custom_order_carrier', $prefix . 'order_carrier.id_order_carrier', '=', $prefix . 'custom_order_carrier.id_order_carrier')
+                    ->select(
+                        $prefix . 'orders.id_order',
+                        $prefix . 'custom_order_carrier.shipping_budget',
+                        $prefix . 'custom_order_carrier.width',
+                        $prefix . 'custom_order_carrier.height',
+                        $prefix . 'custom_order_carrier.depth',
+                        $prefix . 'custom_order_carrier.weight'
+                    )
                     ->where(      $prefix . 'orders.id_shop', $shopId )
                     ->where(      $prefix . 'order_carrier.tracking_number', 'LIKE', '%' . $row[4] . '%' )
                     ->first();
@@ -261,25 +288,13 @@ class carrierIssuesController extends Controller
             
             
             if(!is_null($shippment)){
-                if( isset($shippment->weight) ){
-                    $row['store'] = $store;
-                    $row['id_order'] = $shippment->id_order;
-                    $row['weight'] = $shippment->weight + 0;
-                    $row['width'] = $shippment->width + 0;
-                    $row['height'] = $shippment->height + 0;
-                    $row['length'] = $shippment->length + 0;
-                    $row['value'] = $shippment->ASM_shipping_info_value;                
-                    
-                }else{
-                    $row['store'] = $store;
-                    $row['id_order'] = $shippment->id_order;
-                    $row['weight'] = 0;
-                    $row['width'] = 0;
-                    $row['height'] = 0;
-                    $row['length'] = 0;
-                    $row['value'] = 0;
-                    
-                }
+                $row['store'] = $store;
+                $row['id_order'] = $shippment->id_order;
+                $row['weight'] = $shippment->weight ?? 0;
+                $row['width'] = $shippment->width ?? 0;
+                $row['height'] = $shippment->height ?? 0;
+                $row['length'] = $shippment->depth ?? 0;
+                $row['value'] = $shippment->shipping_budget ?? 0;
     
                 $shop_rows[] =$row;
             }

@@ -17,13 +17,19 @@
                 </thead>
                 <tbody>
                     @foreach($compats AS $compat)
+                    @php
+                        $brandName = $compat->brand?->name ?? 'Unknown';
+                        $modelName = $compat->model?->name ?? 'Unknown';
+                        $typeName = $compat->type?->name ?? 'Unknown';
+                        $versionName = $compat->version?->name ?? 'Unknown';
+                    @endphp
                     <tr onclick="$('.hideRows').css('display', 'none'); $('#editRow_{{$compat->id_compat}}').toggle();" style="text-align: center;">
                         <td>{{$compat->id_compat}}</td>
                         <td><img src="/uploads/logos/{{$compat->store}}.png?v1=1" style="width: 60px;padding: 7px 2px;border: 1px solid #ccc; background: #fff;border-radius: 5px 0 0 5px;"></td>
-                        <td>{{$compat->brand->name}}</td>
-                        <td>{{$compat->model->name}}</td>
-                        <td>{{$compat->type->name}}</td>
-                        <td>{{$compat->version->name}}</td>
+                        <td>{{$brandName}}</td>
+                        <td>{{$modelName}}</td>
+                        <td>{{$typeName}}</td>
+                        <td>{{$versionName}}</td>
                         <td><button class="btn btn-warning" onclick="$('.hideRows').css('display', 'none'); $('#editRow_{{$compat->id_compat}}').toggle();"><i class="fa-solid fa-pencil"></i></button></td>
                         <td><button class="btn btn-danger" onclick="removeCompat({{$compat->id_compat}})"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
@@ -43,10 +49,10 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td><div onclick="editCompatItem(1, {{$compat->id_brand}},   '{{$compat->brand->name}}')">{{$compat->brand->name}}    </div></td>
-                                                    <td><div onclick="editCompatItem(1, {{$compat->id_model}},   '{{$compat->model->name}}')">{{$compat->model->name}}    </div></td>
-                                                    <td><div onclick="editCompatItem(1, {{$compat->id_type}},    '{{$compat->type->name}}')">{{$compat->type->name}}     </div></td>
-                                                    <td><div onclick="editCompatItem(1, {{$compat->id_version}}, '{{$compat->version->name}}')">{{$compat->version->name}}  </div></td>
+                                                    <td><div onclick="editCompatItem(1, {{$compat->id_brand}},   '{{$brandName}}')">{{$brandName}}    </div></td>
+                                                    <td><div onclick="editCompatItem(1, {{$compat->id_model}},   '{{$modelName}}')">{{$modelName}}    </div></td>
+                                                    <td><div onclick="editCompatItem(1, {{$compat->id_type}},    '{{$typeName}}')">{{$typeName}}     </div></td>
+                                                    <td><div onclick="editCompatItem(1, {{$compat->id_version}}, '{{$versionName}}')">{{$versionName}}  </div></td>
                                                 </tr>
                                                 <tr style="display: none;">
                                                     <td colspan="4"> <div class="spacer-20"></div> </td>
@@ -74,9 +80,9 @@
                                     <div style="width: 100%; height: 20px;"></div>
                                 </div>
                                 <div class="col-lg-3">
-                                    <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="brandLogo_{{$compat->id_compat}}" onclick="openModelUpload('logo', {{$compat->brand->id_option}})">
+                                    <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="brandLogo_{{$compat->id_compat}}" onclick="openModelUpload('logo', {{$compat->id_brand}})">
                                         <h5 style="margin-top: 20px;color: #FFF;">BRAND LOGO</h5>
-                                        <img style="max-width: 150px;" src="/uploads/compats/brand/{{$compat->brand->id_option}}.png?t={{rand()}}">                                            
+                                        <img style="max-width: 150px;" src="/uploads/compats/brand/{{$compat->id_brand}}.png?t={{rand()}}">
                                     </div>
                                 </div> 
                                 <div class="col-lg-6">
@@ -86,9 +92,9 @@
                                     </div>
                                 </div>
                                 <div class="col-lg-3">
-                                    <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="brandLogoHover_{{$compat->id_compat}}" onclick="openModelUpload('hover', {{$compat->brand->id_option}})">
+                                    <div style="text-align: center;background-color: #999; border: 1px solid #333;height: 212px;" id="brandLogoHover_{{$compat->id_compat}}" onclick="openModelUpload('hover', {{$compat->id_brand}})">
                                         <h5 style="margin-top: 20px;color: #FFF;">BRAND LOGO ( HOVER )</h5>
-                                        <img style="max-width: 150px;" src="/uploads/compats/brand_hover/{{$compat->brand->id_option}}.png?t={{rand()}}">                                            
+                                        <img style="max-width: 150px;" src="/uploads/compats/brand_hover/{{$compat->id_brand}}.png?t={{rand()}}">
                                     </div>
                                 </div>
                                 <div class="col-lg-2"></div>

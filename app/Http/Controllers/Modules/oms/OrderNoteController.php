@@ -1026,17 +1026,22 @@ class OrderNoteController extends Controller
 
         $products = DB::connection('mysql2')
             ->table('ps_product as p')
-            ->leftJoin('ps_product_lang as pl', function ($join) {
-                $join->on('pl.id_product', '=', 'p.id_product')
-                    ->where('pl.id_lang', '=', 1)
-                    ->where('pl.id_shop', '=', 1);
+            ->leftJoin('ps_product_lang as pl_asm', function ($join) {
+                $join->on('pl_asm.id_product', '=', 'p.id_product')
+                    ->where('pl_asm.id_lang', '=', 1)
+                    ->where('pl_asm.id_shop', '=', 2);
+            })
+            ->leftJoin('ps_product_lang as pl_asd', function ($join) {
+                $join->on('pl_asd.id_product', '=', 'p.id_product')
+                    ->where('pl_asd.id_lang', '=', 1)
+                    ->where('pl_asd.id_shop', '=', 3);
             })
             ->leftJoin('ps_stock_available as sa', function ($join) {
                 $join->on('sa.id_product', '=', 'p.id_product')->where('sa.id_shop', 3)->whereNull('sa.id_product_attribute');
             })
             ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->whereIn('p.id_product', $productIds)
-            ->selectRaw('p.id_product, p.reference, pl.name, COALESCE(sa.quantity, 0) as stock_qty, COALESCE(cp.wholesale_price_base_currency, p.wholesale_price, 0) as unit_cost, cp.wholesale_price_base_currency as wholesale_price_base_currency, p.wholesale_price as wholesale_price')
+            ->selectRaw('p.id_product, p.reference, COALESCE(NULLIF(pl_asm.name, ""), NULLIF(pl_asd.name, ""), "Unknown") as name, COALESCE(sa.quantity, 0) as stock_qty, COALESCE(cp.wholesale_price_base_currency, p.wholesale_price, 0) as unit_cost, cp.wholesale_price_base_currency as wholesale_price_base_currency, p.wholesale_price as wholesale_price')
             ->get()
             ->keyBy('id_product');
 

@@ -338,19 +338,17 @@ class stockEntryController extends Controller
 
         $this->breadcrumbs[] = [ 'name' =>  trans('Remove stock entry'), 'url' => route('stockEntry.listToRemove')];
 
-        $prefix = env('DB2_DB_prefix');
         $lastEntries = DB::table('oms_receptions as r')
             ->join('oms_reception_lines as rl', 'rl.reception_id', '=', 'r.id')
             ->join('oms_billed_order_lines as bol', 'bol.id', '=', 'rl.billed_order_line_id')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'r.billed_order_id')
             ->leftJoin('users as u', 'u.id', '=', 'r.created_by')
-            ->leftJoin(DB::raw($prefix . 'product as p'), 'p.id_product', '=', 'bol.product_id')
-            ->leftJoin(DB::raw($prefix . 'product_attribute as pa'), 'pa.id_product_attribute', '=', 'bol.product_attribute_id')
             ->select(
                 'r.id as oms_reception_id',
                 'bo.id as po_id',
                 'bo.reference',
-                DB::raw('COALESCE(pa.reference, p.reference) as sku'),
+                'bol.product_id',
+                'bol.product_attribute_id',
                 'rl.qty_received as qty',
                 DB::raw('0 as deleted'),
                 DB::raw('COALESCE(u.name, "") as firstname'),
@@ -358,8 +356,23 @@ class stockEntryController extends Controller
             )
             ->orderByDesc('r.id')
             ->limit(1000)
-            ->get()
-            ->map(fn ($row) => (array) $row);
+            ->get();
+
+        $productIds = $lastEntries->pluck('product_id')->filter()->unique()->values();
+        $attributeIds = $lastEntries->pluck('product_attribute_id')->filter()->unique()->values();
+        $productReferences = DB::connection('mysql2')->table('ps_product')
+            ->whereIn('id_product', $productIds)
+            ->pluck('reference', 'id_product');
+        $attributeReferences = DB::connection('mysql2')->table('ps_product_attribute')
+            ->whereIn('id_product_attribute', $attributeIds)
+            ->pluck('reference', 'id_product_attribute');
+
+        $lastEntries = $lastEntries->map(function ($row) use ($productReferences, $attributeReferences): array {
+            $row->sku = (string) ($attributeReferences->get($row->product_attribute_id) ?: $productReferences->get($row->product_id) ?: '');
+            unset($row->product_id, $row->product_attribute_id);
+
+            return (array) $row;
+        });
 
         $data = [
             'actions'    => $this->actions,

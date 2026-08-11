@@ -20,15 +20,21 @@ class BilledOrderDisplayService
         if (!empty($productIds)) {
             $products = DB::connection('mysql2')
                 ->table('ps_product as p')
-                ->leftJoin('ps_product_lang as pl', function ($join) {
-                    $join->on('pl.id_product', '=', 'p.id_product')
-                         ->where('pl.id_lang', 1);
+                ->leftJoin('ps_product_lang as pl_asm', function ($join) {
+                    $join->on('pl_asm.id_product', '=', 'p.id_product')
+                         ->where('pl_asm.id_lang', 1)
+                         ->where('pl_asm.id_shop', 2);
+                })
+                ->leftJoin('ps_product_lang as pl_asd', function ($join) {
+                    $join->on('pl_asd.id_product', '=', 'p.id_product')
+                         ->where('pl_asd.id_lang', 1)
+                         ->where('pl_asd.id_shop', 3);
                 })
                 ->whereIn('p.id_product', $productIds)
                 ->select([
                     'p.id_product',
                     'p.reference as product_reference',
-                    'pl.name as product_name',
+                    DB::raw('COALESCE(NULLIF(pl_asm.name, ""), NULLIF(pl_asd.name, ""), "Unknown") as product_name'),
                 ])
                 ->get()
                 ->keyBy('id_product');

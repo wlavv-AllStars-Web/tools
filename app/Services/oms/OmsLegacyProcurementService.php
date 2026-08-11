@@ -108,13 +108,18 @@ class OmsLegacyProcurementService
             ->leftJoinSub($receivedSubquery, 'rl_sum', 'rl_sum.billed_order_line_id', '=', 'bol.id')
             ->leftJoin(self::psTable('product') . ' as p', 'p.id_product', '=', 'bol.product_id')
             ->leftJoin(self::psTable('product_attribute') . ' as pa', 'pa.id_product_attribute', '=', 'bol.product_attribute_id')
-            ->leftJoin(self::psTable('product_lang') . ' as pl', function ($join) {
-                $join->on('pl.id_product', '=', 'p.id_product')
-                    ->where('pl.id_lang', '=', 1)
-                    ->where('pl.id_shop', '=', 1);
+            ->leftJoin(self::psTable('product_lang') . ' as pl_asm', function ($join) {
+                $join->on('pl_asm.id_product', '=', 'p.id_product')
+                    ->where('pl_asm.id_lang', '=', 1)
+                    ->where('pl_asm.id_shop', '=', 2);
+            })
+            ->leftJoin(self::psTable('product_lang') . ' as pl_asd', function ($join) {
+                $join->on('pl_asd.id_product', '=', 'p.id_product')
+                    ->where('pl_asd.id_lang', '=', 1)
+                    ->where('pl_asd.id_shop', '=', 3);
             })
             ->whereIn('bol.billed_order_id', $billedOrderIds)
-            ->selectRaw('bol.id AS oms_billed_order_line_id, bol.billed_order_id AS po_id, bol.product_id, COALESCE(bol.product_attribute_id, 0) AS product_attribute_id, COALESCE(pa.reference, p.reference, "") AS sku, COALESCE(pl.name, "") AS name, COALESCE(onl.qty_ordered, bol.qty_billed, 0) AS qty_ordered, COALESCE(bol.qty_billed, 0) AS qty_wmfaturado, COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) AS qty_received')
+            ->selectRaw('bol.id AS oms_billed_order_line_id, bol.billed_order_id AS po_id, bol.product_id, COALESCE(bol.product_attribute_id, 0) AS product_attribute_id, COALESCE(pa.reference, p.reference, "") AS sku, COALESCE(NULLIF(pl_asm.name, ""), NULLIF(pl_asd.name, ""), "Unknown") AS name, COALESCE(onl.qty_ordered, bol.qty_billed, 0) AS qty_ordered, COALESCE(bol.qty_billed, 0) AS qty_wmfaturado, COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) AS qty_received')
             ->orderBy('sku')
             ->get()
             ->map(function ($row) {

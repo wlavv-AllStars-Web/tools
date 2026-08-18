@@ -337,7 +337,6 @@ class compats extends Model
             ->join('compats_options', 'compats.id_brand', '=', 'compats_options.id_option')
             ->where('store', $store)
             ->groupBy('compats.id_brand', 'compats_options.name')
-            ->orderBy('brand_position', 'ASC')
             ->orderBy('compats_options.name', 'ASC')
             ->get();
 
@@ -456,7 +455,6 @@ class compats extends Model
             ->join('compats_options', 'compats.id_brand', '=', 'compats_options.id_option')
             ->forStore($store)
             ->groupBy('compats.id_brand', 'compats_options.name')
-            ->orderBy('brand_position', 'asc')
             ->orderBy('compats_options.name', 'asc')
             ->get()
             ->map(fn ($brand) => [

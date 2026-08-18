@@ -381,6 +381,9 @@
                         <td style="width: 30%">NOTES</td>
                     </tr>
                 @foreach( $documents_manager AS $document)
+                    @php
+                        $documentPath = \App\Models\modules\documents_manager\documents_manager::documentPublicPath($document);
+                    @endphp
                     <tr onclick="$('#documentHolder_{{$document->id_document}}').toggle()">
                         <td>{{$document->name}}</td>
                         <td>{{$document->document_number}}</td>
@@ -390,13 +393,7 @@
                     </tr>
                     <tr style="display: none;" id="documentHolder_{{$document->id_document}}">
                         <td colspan="6">
-                            @if( ( strlen( $document->element) > 0 ) && ( $document->element != 'others' ))
-                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/{{$document->category}}/{{str_replace('.', '/', str_replace(' ', '', $document->element))}}/{{str_replace('/', '|', $document->document)}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
-                            @elseif( ( $document->category == 'manifest' ) && ( strlen( $document->element) > 0 ) && ( $document->element == 'others' ))
-                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/manifest/manifest{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
-                            @else
-                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/{{str_replace('.', '/', $document->category)}}/{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
-                            @endif
+                            <embed src="{{ config('allstars.services.webtools.base_url') }}{{ $documentPath }}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
                         </td>
                     </tr>
                 @endforeach

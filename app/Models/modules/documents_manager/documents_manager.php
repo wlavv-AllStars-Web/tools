@@ -41,7 +41,9 @@ class documents_manager extends Model
             $element = (isset($data[$data['category']])) ? $data[$data['category']] : '';
         }
 
-        $storedDocumentName = $data['number'] . '_' . $data['year'] . '_' . $data['month'] . '_' . $data['day'] . '.pdf';
+        $storedDocumentName = self::normalizeDocumentFilename(
+            $data['number'] . '_' . $data['year'] . '_' . $data['month'] . '_' . $data['day'] . '.pdf'
+        );
         $to = self::documentAbsolutePath((object) [
             'category' => $data['category'],
             'element' => $element,
@@ -212,7 +214,12 @@ class documents_manager extends Model
 
     private static function sanitizePathSegment(string $value): string
     {
-        return str_replace(['/', '\\', '|'], '_', $value);
+        return self::normalizeDocumentFilename($value);
+    }
+
+    public static function normalizeDocumentFilename(string $value): string
+    {
+        return str_replace(['|', '/', '#'], '_', $value);
     }
 
     private static function legacyDocumentFilename(string $value): string

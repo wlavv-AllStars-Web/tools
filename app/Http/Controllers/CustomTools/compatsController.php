@@ -247,7 +247,7 @@ class compatsController extends Controller
         }
 
         uasort($brands, function ($left, $right) {
-            return [$left->position, $left->name, $left->id] <=> [$right->position, $right->name, $right->id];
+            return [mb_strtolower($left->name), $left->id] <=> [mb_strtolower($right->name), $right->id];
         });
 
         foreach ($brands as $brand) {

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 
 use App\Models\modules\dashboard\dashboard;
+use App\Models\prestashop\manufacturers;
 
 class purchaseController extends Controller
 {
@@ -22,6 +23,7 @@ class purchaseController extends Controller
     {
         $data = [
             'counters'      => dashboard::calculateAndGetCountersOfTab('purchase'),
+            'manufacturers' => manufacturers::getManufacturersForSelect(),
             'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs

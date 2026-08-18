@@ -11,7 +11,6 @@ use App\Http\Controllers\CustomTools\mailsController;
 
 use App\Models\prestashop\asm_dashboard;
 use App\Models\prestashop\product;
-use App\Models\prestashop\manufacturers;
 use App\Models\prestashop\orders;
 use App\Models\prestashop\order_carrier;
 use App\Models\prestashop\stock_available;
@@ -26,8 +25,7 @@ class dashboardController extends Controller{
     public function index(){
 
         $data = [
-            'breadcrumbs'   => [ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')],
-            'manufacturers' => manufacturers::getManufacturersForSelect()
+            'breadcrumbs'   => [ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')]
         ];
 
         return View::make('areas/dashboard/index')->with($data);

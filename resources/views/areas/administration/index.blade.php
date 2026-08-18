@@ -2,6 +2,7 @@
 
 @section('content')
 
+    @if(count($accessList) > 0)
     <div class="navbar navbar-light customPanel">
         <div class="listUL" style="margin: 0 auto;display: table;">
             @foreach($accessList AS $access)
@@ -14,6 +15,7 @@
             @endforeach
         </div>
     </div>
+    @endif
 {{--
     @php
         $symbols = [
@@ -23,6 +25,7 @@
             'YEN' => '&yen;',
         ];
     @endphp
+
 
     <div class="navbar navbar-light customPanel">
         <table class="currency-table">

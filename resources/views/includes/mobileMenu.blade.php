@@ -3,12 +3,7 @@
 </div>
 <div id="mobileMenu">
     <div style="display: inline-block; background-color: #fff;padding:10px;border-bottom: 1px solid #ccc;width: 100%;">
-        <div class="text-center mobileMenuItem @if(Route::is('dashboard.index') ) active-link @endif"> 
-            <a class="nav-link uppercase" href="{{ route('dashboard.index') }}"> 
-                <div><i class="fa-solid fa-chart-pie" style="font-size: 30px;"></i></div>
-                <div class="sideMenuText">{{ __('menu.dashboard') }}</div>
-            </a> 
-        </div>
+
         <div class="text-center mobileMenuItem @if(Route::is('finance.index') ) active-link @endif"> 
             <a class="nav-link uppercase" href="{{ route('finance.index') }}">
                 <div><i class="fa fa-xl fa-chart-line" style="font-size: 30px;"></i></div>

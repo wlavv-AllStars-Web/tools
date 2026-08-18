@@ -1,16 +1,11 @@
 <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
     <div class="container" style="display: inline-block;padding: 0;">
-        <a class="navbar-brand sideMenuLogo" href="https://www.allstars-web.com/" target="_blank">
+        <a class="navbar-brand sideMenuLogo" href="{{ route('dashboard.index') }}">
             <img src="/admin/images/allstarsweb.gif" style="width: calc(100% - 20px); margin: 10px; @guest display: none; @endif">
         </a>
         <div class="navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto margin-auto sideMenuUL">
-                <li class="nav-item text-center @if(Route::is('dashboard.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
-                    <a class="nav-link uppercase" href="{{ route('dashboard.index') }}"> 
-                        <div><i class="fa-solid fa-chart-pie" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText">{{ __('menu.dashboard') }}</div>
-                    </a> 
-                </li>
+
                 @if( ( Auth::id() == 2 ) || ( Auth::id() == 43 ) )
                 <li class="nav-item text-center @if(Route::is('web.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('web.index') }}">

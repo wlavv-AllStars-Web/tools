@@ -60,7 +60,7 @@ class Authenticate extends Middleware
         $ids[105] = (object) ['asm' => 102, 'asd' => 44,  'name' => 'Tania'];
         $ids[107] = (object) ['asm' => 104, 'asd' => 0,   'name' => 'Helder'];
         $ids[109] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Angela'];
-        $ids[110] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Lorenzo'];
+        $ids[106] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Lorenzo'];
         $ids[111] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'José'];
         $ids[999] = (object) ['asm' => 63,  'asd' => 16,  'name' => 'Dashboard'];
         Config::set(['token' => User::getTokens($ids[auth()->user()->id]->asm)]);

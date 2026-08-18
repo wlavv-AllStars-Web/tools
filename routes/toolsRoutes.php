@@ -224,6 +224,9 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::patch('/invoices/{invoice}', [SupplierInvoiceController::class, 'update'])->name('invoices.update');
             Route::patch('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'updateLine'])->name('invoices.lines.update');
             Route::delete('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'destroyLine'])->name('invoices.lines.destroy');
+        Route::delete('/invoices/{invoice}/lines/{line}/reverse', [SupplierInvoiceController::class, 'reverseLine'])->name('invoices.lines.reverse');
+        Route::post('/invoices/{invoice}/billed-orders/{billedOrder}/reverse', [SupplierInvoiceController::class, 'reverseBilledOrder'])->name('invoices.billed_orders.reverse');
+        Route::post('/invoices/{invoice}/reverse', [SupplierInvoiceController::class, 'reverseInvoice'])->name('invoices.reverse');
             Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
             Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
             Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
@@ -641,6 +644,9 @@ Route::middleware(['web', 'auth'])
         Route::patch('/invoices/{invoice}', [SupplierInvoiceController::class, 'update'])->name('invoices.update');
         Route::patch('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'updateLine'])->name('invoices.lines.update');
         Route::delete('/invoices/{invoice}/lines/{line}', [SupplierInvoiceController::class, 'destroyLine'])->name('invoices.lines.destroy');
+        Route::delete('/invoices/{invoice}/lines/{line}/reverse', [SupplierInvoiceController::class, 'reverseLine'])->name('invoices.lines.reverse');
+        Route::post('/invoices/{invoice}/billed-orders/{billedOrder}/reverse', [SupplierInvoiceController::class, 'reverseBilledOrder'])->name('invoices.billed_orders.reverse');
+        Route::post('/invoices/{invoice}/reverse', [SupplierInvoiceController::class, 'reverseInvoice'])->name('invoices.reverse');
         Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
         Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
         Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');

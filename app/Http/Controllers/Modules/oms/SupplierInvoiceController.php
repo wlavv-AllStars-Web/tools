@@ -10,9 +10,11 @@ use App\Models\modules\oms\SupplierInvoice;
 use App\Models\modules\shipping\shipping;
 use App\Models\modules\shipping_erp\shipping_erp;
 use App\Services\oms\BilledOrderDisplayService;
+use App\Services\oms\BilledOrderReversalService;
 use App\Services\oms\ExportService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SupplierInvoiceController extends Controller
@@ -21,6 +23,7 @@ class SupplierInvoiceController extends Controller
         protected ExportService $exportService,
         protected SupplierInvoiceWorkflowService $workflowService,
         protected BilledOrderDisplayService $billedOrderDisplayService,
+        protected BilledOrderReversalService $billedOrderReversalService,
     ) {
         $this->middleware('auth');
     }
@@ -179,12 +182,15 @@ class SupplierInvoiceController extends Controller
 
         $selectedShipmentId = (int) ($linkedShipmentIds->first() ?? 0);
 
+        $canReverseInvoices = $this->canReverseInvoices();
+
         return view('modules.oms.invoices.show', compact(
             'invoice',
             'availableShipments',
             'selectedShipmentId',
             'linkedShipmentIds',
-            'lineHistoryMap'
+            'lineHistoryMap',
+            'canReverseInvoices'
         ));
     }
 
@@ -314,6 +320,57 @@ class SupplierInvoiceController extends Controller
         return response()->json(['success' => true, 'message' => 'Invoice line removed successfully.']);
     }
 
+    public function reverseLine(Request $request, SupplierInvoice $invoice, BilledOrderLine $line)
+    {
+        $this->ensureReversalAuthorized();
+        $billedOrder = $line->billedOrder()->firstOrFail();
+        if ((int) $billedOrder->supplier_invoice_id !== (int) $invoice->id) abort(404);
+        if (($invoice->status ?? 'draft') === 'cancelled') return $this->reversalError($request, 'Cancelled invoices cannot be reversed again.');
+        $data = $request->validate(['qty_to_remove' => ['required', 'integer', 'min:1'], 'confirm_negative_stock' => ['nullable', 'boolean']]);
+        $summary = $this->billedOrderReversalService->revertLine($line, (int) $data['qty_to_remove'], (bool) ($data['confirm_negative_stock'] ?? false));
+        return $this->reversalSuccess($request, 'Invoice line reversed.', $summary);
+    }
+
+    public function reverseBilledOrder(Request $request, SupplierInvoice $invoice, \App\Models\modules\oms\BilledOrder $billedOrder)
+    {
+        $this->ensureReversalAuthorized();
+        if ((int) $billedOrder->supplier_invoice_id !== (int) $invoice->id) abort(404);
+        if (($invoice->status ?? 'draft') === 'cancelled') return $this->reversalError($request, 'Cancelled invoices cannot be reversed again.');
+        $data = $request->validate(['confirm_negative_stock' => ['nullable', 'boolean']]);
+        $summary = $this->billedOrderReversalService->revertBilledOrder($billedOrder, (bool) ($data['confirm_negative_stock'] ?? false));
+        return $this->reversalSuccess($request, 'Billed order reversed.', $summary);
+    }
+
+    public function reverseInvoice(Request $request, SupplierInvoice $invoice)
+    {
+        $this->ensureReversalAuthorized();
+        if (($invoice->status ?? 'draft') === 'cancelled') return $this->reversalError($request, 'Cancelled invoices cannot be reversed again.');
+        $data = $request->validate(['confirm_negative_stock' => ['nullable', 'boolean']]);
+        $summary = $this->billedOrderReversalService->revertInvoice($invoice, (bool) ($data['confirm_negative_stock'] ?? false));
+        return $this->reversalSuccess($request, 'Invoice reversed.', $summary);
+    }
+
+    public function canReverseInvoices(): bool
+    {
+        return in_array((int) Auth::id(), [2, 43, 78], true);
+    }
+
+    private function ensureReversalAuthorized(): void
+    {
+        abort_unless($this->canReverseInvoices(), 403, 'You are not authorized to reverse OMS invoices.');
+    }
+
+    private function reversalSuccess(Request $request, string $message, array $summary)
+    {
+        if ($request->expectsJson() || $request->ajax()) return response()->json(['success' => true, 'message' => $message, 'summary' => $summary]);
+        return back()->with('success', $message);
+    }
+
+    private function reversalError(Request $request, string $message)
+    {
+        if ($request->expectsJson() || $request->ajax()) return response()->json(['success' => false, 'message' => $message], 422);
+        return back()->with('error', $message);
+    }
     public function saveShipmentRelation(Request $request, SupplierInvoice $invoice)
     {
         $data = $request->validate([

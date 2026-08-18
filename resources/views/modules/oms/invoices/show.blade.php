@@ -13,6 +13,7 @@
     $linkedShipmentIds = $linkedShipmentIds ?? collect();
     $selectedShipmentId = (int) ($selectedShipmentId ?? 0);
     $selectedShipment = $availableShipments->firstWhere('id', $selectedShipmentId);
+    $canReverseInvoices = $canReverseInvoices ?? false;
 @endphp
 
 <div class="container-fluid py-3 oms-premium">
@@ -49,6 +50,11 @@
                 <a href="{{ route('erp.oms.invoices.export.xlsx', $invoice) }}" class="btn btn-outline-success btn-sm rounded-2 oms-btn-icon">
                     <i class="fa-solid fa-file-excel me-1"></i> Export XLSX
                 </a>
+                @if($canReverseInvoices && $status !== 'cancelled' && $invoice->billedOrders->count() > 0)
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-2 oms-btn-icon js-reverse-invoice" data-reverse-url="{{ route('erp.oms.invoices.reverse', $invoice) }}">
+                        <i class="fa-solid fa-rotate-left me-1"></i> Reverse Invoice
+                    </button>
+                @endif
                 @if($status !== 'cancelled')
                     <form action="{{ route('erp.oms.invoices.cancel', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel invoice? This will revert operational invoiced quantities, but will not revert product costs.');">
                         @csrf
@@ -201,6 +207,11 @@
                                             <a href="{{ route('erp.oms.billed_orders.show', $billedOrder) }}" class="btn btn-outline-primary btn-sm rounded-2 oms-btn-icon" onclick="event.stopPropagation();">
                                                 <i class="fa-solid fa-eye"></i>
                                             </a>
+                                            @if($canReverseInvoices && $status !== 'cancelled')
+                                                <button type="button" class="btn btn-outline-danger btn-sm rounded-2 oms-btn-icon js-reverse-billed-order" data-reverse-url="{{ route('erp.oms.invoices.billed_orders.reverse', [$invoice, $billedOrder]) }}" data-reference="{{ $billedOrder->reference }}" title="Reverse billed order" onclick="event.stopPropagation();">
+                                                    <i class="fa-solid fa-rotate-left"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                     <tr id="bo-lines-{{ $billedOrder->id }}" class="oms-hidden-row d-none">
@@ -242,7 +253,9 @@
                                                                     <td class="text-end">{{ number_format($unitPriceInvoiceCurrency, 2, '.', '') }} {{ $lineCurrencyIso }}</td>
                                                                     <td class="text-end">{{ number_format($unitPriceEur, 2, '.', '') }} EUR</td>
                                                                     <td class="text-end">
-                                                                        @if($status !== 'cancelled' && $lineReceived === 0)
+                                                                        @if($canReverseInvoices && $status !== 'cancelled')
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger oms-btn-icon js-reverse-invoice-line" data-reverse-url="{{ route('erp.oms.invoices.lines.reverse', [$invoice, $line]) }}" data-quantity="{{ $line->qty_billed }}" data-reference="{{ $line->display_reference ?: ('Product #' . $line->product_id) }}" title="Reverse billed quantity"><i class="fa-solid fa-rotate-left"></i></button>
+                                                                        @elseif($status !== 'cancelled' && $lineReceived === 0)
                                                                             <button type="button" class="btn btn-sm btn-outline-danger oms-btn-icon js-remove-invoice-line" data-line-id="{{ $line->id }}" data-delete-url="{{ route('erp.oms.invoices.lines.destroy', [$invoice, $line]) }}" title="Remove line"><i class="fa-solid fa-trash"></i></button>
                                                                         @endif
                                                                     </td>
@@ -398,6 +411,46 @@ function initOmsInvoiceActions() {
             if (!result.isConfirmed) return;
             try {
                 await invoiceLineRequest(this.dataset.deleteUrl, 'DELETE');
+                window.location.reload();
+            } catch (error) { Swal.fire('Error', error.message, 'error'); }
+        });
+    });
+    async function confirmReversal(title, text) {
+        const result = await Swal.fire({
+            title, html: text + '<div class="form-check text-start mt-3"><input class="form-check-input" type="checkbox" id="allow-negative-stock"><label class="form-check-label" for="allow-negative-stock">Allow negative stock if this reversal requires it</label></div>',
+            icon: 'warning', showCancelButton: true, confirmButtonText: 'Reverse', cancelButtonText: 'Cancel', confirmButtonColor: '#dc3545',
+            preConfirm: () => ({ allowNegative: Boolean(document.getElementById('allow-negative-stock')?.checked) }),
+        });
+        return result.isConfirmed ? result.value : null;
+    }
+
+    document.querySelectorAll('.js-reverse-invoice-line').forEach(function (button) {
+        button.addEventListener('click', async function (event) {
+            event.preventDefault(); event.stopPropagation();
+            const quantity = Number(this.dataset.quantity || 0);
+            const quantityResult = await Swal.fire({
+                title: 'Reverse billed quantity', text: this.dataset.reference || 'Invoice line', input: 'number', inputValue: quantity,
+                inputAttributes: { min: 1, max: quantity, step: 1 }, showCancelButton: true, confirmButtonText: 'Continue',
+                inputValidator: value => (!Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > quantity) ? 'Enter a whole quantity between 1 and ' + quantity + '.' : undefined,
+            });
+            if (!quantityResult.isConfirmed) return;
+            const confirmation = await confirmReversal('Reverse ' + quantityResult.value + ' unit(s)?', 'The OMS billed quantity will be reduced. Received stock is only reversed when necessary to keep the record consistent.');
+            if (!confirmation) return;
+            try {
+                await invoiceLineRequest(this.dataset.reverseUrl, 'DELETE', { qty_to_remove: Number(quantityResult.value), confirm_negative_stock: confirmation.allowNegative });
+                window.location.reload();
+            } catch (error) { Swal.fire('Error', error.message, 'error'); }
+        });
+    });
+
+    document.querySelectorAll('.js-reverse-billed-order, .js-reverse-invoice').forEach(function (button) {
+        button.addEventListener('click', async function (event) {
+            event.preventDefault(); event.stopPropagation();
+            const isInvoice = this.classList.contains('js-reverse-invoice');
+            const confirmation = await confirmReversal(isInvoice ? 'Reverse complete invoice?' : 'Reverse billed order?', isInvoice ? 'All billed lines and their required receptions will be reverted.' : 'All lines in ' + (this.dataset.reference || 'this billed order') + ' will be reverted.');
+            if (!confirmation) return;
+            try {
+                await invoiceLineRequest(this.dataset.reverseUrl, 'POST', { confirm_negative_stock: confirmation.allowNegative });
                 window.location.reload();
             } catch (error) { Swal.fire('Error', error.message, 'error'); }
         });

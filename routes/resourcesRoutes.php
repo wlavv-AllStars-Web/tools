@@ -39,10 +39,10 @@ Route::get('web/product-store-compare/pdf', [WebProductStoreCompareController::c
 Route::resources([ 'hr'             => hrController::class      ]);
 Route::get('finance', [financeController::class, 'index'])->name('finance.index');
 
-Route::get('data', [dataController::class, 'index'])->name('data.index');
-Route::post('data/asd-images/sync', [dataController::class, 'syncAsdImages'])->name('data.asd_images.sync');
-Route::get('data/asd-shipping', [DataAsdShippingController::class, 'index'])->name('data.asd_shipping.index');
-Route::post('data/asd-shipping', [DataAsdShippingController::class, 'update'])->name('data.asd_shipping.update');
+// Disabled: Route::get('data', [dataController::class, 'index'])->name('data.index');
+// Disabled: Route::post('data/asd-images/sync', [dataController::class, 'syncAsdImages'])->name('data.asd_images.sync');
+// Disabled: Route::get('data/asd-shipping', [DataAsdShippingController::class, 'index'])->name('data.asd_shipping.index');
+// Disabled: Route::post('data/asd-shipping', [DataAsdShippingController::class, 'update'])->name('data.asd_shipping.update');
 
 
 Route::get(  'finance/documents/inventory', [financeController::class, 'download_inventory'])->name('finance.download_inventory');
@@ -56,7 +56,7 @@ Route::get('marketing', [marketingController::class, 'index'])->name('marketing.
 Route::get('marketing/product-images', [MarketingProductImageReviewController::class, 'index'])->name('marketing.product_images.index');
 Route::get('marketing/product-images/products', [MarketingProductImageReviewController::class, 'products'])->name('marketing.product_images.products');
 Route::post( 'customTools/marketing/post', [marketingController::class, 'post'])->name('marketing.post');
-Route::post('marketing/youtube-broken-links/sync', [marketingController::class, 'syncYoutubeBrokenLinks'])->name('marketing.youtube_broken_links.sync');
+Route::post('sales/youtube-broken-links/sync', [salesController::class, 'syncYoutubeBrokenLinks'])->name('sales.youtube_broken_links.sync');
 Route::get( 'marketing/ASD/missingImages',[marketingController::class, 'getASDMissingImages'])->name('marketing.asdMissingImages');
 
 Route::get('customer', [customerSupportController::class, 'index'])->name('customer.index');

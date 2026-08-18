@@ -46,47 +46,14 @@
                 <li class="nav-item text-center @if(Route::is('purchase.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('purchase.index') }}">
                         <div><i class="fa-solid fa-dollar-sign" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> BACKOFFICE </div>
+                        <div class="sideMenuText"> PURCHASE </div>
                     </a>
                 </li>
                 <li class="nav-item text-center @if(Route::is('sales.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('sales.index') }}">
                         <div><i class="fa-solid fa-comments-dollar" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> FRONTOFFICE </div>
+                        <div class="sideMenuText"> SALES </div>
                     </a>
-                </li>
-                
-                <li class="nav-item text-center @if(Route::is('data.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
-                    <a class="nav-link uppercase" href="{{ route('data.index') }}">
-                        <div><i class="fa-solid fa-database" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('menu.data') }}</div>
-                    </a> 
-                </li>
-
-                <li class="nav-item text-center @if(Route::is('checklist.index') || Route::is('checklist.today')) active-link @endif" style="display: inline-block;height: unset !important;"> 
-                    @if(auth()->user()->id == 59 || auth()->user()->id == 94 || auth()->user()->id == 43)
-                
-                        <a class="nav-link uppercase" data-bs-toggle="collapse" href="#collapseChecklist" role="button" aria-expanded="false" aria-controls="collapseChecklist">
-                            <div><i class="fa-solid fa-list" style="font-size:30px;"></i></div>
-                            <div class="sideMenuText">{{ __('messages.Checklist') }}</div>
-                        </a>
-                        <div class="collapse bg-secondary" id="collapseChecklist">
-                            <a class="nav-link uppercase text-white" href="{{ route('checklist.index') }}">
-                                <div><i class="fa-solid fa-clipboard-list" style="font-size:22px;"></i></div>
-                                <div class="sideMenuText"> {{ __('messages.Checklist Manager') }}</div>
-                            </a>
-                            <a class="nav-link uppercase text-white" href="{{ route('checklist.today') }}">
-                                <div><i class="fa-solid fa-list-check" style="font-size: 22px;"></i></div>
-                                <div class="sideMenuText"> {{ __('messages.Checklist') }}</div>
-                            </a>
-                        </div>
-                    @else
-                        <a class="nav-link uppercase" href="{{ route('checklist.today') }}">
-                            <div><i class="fa-solid fa-clipboard-list" style="font-size:30px;"></i></div>
-                            <div class="sideMenuText"> {{ __('messages.Checklist') }}</div>
-                        </a>
-                    @endif
-                    
                 </li>
                 <li class="nav-item text-center @if(Route::is('documentsManager.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('documentsManager.index') }}">

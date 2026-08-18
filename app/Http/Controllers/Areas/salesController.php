@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Areas;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\CustomTools\mailsController;
@@ -16,6 +18,7 @@ use App\Models\prestashop\orders;
 use App\Models\modules\price_map\price_map;
 
 use App\Models\modules\dashboard\dashboard;
+use Throwable;
 
 class salesController extends Controller
 {
@@ -55,6 +58,7 @@ class salesController extends Controller
 
     private function accessList(){        
         $accessList = array();
+        $accessList[]                           = ['name' =>  'YouTube Verify',                       'url' => route('sales.youtube_broken_links.sync'),             'method' => 'post', 'icon' => '<i style="font-size: 40px;" class="fa-brands fa-youtube"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.backorders'),             'url' => route('sales.tools.backorders.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-business-time"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.PRODUCT ISSUES'),         'url' => route('sales.tools.product_issues.index'),          'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-box-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.quote'),                  'url' => route('sales.tools.quotes.index', ['list' => 1]),    'icon' => '<i style="font-size: 40px;" class="fa-solid fa-bell-concierge"></i>'];
@@ -63,6 +67,25 @@ class salesController extends Controller
         $accessList[]                           = ['name' =>  'Payment link',                            'url' => route('sales.tools.payment_links.index'),           'icon' => '<i style="font-size: 40px;" class="fa-solid fa-link"></i>'];
         $accessList[]                           = ['name' =>  'Product visibility',                      'url' => route('sales.tools.product_visibility.index'),       'icon' => '<i style="font-size: 40px;" class="fa-solid fa-eye"></i>'];
         return $accessList;
+    }
+
+    public function syncYoutubeBrokenLinks(): RedirectResponse
+    {
+        try {
+            Artisan::call('youtube:check-broken-links');
+
+            $output = trim(Artisan::output());
+
+            return redirect()
+                ->route('sales.index')
+                ->with('success', $output !== '' ? $output : 'YouTube broken links verification completed.');
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('sales.index')
+                ->with('error', 'YouTube broken links verification failed: ' . $e->getMessage());
+        }
     }
 
     public function post(Request $request){

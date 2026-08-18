@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Areas;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
-use Throwable;
 
 use App\Http\Controllers\CustomTools\mailsController;
 
@@ -46,35 +43,11 @@ class marketingController extends Controller{
         return View::make('areas/marketing/index')->with($data);
     }
 
-    public function syncYoutubeBrokenLinks(): RedirectResponse
-    {
-        try {
-            Artisan::call('youtube:check-broken-links');
-
-            $output = trim(Artisan::output());
-
-            return redirect()
-                ->route('marketing.index')
-                ->with('success', $output !== '' ? $output : 'YouTube broken links verification completed.');
-        } catch (Throwable $e) {
-            report($e);
-
-            return redirect()
-                ->route('marketing.index')
-                ->with('error', 'YouTube broken links verification failed: ' . $e->getMessage());
-        }
-    }
-
     private function accessList(){
         
         $accessList = array();
-        $accessList[]                           = ['name' =>  trans('messages.TV'),         	    'url' => route('marketing.tools.tv.index'),      		       'icon' => '<i style="font-size: 40px;" class="fa-solid fa-tv"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.homepage'),         	'url' => route('marketing.tools.homepage.asm.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.homepage_asd'),       'url' => route('marketing.tools.homepage.asd.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.asm_resources'),      'url' => route('marketing.tools.resources.asm.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.resources'),         	'url' => route('marketing.tools.resources.asd.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.cars'),         	    'url' => route('marketing.tools.car_gallery.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-car"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.asg_events'),         'url' => route('asg_events.index'),                           'icon' => '<i style="font-size: 40px;" class="fa-solid fa-calendar-days"></i>'];
 
         $accessList[] = ['name' => trans('messages.product_images'), 'url' => route('marketing.product_images.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-images"></i>'];
 

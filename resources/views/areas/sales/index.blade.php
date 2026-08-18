@@ -3,16 +3,33 @@
     @include("areas.dashboard.includes.js")
 
 @section('content')
+    @if(session('success'))
+        <div class="alert alert-success" style="width: 100%;">{{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger" style="width: 100%;">{{ session('error') }}</div>
+    @endif
 
     <div class="navbar navbar-light customPanel">
         <div class="listUL" style="margin: 0 auto;display: table;">
             @foreach($accessList AS $access)
+            @if(($access['method'] ?? 'get') === 'post')
+            <form method="POST" action="{{ $access['url'] }}" style="margin: 0; float: left;">
+                @csrf
+                <button type="submit" class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left; border: 1px solid #ccc; padding: 20px 10px; background: transparent;">
+                    <div>{!! $access['icon'] !!}</div>
+                    <div style="line-height: 18px;">{{ $access['name']}}</div>
+                </button>
+            </form>
+            @else
             <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
                 <a href="{{$access['url']}}">     
                     <div>{!! $access['icon'] !!}</div>
                     <div style="line-height: 18px;">{{ $access['name']}}</div>
                 </a>
             </div>
+            @endif
             @endforeach
         </div>
     </div>

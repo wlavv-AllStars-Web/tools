@@ -45,28 +45,6 @@
                 <div class="sideMenuText"> {{ __('menu.sales') }}</div>
             </a>
         </div>
-
-        @if(auth()->user()->id == 59 || auth()->user()->id == 94 || auth()->user()->id == 43 )
-            <div class="text-center mobileMenuItem"> 
-                <a class="nav-link uppercase" href="{{ route('checklist.index') }}">
-                    <div><i class="fa-solid fa-clipboard-list" style="font-size:22px;"></i></div>
-                    <div class="sideMenuText"> {{ __('messages.Checklist Manager') }}</div>
-                </a>
-            </div>
-            <div class="text-center mobileMenuItem @if(Route::is('sales.index') ) active-link @endif"> 
-                <a class="nav-link uppercase" href="{{ route('checklist.today') }}">
-                    <div><i class="fa-solid fa-list-check" style="font-size: 22px;"></i></div>
-                    <div class="sideMenuText"> {{ __('messages.Checklist') }}</div>
-                </a>
-            </div>
-        @else
-            <div class="text-center mobileMenuItem @if(Route::is('sales.index') ) active-link @endif"> 
-                <a class="nav-link uppercase" href="{{ route('checklist.today') }}">
-                    <div><i class="fa-solid fa-clipboard-list" style="font-size:30px;"></i></div>
-                    <div class="sideMenuText"> {{ __('messages.Checklist') }}</div>
-                </a>
-            </div>
-        @endif
         <div class="text-center mobileMenuItem"> 
             <a class="nav-link uppercase" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <div><i class="fa fa-xl fa-sign-out" style="font-size: 30px;"></i></div>

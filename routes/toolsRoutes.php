@@ -1081,57 +1081,58 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
 });
 
 
-/** Checklist **/
-/** Checklist App Employee **/
-Route::get(  'checklist/history/{department}',     [employeeChecklistController::class, 'history'])->name('checklist.history');
-Route::get(  'checklist/today',                    [employeeChecklistController::class, 'today'])->name('checklist.today');
-Route::patch('checklist/{task}/status',            [employeeChecklistController::class, 'updateStatus'])->name('checklist.updateStatus');
-Route::patch('checklist/note',                     [employeeChecklistController::class, 'updateNote'])->name('checklist.updateNote');
+// Checklist routes disabled.
+// /** Checklist **/
+// /** Checklist App Employee **/
+// Route::get(  'checklist/history/{department}',     [employeeChecklistController::class, 'history'])->name('checklist.history');
+// Route::get(  'checklist/today',                    [employeeChecklistController::class, 'today'])->name('checklist.today');
+// Route::patch('checklist/{task}/status',            [employeeChecklistController::class, 'updateStatus'])->name('checklist.updateStatus');
+// Route::patch('checklist/note',                     [employeeChecklistController::class, 'updateNote'])->name('checklist.updateNote');
 
-Route::get(   'checklist',                         [checklistManagerController::class, 'index'])->name('checklist.index');
-Route::get(   'checklist/create',                  [checklistManagerController::class, 'create'])->name('checklist.create');
-Route::post(  'checklist/',                        [checklistManagerController::class, 'store'])->name('checklist.store');
-Route::get(   'checklist/{id}/{template}/edit',    [checklistManagerController::class, 'edit'])->name('checklist.edit');
-Route::put(   'checklist/{template}',              [checklistManagerController::class, 'update'])->name('checklist.update');
-Route::delete('checklist/{template}',              [checklistManagerController::class, 'destroy'])->name('checklist.destroy');
+// Route::get(   'checklist',                         [checklistManagerController::class, 'index'])->name('checklist.index');
+// Route::get(   'checklist/create',                  [checklistManagerController::class, 'create'])->name('checklist.create');
+// Route::post(  'checklist/',                        [checklistManagerController::class, 'store'])->name('checklist.store');
+// Route::get(   'checklist/{id}/{template}/edit',    [checklistManagerController::class, 'edit'])->name('checklist.edit');
+// Route::put(   'checklist/{template}',              [checklistManagerController::class, 'update'])->name('checklist.update');
+// Route::delete('checklist/{template}',              [checklistManagerController::class, 'destroy'])->name('checklist.destroy');
 
-Route::get(  'customTools/checklist/history/{department}',     [employeeChecklistController::class, 'history'])->name('checklist.legacy.history');
-Route::get(  'customTools/checklist/today',                    [employeeChecklistController::class, 'today'])->name('checklist.legacy.today');
-Route::patch('customTools/checklist/{task}/status',            [employeeChecklistController::class, 'updateStatus'])->name('checklist.legacy.updateStatus');
-Route::patch('customTools/checklist/note',                     [employeeChecklistController::class, 'updateNote'])->name('checklist.legacy.updateNote');
+// Route::get(  'customTools/checklist/history/{department}',     [employeeChecklistController::class, 'history'])->name('checklist.legacy.history');
+// Route::get(  'customTools/checklist/today',                    [employeeChecklistController::class, 'today'])->name('checklist.legacy.today');
+// Route::patch('customTools/checklist/{task}/status',            [employeeChecklistController::class, 'updateStatus'])->name('checklist.legacy.updateStatus');
+// Route::patch('customTools/checklist/note',                     [employeeChecklistController::class, 'updateNote'])->name('checklist.legacy.updateNote');
 
-Route::get(   'customTools/checklist',                         [checklistManagerController::class, 'index'])->name('checklist.legacy.index');
-Route::get(   'customTools/checklist/create',                  [checklistManagerController::class, 'create'])->name('checklist.legacy.create');
-Route::post(  'customTools/checklist/',                        [checklistManagerController::class, 'store'])->name('checklist.legacy.store');
-Route::get(   'customTools/checklist/{id}/{template}/edit',    [checklistManagerController::class, 'edit'])->name('checklist.legacy.edit');
-Route::put(   'customTools/checklist/{template}',              [checklistManagerController::class, 'update'])->name('checklist.legacy.update');
-Route::delete('customTools/checklist/{template}',              [checklistManagerController::class, 'destroy'])->name('checklist.legacy.destroy');
+// Route::get(   'customTools/checklist',                         [checklistManagerController::class, 'index'])->name('checklist.legacy.index');
+// Route::get(   'customTools/checklist/create',                  [checklistManagerController::class, 'create'])->name('checklist.legacy.create');
+// Route::post(  'customTools/checklist/',                        [checklistManagerController::class, 'store'])->name('checklist.legacy.store');
+// Route::get(   'customTools/checklist/{id}/{template}/edit',    [checklistManagerController::class, 'edit'])->name('checklist.legacy.edit');
+// Route::put(   'customTools/checklist/{template}',              [checklistManagerController::class, 'update'])->name('checklist.legacy.update');
+// Route::delete('customTools/checklist/{template}',              [checklistManagerController::class, 'destroy'])->name('checklist.legacy.destroy');
 
-/** Checklist admin assignment**/
-Route::get('checklist/assignEmployees', [checklistManagerController::class, 'assignEmployees'])->name('checklist.assignEmployees');
-Route::post('checklist/assignEmployees', [checklistManagerController::class, 'updateEmployeeAdmins'])->name('checklist.updateEmployeeAdmins');
-Route::get('customTools/checklist/assignEmployees', [checklistManagerController::class, 'assignEmployees'])->name('checklist.legacy.assignEmployees');
-Route::post('customTools/checklist/assignEmployees', [checklistManagerController::class, 'updateEmployeeAdmins'])->name('checklist.legacy.updateEmployeeAdmins');
+// /** Checklist admin assignment**/
+// Route::get('checklist/assignEmployees', [checklistManagerController::class, 'assignEmployees'])->name('checklist.assignEmployees');
+// Route::post('checklist/assignEmployees', [checklistManagerController::class, 'updateEmployeeAdmins'])->name('checklist.updateEmployeeAdmins');
+// Route::get('customTools/checklist/assignEmployees', [checklistManagerController::class, 'assignEmployees'])->name('checklist.legacy.assignEmployees');
+// Route::post('customTools/checklist/assignEmployees', [checklistManagerController::class, 'updateEmployeeAdmins'])->name('checklist.legacy.updateEmployeeAdmins');
 
-Route::get('/checklist-carry-over', function() {
-    // link para passar tasks pending para o dia de hoje.
+// Route::get('/checklist-carry-over', function() {
+//     // link para passar tasks pending para o dia de hoje.
 
 
-    $today = Carbon::today();
-    $departmentIds = daily_checklist::query()
-        ->where('main_task', true)
-        ->pluck('department_id')
-        ->unique()
-        ->values()
-        ->all();
+//     $today = Carbon::today();
+//     $departmentIds = daily_checklist::query()
+//         ->where('main_task', true)
+//         ->pluck('department_id')
+//         ->unique()
+//         ->values()
+//         ->all();
 
-    $carriedCount = daily_checklist::ensureTasksForDate($departmentIds, $today);
+//     $carriedCount = daily_checklist::ensureTasksForDate($departmentIds, $today);
 
-    return response()->json([
-        'message' => $carriedCount . ' main tasks carried over to ' . $today->toDateString(),
-        'count' => $carriedCount
-    ]);
-});
+//     return response()->json([
+//         'message' => $carriedCount . ' main tasks carried over to ' . $today->toDateString(),
+//         'count' => $carriedCount
+//     ]);
+// });
 
 /**
 

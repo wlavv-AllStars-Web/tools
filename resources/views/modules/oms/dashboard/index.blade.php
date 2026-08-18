@@ -103,6 +103,9 @@
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ route('erp.oms.invoices.index') }}" class="btn btn-primary oms-btn-icon">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Invoices
+                        </a>
                         <a href="{{ route('erp.oms.history.prices') }}" class="btn btn-outline-primary oms-btn-icon">
                             <i class="fa-solid fa-chart-line"></i> Price History
                         </a>

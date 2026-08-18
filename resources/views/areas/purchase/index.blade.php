@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="row">
+    <div class="row" style="margin: 0;">
         <div class="col-lg-3">
                 <div class="navbar navbar-light customPanel">
         <div class="panel panel-default" style="display: flow-root">
             <div class="panel-body sales_history" style="min-height: 100px;">
-                <div class="row">
+                <div class="row" style="margin: 0;">
                     <div class="col-lg-12"><h5 style="margin-top:7px;text-align: center;">{{ __('tags.SALES REPORT') }}</h5></div>
                     <div class="col-lg-12">
                         <div style="width: 40%;float: left;">

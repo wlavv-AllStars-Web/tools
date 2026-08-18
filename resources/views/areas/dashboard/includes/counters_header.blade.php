@@ -1,9 +1,6 @@
 <div class="row">
 
     @if(count($asm) > 0)
-        <div class="col-lg-12">
-            <div class="navbar navbar-light customPanel">ALL STARS MOTORSPORT PANEL'S</div>
-        </div>
 
         @foreach($asm as $counter)
             @php
@@ -62,9 +59,6 @@
 
 
     @if(count($asd) > 0)
-        <div class="col-lg-12">
-            <div class="navbar navbar-light customPanel">ALL STARS DISTRIBUTION PANEL'S</div>
-        </div>
 
         @foreach($asd as $counter)
             @php

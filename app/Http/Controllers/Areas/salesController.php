@@ -58,6 +58,7 @@ class salesController extends Controller
 
     private function accessList(){        
         $accessList = array();
+        $accessList[]                           = ['name' =>  trans('messages.COMPATS'),                 'url' => route('admin.tools.compats.index'),                   'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-packing"></i>'];
         $accessList[]                           = ['name' =>  'YouTube Verify',                       'url' => route('sales.youtube_broken_links.sync'),             'method' => 'post', 'icon' => '<i style="font-size: 40px;" class="fa-brands fa-youtube"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.backorders'),             'url' => route('sales.tools.backorders.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-business-time"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.PRODUCT ISSUES'),         'url' => route('sales.tools.product_issues.index'),          'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-box-open"></i>'];

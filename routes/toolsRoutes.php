@@ -162,14 +162,15 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/annual', [productivityController::class,'annual'])->name('annual');
         });
 
-        Route::prefix('asd-alerts')->name('asd_alerts.')->group(function () {
-            Route::get('/', [AsdAlertController::class, 'index'])->name('index');
-            Route::get('/create', [AsdAlertController::class, 'create'])->name('create');
-            Route::post('/', [AsdAlertController::class, 'store'])->name('store');
-            Route::get('/{asdAlert}/edit', [AsdAlertController::class, 'edit'])->name('edit');
-            Route::put('/{asdAlert}', [AsdAlertController::class, 'update'])->name('update');
-            Route::delete('/{asdAlert}', [AsdAlertController::class, 'destroy'])->name('destroy');
-        });
+        // ASD Alerts BO routes disabled; the API routes in routes/api.php remain active.
+//         Route::prefix('asd-alerts')->name('asd_alerts.')->group(function () {
+//             Route::get('/', [AsdAlertController::class, 'index'])->name('index');
+//             Route::get('/create', [AsdAlertController::class, 'create'])->name('create');
+//             Route::post('/', [AsdAlertController::class, 'store'])->name('store');
+//             Route::get('/{asdAlert}/edit', [AsdAlertController::class, 'edit'])->name('edit');
+//             Route::put('/{asdAlert}', [AsdAlertController::class, 'update'])->name('update');
+//             Route::delete('/{asdAlert}', [AsdAlertController::class, 'destroy'])->name('destroy');
+//         });
 
         Route::redirect('/oms/logistic-containers', '/logistics/oms/logistic-containers');
 
@@ -432,10 +433,10 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('marketing')->name('marketing.tools.')->group(function () {
-        Route::get('/tv', [tvController::class, 'index'])->name('tv.index');
-        Route::post('/tv/save', [tvController::class, 'store'])->name('tv.store');
-        Route::post('/tv/toggle-active/{id}', [tvController::class, 'toggleActive'])->name('tv.toggle_active');
-        Route::post('/tv/update-text', [tvController::class, 'changeText'])->name('tv.change_text');
+// Disabled TV route: Route::get('/tv', [tvController::class, 'index'])->name('tv.index');
+// Disabled TV route: Route::post('/tv/save', [tvController::class, 'store'])->name('tv.store');
+// Disabled TV route: Route::post('/tv/toggle-active/{id}', [tvController::class, 'toggleActive'])->name('tv.toggle_active');
+// Disabled TV route: Route::post('/tv/update-text', [tvController::class, 'changeText'])->name('tv.change_text');
 
         Route::get('/homepage/asm', [HomepageAdminController::class, 'index'])->name('homepage.asm.index');
         Route::get('/homepage/asd', [HomepageASDAdminController::class, 'index'])->name('homepage.asd.index');
@@ -754,7 +755,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [HomepageASDAdminController::class, 'index'])->name('index');
         Route::post('/update', [HomepageASDAdminController::class, 'update'])->name('update');
     });
-    
+
     Route::prefix('customTools/shipments-check')->name('customTools.')->group(function () {
         Route::get('', [CarrierExpeditionCheckController::class, 'index'])->name('shipments.index');
         Route::post('/store', [CarrierExpeditionCheckController::class, 'store'])->name('shipments.store');
@@ -806,39 +807,39 @@ Route::middleware(['auth'])->group(function () {
     Route::post('customTools/refunds/get/info',             [refundController::class, 'getInfo'])->name('refund.getInfo');
     Route::post('customTools/refunds/edit',                 [refundController::class, 'editRefund'])->name('refund.editRefund');
     Route::post('customTools/refunds/update',               [refundController::class, 'updateRefund'])->name('refund.updateRefund');
-    
-    
-    
+
+
+
     Route::get( 'customTools/priceMap',                     [priceMapController::class, 'index'])->name('priceMap.index');
     Route::post( 'customTools/getPriceMapOfBrand',          [priceMapController::class, 'getPriceMapOfBrand'])->name('priceMap.getPriceMapOfBrand');
     Route::get( 'customTools/priceMap/cron/{part}',         [priceMapController::class, 'cron_priceMap'])->name('priceMap.cron_priceMap');
-    
-    
-    
+
+
+
     Route::post( 'customTools/search',                      [searchController::class, 'globalSearch'])->name('search.globalSearch');
     Route::get(  'customTools/search',                      [searchController::class, 'globalSearchGet'])->name('search.globalSearchGet');
-        
+
     Route::get(  'customTools/dashboard/index',             [dashboardController::class, 'index'])->name('dashboard.index');
     Route::post( 'customTools/dashboard/counters/content',  [dashboardController::class, 'getCountersContent'])->name('dashboard.getCountersContent');
-    
+
     Route::get(  'customTools/suppliers/map',               [suppliersMapController::class, 'index'])->name('suppliersMap.index');
     Route::post(  'customTools/suppliers/map/store',        [suppliersMapController::class, 'store'])->name('suppliersMap.store');
     Route::post(  'customTools/suppliers/map/modal',        [suppliersMapController::class, 'modal'])->name('suppliersMap.modal');
-    
+
     Route::get(  'customTools/suppliers/issues/{type}',     [suppliersIssuesController::class, 'index'])->name('suppliersIssues.index');
-    
+
     Route::post( 'customTools/suppliers/issues/delivery/new',   [suppliersIssuesController::class, 'newDeliveryIssue'])->name('suppliersIssues.newDeliveryIssue');
     Route::post( 'customTools/suppliers/issues/delivery/update',[suppliersIssuesController::class, 'updateDeliveryIssue'])->name('suppliersIssues.updateDeliveryIssue');
     Route::post( 'customTools/suppliers/issues/delivery/close', [suppliersIssuesController::class, 'closeDeliveryIssue'])->name('suppliersIssues.closeDeliveryIssue');
-    
+
     Route::post( 'customTools/suppliers/issues/warranty/new',   [suppliersIssuesController::class, 'newWarrantyIssue'])->name('suppliersIssues.newWarrantyIssue');
     Route::post( 'customTools/suppliers/issues/warranty/update',[suppliersIssuesController::class, 'updateWarrantyIssue'])->name('suppliersIssues.updateWarrantyIssue');
     Route::post( 'customTools/suppliers/issues/warranty/close', [suppliersIssuesController::class, 'closeWarrantyIssue'])->name('suppliersIssues.closeWarrantyIssue');
-    
+
     Route::post( 'customTools/suppliers/issues/new',[suppliersIssuesController::class, 'newSupplierIssue'])->name('suppliersIssues.newSupplierIssue');
     Route::post( 'customTools/suppliers/issues/update',[suppliersIssuesController::class, 'updateSupplierIssue'])->name('suppliersIssues.updateSupplierIssue');
-    
-    
+
+
     Route::get(  'customTools/shipping',[shippingController::class, 'index'])->name('shipping.index');
     Route::post( 'customTools/shipping/add/eta/delay',[shippingController::class, 'addDelay'])->name('shipping.addDelay');
     Route::get(  'customTools/shipping/add',[shippingController::class, 'add'])->name('shipping.add');
@@ -852,7 +853,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get( 'customTools/vat/check', fn () => redirect()->route('finance.tools.vat.check'))->name('checkVat.index');
     Route::get( 'customTools/vat/verify',[checkVatController::class, 'verify'])->name('checkVat.verify');
-    
+
     Route::get( 'customTools/compats/index',[compatsController::class, 'index'])->name('compats.index');
     Route::post('customTools/compats/options/edit',[compatsController::class, 'updateTag'])->name('compats.updateTag');
     Route::post('customTools/compats/get/options',[compatsController::class, 'getOptions'])->name('compats.getOptions');
@@ -861,17 +862,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('customTools/compats/create/relationship',[compatsController::class, 'saveNewRelationship'])->name('compats.saveNewRelationship');
     Route::post('customTools/compats/edit/logo',[compatsController::class, 'editImage'])->name('compats.editImage');
     Route::post('customTools/compats/options/edit/options',[compatsController::class, 'setData'])->name('compats.setData');
-    
+
     Route::post('customTools/compats/remove/comapt',[compatsController::class, 'removeCompat'])->name('compats.removeCompat');
     Route::post('customTools/compats/menu/clearFrontoffice',[compatsController::class, 'clearFrontofficeMenu'])->name('compats.clearFrontofficeMenu');
 
     Route::get('customTools/compats/menu/updateMenu',[compatsController::class, 'updateMenu'])->name('compats.updateMenu');
     Route::post('customTools/compats/menu/setOrder',[compatsController::class, 'setOrder'])->name('compats.setOrder');
 
-    Route::get('customTools/tv',                        [tvController::class, 'index'])->name('tv.index');
-    Route::post('customTools/tv/save',                  [tvController::class, 'store'])->name('tv.store');
-    Route::post('customTools/tv/toggle-active/{id}',    [tvController::class, 'toggleActive'])->name('tv.toggleActive');
-    Route::post('customTools/tv/update_text',           [tvController::class, 'changeText'])->name('tv.changeText');     
+// Disabled TV route: Route::get('customTools/tv',                        [tvController::class, 'index'])->name('tv.index');
+// Disabled TV route: Route::post('customTools/tv/save',                  [tvController::class, 'store'])->name('tv.store');
+// Disabled TV route: Route::post('customTools/tv/toggle-active/{id}',    [tvController::class, 'toggleActive'])->name('tv.toggleActive');
+// Disabled TV route: Route::post('customTools/tv/update_text',           [tvController::class, 'changeText'])->name('tv.changeText');
 
     Route::get( 'customTools/carrier/return/index',[carrierReturnController::class, 'index'])->name('carrierReturn.index');
     Route::post( 'customTools/carrier/return/add',[carrierReturnController::class, 'store'])->name('carrierReturn.store');
@@ -881,15 +882,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get( 'customTools/carrier/verification/index',[carrierIssuesController::class, 'verificationIndex'])->name('carrierIssues.verification.index');
     Route::post( 'customTools/carrier/verification/upload',[carrierIssuesController::class, 'verificationUpload'])->name('carrierIssues.verification.upload');
     Route::post( 'customTools/carrier/verification/check',[carrierIssuesController::class, 'carrierVerify'])->name('carrierIssues.verification.carrierVerify');
-    
-    
+
+
     Route::post( 'customTools/carrier/issues/archive',[carrierIssuesController::class, 'archive'])->name('carrierIssues.archive');
     Route::post( 'customTools/carrier/issues/update', [carrierIssuesController::class, 'update'])->name('carrierIssues.update');
     Route::post( 'customTools/carrier/issues/edit',   [carrierIssuesController::class, 'edit'])->name('carrierIssues.edit');
     Route::post( 'customTools/carrier/issues/destroy',[carrierIssuesController::class, 'destroy'])->name('carrierIssues.destroy');
     Route::get(  'customTools/carrier/issues/index',  [carrierIssuesController::class, 'index'])->name('carrierIssues.index');
     Route::post(  'customTools/carrier/issues/save',  [carrierIssuesController::class, 'store'])->name('carrierIssues.store');
-    
+
     Route::get(  'customTools/picking/index', [pickingController::class, 'index'])->name('picking.index');
     Route::post( 'customTools/picking/rowDone', [pickingController::class, 'rowDone'])->name('picking.rowDone');
     Route::post( 'customTools/picking/container', [pickingController::class, 'saveContainer'])->name('picking.container.save');
@@ -917,7 +918,7 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
     Route::post('customTools/housing/editReference', [housingController::class, 'editReference'])->name('housing.editReference');
     Route::post('customTools/housing/editEan13', [housingController::class, 'editEan13'])->name('housing.editEan13');
     Route::post('customTools/housing/editStock', [housingController::class, 'editStock'])->name('housing.editStock');
-    
+
     Route::post('customTools/housing/editStockArrive', [housingController::class, 'editStockArrive'])->name('housing.editStockArrive');
 **/
 
@@ -938,62 +939,62 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
     Route::post( 'customTools/documentManager/loadFile', [documentsManagerController::class, 'loadFile'])->name('documentsManager.legacy.loadFile');
     Route::post( 'customTools/documentManager/listSearch', [documentsManagerController::class, 'listSearch'])->name('documentsManager.legacy.listSearch');
     Route::post( 'customTools/documentManager/destroy', [documentsManagerController::class, 'destroy'])->name('documentsManager.legacy.destroy');
-    
-    
+
+
     /** DPD **/
     Route::get( 'dpd/csv/generate/{id_order}/{weight}', [dpdController::class, 'generateCSV'])->name('dpd.generateCSV');
     /** DPD **/
-    
+
     /** BARCODE **/
     Route::get( 'barcode/erp/print/{id_order}', [barcodeController::class, 'printERPOrderBarcode'])->name('barcode.printERPOrderBarcode');
     Route::get( 'barcode/erp/print/{id_product}/{id_product_attribute}', [barcodeController::class, 'printProductStand'])->name('barcode.printProductStand');
     /**Route::get( 'barcode/stand/print/{id_product}/{id_product_attribute}', [barcodeController::class, 'printProductStand'])->name('barcode.printProductStand');**/
     Route::get( 'barcode/stand/print/{id_product}/{id_product_attribute}', [barcodeController::class, 'printProductStandString'])->name('barcode.printProductStandString');
-    
+
     Route::get( 'barcode/stand/cell/print/{tag}', [barcodeController::class, 'printProductStandCell'])->name('barcode.printProductStandCell');
-    
+
     //Route::get( 'barcode/product/print/{id_product}/{id_product_attribute}/{repeat}', [barcodeController::class, 'printProductBarcode'])->name('barcode.printProductBarcode');
-    
+
     //Route::get( 'barcode/product/generate/{id_product}/{id_product_attribute}', [barcodeController::class, 'generateProductBarcode'])->name('barcode.generateProductBarcode');
     //Route::get( 'barcode/product/{barcode}/{id_product}/{id_product_attribute}', [barcodeController::class, 'checkAndShowBarcode'])->name('barcode.checkAndShowBarcode');
     /** BARCODE **/
-    
+
     Route::get( 'customTools/stockEntry/listToRemove', [stockEntryController::class, 'listToRemove'])->name('stockEntry.listToRemove');
     Route::post( 'customTools/stockEntry/post',        [stockEntryController::class, 'post'])->name('stockEntry.post');
-    
+
     Route::post( 'customTools/autoOrders/setAsOrdered',     [autoOrdersController::class, 'setAsOrdered'])->name('autoOrders.setAsOrdered');
     Route::post( 'customTools/autoOrders/getProductInfo',   [autoOrdersController::class, 'getProductInfo'])->name('autoOrders.getProductInfo');
     Route::post( 'customTools/autoOrders/getProductsInfo',  [autoOrdersController::class, 'getProductsInfo'])->name('autoOrders.getProductsInfo');
     Route::post( 'customTools/autoOrders/add',              [autoOrdersController::class, 'addToOrder'])->name('autoOrders.addToOrder');
     Route::post( 'customTools/autoOrders/update',           [autoOrdersController::class, 'updateOrder'])->name('autoOrders.updateOrder');
     Route::post( 'customTools/autoOrders/createOrder',      [autoOrdersController::class, 'saveOrder'])->name('autoOrders.saveOrder');
-    
+
     Route::post( 'customTools/autoOrders/clean/brand/items',[autoOrdersController::class, 'cleanBranditems'])->name('autoOrders.cleanBranditems');
     Route::post( 'customTools/autoOrders/export/CSV',       [autoOrdersController::class, 'exportCSV'])->name('autoOrders.exportCSV');
-    
+
     Route::post( 'customTools/autoOrders/load/products',    [autoOrdersController::class, 'loadProducts'])->name('autoOrders.loadProducts');
     Route::post( 'customTools/autoOrders/load/attributes',  [autoOrdersController::class, 'loadAttributes'])->name('autoOrders.loadAttributes');
     Route::post( 'customTools/autoOrders/new/order/scratch',[autoOrdersController::class, 'saveNewOrderFromScratch'])->name('autoOrders.saveNewOrderFromScratch');
-    
+
     Route::post( 'customTools/uploads/upload',              [uploadsController::class, 'upload'])->name('uploads.upload');
-    
+
     Route::post( 'customTools/suppliersBackorders/getSuppliersBackorders',      [suppliersBackordersController::class, 'getSuppliersBackorders'])->name('suppliersBackorders.getSuppliersBackorders');
     Route::get(  'customTools/suppliersBackorders/send/{id_supplier}/{token}',  [suppliersBackordersController::class, 'send_report'])->name('suppliersBackorders.send_report');
-    
+
     Route::resource('customTools/stockEntry', stockEntryController::class)->only(['show', 'update', 'destroy']);
     Route::resource('customTools/autoOrders', autoOrdersController::class)->except(['update', 'destroy']);
     Route::resource('customTools/backorders', backordersController::class)->only(['index']);
 
     Route::post( 'customTools/backorders/getBackorderDetail', [backordersController::class, 'getOrderDetails'])->name('backorders.getBackorderDetail');
-    
+
     Route::post( 'customTools/backorders/updateInfo',      [backordersController::class, 'updateInfo'])->name('backorders.updateInfo');
     Route::post( 'customTools/backorders/getProductInfo',  [backordersController::class, 'getProductInfo'])->name('backorders.getProductInfo');
     Route::post( 'customTools/backorders/setRowColor',     [backordersController::class, 'setRowColor'])->name('backorders.setRowColor');
-    
+
     Route::resources([ 'customTools/suppliersBackorders'=>  suppliersBackordersController::class]);
     Route::resources([ 'customTools/uploads'=>              uploadsController::class]);
-    
-    
+
+
     Route::get(  'customTools/products/issues/index',       [productIssuesController::class, 'index']  )->name('productIssues.index');
     Route::post( 'customTools/products/issues/save',        [productIssuesController::class, 'store']  )->name('productIssues.store');
     Route::get(  'customTools/products/issues/edit/{id}',   [productIssuesController::class, 'edit']   )->name('productIssues.edit');
@@ -1001,12 +1002,12 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
 
     Route::get('/returns/{id?}', [returnsController::class, 'index'])->name('returns.index');
     Route::get('/returns/modal/{id}', [returnsController::class, 'getModal'])->name('returns.getModal');
-    Route::post('/returns/changeStatus', [returnsController::class, 'changeStatus'])->name('returns.changeStatus');    
-    
+    Route::post('/returns/changeStatus', [returnsController::class, 'changeStatus'])->name('returns.changeStatus');
+
     Route::get('/warranties/{id?}', [warrantiesController::class, 'index'])->name('warranties.index');
     Route::get('/warranties/modal/{id}', [warrantiesController::class, 'getModal'])->name('warranties.getModal');
     Route::post('/warranties/changeStatus', [warrantiesController::class, 'changeStatus'])->name('warranties.changeStatus');
-    
+
     /** pricing data **/
     Route::get( 'customTools/pricing/index',               [pricingConvertionController::class, 'index'] )->name('pricing.index');
 
@@ -1039,10 +1040,10 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
         Route::get('/', [taskController::class,'index'])->name('index');
         Route::post('/store', [taskController::class,'store'])->name('store');
         Route::post('/{id}/update', [taskController::class,'update'])->name('update');
-    
+
         // ✅ novo: excel inline update
         Route::post('/{id}/field', [taskController::class,'updateField'])->name('field');
-    
+
         // ✅ novo: comentários/histórico para expand inline
         Route::get('/{id}/comments', [taskController::class,'comments'])->name('comments');
 
@@ -1075,7 +1076,7 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
         Route::get('/monthly', [productivityController::class,'monthly'])->name('monthly');
         Route::get('/annual', [productivityController::class,'annual'])->name('annual');
     });
-    
+
 
 
 });
@@ -1137,14 +1138,14 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
 /**
 
 Route::get('/db-comparision', function () {
-    
+
     $oldConnection = 'mysql2'; // Definir no config/database.php
     $newConnection = 'mysql3'; // Conex達o padr達o do Laravel
-    
+
     $oldTables = DB::connection($oldConnection)->select("SHOW TABLES");
     $newTables = DB::connection($newConnection)->select("SHOW TABLES");
-    
-    
+
+
 
     $oldTableNames = array_map('current', json_decode(json_encode($oldTables), true));
     $newTableNames = array_map('current', json_decode(json_encode($newTables), true));
@@ -1159,10 +1160,10 @@ Route::get('/db-comparision', function () {
     foreach ($tableDifferences['common'] as $table) {
         $oldColumns = DB::connection($oldConnection)->select("SHOW COLUMNS FROM `$table`");
         $newColumns = DB::connection($newConnection)->select("SHOW COLUMNS FROM `$table`");
-        
+
         $oldColumnNames = array_column($oldColumns, 'Field');
         $newColumnNames = array_column($newColumns, 'Field');
-        
+
         $columnDifferences[$table] = [
             'only_in_old' => array_diff($oldColumnNames, $newColumnNames),
             'only_in_new' => array_diff($newColumnNames, $oldColumnNames),
@@ -1180,7 +1181,7 @@ Route::get('/db-comparision', function () {
             }
         }
     }
-    
+
     return view('bd_compare', compact('tableDifferences', 'columnDifferences'));
 });
 */

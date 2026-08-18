@@ -33,9 +33,6 @@ class adminController extends Controller{
     private function accessList(){
         return [
             /**['name' => trans('messages.tasks'), 'url' => route('admin.tools.asg_tasks.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-list-check"></i>'],**/
-            ['name' => trans('messages.oms'), 'url' => route('admin.tools.oms.dashboard'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-warehouse"></i>'],
-            ['name' => trans('messages.COMPATS'), 'url' => route('admin.tools.compats.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-packing"></i>'],
-            ['name' => 'ASD - Alerts', 'url' => route('admin.tools.asd_alerts.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-triangle-exclamation"></i>'],
         ];
     }
 

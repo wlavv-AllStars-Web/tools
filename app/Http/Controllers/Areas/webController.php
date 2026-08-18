@@ -51,7 +51,6 @@ class webController extends Controller{
     private function accessList(){
         
         $accessList = array();
-        $accessList[]                           = ['name' => trans('messages.TV'),           'url' => route('marketing.tools.tv.index'),           'icon' => '<i style="font-size: 40px;" class="fa-solid fa-tv"></i>'];
         $accessList[]                           = ['name' => trans('messages.cars'),         'url' => route('marketing.tools.car_gallery.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-car"></i>'];
         $accessList[]                           = ['name' => trans('messages.asg_events'),   'url' => route('asg_events.index'),                   'icon' => '<i style="font-size: 40px;" class="fa-solid fa-calendar-days"></i>'];
         $accessList[]                           = ['name' => trans('messages.homepage'),     'url' => route('marketing.tools.homepage.asm.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];

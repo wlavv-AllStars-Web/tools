@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="navbar navbar-light customPanel">
+    <div class="row">
+        <div class="col-lg-3">
+                <div class="navbar navbar-light customPanel">
         <div class="panel panel-default" style="display: flow-root">
             <div class="panel-body sales_history" style="min-height: 100px;">
                 <div class="row">
@@ -30,7 +32,9 @@
         </div>
     </div>
 
-    <div class="navbar navbar-light customPanel">
+        </div>
+        <div class="col-lg-9">
+                <div class="navbar navbar-light customPanel">
         <div class="listUL" style="margin: 0 auto;display: table;">
             @foreach($accessList AS $access)
             <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
@@ -48,9 +52,10 @@
             </div>
         </div>
     </div>
-    
+            </div>
+        </div>
+    </div>
 
-    
     {!! $counters !!}    
 
     <script>

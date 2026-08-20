@@ -186,7 +186,7 @@ class picking extends Model
             ->all();
     }
     public static function add(){
-        self::classifyPaymentAcceptedOrders();
+        // Order-state classification is owned exclusively by PrestaShop.
         self::removeNonPreparationPickingRows();
         self::addData([3, 35], 'preparation');
     }

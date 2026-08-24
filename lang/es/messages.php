@@ -145,7 +145,7 @@ return [
 
     /** marketing **/
     'marketing' => 'Marketing',
-    'marketing.index' => 'Marketing',
+    'marketing.index' => 'Studio',
   
 
     /** swal **/

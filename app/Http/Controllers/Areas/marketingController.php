@@ -27,7 +27,7 @@ class marketingController extends Controller{
     
     public function __construct(){
         $this->middleware('auth');
-        $this->breadcrumbs[] = [ 'name' =>  trans('menu.marketing'), 'url' => route('marketing.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Studio', 'url' => route('marketing.index'), 'no_translation' => 1];
     }
 
     public function index(){

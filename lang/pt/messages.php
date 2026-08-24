@@ -141,7 +141,7 @@ return [
 
     /** marketing **/
     'marketing' => 'Marketing',
-    'marketing.index' => 'Marketing',
+    'marketing.index' => 'Studio',
 
     /** Stock entry **/
     'Please confirm the removal of the stock entry!' => 'Por favor, confirme a remoção da entrada de stock!',

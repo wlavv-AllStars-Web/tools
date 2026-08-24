@@ -6,7 +6,6 @@
             @php
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
                 $isDeferred = isset($counter->calculated) && $counter->calculated === false;
-                $hideCounter = $counter->tab === 'marketing';
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
@@ -37,11 +36,9 @@
                                     @endif
                                 "
                             >
-                                @if(!$hideCounter)
-                                    <div style="font-size: 35px" id="{{ $panelDomId }}_quantity">
-                                        {{ $counter->counter }}
-                                    </div>
-                                @endif
+                                <div style="font-size: 35px" id="{{ $panelDomId }}_quantity">
+                                    {{ $counter->counter }}
+                                </div>
 
                                 <div id="{{ $panelDomId }}_loading" style="display: none;">
                                     <div class="spinner"></div>
@@ -67,7 +64,6 @@
             @php
                 $panelDomId = 'dashboard_panel_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $counter->tab . '_' . $counter->store . '_' . $counter->panel);
                 $isDeferred = isset($counter->calculated) && $counter->calculated === false;
-                $hideCounter = $counter->tab === 'marketing';
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
@@ -97,11 +93,9 @@
                                     @endif
                                 "
                             >
-                                @if(!$hideCounter)
-                                    <div style="font-size: 35px" id="{{ $panelDomId }}_quantity">
-                                        {{ $counter->counter }}
-                                    </div>
-                                @endif
+                                <div style="font-size: 35px" id="{{ $panelDomId }}_quantity">
+                                    {{ $counter->counter }}
+                                </div>
 
                                 <div id="{{ $panelDomId }}_loading" style="display: none;">
                                     <div class="spinner"></div>

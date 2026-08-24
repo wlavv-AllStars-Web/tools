@@ -171,4 +171,5 @@ return [
     'pending_reviews' => 'Pending reviews',
     'id_shipping' => 'ID',
     'eta_date' => 'ETA',
+    'days' => 'DAYS',
 ];

@@ -139,6 +139,18 @@
             white-space: nowrap;
         }
 
+        .daily-card-link {
+            color: #5c6670;
+            font-size: 58px;
+            line-height: 1;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .daily-card-link .label {
+            font-size: 22px;
+        }
+
         .shop-card {
             display: flex;
             flex-direction: column;
@@ -205,6 +217,14 @@
                     <div class="label">{{ $item[2] ?? strtoupper($item[0]) }}</div>
                 </div>
             @endforeach
+            @if(!empty($canUseDailyDashboard))
+                <div class="card">
+                    <a class="daily-card-link" href="#" onclick="getDailyStats(); return false;">
+                        <div><i class="fa-solid fa-chart-simple"></i></div>
+                        <div class="label">DAILY</div>
+                    </a>
+                </div>
+            @endif
         </div>
         <div class="panel middle">
             <div class="card">

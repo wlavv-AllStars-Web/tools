@@ -162,11 +162,11 @@ class statsController extends Controller
         return $this->renderKpi('areas/dashboard/dashboard-admin');
     }
 
-    public function dashboardKpiContent(bool $admin): string
+    public function dashboardKpiContent(bool $canUseDailyDashboard = false): string
     {
         return $this->renderKpi(
-            $admin ? 'areas/dashboard/dashboard-admin' : 'areas/dashboard/dashboard',
-            ['embedded' => true]
+            'areas/dashboard/dashboard-admin',
+            ['embedded' => true, 'canUseDailyDashboard' => $canUseDailyDashboard]
         )->render();
     }
 

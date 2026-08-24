@@ -98,17 +98,13 @@ class customers_backorders extends Model
                 $expected = 0;
             }
 
+            $omsProductTargets = self::resolveOmsProductTargets($id_product, $id_product_attribute, (string) $item->reference);
+
             $erp_ordered = null;
             if (Schema::hasTable('oms_billed_order_lines')) {
                 $erp_ordered = DB::table('oms_billed_order_lines as bol')
-                    ->where('bol.product_id', $id_product)
-                    ->where(function ($query) use ($id_product_attribute) {
-                        if ($id_product_attribute > 0) {
-                            $query->where('bol.product_attribute_id', $id_product_attribute);
-                        } else {
-                            $query->whereNull('bol.product_attribute_id')
-                                ->orWhere('bol.product_attribute_id', 0);
-                        }
+                    ->where(function ($query) use ($omsProductTargets) {
+                        self::applyOmsProductTargetFilter($query, $omsProductTargets, 'bol');
                     })
                     ->selectRaw('SUM(COALESCE(bol.qty_billed, 0)) AS invoiced, SUM(COALESCE(bol.qty_received, 0)) AS qty_received, SUM(GREATEST(COALESCE(bol.qty_billed, 0) - COALESCE(bol.qty_received, 0), 0)) AS expected')
                     ->first();
@@ -118,14 +114,8 @@ class customers_backorders extends Model
             $erpExpected = (int) ($erp_ordered->expected ?? 0);
 
             $omsExpected = DB::table('oms_order_note_lines as onl')
-                ->where('onl.product_id', $id_product)
-                ->where(function ($query) use ($id_product_attribute) {
-                    if ($id_product_attribute > 0) {
-                        $query->where('onl.product_attribute_id', $id_product_attribute);
-                    } else {
-                        $query->whereNull('onl.product_attribute_id')
-                            ->orWhere('onl.product_attribute_id', 0);
-                    }
+                ->where(function ($query) use ($omsProductTargets) {
+                    self::applyOmsProductTargetFilter($query, $omsProductTargets, 'onl');
                 })
                 ->leftJoinSub(
                     DB::table('oms_billed_order_lines as bol')
@@ -195,6 +185,77 @@ class customers_backorders extends Model
         return $rows;
     }
     
+    private static function resolveOmsProductTargets(int $idProduct, int $idProductAttribute, string $reference): array
+    {
+        static $cache = [];
+
+        $reference = trim($reference);
+        $cacheKey = strtoupper($reference);
+
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+
+        $fallback = [[
+            'id_product' => $idProduct,
+            'id_product_attribute' => $idProductAttribute,
+        ]];
+
+        if ($reference === '') {
+            return $cache[$cacheKey] = $fallback;
+        }
+
+        try {
+            $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+            $prestashop = DB::connection('mysql2');
+
+            $attributeTargets = $prestashop->table($prefix . 'product_attribute as pa')
+                ->join($prefix . 'product as p', 'p.id_product', '=', 'pa.id_product')
+                ->where('pa.reference', $reference)
+                ->get([
+                    'p.id_product',
+                    'pa.id_product_attribute',
+                ]);
+
+            $productTargets = $prestashop->table($prefix . 'product as p')
+                ->where('p.reference', $reference)
+                ->get([
+                    'p.id_product',
+                    DB::raw('0 as id_product_attribute'),
+                ]);
+
+            $targets = $attributeTargets
+                ->merge($productTargets)
+                ->map(fn ($target) => [
+                    'id_product' => (int) $target->id_product,
+                    'id_product_attribute' => (int) $target->id_product_attribute,
+                ])
+                ->unique(fn (array $target) => $target['id_product'] . ':' . $target['id_product_attribute'])
+                ->values()
+                ->all();
+
+            return $cache[$cacheKey] = $targets ?: $fallback;
+        } catch (\Throwable $exception) {
+            return $cache[$cacheKey] = $fallback;
+        }
+    }
+
+    private static function applyOmsProductTargetFilter($query, array $targets, string $tableAlias): void
+    {
+        foreach ($targets as $target) {
+            $query->orWhere(function ($targetQuery) use ($target, $tableAlias) {
+                $targetQuery->where($tableAlias . '.product_id', $target['id_product'])
+                    ->where(function ($attributeQuery) use ($target, $tableAlias) {
+                        if ($target['id_product_attribute'] > 0) {
+                            $attributeQuery->where($tableAlias . '.product_attribute_id', $target['id_product_attribute']);
+                        } else {
+                            $attributeQuery->whereNull($tableAlias . '.product_attribute_id')
+                                ->orWhere($tableAlias . '.product_attribute_id', 0);
+                        }
+                    });
+            });
+        }
+    }
     private static function isGoodiesBackorderLine(int $idProduct, string $reference): bool
     {
         $reference = strtoupper(trim($reference));

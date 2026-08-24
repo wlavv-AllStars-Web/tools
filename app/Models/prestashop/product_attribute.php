@@ -225,7 +225,7 @@ class product_attribute extends PrestashopModel
             'col' => 4,
             'item_id' => $type . '_attributes_no_5_pics',
             'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
-            'columns' => ['days', 'id_product', 'id_product_attribute', 'reference', 'brand', 'housing'],
+            'columns' => ['days', 'reference', 'brand', 'housing'],
             'counter' => count($products),
             'data' => array_values($products)
         ];

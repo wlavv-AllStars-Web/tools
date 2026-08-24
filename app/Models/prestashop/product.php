@@ -917,7 +917,7 @@ class product extends PrestashopModel
             trans('dashboard.PRODUCTS - No 5 photos'),
             $type,
             'products_no_5_pics',
-            ['days', 'id_product', 'reference', 'brand', 'housing'],
+            ['days', 'reference', 'brand', 'housing'],
             $products
         );
     }

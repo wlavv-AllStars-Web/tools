@@ -837,6 +837,7 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
+            ->orderBy($productTable . '.date_add')
             ->orderBy($productTable . '.id_product')
             ->groupBy(
                 $productTable . '.id_product',
@@ -907,10 +908,9 @@ class product extends PrestashopModel
             )
             ->havingRaw('MAX(' . $stockTable . '.quantity) > 0')
             ->havingRaw('COUNT(DISTINCT ' . $imageTable . '.id_image) < 5')
+            ->orderBy($productTable . '.date_add')
             ->orderByRaw('CAST(' . $productTable . '.id_product AS UNSIGNED) ASC')
             ->get()
-            ->sortBy('id_product', SORT_NUMERIC)
-            ->values()
             ->toArray();
 
         return self::productDashboardResponse(

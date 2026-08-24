@@ -181,6 +181,7 @@ class product_attribute extends PrestashopModel
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
+            ->orderBy($productTable . '.date_add')
             ->orderBy($productTable . '.id_product')
             ->groupBy(
                 $productTable . '.id_product',

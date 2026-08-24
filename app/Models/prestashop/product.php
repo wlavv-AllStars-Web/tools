@@ -806,6 +806,7 @@ class product extends PrestashopModel
 
         $bd_data = self::select(
                 $productTable . '.id_product',
+                DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name AS brand')
             )
@@ -839,6 +840,7 @@ class product extends PrestashopModel
             ->orderBy($productTable . '.id_product')
             ->groupBy(
                 $productTable . '.id_product',
+                $productTable . '.date_add',
                 $productTable . '.reference',
                 $manufacturerTable . '.name'
             )
@@ -847,6 +849,7 @@ class product extends PrestashopModel
         foreach ($bd_data as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
+                'days' => $item->days,
                 'reference' => $item->reference,
                 'brand' => $item->brand ?? ''
             ];
@@ -856,7 +859,7 @@ class product extends PrestashopModel
             trans('dashboard.No real photos'),
             $type,
             'no_real_photos',
-            ['id_product', 'reference', 'brand'],
+            ['days', 'id_product', 'reference', 'brand'],
             $data
         );
     }
@@ -871,6 +874,7 @@ class product extends PrestashopModel
 
         $products = self::select(
                 $productTable . '.id_product',
+                DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
                 $productTable . '.id_category_default',
                 DB::raw('COUNT(DISTINCT ' . $imageTable . '.id_image) AS nr_images'),
                 $productTable . '.reference',
@@ -894,6 +898,7 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
             ->groupBy(
                 $productTable . '.id_product',
+                $productTable . '.date_add',
                 $productTable . '.id_category_default',
                 $productTable . '.reference',
                 $productTable . '.location',
@@ -912,7 +917,7 @@ class product extends PrestashopModel
             trans('dashboard.PRODUCTS - No 5 photos'),
             $type,
             'products_no_5_pics',
-            ['id_product', 'reference', 'brand', 'housing', 'nr_images'],
+            ['days', 'id_product', 'reference', 'brand', 'housing', 'nr_images'],
             $products
         );
     }

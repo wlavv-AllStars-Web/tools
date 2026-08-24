@@ -134,6 +134,7 @@ class product_attribute extends PrestashopModel
 
         $query = self::select(
                 $productTable . '.id_product',
+                DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
                 $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 DB::raw('COUNT(DISTINCT ' . $productAttributeImageTable . '.id_image) AS nr_images'),
@@ -183,6 +184,7 @@ class product_attribute extends PrestashopModel
             ->orderBy($productTable . '.id_product')
             ->groupBy(
                 $productTable . '.id_product',
+                $productTable . '.date_add',
                 $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 $productAttributeTable . '.reference',
@@ -205,6 +207,7 @@ class product_attribute extends PrestashopModel
                 $products[(int) $image->id_product_attribute] = [
                     'clean' => $image->id_product_attribute,
                     'id_product' => $image->id_product,
+                    'days' => $image->days,
                     'id_product_attribute' => $image->id_product_attribute,
                     'id_category_default' => $image->id_category_default,
                     'nr_images' => $image->nr_images,
@@ -221,7 +224,7 @@ class product_attribute extends PrestashopModel
             'col' => 4,
             'item_id' => $type . '_attributes_no_5_pics',
             'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
-            'columns' => ['id_product', 'id_product_attribute', 'reference', 'brand', 'housing', 'nr_images'],
+            'columns' => ['days', 'id_product', 'id_product_attribute', 'reference', 'brand', 'housing', 'nr_images'],
             'counter' => count($products),
             'data' => array_values($products)
         ];

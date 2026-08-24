@@ -162,7 +162,15 @@ class statsController extends Controller
         return $this->renderKpi('areas/dashboard/dashboard-admin');
     }
 
-    private function renderKpi($view)
+    public function dashboardKpiContent(bool $admin): string
+    {
+        return $this->renderKpi(
+            $admin ? 'areas/dashboard/dashboard-admin' : 'areas/dashboard/dashboard',
+            ['embedded' => true]
+        )->render();
+    }
+
+    private function renderKpi($view, array $viewData = [])
     {
         $asd = orders::getCounters(3, self::$expectedEvolution);
         $asm = orders::getCounters(2, self::$expectedEvolution);
@@ -290,7 +298,7 @@ class statsController extends Controller
             'yen'    => $currency_rates ? number_format($currency_rates->yen, 4, ',', ' ') : '0,0000',
         ];
     
-        return View::make($view)->with($data);
+        return View::make($view)->with(array_merge($data, $viewData));
     }      
     
 }

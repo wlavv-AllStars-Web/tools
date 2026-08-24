@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 
 use App\Http\Controllers\CustomTools\mailsController;
+use App\Http\Controllers\CustomTools\statsController;
 
 use App\Models\prestashop\asm_dashboard;
 use App\Models\prestashop\product;
@@ -23,14 +24,16 @@ class dashboardController extends Controller{
     public function __construct(){ $this->middleware('auth'); }
 
     public function index(){
+        $canUseDailyDashboard = in_array((int) auth()->id(), [2, 43], true);
 
         $data = [
-            'breadcrumbs'   => [ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')]
+            'breadcrumbs' => [ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')],
+            'canUseDailyDashboard' => $canUseDailyDashboard,
+            'kpiContent' => app(statsController::class)->dashboardKpiContent($canUseDailyDashboard),
         ];
 
         return View::make('areas/dashboard/index')->with($data);
     }
-        
     public function post(Request $request)
     {
         $sold = [];

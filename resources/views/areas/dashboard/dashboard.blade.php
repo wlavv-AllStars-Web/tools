@@ -1,14 +1,12 @@
+@if(empty($embedded))
 <!DOCTYPE html>
 <html>
 <head>
     <title>KPI ALL STARS GROUP</title>
-
     <script>
-        setTimeout(function(){
-            window.location.reload(1);
-        }, 300000);
+        setTimeout(function(){ window.location.reload(1); }, 300000);
     </script>
-
+@endif
     <style>
         body {
             background: #e5e5e5;
@@ -186,9 +184,12 @@
     font-size: clamp(26px, 2.2vw, 36px);
 }        
     </style>
+@if(!empty($embedded))
+    <style>.mainContainer { height: auto; min-height: 900px; }</style>
+@else
 </head>
 <body>
-    
+@endif
     <div class="mainContainer">
         <div class="panel top">
             @foreach([
@@ -264,5 +265,7 @@
             @endforeach
         </div>
     </div>
+@if(empty($embedded))
 </body>
 </html>
+@endif

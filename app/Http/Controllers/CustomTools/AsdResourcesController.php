@@ -42,8 +42,12 @@ class ASDResourcesController extends Controller
         return view('customTools.asdResources.index', compact('brands', 'resources', 'missingImagesByBrand', 'breadcrumbs'));
     }
 
-    public function edit(int $id_manufacturer)
+    public function edit(Request $request, int $id_manufacturer)
     {
+        if ($request->query('from') === 'studio') {
+            return $this->studioEdit($id_manufacturer);
+        }
+
         $brand = $this->getAsdBrandOrFail($id_manufacturer);
 
         $resource = ASDBrandResource::query()->firstOrCreate(
@@ -158,6 +162,68 @@ class ASDResourcesController extends Controller
             ->with('success', 'ASD brand resources updated successfully.');
     }
 
+    public function studioEdit(int $id_manufacturer)
+    {
+        $brand = $this->getAsdBrandOrFail($id_manufacturer);
+        $resource = ASDBrandResource::query()->firstOrCreate([
+            'id_manufacturer' => $id_manufacturer,
+            'id_shop' => $this->asdShopId,
+        ]);
+        $breadcrumbs = [
+            ['name' => 'Studio', 'url' => route('marketing.index'), 'no_translation' => 1],
+            ['name' => 'ASD missing photos', 'url' => route('web.tools.resources.asd.edit', ['id_manufacturer' => $id_manufacturer, 'from' => 'studio']), 'no_translation' => 1],
+        ];
+
+        return view('areas.marketing.asd-missing-photos.edit', compact('brand', 'resource', 'breadcrumbs'));
+    }
+
+    public function studioUploadImages(Request $request, int $id_manufacturer)
+    {
+        $brand = $this->getAsdBrandOrFail($id_manufacturer);
+        $validated = $request->validate([
+            'pictures_selected_count' => ['nullable', 'integer', 'max:' . (int) ini_get('max_file_uploads')],
+            'pictures' => ['required', 'array', 'min:1'],
+            'pictures.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
+        ]);
+        $selectedPictures = (int) ($validated['pictures_selected_count'] ?? 0);
+        $receivedPictures = count($request->file('pictures', []));
+
+        if ($selectedPictures > $receivedPictures) {
+            throw ValidationException::withMessages([
+                'pictures' => 'Only ' . $receivedPictures . ' of ' . $selectedPictures . ' selected images reached the server. Upload at most ' . (int) ini_get('max_file_uploads') . ' images at a time.',
+            ]);
+        }
+
+        $brandFolder = $this->brandFolder($brand->id_manufacturer);
+        $failedPictures = [];
+        foreach ($request->file('pictures') as $picture) {
+            if (!$picture || !$picture->isValid() || !$this->uploadPictureAndThumb($picture, $brandFolder)) {
+                $failedPictures[] = $picture?->getClientOriginalName() ?? 'image';
+            }
+        }
+        if (!empty($failedPictures)) {
+            throw ValidationException::withMessages([
+                'pictures' => 'Could not process these images: ' . implode(', ', $failedPictures),
+            ]);
+        }
+
+        $resource = ASDBrandResource::query()->firstOrCreate([
+            'id_manufacturer' => $id_manufacturer,
+            'id_shop' => $this->asdShopId,
+        ]);
+        $resource->update([
+            'images_zip' => $this->rebuildImagesZip($brandFolder, $this->brandSlug($brand->name)),
+            'last_update' => now()->toDateString(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Images uploaded successfully.']);
+        }
+
+        return redirect()
+            ->route('web.tools.resources.asd.edit', ['id_manufacturer' => $brand->id_manufacturer, 'from' => 'studio'])
+            ->with('success', 'Images uploaded successfully.');
+    }
     public function images(Request $request, int $id_manufacturer)
     {
         $breadcrumbs = $this->breadcrumbs;

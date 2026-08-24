@@ -32,10 +32,12 @@ class marketingController extends Controller{
 
     public function index(){
         $imageReviewManufacturers = $this->imageReviewManufacturers();
+        $asdMissingImageBrands = $this->asdMissingImageBrands();
         $imageReviewPanel = View::make('areas.marketing.includes.image-review-panel', compact('imageReviewManufacturers'))->render();
+        $asdMissingPhotosPanel = View::make('areas.marketing.includes.asd-missing-photos-panel', compact('asdMissingImageBrands'))->render();
 
         $data = [
-            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing', [], $imageReviewPanel),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing', [], $imageReviewPanel . $asdMissingPhotosPanel),
             'panels'        => [],
             'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
@@ -64,6 +66,41 @@ class marketingController extends Controller{
             })
             ->where('m.active', 1)
             ->groupBy('m.id_manufacturer', 'm.name')
+            ->orderBy('m.name')
+            ->get();
+    }
+    private function asdMissingImageBrands()
+    {
+        $asdShopId = (int) config('allstars.stores.ASD.id_shop', 3);
+
+        return AsdImage::query()
+            ->from('ps_custom_asd_images as ai')
+            ->join('ps_product as p', 'p.id_product', '=', 'ai.id_product')
+            ->join('ps_manufacturer as m', 'm.id_manufacturer', '=', 'ai.id_manufacturer')
+            ->join('ps_manufacturer_shop as ms', function ($join) use ($asdShopId) {
+                $join->on('ms.id_manufacturer', '=', 'm.id_manufacturer')
+                    ->where('ms.id_shop', $asdShopId);
+            })
+            ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin('ps_custom_product_attribute as cpa', function ($join) {
+                $join->on('cpa.id_product_attribute', '=', 'ai.id_product_attribute')
+                    ->where('ai.id_product_attribute', '>', 0);
+            })
+            ->leftJoin('ps_stock_available as sa', function ($join) use ($asdShopId) {
+                $join->on('sa.id_product', '=', 'ai.id_product')
+                    ->on('sa.id_product_attribute', '=', 'ai.id_product_attribute')
+                    ->where('sa.id_shop', $asdShopId);
+            })
+            ->where('m.active', 1)
+            ->where('ai.has_image', 0)
+            ->where(function ($query) {
+                $query->whereRaw('COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) <> 1')
+                    ->orWhereRaw('COALESCE(sa.quantity, 0) > 0');
+            })
+            ->select('m.id_manufacturer', 'm.name')
+            ->selectRaw('COUNT(*) as missing_images_count')
+            ->groupBy('m.id_manufacturer', 'm.name')
+            ->orderByDesc('missing_images_count')
             ->orderBy('m.name')
             ->get();
     }

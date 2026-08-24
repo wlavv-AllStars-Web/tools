@@ -17,6 +17,7 @@ use App\Http\Controllers\Areas\WebProductStoreCompareController;
 
 use App\Http\Controllers\Areas\dataController;
 use App\Http\Controllers\CustomTools\DataAsdShippingController;
+use App\Http\Controllers\CustomTools\AsdResourcesController;
 
 /** AREAS **/
 Route::get('home', [dashboardController::class, 'index'])->name('home.index');
@@ -55,6 +56,8 @@ Route::get('logistics', [logisticsController::class, 'index'])->name('logistics.
 Route::get('marketing', [marketingController::class, 'index'])->name('marketing.index');
 Route::get('marketing/product-images', [MarketingProductImageReviewController::class, 'index'])->name('marketing.product_images.index');
 Route::get('marketing/product-images/products', [MarketingProductImageReviewController::class, 'products'])->name('marketing.product_images.products');
+Route::get('marketing/asd-missing-photos/{id_manufacturer}', [AsdResourcesController::class, 'studioEdit'])->name('marketing.asd_missing_photos.edit');
+Route::post('marketing/asd-missing-photos/{id_manufacturer}/images', [AsdResourcesController::class, 'studioUploadImages'])->name('marketing.asd_missing_photos.images.upload');
 Route::post( 'customTools/marketing/post', [marketingController::class, 'post'])->name('marketing.post');
 Route::post('sales/youtube-broken-links/sync', [salesController::class, 'syncYoutubeBrokenLinks'])->name('sales.youtube_broken_links.sync');
 Route::get( 'marketing/ASD/missingImages',[marketingController::class, 'getASDMissingImages'])->name('marketing.asdMissingImages');

@@ -32,9 +32,14 @@ class MarketingProductImageReviewController extends Controller
             abort(404);
         }
 
+        $selectedManufacturer = $selectedManufacturerId > 0
+            ? $manufacturers->firstWhere('id_manufacturer', $selectedManufacturerId)
+            : null;
+
         return View::make('areas.marketing.product-image-review', [
             'manufacturers' => $manufacturers,
             'selectedManufacturerId' => $selectedManufacturerId,
+            'selectedManufacturer' => $selectedManufacturer,
             'breadcrumbs' => [
                 ['name' => trans('marketing'), 'url' => route('marketing.index')],
                 ['name' => 'product_image_review', 'url' => route('marketing.product_images.index')],

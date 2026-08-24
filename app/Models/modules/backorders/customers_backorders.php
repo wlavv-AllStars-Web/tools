@@ -146,7 +146,9 @@ class customers_backorders extends Model
                     'GREATEST(COALESCE(onl.qty_ordered, 0) - COALESCE(received.qty_received, 0), 0)'
                 ));
 
-            $erpExpected = (int) $omsExpected;
+            // A billed line can exist without an OMS order-note line (for example, an imported supplier bill).
+            // Keep its outstanding quantity visible and avoid double-counting when both sources represent the same demand.
+            $erpExpected = max($erpExpected, (int) $omsExpected);
 
             $stockQuantity = isset($stock_available->quantity) ? (int) $stock_available->quantity : 0;
             $soldQuantity = (int) $item->sold;

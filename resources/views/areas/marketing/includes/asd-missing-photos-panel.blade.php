@@ -3,7 +3,7 @@
         <div class="navbar navbar-light customPanel">
             <div class="panel panel-default" style="display: flow-root;">
                 <div class="panel-heading" style="padding: 12px 15px; text-transform: uppercase; font-weight: bold; text-align: center;">
-                    ASD missing photos
+                    NO ASD PHOTOS
                 </div>
                 <div style="max-height: 180px; overflow-y: auto; padding: 0 10px 10px;">
                     @foreach($asdMissingImageBrands as $brand)

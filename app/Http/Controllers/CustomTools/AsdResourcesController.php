@@ -21,8 +21,8 @@ class ASDResourcesController extends Controller
     public $breadcrumbs;
     
     public function __construct(){
-        $this->breadcrumbs[] = ['name' => trans('web'), 'url' => route('web.index')];
-        $this->breadcrumbs[] = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index')];
+        $this->breadcrumbs[] = ['name' => 'web', 'url' => route('web.index')];
+        $this->breadcrumbs[] = ['name' => 'web.tools.resources.asd.index', 'url' => route('web.tools.resources.asd.index')];
     }
 
     public function index()

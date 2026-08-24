@@ -139,6 +139,10 @@ return [
     'webmaster' => 'Webmaster',
     'web.index' => 'Webmaster',
     'web' => 'web',
+    'asd' => 'ASD',
+    'web.tools.resources.asd.index' => 'ASD resources',
+    'web.tools.resources.asd.edit' => 'ASD resources',
+    'web.tools.resources.asd.images' => 'ASD images',
     
     /** autoOrders **/
     'autoOrders' => 'Auto orders',

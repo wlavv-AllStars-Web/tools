@@ -132,6 +132,10 @@ return [
     'webmastering' => 'Webmaster',
     'web.index' => 'Webmaster',
     'web' => 'web',
+    'asd' => 'ASD',
+    'web.tools.resources.asd.index' => 'Recursos ASD',
+    'web.tools.resources.asd.edit' => 'Recursos ASD',
+    'web.tools.resources.asd.images' => 'Imágenes ASD',
 
     /** Human Resources **/
     'humanResources' => 'Human Resources',

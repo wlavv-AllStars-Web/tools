@@ -2,7 +2,7 @@
 
 @section('content')
 <style>
-    .studio-asd-photos { max-width: 760px; margin: 15px auto; }
+    .studio-asd-photos { max-width: 760px; margin: 15px 0; }
     .studio-asd-photos-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 22px; }
     .studio-asd-photos-brand { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
 </style>
@@ -12,7 +12,7 @@
         <div class="studio-asd-photos-brand">
             <div>
                 <h4 style="margin: 0;">{{ $brand->name }}</h4>
-                <small class="text-muted">ASD · manufacturer #{{ $brand->id_manufacturer }}</small>
+                <small class="text-muted">ASD - manufacturer #{{ $brand->id_manufacturer }}</small>
             </div>
             <a href="{{ route('web.tools.resources.asd.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}" class="btn btn-outline-success">
                 <i class="fa-solid fa-images"></i> IMAGES

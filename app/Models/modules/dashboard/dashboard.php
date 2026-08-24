@@ -110,7 +110,7 @@ class dashboard extends Model
     }
 
     /** Calcula os contadores em tempo real **/
-    public static function calculateAndGetCountersOfTab($tab, array $deferredPanels = [])
+    public static function calculateAndGetCountersOfTab($tab, array $deferredPanels = [], ?string $leadingPanel = null)
     {
         $panels = dashboard::where('tab', $tab)
             ->orderBy('store')
@@ -201,7 +201,7 @@ class dashboard extends Model
             }
         }
     
-        return View::make('areas/dashboard/includes/counters_header', compact('asm', 'asd'));
+        return View::make('areas/dashboard/includes/counters_header', compact('asm', 'asd', 'leadingPanel'));
     }
     
     protected static function callDashboardMethod($modelClass, $method, $panel)

@@ -27,15 +27,16 @@ class marketingController extends Controller{
     
     public function __construct(){
         $this->middleware('auth');
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing'), 'url' => route('marketing.index')];
+        $this->breadcrumbs[] = [ 'name' =>  trans('menu.marketing'), 'url' => route('marketing.index')];
     }
 
     public function index(){
-        
+        $imageReviewManufacturers = $this->imageReviewManufacturers();
+        $imageReviewPanel = View::make('areas.marketing.includes.image-review-panel', compact('imageReviewManufacturers'))->render();
+
         $data = [
-            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing'),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing', [], $imageReviewPanel),
             'panels'        => [],
-            'imageReviewManufacturers' => $this->imageReviewManufacturers(),
             'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs

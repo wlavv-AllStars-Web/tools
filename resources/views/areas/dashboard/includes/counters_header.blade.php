@@ -1,5 +1,9 @@
 <div class="row">
 
+    @if(!empty($leadingPanel))
+        {!! $leadingPanel !!}
+    @endif
+
     @if(count($asm) > 0)
 
         @foreach($asm as $counter)

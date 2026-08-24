@@ -41,7 +41,7 @@ class MarketingProductImageReviewController extends Controller
             'selectedManufacturerId' => $selectedManufacturerId,
             'selectedManufacturer' => $selectedManufacturer,
             'breadcrumbs' => [
-                ['name' => trans('marketing'), 'url' => route('marketing.index')],
+                ['name' => trans('menu.marketing'), 'url' => route('marketing.index')],
                 ['name' => 'product_image_review', 'url' => route('marketing.product_images.index')],
             ],
             'actions' => [],

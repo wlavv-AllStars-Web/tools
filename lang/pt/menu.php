@@ -7,7 +7,7 @@ return [
     'human resources' => 'RH',
     'finance' => 'FINANCEIRO',
     'logistics' => 'LOGISTICA',
-    'marketing' => 'MARKETING',
+    'marketing' => 'Studio',
     'customer support' => 'SUPORTE',
     'modules' => 'MODULOS',
     'Auto Orders' => 'AUTO ORDERS',

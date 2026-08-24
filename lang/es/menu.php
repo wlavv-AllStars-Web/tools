@@ -7,7 +7,7 @@ return [
     'human resources' => 'HR FR',
     'finance' => 'Finance FR',
     'logistics' => 'Logistics FR',
-    'marketing' => 'Marketing FR',
+    'marketing' => 'Studio',
     'customer support' => 'Support FR',
     'modules' => 'Modules FR',
     'Auto Orders' => 'Auto Orders FR',

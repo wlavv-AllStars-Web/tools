@@ -5,7 +5,7 @@ return [
     'admin' => 'Admin',
     'finance' => 'ACCOUNTING',
     'logistics' => 'Logistics',
-    'marketing' => 'Marketing',
+    'marketing' => 'Studio',
     'customer support' => 'Support',
     'sales' => 'SALES',
     'Auto Orders' => 'Auto Orders',

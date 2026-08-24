@@ -119,6 +119,7 @@ class product_attribute extends PrestashopModel
 
         $productAttributeTable = self::tableName('product_attribute');
         $productTable = self::tableName('product');
+        $packTable = self::tableName('pack');
         $manufacturerTable = self::tableName('manufacturer');
         $stockTable = self::tableName('stock_available');
         $customProductAttributeTable = self::tableName('custom_product_attribute');
@@ -158,6 +159,11 @@ class product_attribute extends PrestashopModel
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
             ->where($productShopTable . '.visibility', 'both')
             ->where($productTable . '.cache_is_pack', 0)
+            ->whereNotExists(function ($packQuery) use ($packTable, $productTable) {
+                $packQuery->select(DB::raw(1))
+                    ->from($packTable)
+                    ->whereColumn($packTable . '.id_product_pack', $productTable . '.id_product');
+            })
             ->where($productAttributeTable . '.reference', 'not like', 'VAT-%')
             ->where($productAttributeTable . '.reference', 'not like', '%parts')
             ->where($productAttributeTable . '.reference', 'not like', 'shipping%')

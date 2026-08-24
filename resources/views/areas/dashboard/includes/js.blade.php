@@ -212,7 +212,7 @@ function getDailyStats(){
             
             var data = JSON.parse(JSON.stringify(response));
             
-            $('#daily_stats').replaceWith(data.html);
+            $('#dashboard_content').html(data.html);
 
         }       
     });

@@ -14,7 +14,7 @@
             margin: 0;
         }
 
-        .mainContainer {
+        .kpi-dashboard {
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -197,12 +197,12 @@
 }        
     </style>
 @if(!empty($embedded))
-    <style>.mainContainer { height: auto; min-height: 900px; }</style>
+    <style>.kpi-dashboard { height: auto; min-height: 900px; width: 100%; }</style>
 @else
 </head>
 <body>
 @endif
-    <div class="mainContainer">
+    <div class="kpi-dashboard">
         <div class="panel top">
             @foreach([
                 ['awaiting',$awaiting, 'AWAITING'],

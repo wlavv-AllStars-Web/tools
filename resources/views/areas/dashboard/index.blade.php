@@ -5,9 +5,10 @@
 
 @section('content')
 
-    {!! $kpiContent !!}
+    <style>#yieldContent { width: 100% !important; margin: 0 !important; display: block !important; }</style>
 
-    <div class="row">
-        <div class="col-lg-12" id="daily_stats"></div>
+    <div id="dashboard_content">
+        {!! $kpiContent !!}
     </div>
+
 @endsection

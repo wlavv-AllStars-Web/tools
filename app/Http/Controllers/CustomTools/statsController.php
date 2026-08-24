@@ -159,14 +159,16 @@ class statsController extends Controller
     {
         abort_unless(in_array((int) auth()->id(), [2, 94, 43], true), 403);
 
-        return $this->renderKpi('areas/dashboard/dashboard-admin');
+        $canViewKpiDetails = in_array((int) auth()->id(), [2, 43], true);
+
+        return $this->renderKpi('areas/dashboard/dashboard-admin', ['canViewKpiDetails' => $canViewKpiDetails]);
     }
 
     public function dashboardKpiContent(bool $canUseDailyDashboard = false): string
     {
         return $this->renderKpi(
             'areas/dashboard/dashboard-admin',
-            ['embedded' => true, 'canUseDailyDashboard' => $canUseDailyDashboard]
+            ['embedded' => true, 'canUseDailyDashboard' => $canUseDailyDashboard, 'canViewKpiDetails' => $canUseDailyDashboard]
         )->render();
     }
 

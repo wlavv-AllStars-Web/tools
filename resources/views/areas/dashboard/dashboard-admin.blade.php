@@ -247,6 +247,7 @@
                     }
                 @endphp
 
+                @if(!empty($canViewKpiDetails))
                 <div class="progressText {{ $statusClass }}"> {{ number_format($status,2,',',' ') }} % </div>
                 <div class="goal-result">
                     <div class="progressText">
@@ -257,6 +258,7 @@
                         RESULT: {{ number_format($realised_until_today,2,',',' ') }} €
                     </div>
                 </div>
+                @endif
                 <div class="currency-bar">
                     <div>元 {{$yuan}}</div>
                     <div>£ {{$pound}}</div>

@@ -157,7 +157,7 @@
                                     {{ optional($resource?->updated_at)->format('Y-m-d') ?: '-' }}
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ route('data.resources.edit', $brand->id_manufacturer) }}" class="btn btn-sm btn-outline-primary"> <i class="fa-solid fa-pencil me-1"></i> </a>
+                                    <a href="{{ route('web.tools.resources.asd.edit', $brand->id_manufacturer) }}" class="btn btn-sm btn-outline-primary"> <i class="fa-solid fa-pencil me-1"></i> </a>
                                 </td>
                             </tr>
                         @empty

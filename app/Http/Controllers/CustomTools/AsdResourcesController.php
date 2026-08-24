@@ -21,8 +21,8 @@ class ASDResourcesController extends Controller
     public $breadcrumbs;
     
     public function __construct(){
-        $this->breadcrumbs[] = ['name' => 'marketing', 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = ['name' => 'ASD resources', 'url' => route('data.resources.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => trans('web'), 'url' => route('web.index')];
+        $this->breadcrumbs[] = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index')];
     }
 
     public function index()
@@ -154,7 +154,7 @@ class ASDResourcesController extends Controller
         }
 
         return redirect()
-            ->route('data.resources.edit', $brand->id_manufacturer)
+            ->route('web.tools.resources.asd.edit', $brand->id_manufacturer)
             ->with('success', 'ASD brand resources updated successfully.');
     }
 

@@ -17,15 +17,24 @@ class MarketingProductImageReviewController extends Controller
         $this->middleware('auth');
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $manufacturers = $this->manufacturerQuery()
+            ->select('m.id_manufacturer', 'm.name')
+            ->selectRaw('COUNT(DISTINCT p.id_product) AS product_count')
+            ->groupBy('m.id_manufacturer', 'm.name')
+            ->orderBy('m.name')
+            ->get();
+
+        $selectedManufacturerId = (int) $request->query('manufacturer_id', 0);
+
+        if ($selectedManufacturerId > 0 && !$manufacturers->contains('id_manufacturer', $selectedManufacturerId)) {
+            abort(404);
+        }
+
         return View::make('areas.marketing.product-image-review', [
-            'manufacturers' => $this->manufacturerQuery()
-                ->select('m.id_manufacturer', 'm.name')
-                ->selectRaw('COUNT(DISTINCT p.id_product) AS product_count')
-                ->groupBy('m.id_manufacturer', 'm.name')
-                ->orderBy('m.name')
-                ->get(),
+            'manufacturers' => $manufacturers,
+            'selectedManufacturerId' => $selectedManufacturerId,
             'breadcrumbs' => [
                 ['name' => trans('marketing'), 'url' => route('marketing.index')],
                 ['name' => 'product_image_review', 'url' => route('marketing.product_images.index')],
@@ -33,7 +42,6 @@ class MarketingProductImageReviewController extends Controller
             'actions' => [],
         ]);
     }
-
     public function products(Request $request): JsonResponse
     {
         $validated = $request->validate([

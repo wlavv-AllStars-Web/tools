@@ -16,8 +16,8 @@ class asmResourcesController extends Controller
     public $breadcrumbs;
     
     public function __construct(){
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing.asm_resources.index'), 'url' => route('marketing.resources.index')];
+        $this->breadcrumbs[] = [ 'name' => trans('web'), 'url' => route('web.index')];
+        $this->breadcrumbs[] = [ 'name' => trans('messages.asm_resources'), 'url' => route('web.tools.resources.asm.index')];
     }
     
     public function index(){
@@ -92,7 +92,7 @@ class asmResourcesController extends Controller
         );
 
         return redirect()
-            ->route('marketing.resources.index')
+            ->route('web.tools.resources.asm.index')
             ->with('success', $lang . ' banner uploaded successfully for ' . $brand->name . '.');
     }
 
@@ -109,7 +109,7 @@ class asmResourcesController extends Controller
         );
 
         return redirect()
-            ->route('marketing.resources.index')
+            ->route('web.tools.resources.asm.index')
             ->with('success', 'YouTube updated successfully for ' . $brand->name . '.');
     }
 

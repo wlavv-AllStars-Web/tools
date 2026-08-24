@@ -35,6 +35,7 @@ class marketingController extends Controller{
         $data = [
             'counters'      => dashboard::calculateAndGetCountersOfTab('marketing'),
             'panels'        => [],
+            'imageReviewManufacturers' => $this->imageReviewManufacturers(),
             'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs
@@ -43,13 +44,32 @@ class marketingController extends Controller{
         return View::make('areas/marketing/index')->with($data);
     }
 
+    private function imageReviewManufacturers()
+    {
+        $prefix = (string) env('DB2_DB_prefix', 'ps_');
+        $shopId = (int) config('allstars.stores.ASM.id_shop', 2);
+
+        return DB::connection('mysql2')->table($prefix . 'manufacturer as m')
+            ->select('m.id_manufacturer', 'm.name')
+            ->selectRaw('COUNT(DISTINCT p.id_product) AS product_count')
+            ->join($prefix . 'manufacturer_shop as ms', function ($join) use ($shopId) {
+                $join->on('ms.id_manufacturer', '=', 'm.id_manufacturer')
+                    ->where('ms.id_shop', $shopId);
+            })
+            ->join($prefix . 'product as p', 'p.id_manufacturer', '=', 'm.id_manufacturer')
+            ->join($prefix . 'product_shop as ps', function ($join) use ($shopId) {
+                $join->on('ps.id_product', '=', 'p.id_product')
+                    ->where('ps.id_shop', $shopId);
+            })
+            ->where('m.active', 1)
+            ->groupBy('m.id_manufacturer', 'm.name')
+            ->orderBy('m.name')
+            ->get();
+    }
     private function accessList(){
         
         $accessList = array();
-        $accessList[]                           = ['name' =>  trans('messages.asm_resources'),      'url' => route('marketing.tools.resources.asm.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.resources'),         	'url' => route('marketing.tools.resources.asd.index'),        'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
 
-        $accessList[] = ['name' => 'PRODUCT', 'url' => route('marketing.product_images.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-images"></i>'];
 
         return $accessList;
     }

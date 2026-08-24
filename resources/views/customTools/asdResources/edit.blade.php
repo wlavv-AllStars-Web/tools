@@ -53,7 +53,7 @@
                 </div>
             </div>
             
-            <a href="{{ route('data.resources.images', $brand->id_manufacturer) }}" class="btn btn-outline-success">
+            <a href="{{ route('web.tools.resources.asd.images', $brand->id_manufacturer) }}" class="btn btn-outline-success">
                 <i class="fa-solid fa-images"></i> IMAGES
             </a>
         </div>
@@ -77,7 +77,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('data.resources.update', $brand->id_manufacturer) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('web.tools.resources.asd.update', $brand->id_manufacturer) }}" enctype="multipart/form-data">
         @csrf
 
         <div class="row g-3">

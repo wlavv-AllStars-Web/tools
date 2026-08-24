@@ -123,14 +123,14 @@
             <div class="asd-stat-card asd-filter-card">
                 <div class="btn-group" role="group" aria-label="Image filter">
                     <a
-                        href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'all']) }}"
+                        href="{{ route('web.tools.resources.asd.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'all']) }}"
                         class="btn {{ $imageFilter === 'all' ? 'btn-primary' : 'btn-outline-primary' }}"
                     >
                         <i class="fa-solid fa-images me-1"></i>
                         All references
                     </a>
                     <a
-                        href="{{ route('data.resources.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}"
+                        href="{{ route('web.tools.resources.asd.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}"
                         class="btn {{ $imageFilter === 'missing' ? 'btn-danger' : 'btn-outline-danger' }}"
                     >
                         <i class="fa-solid fa-image me-1"></i>

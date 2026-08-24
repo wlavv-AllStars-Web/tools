@@ -100,6 +100,13 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/seo', [SiteSeoCompareController::class, 'compare'])->name('seo.compare');
         Route::get('/raw-text', [SiteTextSideBySideController::class, 'index'])->name('raw_text.index');
         Route::post('/raw-text', [SiteTextSideBySideController::class, 'compare'])->name('raw_text.compare');
+        Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
+        Route::post('/resources/asm/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('resources.asm.upload');
+        Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
+        Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
+        Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
+        Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
+        Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');
 
         Route::prefix('changes')->name('changes.')->group(function () {
             Route::get('/', [ChangeTrackerController::class, 'index'])->name('index');
@@ -440,11 +447,6 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         Route::get('/homepage/asm', [HomepageAdminController::class, 'index'])->name('homepage.asm.index');
         Route::get('/homepage/asd', [HomepageASDAdminController::class, 'index'])->name('homepage.asd.index');
-        Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
-        Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
-        Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
-        Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
-        Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');
 
         Route::resource('/car-gallery', asgCarsController::class)->names('car_gallery');
     });
@@ -676,13 +678,6 @@ Route::middleware(['web', 'auth'])
         });
     });
 
-Route::middleware(['web', 'auth'])->prefix('data/asd/resources')->name('data.resources.')->group(function () {
-    Route::get('/', [AsdResourcesController::class, 'index'])->name('index');
-    Route::get('/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('edit');
-    Route::post('/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('update');
-    Route::get('/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('images');
-});
-
 Route::get('/api/asd/resources', [AsdResourcesController::class, 'api'])->name('api.asd.resources');
 Route::get('/api/asm/resources', [asmResourcesController::class, 'api'])->name('api.asm.resources');
 Route::get('/api/gallery/cars', [asgCarsController::class, 'api'])->name('api.gallery.cars');
@@ -690,12 +685,6 @@ Route::get('/api/gallery/cars/{lang}', [asgCarsController::class, 'apiList'])->w
 Route::get('/api/gallery/cars/{lang}/{id}', [asgCarsController::class, 'apiShow'])->where('lang', 'en|es|fr|pt|it')->whereNumber('id')->name('api.gallery.cars.show');
 Route::get('/api/gallery/events', [asgEventsController::class, 'api'])->name('api.gallery.events');
 Route::get('/api/gallery/events/{id}', [asgEventsController::class, 'apiShow'])->whereNumber('id')->name('api.gallery.events.show');
-
-Route::middleware(['web', 'auth'])->prefix('marketing/asm/resources')->name('marketing.resources.')->group(function () {
-    Route::get('/', [asmResourcesController::class, 'index'])->name('index');
-    Route::post('/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('upload');
-    Route::post('/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('youtube');
-});
 
 Route::prefix('customTools/asg-cars')
     ->name('asg_cars.')

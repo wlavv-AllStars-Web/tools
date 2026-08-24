@@ -324,7 +324,7 @@
                                     <td>
                                         <form
                                             method="POST"
-                                            action="{{ route('marketing.resources.upload', [$brand->id_manufacturer, $lang]) }}"
+                                            action="{{ route('web.tools.resources.asm.upload', [$brand->id_manufacturer, $lang]) }}"
                                             enctype="multipart/form-data"
                                             class="asm-upload-cell"
                                         >
@@ -353,7 +353,7 @@
                                 @endforeach
 
                                 <td>
-                                    <form method="POST" action="{{ route('marketing.resources.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
+                                    <form method="POST" action="{{ route('web.tools.resources.asm.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
                                         @csrf
                                         <input type="text" name="youtube" class="form-control form-control-sm" value="{{ old('youtube', $brand->youtube) }}" placeholder="YouTube URL or code">
                                         <button type="submit" class="btn btn-sm btn-primary" title="Save YouTube">

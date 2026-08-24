@@ -119,6 +119,7 @@ class product_attribute extends PrestashopModel
 
         $productAttributeTable = self::tableName('product_attribute');
         $productTable = self::tableName('product');
+        $advancedPackTable = self::tableName('pm_advancedpack');
         $packTable = self::tableName('pack');
         $manufacturerTable = self::tableName('manufacturer');
         $stockTable = self::tableName('stock_available');
@@ -163,6 +164,11 @@ class product_attribute extends PrestashopModel
                 $packQuery->select(DB::raw(1))
                     ->from($packTable)
                     ->whereColumn($packTable . '.id_product_pack', $productTable . '.id_product');
+            })
+            ->whereNotExists(function ($advancedPackQuery) use ($advancedPackTable, $productTable) {
+                $advancedPackQuery->select(DB::raw(1))
+                    ->from($advancedPackTable)
+                    ->whereColumn($advancedPackTable . '.id_pack', $productTable . '.id_product');
             })
             ->where($productAttributeTable . '.reference', 'not like', 'VAT-%')
             ->where($productAttributeTable . '.reference', 'not like', '%parts')

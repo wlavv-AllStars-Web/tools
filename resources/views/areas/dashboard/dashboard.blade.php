@@ -96,7 +96,7 @@
         }
 
         .bigNumber {
-            font-size: clamp(42px, 4.2vw, 72px);
+            font-size: clamp(42px, 3.2vw, 72px);
             font-weight: bold;
             line-height: 1;
             white-space: nowrap;

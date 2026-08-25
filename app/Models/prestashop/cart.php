@@ -25,9 +25,10 @@ class cart extends PrestashopModel
         $data = self::getDropcartData(
             'dropcart_3_days',
             0,
-            Carbon::now()->subDays(4)->startOfDay(),
-            Carbon::now()->subDay()->endOfDay(),
-            0
+            Carbon::now()->subDays(7),
+            Carbon::now()->subDays(3),
+            0,
+            true
         );
 
         return [
@@ -86,7 +87,7 @@ class cart extends PrestashopModel
         ];
     }
 
-    protected static function getDropcartData($board, $statusSent, $dateFrom, $dateTo, $minTotal = 0)
+    protected static function getDropcartData($board, $statusSent, $dateFrom, $dateTo, $minTotal = 0, $excludeStartDate = false)
     {
         $data = [];
 
@@ -94,6 +95,7 @@ class cart extends PrestashopModel
         $customerTable = self::tableName('customer');
         $cartProductTable = self::tableName('cart_product');
         $productTable = self::tableName('product');
+        $ordersTable = self::tableName('orders');
 
         if (!self::hasPrestashopColumn($cartTable, 'status_sent')) {
             return $data;
@@ -109,7 +111,13 @@ class cart extends PrestashopModel
             ->join($cartProductTable . ' as cp', 'cp.id_cart', '=', 'c.id_cart')
             ->join($productTable . ' as p', 'p.id_product', '=', 'cp.id_product')
             ->where('c.status_sent', $statusSent)
-            ->whereBetween('c.date_add', [$dateFrom, $dateTo])
+            ->where('c.date_add', $excludeStartDate ? '>' : '>=', $dateFrom)
+            ->where('c.date_add', '<=', $dateTo)
+            ->whereNotExists(function ($query) use ($ordersTable) {
+                $query->selectRaw('1')
+                    ->from($ordersTable . ' as o')
+                    ->whereColumn('o.id_cart', 'c.id_cart');
+            })
             ->groupBy('c.id_cart', 'c.id_customer', 'cu.firstname', 'cu.lastname', 'c.date_add')
             ->havingRaw('SUM(cp.quantity * p.price) > ?', [$minTotal])
             ->select(

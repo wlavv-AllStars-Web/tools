@@ -352,7 +352,7 @@ class SupplierInvoiceController extends Controller
 
     public function canReverseInvoices(): bool
     {
-        return in_array((int) Auth::id(), [2, 43, 78], true);
+        return in_array((int) Auth::id(), [2, 43, 59, 78], true);
     }
 
     private function ensureReversalAuthorized(): void

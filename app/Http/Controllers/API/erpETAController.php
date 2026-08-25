@@ -248,24 +248,263 @@ class erpETAController extends Controller
             ], 422);
         }
 
-        $references = array_slice($references, 0, 25);
+        $references = collect(array_slice($references, 0, 25))
+            ->map(fn ($reference) => trim((string) $reference))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
+        $results = $this->computeEtaBatch($references);
+
+        return response()
+            ->json([
+                'count' => count($results),
+                'results' => $results,
+            ])
+            ->header('Cache-Control', 'no-store, private, max-age=0')
+            ->header('Pragma', 'no-cache');
+    }
+
+    /**
+     * Resolve an ETA batch with a bounded number of queries.
+     *
+     * Product, stock, pack and OMS data is fetched once for the entire request,
+     * instead of repeating the same lookups for every reference.
+     */
+    private function computeEtaBatch(array $references): array
+    {
+        if (empty($references)) {
+            return [];
+        }
+
+        $productTable = (new product())->getTable();
+        $attributeTable = (new product_attribute())->getTable();
+        $packTable = (new pack())->getTable();
+        $stockTable = (new stock_available())->getTable();
+        $prestashop = DB::connection('mysql2');
+
+        $productsByReference = $prestashop->table($productTable)
+            ->whereIn('reference', $references)
+            ->get(['id_product', 'reference'])
+            ->keyBy('reference');
+
+        $attributesByReference = $prestashop->table($attributeTable)
+            ->whereIn('reference', $references)
+            ->get(['id_product', 'id_product_attribute', 'reference'])
+            ->keyBy('reference');
+
+        $resolved = [];
+        foreach ($references as $reference) {
+            $product = $productsByReference->get($reference);
+            $attribute = $attributesByReference->get($reference);
+
+            if ($product) {
+                $resolved[$reference] = [
+                    'id_product' => (int) $product->id_product,
+                    'id_product_attribute' => 0,
+                ];
+            } elseif ($attribute) {
+                $resolved[$reference] = [
+                    'id_product' => (int) $attribute->id_product,
+                    'id_product_attribute' => (int) $attribute->id_product_attribute,
+                ];
+            }
+        }
+
+        $productIds = collect($resolved)->pluck('id_product')->unique()->values()->all();
+        if (empty($productIds)) {
+            return collect($references)->mapWithKeys(fn ($reference) => [
+                $reference => ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'],
+            ])->all();
+        }
+
+        $productsWithCombinations = $prestashop->table($attributeTable)
+            ->whereIn('id_product', $productIds)
+            ->distinct()
+            ->pluck('id_product')
+            ->flip();
+
+        $packItems = $prestashop->table($packTable)
+            ->whereIn('id_product_pack', $productIds)
+            ->get(['id_product_pack', 'id_product_item', 'id_product_attribute_item', 'quantity'])
+            ->groupBy('id_product_pack');
+
+        $stockPairs = collect($resolved)->map(fn ($item) => [
+            'product' => $item['id_product'],
+            'attribute' => $item['id_product_attribute'],
+        ]);
+        foreach ($packItems as $items) {
+            foreach ($items as $item) {
+                $stockPairs->push([
+                    'product' => (int) $item->id_product_item,
+                    'attribute' => (int) $item->id_product_attribute_item,
+                ]);
+            }
+        }
+        $stockPairs = $stockPairs
+            ->unique(fn ($item) => $item['product'] . '-' . $item['attribute'])
+            ->values();
+
+        // getPrestashopStockQty() uses the first matching row. Preserve that behaviour
+        // while loading every required product/combination in a single query.
+        $stockRowsByPair = $prestashop->table($stockTable)
+            ->where(function ($query) use ($stockPairs) {
+                foreach ($stockPairs as $pair) {
+                    $query->orWhere(function ($pairQuery) use ($pair) {
+                        $pairQuery->where('id_product', $pair['product'])
+                            ->where('id_product_attribute', $pair['attribute']);
+                    });
+                }
+            })
+            ->orderBy('id_stock_available')
+            ->get(['id_product', 'id_product_attribute', 'quantity'])
+            ->groupBy(fn ($row) => $row->id_product . '-' . $row->id_product_attribute);
+
+        // Direct products use getPrestashopStockQty() (first row). Pack components
+        // use pack::availablePackQty() (keyBy(), therefore the last row).
+        $stockByPair = $stockRowsByPair->map(fn ($rows) => (int) $rows->first()->quantity);
+        $packStockByPair = $stockRowsByPair->map(fn ($rows) => (int) $rows->last()->quantity);
+
+        $incomingByPair = $this->getOmsIncomingForProductBatch($stockPairs->all());
         $results = [];
-        foreach ($references as $ref) {
-            $ref = trim((string) $ref);
-            if ($ref === '') {
+
+        foreach ($references as $reference) {
+            $item = $resolved[$reference] ?? null;
+            if ($item === null) {
+                $results[$reference] = ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
                 continue;
             }
 
-            $results[$ref] = $this->computeEtaOrOutOfStock($ref);
+            $idProduct = $item['id_product'];
+            $idProductAttribute = $item['id_product_attribute'];
+            if ($idProductAttribute === 0 && $productsWithCombinations->has($idProduct)) {
+                $results[$reference] = ['status' => 'not_found', 'quantity' => 'OUT OF STOCK'];
+                continue;
+            }
+
+            $key = $idProduct . '-' . $idProductAttribute;
+            $quantity = (int) ($stockByPair->get($key, 0));
+            if ($quantity > 0) {
+                $results[$reference] = ['status' => 'in_stock', 'quantity' => $quantity];
+                continue;
+            }
+
+            $components = $packItems->get($idProduct, collect());
+            if ($components->isEmpty()) {
+                $incoming = $incomingByPair[$key] ?? ['quantity' => 0, 'eta' => null, 'shipment_id' => null];
+                $results[$reference] = $incoming['quantity'] > 0 && $incoming['eta']
+                    ? [
+                        'status' => 'eta',
+                        'eta' => $incoming['eta'],
+                        'quantity' => $incoming['quantity'],
+                        'shipment_id' => $incoming['shipment_id'],
+                    ]
+                    : ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
+                continue;
+            }
+
+            $expectedPacks = null;
+            $etaCandidates = [];
+            foreach ($components as $component) {
+                $componentKey = $component->id_product_item . '-' . $component->id_product_attribute_item;
+                $incoming = $incomingByPair[$componentKey] ?? ['quantity' => 0, 'eta' => null];
+                $qtyInPack = max((int) $component->quantity, 1);
+                $possiblePacks = (int) floor(((int) $packStockByPair->get($componentKey, 0) + (int) $incoming['quantity']) / $qtyInPack);
+                $expectedPacks = $expectedPacks === null ? $possiblePacks : min($expectedPacks, $possiblePacks);
+
+                if (!empty($incoming['eta'])) {
+                    $etaCandidates[] = $incoming['eta'];
+                }
+            }
+
+            if (($expectedPacks ?? 0) <= 0) {
+                $results[$reference] = ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
+            } elseif (!empty($etaCandidates)) {
+                sort($etaCandidates);
+                $results[$reference] = [
+                    'status' => 'eta',
+                    'eta' => (string) $etaCandidates[0],
+                    'quantity' => $expectedPacks,
+                    'is_pack' => true,
+                ];
+            } else {
+                $results[$reference] = ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
+            }
         }
 
-        return response()->json([
-            'count' => count($results),
-            'results' => $results,
-        ]);
+        return $results;
     }
 
+    /**
+     * Fetch pending OMS quantities and ETAs for every requested product pair at once.
+     */
+    private function getOmsIncomingForProductBatch(array $pairs): array
+    {
+        if (empty($pairs)) {
+            return [];
+        }
+
+        $pairKeys = collect($pairs)
+            ->mapWithKeys(fn ($pair) => [$pair['product'] . '-' . $pair['attribute'] => true]);
+        $productIds = collect($pairs)->pluck('product')->unique()->values()->all();
+
+        $rows = DB::table('oms_billed_order_lines as bol')
+            ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
+            ->join('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
+            ->leftJoin('shipping_erp as se', 'se.id_erp', '=', 'si.id')
+            ->leftJoin('shipping as s', 's.id', '=', 'se.id_shipping')
+            ->leftJoin(DB::raw('(
+                SELECT sd.id_shipping, MAX(sd.date) as eta_date
+                FROM shipping_delay sd
+                GROUP BY sd.id_shipping
+            ) as eta_map'), 'eta_map.id_shipping', '=', 's.id')
+            ->leftJoin(DB::raw('(
+                SELECT rl.billed_order_line_id, SUM(rl.qty_received) as qty_received_sum
+                FROM oms_reception_lines rl
+                GROUP BY rl.billed_order_line_id
+            ) as rl_sum'), 'rl_sum.billed_order_line_id', '=', 'bol.id')
+            ->whereIn('bol.product_id', $productIds)
+            ->where(function ($query) {
+                $query->whereNull('si.status')
+                    ->orWhere('si.status', '!=', 'cancelled');
+            })
+            ->selectRaw('
+                bol.product_id,
+                COALESCE(bol.product_attribute_id, 0) as product_attribute_id,
+                bol.qty_billed,
+                COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) as qty_received_real,
+                s.id as shipment_id,
+                eta_map.eta_date as eta_date
+            ')
+            ->get();
+
+        $incoming = [];
+        foreach ($rows as $row) {
+            $key = (int) $row->product_id . '-' . (int) $row->product_attribute_id;
+            if (!$pairKeys->has($key)) {
+                continue;
+            }
+
+            $outstanding = max(0, (int) $row->qty_billed - (int) $row->qty_received_real);
+            if ($outstanding <= 0) {
+                continue;
+            }
+
+            if (!isset($incoming[$key])) {
+                $incoming[$key] = ['quantity' => 0, 'shipment_id' => null, 'eta' => null];
+            }
+            $incoming[$key]['quantity'] += $outstanding;
+
+            if (!empty($row->shipment_id) && !empty($row->eta_date)
+                && ($incoming[$key]['eta'] === null || $row->eta_date < $incoming[$key]['eta'])) {
+                $incoming[$key]['eta'] = (string) $row->eta_date;
+                $incoming[$key]['shipment_id'] = (int) $row->shipment_id;
+            }
+        }
+
+        return $incoming;
+    }
     private function computeEtaOrOutOfStock(string $reference): array
     {
         $product = product::where('reference', $reference)->first();

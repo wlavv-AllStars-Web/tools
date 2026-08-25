@@ -37,7 +37,7 @@ class shippingController extends Controller
             'shipments_in_transit' => shipping::getShipements(2),
             'shipments_received'   => shipping::getShipements(3, 'delivery_date'),
             'shipments_cancelled'  => shipping::getShipements(4),
-            'suppliers'  => suppliers::orderBy('name', 'ASC')->pluck('name', 'id_supplier'),
+            'suppliers'  => suppliers::where('active', 1)->orderBy('name', 'ASC')->pluck('name', 'id_supplier'),
             'carriers'  => shipping::getCarriers()
         ];
         
@@ -52,7 +52,7 @@ class shippingController extends Controller
         $data = [
             'actions'    => [],
             'breadcrumbs'=> $this->breadcrumbs,
-            'suppliers'  => suppliers::orderBy('name', 'ASC')->pluck('name', 'id_supplier'),
+            'suppliers'  => suppliers::where('active', 1)->orderBy('name', 'ASC')->pluck('name', 'id_supplier'),
             'carriers'  => shipping::getCarriers()
         ];
         
@@ -72,7 +72,7 @@ class shippingController extends Controller
         $data = [
             'actions'    => [],
             'breadcrumbs'=> $this->breadcrumbs,
-            'suppliers'  => suppliers::orderBy('name', 'ASC')->pluck('name', 'id_supplier'),
+            'suppliers'  => suppliers::where('active', 1)->orderBy('name', 'ASC')->pluck('name', 'id_supplier'),
             'carriers'   => shipping::getCarriers(),
             'shipment'   => shipping::getShipment($id),
             'packages'   => shipping_package::getPackages($id),

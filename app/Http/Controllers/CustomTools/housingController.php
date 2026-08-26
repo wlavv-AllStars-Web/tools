@@ -321,9 +321,14 @@ class housingController extends Controller
             return response()->json(['ok' => false, 'message' => 'Product not found.'], 404);
         }
 
-        $stockRow = $resolved['type'] === 'attribute'
-            ? optional($resolved['attribute']->stock)->first()
-            : optional($resolved['product']->stock)->first();
+        $productId = (int) $resolved['product']->id_product;
+        $productAttributeId = $resolved['type'] === 'attribute' ? (int) $resolved['attribute']->id_product_attribute : 0;
+        $stockRow = DB::connection('mysql2')->table($this->psPrefix() . 'stock_available')
+            ->where('id_product', $productId)
+            ->where('id_product_attribute', $productAttributeId)
+            ->orderByRaw('CASE WHEN id_shop = 0 THEN 0 ELSE 1 END')
+            ->orderBy('id_stock_available')
+            ->first(['id_stock_available', 'quantity']);
 
         if (!$stockRow) {
             return response()->json(['ok' => false, 'message' => 'Stock row not found.'], 404);
@@ -336,8 +341,17 @@ class housingController extends Controller
             return response()->json(['ok' => true, 'message' => 'No changes detected.']);
         }
 
-        $stockRow->quantity = $newStock;
-        $stockRow->save();
+        DB::connection('mysql2')->transaction(function () use ($stockRow, $newStock) {
+            DB::connection('mysql2')->statement('SET @ps_stock_sync_processing = 1');
+
+            try {
+                DB::connection('mysql2')->table($this->psPrefix() . 'stock_available')
+                    ->where('id_stock_available', $stockRow->id_stock_available)
+                    ->update(['quantity' => $newStock]);
+            } finally {
+                DB::connection('mysql2')->statement('SET @ps_stock_sync_processing = 0');
+            }
+        });
 
         $this->storeHistoryBatch($resolved, 'update_stock', [[
             'field_name' => 'stock',

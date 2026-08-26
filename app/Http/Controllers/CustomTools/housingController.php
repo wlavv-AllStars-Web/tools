@@ -602,7 +602,10 @@ class housingController extends Controller
             'operational_location' => $isAttribute ? $attributeHousing : $productLocation,
             'location_source' => $isAttribute ? 'attribute_housing' : 'product_location',
             'stock' => (int) ($stockRow->quantity ?? 0),
-            'quantity_arrive' => $this->getQuantityArriveValue($baseProduct, $item, $isAttribute),
+            'quantity_arrive' => $this->getQuantityArriveValue(
+                (int) $baseProduct->id_product,
+                $isAttribute ? (int) $item->id_product_attribute : 0
+            ),
             'weight' => (string) ($baseProduct->weight ?? 0),
             'width' => (string) ($baseProduct->width ?? 0),
             'height' => (string) ($baseProduct->height ?? 0),
@@ -674,17 +677,18 @@ class housingController extends Controller
         return [null, null];
     }
 
-    private function getQuantityArriveValue($productModel, $item, bool $isAttribute)
+    private function getQuantityArriveValue(int $productId, int $productAttributeId = 0): int
     {
-        if ($isAttribute && isset($item->quantity_arrive)) {
-            return $item->quantity_arrive;
+        $isAttribute = $productAttributeId > 0;
+        $table = $this->psPrefix() . ($isAttribute ? 'custom_product_attribute' : 'custom_product');
+        $key = $isAttribute ? 'id_product_attribute' : 'id_product';
+        $id = $isAttribute ? $productAttributeId : $productId;
+
+        if (!Schema::connection('mysql2')->hasTable($table) || !Schema::connection('mysql2')->hasColumn($table, 'stock_arrive')) {
+            return 0;
         }
 
-        if (isset($productModel->quantity_arrive)) {
-            return $productModel->quantity_arrive;
-        }
-
-        return 0;
+        return (int) (DB::connection('mysql2')->table($table)->where($key, $id)->value('stock_arrive') ?? 0);
     }
 
     private function getOrderSummary(object $product): array

@@ -95,6 +95,10 @@ class product_lang extends PrestashopModel
 
         $productLangTable = self::tableName('product_lang');
         $productTable = self::tableName('product');
+        $shopIds = array_filter([
+            PrestashopAdminLinkService::shopId('ASM'),
+            PrestashopAdminLinkService::shopId('ASD'),
+        ]);
 
         $bd_data = self::select(
                 $productTable . '.id_product',
@@ -103,6 +107,7 @@ class product_lang extends PrestashopModel
             )
             ->leftJoin($productTable, $productLangTable . '.id_product', '=', $productTable . '.id_product')
             ->where($productLangTable . '.name', 'LIKE', '%  %')
+            ->whereIn($productLangTable . '.id_shop', $shopIds)
             ->where($productTable . '.reference', 'not like', 'VAT-%')
             ->where($productTable . '.reference', 'not like', '%parts')
             ->where($productTable . '.reference', 'not like', 'shipping%')

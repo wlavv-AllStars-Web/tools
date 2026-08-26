@@ -263,8 +263,7 @@ class BilledOrderReversalService
     {
         $this->stockTargets($productId, $attributeId, $prefix)->each(function ($target) use ($delta, $prefix) {
             DB::connection('mysql2')->table($prefix.'stock_available')
-                ->where('id_product', $target->id_product)
-                ->where('id_product_attribute', $target->id_product_attribute)
+                ->where('id_stock_available', $target->id_stock_available)
                 ->update(['quantity' => DB::raw('quantity + ('.((int) $delta).')')]);
         });
     }
@@ -276,12 +275,12 @@ class BilledOrderReversalService
         $reference = trim((string) DB::connection('mysql2')->table($table)->where($key, $attributeId ?: $productId)->value('reference'));
         $query = DB::connection('mysql2')->table($prefix.'stock_available as sa');
         if ($reference === '') {
-            return $query->where('sa.id_product', $productId)->where('sa.id_product_attribute', $attributeId)->get(['sa.id_product', 'sa.id_product_attribute', 'sa.quantity']);
+            return $query->where('sa.id_product', $productId)->where('sa.id_product_attribute', $attributeId)->get(['sa.id_stock_available', 'sa.id_product', 'sa.id_product_attribute', 'sa.quantity']);
         }
         if ($attributeId > 0) {
-            return $query->join($prefix.'product_attribute as pa', 'pa.id_product_attribute', '=', 'sa.id_product_attribute')->where('pa.reference', $reference)->get(['sa.id_product', 'sa.id_product_attribute', 'sa.quantity']);
+            return $query->join($prefix.'product_attribute as pa', 'pa.id_product_attribute', '=', 'sa.id_product_attribute')->where('pa.reference', $reference)->get(['sa.id_stock_available', 'sa.id_product', 'sa.id_product_attribute', 'sa.quantity']);
         }
-        return $query->join($prefix.'product as p', 'p.id_product', '=', 'sa.id_product')->where('p.reference', $reference)->where('sa.id_product_attribute', 0)->get(['sa.id_product', 'sa.id_product_attribute', 'sa.quantity']);
+        return $query->join($prefix.'product as p', 'p.id_product', '=', 'sa.id_product')->where('p.reference', $reference)->where('sa.id_product_attribute', 0)->get(['sa.id_stock_available', 'sa.id_product', 'sa.id_product_attribute', 'sa.quantity']);
     }
 
     private function primaryStock(int $productId, int $attributeId, string $prefix): int

@@ -585,7 +585,7 @@ class housingController extends Controller
         $item = $match['item'];
         $isAttribute = $match['type'] === 'attribute';
         $baseProduct = $isAttribute ? $item->product : $item;
-        $stockRow = optional($item->stock)->first();
+        $stockRow = $item->stock;
 
         $productLocation = (string) ($baseProduct->location ?? '');
         $attributeHousing = $isAttribute ? $this->getAttributeHousing((int) $item->id_product_attribute) : '';
@@ -615,7 +615,7 @@ class housingController extends Controller
         $item = $match['item'];
         $isAttribute = $match['type'] === 'attribute';
         $baseProduct = $isAttribute ? $item->product : $item;
-        $stockRow = optional($item->stock)->first();
+        $stockRow = $item->stock;
 
         $productLocation = (string) ($baseProduct->location ?? '');
         $attributeHousing = $isAttribute ? $this->getAttributeHousing((int) $item->id_product_attribute) : '';
@@ -737,7 +737,8 @@ class housingController extends Controller
             ->table($detailTable . ' as od')
             ->join($orderTable . ' as o', 'o.id_order', '=', 'od.id_order')
             ->leftJoin($stateLangTable . ' as osl', function ($join) {
-                $join->on('osl.id_order_state', '=', 'o.current_state');
+                $join->on('osl.id_order_state', '=', 'o.current_state')
+                    ->where('osl.id_lang', 1);
             })
             ->select([
                 'o.id_order',

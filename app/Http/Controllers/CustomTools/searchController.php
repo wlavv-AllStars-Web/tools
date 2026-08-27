@@ -41,7 +41,7 @@ class searchController extends Controller
 
         $orders = orders::leftjoin('ps_order_carrier', 'ps_order_carrier.id_order', 'ps_orders.id_order')->leftjoin('ps_order_state', 'ps_orders.current_state', 'ps_order_state.id_order_state')->leftjoin('ps_order_state_lang', 'ps_orders.current_state', 'ps_order_state_lang.id_order_state')->where('ps_order_state_lang.id_lang', 1)->where('ps_orders.id_order', 'like', '%' . $tag . '%')->orWhere('ps_orders.reference', 'LIKE', '"%' . $tag . '%"')->orderBy('ps_orders.id_order', 'DESC')->get();
         $tracking = order_carrier::leftjoin('ps_orders', 'ps_orders.id_order', 'ps_order_carrier.id_order')->leftjoin('ps_order_state', 'ps_orders.current_state', 'ps_order_state.id_order_state')->leftjoin('ps_order_state_lang', 'ps_orders.current_state', 'ps_order_state_lang.id_order_state')->where('tracking_number', 'LIKE', '%' . $tag . '%')->orderBy('ps_orders.id_order', 'DESC')->groupBy('tracking_number')->get();
-        $products = product::where('id_product', $tag)->orWhere('reference', 'LIKE', '%' . $tag . '%')->orWhere('ean13', 'LIKE', '%' . $tag . '%' )->orWhere('housing', 'LIKE', '%' . $tag . '%')->orWhere('location', 'LIKE', '%' . $tag . '%' )->get();
+        $products = product::where('id_product', $tag)->orWhere('reference', 'LIKE', '%' . $tag . '%')->orWhere('ean13', 'LIKE', '%' . $tag . '%' )->orWhere('location', 'LIKE', '%' . $tag . '%' )->get();
         $product_attributes = product_attribute::select('*', 'ps_product_attribute.reference AS ref', 'ps_product_attribute.location AS location_attr', 'ps_product_attribute.ean13 AS ean13_attr')
                                                 ->leftjoin('ps_product', 'ps_product.id_product', 'ps_product_attribute.id_product')
                                                 ->where('ps_product_attribute.id_product', $tag)
@@ -60,9 +60,9 @@ class searchController extends Controller
             })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->where(function ($query) use ($tag, $like) {
-                $query->where('p.id_product', (int) $tag)->orWhere('p.reference', 'like', $like)->orWhere('p.ean13', 'like', $like)->orWhere('p.location', 'like', $like)->orWhere('p.housing', 'like', $like);
+                $query->where('p.id_product', (int) $tag)->orWhere('p.reference', 'like', $like)->orWhere('p.ean13', 'like', $like)->orWhere('p.location', 'like', $like);
             })
-            ->selectRaw('p.id_product, 0 AS id_product_attribute, p.reference, p.ean13, COALESCE(NULLIF(p.location, ""), NULLIF(p.housing, ""), "") AS location, COALESCE(sa.quantity, 0) AS stock, COALESCE(cp.stock_arrive, 0) AS stock_arrive')
+            ->selectRaw('p.id_product, 0 AS id_product_attribute, p.reference, p.ean13, COALESCE(p.location, "") AS location, COALESCE(sa.quantity, 0) AS stock, COALESCE(cp.stock_arrive, 0) AS stock_arrive')
             ->limit(100)->get();
 
         $catalogueAttributes = $catalogue->table($prefix . 'product_attribute as pa')
@@ -74,7 +74,7 @@ class searchController extends Controller
             ->where(function ($query) use ($tag, $like) {
                 $query->where('pa.id_product', (int) $tag)->orWhere('pa.id_product_attribute', (int) $tag)->orWhere('pa.reference', 'like', $like)->orWhere('pa.ean13', 'like', $like)->orWhere('pa.location', 'like', $like);
             })
-            ->selectRaw('p.id_product, pa.id_product_attribute, COALESCE(NULLIF(pa.reference, ""), p.reference) AS reference, COALESCE(NULLIF(pa.ean13, ""), p.ean13) AS ean13, COALESCE(NULLIF(pa.location, ""), NULLIF(p.location, ""), NULLIF(p.housing, ""), "") AS location, COALESCE(sa.quantity, 0) AS stock, COALESCE(cpa.stock_arrive, 0) AS stock_arrive')
+            ->selectRaw('p.id_product, pa.id_product_attribute, COALESCE(NULLIF(pa.reference, ""), p.reference) AS reference, COALESCE(NULLIF(pa.ean13, ""), p.ean13) AS ean13, COALESCE(NULLIF(pa.location, ""), NULLIF(p.location, ""), "") AS location, COALESCE(sa.quantity, 0) AS stock, COALESCE(cpa.stock_arrive, 0) AS stock_arrive')
             ->limit(100)->get();
 
         $catalogueRows = $catalogueProducts->merge($catalogueAttributes)->sortBy(['reference', 'id_product', 'id_product_attribute'])->values();

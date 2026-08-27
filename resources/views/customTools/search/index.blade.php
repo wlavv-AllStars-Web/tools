@@ -87,7 +87,7 @@
                         <td style="width: 25%">STATE</td>
                     </tr>
                     @foreach( $orders AS $order)
-                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminOrders&id_order={{$order->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $order->id_order, 'ASM') }}', '_blank')" style="cursor: pointer;">
                             <td>{{$order->id_order}}</td>
                             <td>{{$order->reference}}</td>
                             <td>{{$order->tracking_number}}</td>
@@ -113,7 +113,7 @@
                         <td style="width: 25%">STATE</td>
                     </tr>
                     @foreach( $tracking AS $tracking_row)
-                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminOrders&id_order={{$tracking_row->id_order}}&vieworder&token={{Config::get('token')->AdminOrders}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $tracking_row->id_order, 'ASM') }}', '_blank')" style="cursor: pointer;">
                             <td>{{$tracking_row->id_order}}</td>
                             <td>{{$tracking_row->reference}}</td>
                             <td>{{$tracking_row->tracking_number}}</td>
@@ -165,7 +165,7 @@
                         <td style="width: 25%">HOUSING</td>
                     </tr>
                     @foreach( $products AS $product)
-                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminProducts&id_product={{$product->id_product}}&updateproduct&token={{Config::get('token')->AdminProducts}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $product->id_product, 'ASM') }}', '_blank')" style="cursor: pointer;">
                             <td>@if($product->active == 1) <i style="color: green" class="fa-solid fa-check"></i> @else <i style="color: red;" class="fa-solid fa-xmark"></i> @endif</td>
                             <td>{{$product->id_product}}</td>
                             <td>{{$product->reference}}</td>
@@ -194,7 +194,7 @@
                         <td style="width: 20%">HOUSING</td>
                     </tr>
                     @foreach( $product_attributes AS $product_attribute)
-                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::storeBaseUrl('ASM') }}/admin77500/index.php?controller=AdminProducts&id_product={{$product_attribute->id_product}}&updateproduct&token={{Config::get('token')->AdminProducts}}', '_blank')" style="cursor: pointer;">
+                        <tr onclick="window.open('{{ \App\Services\Prestashop\PrestashopAdminLinkService::dashboardProductAdminUrl((int) $product_attribute->id_product, 'ASM') }}', '_blank')" style="cursor: pointer;">
                             <td>@if($product_attribute->active == 1) <i style="color: green" class="fa-solid fa-check"></i> @else <i style="color: red;" class="fa-solid fa-xmark"></i> @endif</td>
                             <td>{{$product_attribute->id_product}}</td>
                             <td>{{$product_attribute->id_product_attribute}}</td>

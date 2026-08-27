@@ -134,18 +134,31 @@ class OmsLegacyProcurementService
             return collect();
         }
 
-        return self::billedOrdersBase()
-            ->where(function ($query) use ($tag) {
-                $query->where('bo.reference', 'like', '%' . $tag . '%')
-                    ->orWhere('s.name', 'like', '%' . $tag . '%')
-                    ->orWhere('p.reference', 'like', '%' . $tag . '%')
-                    ->orWhere('pa.reference', 'like', '%' . $tag . '%');
+        // The OMS credentials must not query the PrestaShop database directly.
+        $matches = self::catalogueMatches($tag);
+        $receivedSubquery = DB::table('oms_reception_lines')
+            ->select('billed_order_line_id', DB::raw('SUM(qty_received) as qty_received_sum'))
+            ->groupBy('billed_order_line_id');
+
+        $orders = DB::table('oms_billed_orders as bo')
+            ->join('oms_order_notes as onote', 'onote.id', '=', 'bo.order_note_id')
+            ->join('oms_billed_order_lines as bol', 'bol.billed_order_id', '=', 'bo.id')
+            ->leftJoin('oms_order_note_lines as onl', 'onl.id', '=', 'bol.order_note_line_id')
+            ->leftJoinSub($receivedSubquery, 'rl_sum', 'rl_sum.billed_order_line_id', '=', 'bol.id')
+            ->where(function ($query) use ($tag, $matches) {
+                $query->where('bo.reference', 'like', '%' . $tag . '%');
+                if ($matches['supplier_ids']->isNotEmpty()) $query->orWhereIn('onote.supplier_id', $matches['supplier_ids']);
+                if ($matches['product_ids']->isNotEmpty()) $query->orWhereIn('bol.product_id', $matches['product_ids']);
+                if ($matches['attribute_ids']->isNotEmpty()) $query->orWhereIn('bol.product_attribute_id', $matches['attribute_ids']);
             })
-            ->selectRaw('bo.id AS oms_billed_order_id, bo.id AS po_id, bo.reference, onote.supplier_id, s.name AS supplier_name, MAX(bo.created_at) AS date_add, 5 AS status_id, GROUP_CONCAT(DISTINCT COALESCE(pa.reference, p.reference, "") SEPARATOR ", ") AS sku, SUM(COALESCE(onl.qty_ordered, bol.qty_billed, 0)) AS qty_ordered, SUM(COALESCE(bol.qty_billed, 0)) AS qty_wmfaturado, SUM(COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)) AS qty_received')
-            ->groupBy('bo.id', 'bo.reference', 'onote.supplier_id', 's.name')
+            ->where(fn ($query) => $query->whereNull('bo.status')->orWhereNotIn('bo.status', ['cancelled']))
+            ->selectRaw('bo.id AS oms_billed_order_id, bo.id AS po_id, bo.reference, onote.supplier_id, MAX(bo.created_at) AS date_add, 5 AS status_id, SUM(COALESCE(onl.qty_ordered, bol.qty_billed, 0)) AS qty_ordered, SUM(COALESCE(bol.qty_billed, 0)) AS qty_wmfaturado, SUM(COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0)) AS qty_received')
+            ->groupBy('bo.id', 'bo.reference', 'onote.supplier_id')
             ->havingRaw('SUM(COALESCE(bol.qty_billed, 0)) > SUM(COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0))')
             ->orderByDesc('bo.id')
             ->get();
+
+        return self::attachCatalogueDetails($orders);
     }
 
     public static function searchReceivedProducts(string $tag): Collection
@@ -154,19 +167,21 @@ class OmsLegacyProcurementService
             return collect();
         }
 
-        return DB::table('oms_reception_lines as rl')
+        $matches = self::catalogueMatches($tag);
+        $rows = DB::table('oms_reception_lines as rl')
             ->join('oms_billed_order_lines as bol', 'bol.id', '=', 'rl.billed_order_line_id')
             ->join('oms_receptions as r', 'r.id', '=', 'rl.reception_id')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
-            ->leftJoin(self::psTable('product') . ' as p', 'p.id_product', '=', 'bol.product_id')
-            ->leftJoin(self::psTable('product_attribute') . ' as pa', 'pa.id_product_attribute', '=', 'bol.product_attribute_id')
-            ->where(function ($query) use ($tag) {
-                $query->where('p.reference', 'like', '%' . $tag . '%')
-                    ->orWhere('pa.reference', 'like', '%' . $tag . '%');
+            ->where(function ($query) use ($tag, $matches) {
+                $query->where('bo.reference', 'like', '%' . $tag . '%');
+                if ($matches['product_ids']->isNotEmpty()) $query->orWhereIn('bol.product_id', $matches['product_ids']);
+                if ($matches['attribute_ids']->isNotEmpty()) $query->orWhereIn('bol.product_attribute_id', $matches['attribute_ids']);
             })
-            ->selectRaw('bo.id AS po_id, bol.product_id, COALESCE(bol.product_attribute_id, 0) AS product_attribute_id, COALESCE(pa.reference, p.reference, "") AS sku, rl.qty_received AS qty, r.created_at AS date_add')
+            ->selectRaw('bo.id AS po_id, bol.product_id, COALESCE(bol.product_attribute_id, 0) AS product_attribute_id, rl.qty_received AS qty, r.created_at AS date_add')
             ->orderByDesc('r.created_at')
             ->get();
+
+        return self::attachCatalogueDetails($rows, false);
     }
 
     public static function openBackorderLinesOlderThan(string $date): Collection
@@ -223,6 +238,50 @@ class OmsLegacyProcurementService
             $attributeReference = $attributes->get((int) $row->product_attribute_id);
             $productReference = $products->get((int) $row->product_id);
             $row->product_reference = $attributeReference ?: ($productReference ?: '');
+
+            return $row;
+        });
+    }
+
+    private static function catalogueMatches(string $tag): array
+    {
+        $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+        $catalogue = DB::connection('mysql2');
+        $like = '%' . $tag . '%';
+
+        return [
+            'supplier_ids' => $catalogue->table($prefix . 'supplier')->where('name', 'like', $like)->pluck('id_supplier'),
+            'product_ids' => $catalogue->table($prefix . 'product')->where('reference', 'like', $like)->pluck('id_product'),
+            'attribute_ids' => $catalogue->table($prefix . 'product_attribute')->where('reference', 'like', $like)->pluck('id_product_attribute'),
+        ];
+    }
+
+    private static function attachCatalogueDetails(Collection $rows, bool $orders = true): Collection
+    {
+        if ($rows->isEmpty()) {
+            return $rows;
+        }
+
+        $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+        $catalogue = DB::connection('mysql2');
+        $supplierNames = $catalogue->table($prefix . 'supplier')
+            ->whereIn('id_supplier', $rows->pluck('supplier_id')->filter()->unique())
+            ->pluck('name', 'id_supplier');
+
+        $lines = $orders
+            ? DB::table('oms_billed_order_lines')->whereIn('billed_order_id', $rows->pluck('po_id'))->get(['billed_order_id', 'product_id', 'product_attribute_id'])
+            : $rows;
+        $productReferences = $catalogue->table($prefix . 'product')->whereIn('id_product', $lines->pluck('product_id')->filter()->unique())->pluck('reference', 'id_product');
+        $attributeReferences = $catalogue->table($prefix . 'product_attribute')->whereIn('id_product_attribute', $lines->pluck('product_attribute_id')->filter()->unique())->pluck('reference', 'id_product_attribute');
+
+        $referenceFor = static fn ($line): string => (string) ($attributeReferences->get((int) ($line->product_attribute_id ?? 0))
+            ?: $productReferences->get((int) $line->product_id, ''));
+
+        return $rows->map(function ($row) use ($orders, $lines, $supplierNames, $referenceFor) {
+            $row->supplier_name = $supplierNames->get((int) ($row->supplier_id ?? 0), '');
+            $row->sku = $orders
+                ? $lines->where('billed_order_id', $row->po_id)->map($referenceFor)->filter()->unique()->implode(', ')
+                : $referenceFor($row);
 
             return $row;
         });

@@ -50,6 +50,35 @@ class searchController extends Controller
                                                 ->orWhere('ps_product_attribute.location',   'like',     '%' . $tag . '%' )
                                                 ->orWhere('ps_product_attribute.ean13',      'like',     '%' . $tag . '%' )
                                                 ->get();
+        $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
+        $catalogue = DB::connection('mysql2');
+        $like = '%' . $tag . '%';
+
+        $catalogueProducts = $catalogue->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'stock_available as sa', function ($join) {
+                $join->on('sa.id_product', '=', 'p.id_product')->where('sa.id_product_attribute', 0);
+            })
+            ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->where(function ($query) use ($tag, $like) {
+                $query->where('p.id_product', (int) $tag)->orWhere('p.reference', 'like', $like)->orWhere('p.ean13', 'like', $like)->orWhere('p.location', 'like', $like)->orWhere('p.housing', 'like', $like);
+            })
+            ->selectRaw('p.id_product, 0 AS id_product_attribute, p.reference, p.ean13, COALESCE(NULLIF(p.location, ""), NULLIF(p.housing, ""), "") AS location, COALESCE(sa.quantity, 0) AS stock, COALESCE(cp.stock_arrive, 0) AS stock_arrive')
+            ->limit(100)->get();
+
+        $catalogueAttributes = $catalogue->table($prefix . 'product_attribute as pa')
+            ->join($prefix . 'product as p', 'p.id_product', '=', 'pa.id_product')
+            ->leftJoin($prefix . 'stock_available as sa', function ($join) {
+                $join->on('sa.id_product', '=', 'pa.id_product')->on('sa.id_product_attribute', '=', 'pa.id_product_attribute');
+            })
+            ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+            ->where(function ($query) use ($tag, $like) {
+                $query->where('pa.id_product', (int) $tag)->orWhere('pa.id_product_attribute', (int) $tag)->orWhere('pa.reference', 'like', $like)->orWhere('pa.ean13', 'like', $like)->orWhere('pa.location', 'like', $like);
+            })
+            ->selectRaw('p.id_product, pa.id_product_attribute, COALESCE(NULLIF(pa.reference, ""), p.reference) AS reference, COALESCE(NULLIF(pa.ean13, ""), p.ean13) AS ean13, COALESCE(NULLIF(pa.location, ""), NULLIF(p.location, ""), NULLIF(p.housing, ""), "") AS location, COALESCE(sa.quantity, 0) AS stock, COALESCE(cpa.stock_arrive, 0) AS stock_arrive')
+            ->limit(100)->get();
+
+        $catalogueRows = $catalogueProducts->merge($catalogueAttributes)->sortBy(['reference', 'id_product', 'id_product_attribute'])->values();
+
 
         $shipments = shipping::where('tracking', 'LIKE', '%' . $tag . '%')->orWhere('invoice_number', 'LIKE', '%' . $tag . '%')->get();
         
@@ -68,6 +97,7 @@ class searchController extends Controller
             'tracking'          => $tracking,
             'products'          => $products,
             'product_attributes'=> $product_attributes,
+            'catalogueRows'     => $catalogueRows,
             'shipments'         => $shipments,
             'supplier_delivery_issues' => $supplier_delivery_issues,
             'supplier_issues'   => $supplier_issues,

@@ -128,6 +128,31 @@
     </div>
 
     <div class="card" style="margin-top: 10px;">
+        <div class="card-header" onclick="$('#tableCatalogueDetails').toggle();">
+            @if($catalogueRows->count() > 0) <span style="color: darkgreen;">( {{ $catalogueRows->count() }} )</span> @else <span style="color: red;">( 0 )</span> @endif PRODUCT DETAILS
+        </div>
+        <div class="card-body">
+            @if($catalogueRows->isNotEmpty())
+                <table id="tableCatalogueDetails" class="table table-striped" style="text-align: center; display:none;">
+                    <tr><td>ID PRODUCT (ATTRIBUTE)</td><td>REFERENCE</td><td>EAN13</td><td>LOCATION</td><td>STOCK</td><td>STOCK ARRIVE</td><td>ACTIONS</td></tr>
+                    @foreach($catalogueRows as $catalogueRow)
+                        <tr>
+                            <td>{{ $catalogueRow->id_product }}@if($catalogueRow->id_product_attribute) ({{ $catalogueRow->id_product_attribute }}) @endif</td>
+                            <td>{{ $catalogueRow->reference }}</td><td>{{ $catalogueRow->ean13 }}</td><td>{{ $catalogueRow->location }}</td><td>{{ $catalogueRow->stock + 0 }}</td><td>{{ $catalogueRow->stock_arrive + 0 }}</td>
+                            <td style="white-space: nowrap;">
+                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="{{ route('barcode.printProductBarcode', ['id_product' => $catalogueRow->id_product, 'id_product_attribute' => $catalogueRow->id_product_attribute, 'repeat' => 1]) }}"><i class="fa-solid fa-barcode"></i> EAN</a>
+                                <a class="btn btn-sm btn-outline-secondary" target="_blank" href="{{ route('barcode.printProductStandString', ['id_product' => $catalogueRow->id_product, 'id_product_attribute' => $catalogueRow->id_product_attribute]) }}"><i class="fa-solid fa-warehouse"></i> Estante</a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </table>
+            @else
+                <p class="card-text" style="text-align: center;">NO PRODUCT DETAILS FOUND</p>
+            @endif
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 10px;">
         <div class="card-header" onclick="$('#tableProducts').toggle();">@if(count($products) > 0) <span style="color: darkgreen;">( {{count($products)}} )</span> @else <span style="color: red;">( 0 )</span> @endif PRODUCTS </div>
         <div class="card-body" @if ( isset($products) && ( count($products) > 0) ) style="display: block;" @else style="display: none;" @endif>
             @if ( isset($products) && ( count($products) > 0) )
@@ -381,9 +406,6 @@
                         <td style="width: 30%">NOTES</td>
                     </tr>
                 @foreach( $documents_manager AS $document)
-                    @php
-                        $documentPath = \App\Models\modules\documents_manager\documents_manager::documentPublicPath($document);
-                    @endphp
                     <tr onclick="$('#documentHolder_{{$document->id_document}}').toggle()">
                         <td>{{$document->name}}</td>
                         <td>{{$document->document_number}}</td>
@@ -393,7 +415,13 @@
                     </tr>
                     <tr style="display: none;" id="documentHolder_{{$document->id_document}}">
                         <td colspan="6">
-                            <embed src="{{ config('allstars.services.webtools.base_url') }}{{ $documentPath }}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                            @if( ( strlen( $document->element) > 0 ) && ( $document->element != 'others' ))
+                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/{{$document->category}}/{{str_replace('.', '/', str_replace(' ', '', $document->element))}}/{{str_replace('/', '|', $document->document)}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                            @elseif( ( $document->category == 'manifest' ) && ( strlen( $document->element) > 0 ) && ( $document->element == 'others' ))
+                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/manifest/manifest{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                            @else
+                                <embed src="{{ config('allstars.services.webtools.base_url') }}/uploads/documents/{{str_replace('.', '/', $document->category)}}/{{$document->document}}?t={{rand()}}" width="750px" height="750px" type="application/pdf" style="margin: 0 auto;">
+                            @endif
                         </td>
                     </tr>
                 @endforeach

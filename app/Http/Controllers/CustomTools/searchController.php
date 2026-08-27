@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CustomTools;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\Controller;
 

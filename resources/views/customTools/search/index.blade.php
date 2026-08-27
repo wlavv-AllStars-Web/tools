@@ -4,6 +4,16 @@
     <style>
         .card-body{ padding: 0; }
         .table{ margin-bottom: 0; border-radius: 0 0 5px 5px; }
+        .search-result-table { text-align: center; margin-bottom: 0; }
+        .search-result-table > tbody > tr:first-child > td {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-size: .8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            vertical-align: middle;
+        }
+        .search-result-table > tbody > tr > td { vertical-align: middle; }
     </style>
     
     <div class="card" style="margin-top: 10px;">
@@ -324,7 +334,7 @@
         <div class="card-header" onclick="$('#tableSuppliersWarrantyIssues').toggle();">@if(count($supplier_warranty_issues) > 0) <span style="color: darkgreen;">( {{count($supplier_warranty_issues)}} )</span> @else <span style="color: red;">( 0 )</span> @endif SUPPLIER WARRANTY ISSUES </div>
         <div class="card-body" @if ( isset($supplier_warranty_issues) && ( count($supplier_warranty_issues) > 0) ) style="display: block;" @else style="display: none;" @endif>
             @if ( isset($supplier_warranty_issues) && ( count($supplier_warranty_issues) > 0) )
-                <table id="tableSuppliersWarrantyIssues" class="table table-striped" style="text-align: center;display:none;">
+                <table id="tableSuppliersWarrantyIssues" class="table table-striped table-hover search-result-table" style="display:none;">
                     <tr>
                         <td style="width: 15%">STATUS</td>
                         <td style="width: 10%">ID ORDER</td>
@@ -359,7 +369,7 @@
         <div class="card-header" onclick="$('#tableCarrierIssues').toggle();">@if(count($carrierIssues) > 0) <span style="color: darkgreen;">( {{count($carrierIssues)}} )</span> @else <span style="color: red;">( 0 )</span> @endif CARRIER ISSUES </div>
         <div class="card-body" @if ( isset($carrierIssues) && ( count($carrierIssues) > 0) ) style="display: block;" @else style="display: none;" @endif>
             @if ( isset($carrierIssues) && ( count($carrierIssues) > 0) )
-                <table id="tableCarrierIssues" class="table table-striped" style="text-align: center;display:none;">
+                <table id="tableCarrierIssues" class="table table-striped table-hover search-result-table" style="display:none;">
                     <tr>
                         <td style="width: 15%">STATUS</td>
                         <td style="width: 10%">ID ORDER</td>
@@ -397,7 +407,7 @@
         <div class="card-header" onclick="$('#tableDocuments').toggle();">@if(count($documents_manager) > 0) <span style="color: darkgreen;">( {{count($documents_manager)}} )</span> @else <span style="color: red;">( 0 )</span> @endif DOCUMENTS </div>
         <div class="card-body" @if ( isset($documents_manager) && ( count($documents_manager) > 0) ) style="display: block;" @else style="display: none;" @endif>
             @if ( isset($documents_manager) && ( count($documents_manager) > 0) )
-                <table id="tableDocuments" class="table table-striped" style="text-align: center;display:none;">
+                <table id="tableDocuments" class="table table-striped table-hover search-result-table" style="display:none;">
                     <tr>
                         <td style="width: 20%">NAME</td>
                         <td style="width: 20%">DOC. NUMBER</td>

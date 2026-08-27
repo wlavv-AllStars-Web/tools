@@ -57,7 +57,7 @@ class searchController extends Controller
 
         $catalogueProducts = $catalogue->table($prefix . 'product as p')
             ->leftJoin($prefix . 'stock_available as sa', function ($join) {
-                $join->on('sa.id_product', '=', 'p.id_product')->where('sa.id_product_attribute', 0);
+                $join->on('sa.id_product', '=', 'p.id_product')->where('sa.id_product_attribute', 0)->where('sa.id_shop', 0)->where('sa.id_shop_group', 1);
             })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->where(function ($query) use ($tag, $like) {
@@ -69,7 +69,7 @@ class searchController extends Controller
         $catalogueAttributes = $catalogue->table($prefix . 'product_attribute as pa')
             ->join($prefix . 'product as p', 'p.id_product', '=', 'pa.id_product')
             ->leftJoin($prefix . 'stock_available as sa', function ($join) {
-                $join->on('sa.id_product', '=', 'pa.id_product')->on('sa.id_product_attribute', '=', 'pa.id_product_attribute');
+                $join->on('sa.id_product', '=', 'pa.id_product')->on('sa.id_product_attribute', '=', 'pa.id_product_attribute')->where('sa.id_shop', 0)->where('sa.id_shop_group', 1);
             })
             ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
             ->where(function ($query) use ($tag, $like) {

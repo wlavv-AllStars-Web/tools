@@ -77,7 +77,8 @@ class product extends PrestashopModel
     public function stock()
     {
         return $this->hasOne(stock_available::class, 'id_product', 'id_product')
-            ->where('id_product_attribute', 0);
+            ->where('id_product_attribute', 0)
+            ->where('id_shop', 0);
     }
 
     public function discount()

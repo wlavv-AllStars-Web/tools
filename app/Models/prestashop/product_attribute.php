@@ -33,7 +33,8 @@ class product_attribute extends PrestashopModel
 
     public function stock()
     {
-        return $this->hasOne(stock_available::class, 'id_product_attribute', 'id_product_attribute');
+        return $this->hasOne(stock_available::class, 'id_product_attribute', 'id_product_attribute')
+            ->where('id_shop', 0);
     }
 
     public function pack()

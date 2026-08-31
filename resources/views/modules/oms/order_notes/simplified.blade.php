@@ -7,6 +7,8 @@
     <style>
         .oms-simple{--line:#e4e7ec;--muted:#667085}.oms-simple .card{border:1px solid var(--line);border-radius:8px}.oms-simple .head{padding:16px;border-bottom:1px solid var(--line)}.oms-simple .label{display:block;color:var(--muted);font-size:.7rem;font-weight:700;text-transform:uppercase}.oms-simple .table-wrap{overflow-x:auto}.oms-simple .table{min-width:1330px}.oms-simple .table th{background:#f9fafb;font-size:.7rem;text-transform:uppercase;white-space:nowrap}.oms-simple .product{min-width:250px}.oms-simple .ref{font-weight:700}.oms-simple .housing{color:dodgerblue;font-weight:700}.oms-simple .housing.na{color:#dc2626}.oms-simple .name,.oms-simple .eur,.oms-simple .meta{font-size:.78rem;color:var(--muted);display:block}.oms-simple .quantity{display:flex;align-items:center;gap:6px}.oms-simple .quantity input,.oms-simple .price input,.oms-simple .invoice-qty{width:66px;max-width:66px;text-align:center}.oms-simple .price{min-width:120px}.oms-simple .state,.oms-simple .signal{width:28px;height:28px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center}.oms-simple .complete{background:#dcfae6;color:#067647}.oms-simple .partial{background:#fef0c7;color:#b54708}.oms-simple .zero{background:#fee4e2;color:#b42318}.oms-simple .signal.dim{background:#ffb6c1}.oms-simple .signal.bo{background:#ffb347;cursor:pointer}.oms-simple .line-state .state{width:auto;padding:0 9px;gap:5px}.oms-simple .empty{text-align:center;padding:2.5rem!important;color:var(--muted)}.oms-simple .signals{display:flex;gap:4px}.oms-simple .invoice-head{background:#f8fbff}.oms-simple .choices{margin:0}.oms-simple .choices__inner{min-height:38px;padding:7px 10px;border:1px solid #ced4da;border-radius:4px;background:#fff}.oms-simple .choices__list--dropdown{z-index:1100;border:1px solid #ced4da;background:#fff}.oms-simple .choices__list--dropdown .choices__item{padding:7px 10px}.oms-simple .choices__input{padding:4px 8px;border:1px solid #ced4da;margin:6px;width:calc(100% - 12px)}
     </style>
+    <style>.oms-simple .row > section.card{width:100%}</style>
+    <style>.oms-simple .quantity input,.oms-simple .price input,.oms-simple .invoice-qty{width:110px;max-width:110px}</style>
 
     @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
     @if($errors->any())<div class="alert alert-danger py-2">{{ $errors->first() }}</div>@endif
@@ -21,11 +23,17 @@
 
     @if($orderNote)
         <div class="row g-2 mb-3">
+        <section class="card mb-3">
+            <div class="head py-2"><span class="label">Order note summary</span></div>
+            <div class="p-3">
             <div class="col-md"><div class="card h-100 p-2"><span class="label">Order note - Product lines</span><b>{{ $summary['lines'] }}</b></div></div>
             <div class="col-md"><div class="card h-100 p-2"><span class="label">Order note - Products</span><b>{{ $summary['products'] }}</b></div></div>
             <div class="col-md"><div class="card h-100 p-2"><span class="label">Invoice - Billed</span><b>{{ $summary['invoiced'] }}</b></div></div>
             <div class="col-md"><div class="card h-100 p-2"><span class="label">Receive - Received</span><b>{{ $summary['received'] }}</b></div></div>
             <div class="col-md-3"><div class="card h-100 p-2"><span class="label">Total purchase price</span><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><span class="eur">&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</span></div></div>
+        </div>
+            </div>
+        </section>
         </div>
 
         <form class="card" method="POST" action="{{ route('erp.oms.invoices.store', $orderNote) }}">

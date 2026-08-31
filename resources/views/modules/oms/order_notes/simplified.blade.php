@@ -9,6 +9,7 @@
     </style>
     <style>.oms-simple .row > section.card{width:100%}</style>
     <style>.oms-simple .quantity input,.oms-simple .price input,.oms-simple .invoice-qty{width:110px;max-width:110px}</style>
+    <style>.oms-simple>.row{display:none}.oms-simple .summary-inline{display:flex;gap:8px;justify-content:flex-end;align-items:end}.oms-simple .summary-inline span{display:flex;flex-direction:column;min-width:42px}.oms-simple .summary-inline small{font-size:.62rem;color:var(--muted);text-transform:uppercase}.oms-simple .summary-inline b{font-size:.9rem}@media(min-width:1200px){.oms-simple>form.card>.head>div:nth-child(1),.oms-simple>form.card>.head>div:nth-child(2){flex:0 0 24%;max-width:24%}.oms-simple>form.card>.head>div:nth-child(3){flex:0 0 16%;max-width:16%}.oms-simple>form.card>.head>div:nth-child(4){flex:0 0 36%;max-width:36%}}</style>
 
     @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
     @if($errors->any())<div class="alert alert-danger py-2">{{ $errors->first() }}</div>@endif
@@ -17,6 +18,9 @@
         <div class="head row g-3 align-items-end">
             <div class="col-lg-4"><label class="label">Supplier</label><select id="supplier" class="form-select" name="supplier_id"><option value="">Select supplier&hellip;</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id_supplier }}" @selected((int) $selectedSupplierId === (int) $supplier->id_supplier)>{{ $supplier->name }}</option>@endforeach</select></div>
             <div class="col-lg-4"><label class="label">Order note</label><select id="orderNote" class="form-select" name="order_note_id"><option value="">Select order note&hellip;</option>@foreach($orderNotes as $note)<option value="{{ $note->id }}" @selected((int) optional($orderNote)->id === (int) $note->id)>{{ $note->reference }} &middot; {{ str_replace('_', ' ', $note->status) }}</option>@endforeach</select></div>
+            @if($orderNote)<div class="summary-inline">
+                <span title="Product lines"><small>Lines</small><b>{{ $summary['lines'] }}</b></span><span title="Ordered product units"><small>Products</small><b>{{ $summary['products'] }}</b></span><span title="Billed units"><small>Billed</small><b>{{ $summary['invoiced'] }}</b></span><span title="Received units"><small>Received</small><b>{{ $summary['received'] }}</b></span><span title="Total purchase price"><small>Purchase</small><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><small>&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</small></span>
+            </div>@endif
             <div class="col-lg-4">@if($orderNote)<b>{{ $orderNote->reference }}</b><span class="meta">{{ $orderNote->supplier?->name }} &middot; {{ $currencyIso }}</span>@endif</div>
         </div>
     </form>

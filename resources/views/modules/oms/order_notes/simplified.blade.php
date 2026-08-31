@@ -2,7 +2,7 @@
 
 @section('content')
 @php($currencyIso = $currencyMeta['currency_iso'] ?? 'EUR')
-<div class="container-fluid py-3 oms-simple">
+<div class="container-fluid py-3 oms-simple" style="padding-left: 0;padding-right: 0;">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 <style>
 .oms-simple{--line:#e4e7ec;--muted:#667085}.oms-simple .card{border:1px solid var(--line);border-radius:8px;background:#fff}.oms-simple .head{padding:16px;border-bottom:1px solid var(--line)}.oms-simple .label{display:block;color:var(--muted);font-size:.7rem;font-weight:700;text-transform:uppercase}.oms-simple .table-wrap{overflow-x:auto}.oms-simple .table{min-width:1330px}.oms-simple .table th{background:#f9fafb;font-size:.7rem;text-transform:uppercase;white-space:nowrap}.oms-simple .product{min-width:250px}.oms-simple .ref{font-weight:700}.oms-simple .housing{color:dodgerblue;font-weight:700}.oms-simple .housing.na{color:#dc2626}.oms-simple .name,.oms-simple .eur,.oms-simple .meta{font-size:.78rem;color:var(--muted);display:block}.oms-simple .quantity{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px}.oms-simple .quantity input,.oms-simple .price input,.oms-simple .invoice-qty{width:110px!important;max-width:110px!important;flex:0 0 110px}.oms-simple .price{min-width:130px}.oms-simple .state,.oms-simple .signal{width:28px!important;height:28px!important;min-width:28px!important;border-radius:5px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}.oms-simple .state.complete{background:#dcfae6!important;color:#067647!important}.oms-simple .state.partial{background:#fef0c7!important;color:#b54708!important}.oms-simple .state.zero{background:#fee4e2!important;color:#b42318!important}.oms-simple .state i{color:inherit!important}.oms-simple .signal.dim{background:#ffb6c1!important}.oms-simple .signal.bo{background:#ffb347!important;cursor:pointer}.oms-simple .line-state .state{width:auto!important;min-width:28px!important;padding:0 9px}.oms-simple .empty{text-align:center;padding:2.5rem!important;color:var(--muted)}.oms-simple .signals{display:flex;gap:4px}.oms-simple .invoice-head{background:#f8fbff}.oms-simple .choices{margin:0}.oms-simple .choices__inner{min-height:38px;padding:7px 10px;border:1px solid #ced4da;border-radius:4px;background:#fff}.oms-simple .choices__list--dropdown{z-index:1100;border:1px solid #ced4da;background:#fff}.oms-simple .choices__input{padding:4px 8px;border:1px solid #ced4da;margin:6px;width:calc(100% - 12px)}
@@ -10,12 +10,13 @@
 @media(max-width:1199px){.oms-simple .oms-toolbar{flex-wrap:wrap}.oms-simple .oms-counters{width:100%;margin-left:0;justify-content:flex-start}}@media(max-width:700px){.oms-simple .oms-selector.supplier,.oms-simple .oms-selector.note{width:100%;flex-basis:100%}.oms-simple .oms-counters{flex-wrap:wrap}}
 .oms-simple .oms-counter{position:relative;overflow:hidden;align-items:flex-end;text-align:right}.oms-simple .oms-counter i{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:2.35rem;opacity:.18;margin:0;pointer-events:none}.oms-simple .oms-counter small,.oms-simple .oms-counter b,.oms-simple .oms-counter .eur{position:relative;z-index:1}.oms-simple .counter-purchase small{display:none}
 .oms-simple .oms-counters{width:800px;flex:0 0 800px}.oms-simple .oms-counter{min-width:120px}@media(max-width:1199px){.oms-simple .oms-counters{width:100%;flex:0 0 100%}}
+.oms-simple .oms-counters{width:700px!important;flex:0 0 700px}.oms-simple .invoice-head{background:transparent!important}
 </style>
 
 @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger py-2">{{ $errors->first() }}</div>@endif
 
-<form class="card mb-3" method="GET" action="{{ route('erp.oms.simple') }}">
+<form class="card container-fluid py-3 oms-simple mb-3" method="GET" action="{{ route('erp.oms.simple') }}">
     <div class="head oms-toolbar">
         <div class="oms-selector supplier"><label class="label">Supplier</label><select id="supplier" class="form-select" name="supplier_id"><option value="">Select supplier&hellip;</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id_supplier }}" @selected((int) $selectedSupplierId === (int) $supplier->id_supplier)>{{ $supplier->name }}</option>@endforeach</select></div>
         <div class="oms-selector note"><label class="label">Order note</label><select id="orderNote" class="form-select" name="order_note_id"><option value="">Select order note&hellip;</option>@foreach($orderNotes as $note)<option value="{{ $note->id }}" @selected((int) optional($orderNote)->id === (int) $note->id)>{{ $note->reference }} &middot; {{ str_replace('_', ' ', $note->status) }}</option>@endforeach</select></div>
@@ -31,7 +32,7 @@
 </form>
 
 @if($orderNote)
-<form class="card" method="POST" action="{{ route('erp.oms.invoices.store', $orderNote) }}">
+<form class="card container-fluid py-3 oms-simple" method="POST" action="{{ route('erp.oms.invoices.store', $orderNote) }}">
 @csrf
 <div class="head invoice-head row g-3 align-items-end">
 <div class="col-lg-3"><label class="label">Invoice draft</label><select name="existing_invoice_id" class="form-select form-select-sm"><option value="">Create new invoice draft</option>@foreach($draftInvoices as $draft)<option value="{{ $draft->id }}" @selected((string) old('existing_invoice_id') === (string) $draft->id)>{{ $draft->invoice_reference }} &middot; {{ optional($draft->invoice_date)->format('Y-m-d') ?: 'No date' }}</option>@endforeach</select></div>

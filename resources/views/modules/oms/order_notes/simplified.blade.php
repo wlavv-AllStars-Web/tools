@@ -13,21 +13,28 @@
 
     <form class="card mb-3" method="GET" action="{{ route('erp.oms.simple') }}">
         <div class="head row g-3 align-items-end">
-            <div class="col-lg-4"><label class="label">Supplier</label><select id="supplier" class="form-select" name="supplier_id"><option value="">Select supplier…</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id_supplier }}" @selected((int) $selectedSupplierId === (int) $supplier->id_supplier)>{{ $supplier->name }}</option>@endforeach</select></div>
-            <div class="col-lg-4"><label class="label">Order note</label><select id="orderNote" class="form-select" name="order_note_id"><option value="">Select order note…</option>@foreach($orderNotes as $note)<option value="{{ $note->id }}" @selected((int) optional($orderNote)->id === (int) $note->id)>{{ $note->reference }} · {{ str_replace('_', ' ', $note->status) }}</option>@endforeach</select></div>
-            <div class="col-lg-4">@if($orderNote)<b>{{ $orderNote->reference }}</b><span class="meta">{{ $orderNote->supplier?->name }} · {{ $currencyIso }}</span>@endif</div>
+            <div class="col-lg-4"><label class="label">Supplier</label><select id="supplier" class="form-select" name="supplier_id"><option value="">Select supplier&hellip;</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id_supplier }}" @selected((int) $selectedSupplierId === (int) $supplier->id_supplier)>{{ $supplier->name }}</option>@endforeach</select></div>
+            <div class="col-lg-4"><label class="label">Order note</label><select id="orderNote" class="form-select" name="order_note_id"><option value="">Select order note&hellip;</option>@foreach($orderNotes as $note)<option value="{{ $note->id }}" @selected((int) optional($orderNote)->id === (int) $note->id)>{{ $note->reference }} &middot; {{ str_replace('_', ' ', $note->status) }}</option>@endforeach</select></div>
+            <div class="col-lg-4">@if($orderNote)<b>{{ $orderNote->reference }}</b><span class="meta">{{ $orderNote->supplier?->name }} &middot; {{ $currencyIso }}</span>@endif</div>
         </div>
     </form>
 
     @if($orderNote)
+        <div class="row g-2 mb-3">
+            <div class="col-md"><div class="card h-100 p-2"><span class="label">Order note - Product lines</span><b>{{ $summary['lines'] }}</b></div></div>
+            <div class="col-md"><div class="card h-100 p-2"><span class="label">Order note - Products</span><b>{{ $summary['products'] }}</b></div></div>
+            <div class="col-md"><div class="card h-100 p-2"><span class="label">Invoice - Billed</span><b>{{ $summary['invoiced'] }}</b></div></div>
+            <div class="col-md"><div class="card h-100 p-2"><span class="label">Receive - Received</span><b>{{ $summary['received'] }}</b></div></div>
+            <div class="col-md-3"><div class="card h-100 p-2"><span class="label">Total purchase price</span><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><span class="eur">&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</span></div></div>
+        </div>
+
         <form class="card" method="POST" action="{{ route('erp.oms.invoices.store', $orderNote) }}">
             @csrf
             <div class="head invoice-head row g-3 align-items-end">
-                <div class="col-lg-3"><label class="label">Invoice draft</label><select name="existing_invoice_id" class="form-select form-select-sm"><option value="">Create new invoice draft</option>@foreach($draftInvoices as $draft)<option value="{{ $draft->id }}" @selected((string) old('existing_invoice_id') === (string) $draft->id)>{{ $draft->invoice_reference }} · {{ optional($draft->invoice_date)->format('Y-m-d') ?: 'No date' }}</option>@endforeach</select></div>
-                <div class="col-lg-2"><label class="label">Invoice reference</label><input class="form-control form-control-sm" name="invoice_reference" value="{{ old('invoice_reference') }}" placeholder="Supplier reference"></div>
+                <div class="col-lg-3"><label class="label">Invoice draft</label><select name="existing_invoice_id" class="form-select form-select-sm"><option value="">Create new invoice draft</option>@foreach($draftInvoices as $draft)<option value="{{ $draft->id }}" @selected((string) old('existing_invoice_id') === (string) $draft->id)>{{ $draft->invoice_reference }} &middot; {{ optional($draft->invoice_date)->format('Y-m-d') ?: 'No date' }}</option>@endforeach</select></div>
+                <div class="col-lg-3"><label class="label">Invoice reference</label><input class="form-control form-control-sm" name="invoice_reference" value="{{ old('invoice_reference') }}" placeholder="Supplier reference"></div>
                 <div class="col-lg-2"><label class="label">Invoice date</label><input type="date" class="form-control form-control-sm" name="invoice_date" value="{{ old('invoice_date', now()->toDateString()) }}"></div>
-                <div class="col-lg-2"><label class="label">Due date</label><input type="date" class="form-control form-control-sm" name="due_date" value="{{ old('due_date') }}"></div>
-                <div class="col-lg-3 d-flex align-items-end justify-content-between gap-2"><span class="small text-muted">Quantities at 0 are not added to this invoice.</span><button class="btn btn-primary btn-sm text-nowrap" type="submit" name="invoice_action" value="save_draft"><i class="fa-solid fa-file-invoice me-1"></i>Save invoice</button></div>
+                <div class="col-lg-4 d-flex align-items-end justify-content-between gap-2"><span class="small text-muted">Quantities at 0 are not added to this invoice.</span><button class="btn btn-primary btn-sm text-nowrap" type="submit" name="invoice_action" value="save_draft"><i class="fa-solid fa-file-invoice me-1"></i>Save invoice</button></div>
             </div>
             <div class="table-wrap"><table class="table align-middle mb-0"><thead><tr><th></th><th>Product</th><th>Ordered</th><th>Invoiced</th><th>Received</th><th>This invoice</th><th>Purchase price ({{ $currencyIso }})</th><th>Sales price ({{ $currencyIso }})</th><th>Line state</th></tr></thead><tbody>
                 @forelse($simplifiedOmsRows as $row)
@@ -39,8 +46,8 @@
                         <td><div class="quantity"><input class="form-control form-control-sm" readonly value="{{ $invoiced }}"><span class="state {{ $invoiceState }}"><i class="fa-solid {{ $icons[$invoiceState] }}"></i></span></div></td>
                         <td><div class="quantity"><input class="form-control form-control-sm" readonly value="{{ $received }}"><span class="state {{ $receivedState }}"><i class="fa-solid {{ $icons[$receivedState] }}"></i></span></div></td>
                         <td><input type="hidden" name="lines[{{ $loop->index }}][order_note_line_id]" value="{{ $row['line_id'] }}"><input type="number" min="0" max="{{ $row['remaining'] }}" class="form-control form-control-sm invoice-qty" name="lines[{{ $loop->index }}][qty_billed]" value="{{ old('lines.'.$loop->index.'.qty_billed', 0) }}" @disabled($row['remaining'] === 0)><span class="meta">max {{ $row['remaining'] }}</span></td>
-                        <td class="price"><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="lines[{{ $loop->index }}][unit_price]" value="{{ old('lines.'.$loop->index.'.unit_price', number_format($row['purchase_supplier'], 2, '.', '')) }}" @disabled($row['remaining'] === 0)><span class="eur">€ {{ number_format($row['purchase_eur'], 2, ',', ' ') }}</span></td>
-                        <td class="price"><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="lines[{{ $loop->index }}][sale_price]" value="{{ old('lines.'.$loop->index.'.sale_price', number_format($row['sales_supplier'], 2, '.', '')) }}" @disabled($row['remaining'] === 0)><span class="eur">€ {{ number_format($row['sales_eur'], 2, ',', ' ') }}</span></td>
+                        <td class="price"><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="lines[{{ $loop->index }}][unit_price]" value="{{ old('lines.'.$loop->index.'.unit_price', number_format($row['purchase_supplier'], 2, '.', '')) }}" @disabled($row['remaining'] === 0)><span class="eur">&euro; {{ number_format($row['purchase_eur'], 2, ',', ' ') }}</span></td>
+                        <td class="price"><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="lines[{{ $loop->index }}][sale_price]" value="{{ old('lines.'.$loop->index.'.sale_price', number_format($row['sales_supplier'], 2, '.', '')) }}" @disabled($row['remaining'] === 0)><span class="eur">&euro; {{ number_format($row['sales_eur'], 2, ',', ' ') }}</span></td>
                         <td class="line-state"><span class="state {{ $lineState }}"><i class="fa-solid {{ $icons[$lineState] }}"></i></span></td>
                     </tr>
                 @empty
@@ -57,7 +64,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     ['supplier', 'orderNote'].forEach(function (id) {
         var select = document.getElementById(id); if (!select) return;
-        new Choices(select, {searchEnabled: true, shouldSort: false, itemSelectText: '', searchPlaceholderValue: 'Search…'});
+        new Choices(select, {searchEnabled: true, shouldSort: false, itemSelectText: '', searchPlaceholderValue: 'Search...'});
         select.addEventListener('change', function () { select.form.submit(); });
     });
     document.querySelectorAll('.js-backorders').forEach(function (button) {

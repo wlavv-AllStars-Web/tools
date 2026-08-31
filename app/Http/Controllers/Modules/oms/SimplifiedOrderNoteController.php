@@ -34,6 +34,8 @@ class SimplifiedOrderNoteController extends Controller
             ? $this->invoiceWorkflow->resolveCurrencyForOrderNote($orderNote, $orderNote->lines)
             : null;
 
+
+        $rows = $orderNote ? $this->rows($orderNote, $currencyMeta) : collect();
         return view('modules.oms.order_notes.simplified', [
             'suppliers' => $suppliers,
             'selectedSupplierId' => $supplierId,
@@ -43,7 +45,15 @@ class SimplifiedOrderNoteController extends Controller
             'draftInvoices' => $orderNote
                 ? $this->invoiceWorkflow->getDraftInvoicesForSupplier((int) $orderNote->supplier_id)
                 : collect(),
-            'simplifiedOmsRows' => $orderNote ? $this->rows($orderNote, $currencyMeta) : collect(),
+            'simplifiedOmsRows' => $rows,
+            'summary' => [
+                'lines' => $rows->count(),
+                'products' => (int) $rows->sum('ordered'),
+                'invoiced' => (int) $rows->sum('invoiced'),
+                'received' => (int) $rows->sum('received'),
+                'purchase_supplier' => (float) $rows->sum(fn ($row) => $row['ordered'] * $row['purchase_supplier']),
+                'purchase_eur' => (float) $rows->sum(fn ($row) => $row['ordered'] * $row['purchase_eur']),
+            ],
         ]);
     }
 

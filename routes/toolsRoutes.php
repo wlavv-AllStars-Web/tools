@@ -598,6 +598,8 @@ Route::middleware(['web', 'auth'])
     ->name('erp.oms.')
     ->group(function () {
         Route::get('/', [OmsDashboardController::class, 'index'])->name('dashboard');
+        // Private review route: deliberately not linked from the OMS navigation.
+        Route::view('/simple', 'modules.oms.order_notes.simplified')->name('simple');
         Route::get('/search', [OmsSearchController::class, 'index'])->name('search');
         Route::get('/fragments/documents', [OmsDashboardController::class, 'documentsFragment'])->name('dashboard.fragments.documents');
         Route::get('/fragments/summary', [OmsDashboardController::class, 'summaryFragment'])->name('dashboard.fragments.summary');

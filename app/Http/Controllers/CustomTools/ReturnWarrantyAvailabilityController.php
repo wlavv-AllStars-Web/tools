@@ -21,7 +21,7 @@ class ReturnWarrantyAvailabilityController extends Controller
         $orderId = (int) $request->query('order_id');
         $order = $orderId > 0 ? $this->findOrder($orderId) : null;
 
-        return View::make('customTools.return-warranty-availability.index', [
+        return View::make('customTools.return-warranty-availability.fullwidth', [
             'breadcrumbs' => [
                 ['name' => 'Web', 'url' => route('web.tools.return_warranty.index')],
                 ['name' => 'Return / Warranty availability', 'url' => route('web.tools.return_warranty.index'), 'no_translation' => true],
@@ -29,7 +29,7 @@ class ReturnWarrantyAvailabilityController extends Controller
             'orderId' => $orderId,
             'order' => $order,
             'details' => $order ? $this->orderDetails($orderId) : collect(),
-            'shipments' => $order ? $this->shipments($orderId) : collect(),
+            'shipments' => $order ? $this->carrierOrHistoryShipments($orderId) : collect(),
             'trackings' => $order ? $this->trackings($orderId) : collect(),
         ]);
     }
@@ -85,6 +85,32 @@ class ReturnWarrantyAvailabilityController extends Controller
             ->leftJoin($this->psTable('custom_order_detail') . ' as cod', 'cod.id_order_detail', '=', 'od.id_order_detail')
             ->where('od.id_order', $orderId)->orderBy('od.id_order_detail')
             ->select(['od.id_order_detail', 'od.product_reference', 'od.product_name', 'od.product_quantity', 'cod.qtd_sent', 'cod.delivered'])
+            ->get();
+    }
+
+    private function carrierOrHistoryShipments(int $orderId)
+    {
+        $carrierShipments = DB::connection('mysql2')->table($this->psTable('order_carrier') . ' as oc')
+            ->leftJoin($this->psTable('carrier') . ' as c', 'c.id_carrier', '=', 'oc.id_carrier')
+            ->where('oc.id_order', $orderId)
+            ->orderBy('oc.date_add')
+            ->select(['oc.date_add as shipped_date', 'oc.tracking_number', 'c.name as carrier_name', DB::raw("'order_carrier' as source")])
+            ->get();
+
+        if ($carrierShipments->isNotEmpty()) {
+            return $carrierShipments;
+        }
+
+        return DB::connection('mysql2')->table($this->psTable('order_history') . ' as oh')
+            ->where('oh.id_order', $orderId)
+            ->where('oh.id_order_state', 4)
+            ->orderBy('oh.date_add')
+            ->select([
+                'oh.date_add as shipped_date',
+                DB::raw('NULL as tracking_number'),
+                DB::raw('NULL as carrier_name'),
+                DB::raw("'order_history' as source"),
+            ])
             ->get();
     }
 

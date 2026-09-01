@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
+use Illuminate\Validation\ValidationException;
 
 class ReturnWarrantyAvailabilityController extends Controller
 {
@@ -45,17 +47,79 @@ class ReturnWarrantyAvailabilityController extends Controller
         }
 
         $this->assertAvailabilityColumnsExist();
-        DB::connection('mysql2')->table($this->psTable('custom_orders'))->updateOrInsert(
-            ['id_order' => $orderId],
-            [
-                'return_warranty_enabled' => 1,
-                'return_warranty_enabled_at' => now(),
-                'return_warranty_enabled_by' => (int) auth()->id(),
-            ]
-        );
+        DB::connection('mysql2')->transaction(function () use ($orderId) {
+            $this->populateCurrentFrontEligibility($orderId);
+
+            DB::connection('mysql2')->table($this->psTable('custom_orders'))->updateOrInsert(
+                ['id_order' => $orderId],
+                [
+                    'return_warranty_enabled' => 1,
+                    'return_warranty_enabled_at' => now(),
+                    'return_warranty_enabled_by' => (int) auth()->id(),
+                    'parcels_upd' => 1,
+                ]
+            );
+        });
 
         return redirect()->route('web.tools.return_warranty.index', ['order_id' => $orderId])
             ->with('success', 'A encomenda foi disponibilizada manualmente para devolução e garantia.');
+    }
+
+    /**
+     * Prepares only dispatched quantities from the selected order for the legacy return frontend.
+     * Existing confirmed delivery dates are always preserved.
+     */
+    private function populateCurrentFrontEligibility(int $orderId): void
+    {
+        $fallbackShippedAt = $this->carrierOrHistoryShipments($orderId)->first()?->shipped_date;
+        $details = DB::connection('mysql2')->table($this->psTable('order_detail') . ' as od')
+            ->join($this->psTable('custom_order_detail') . ' as cod', 'cod.id_order_detail', '=', 'od.id_order_detail')
+            ->where('od.id_order', $orderId)
+            ->lockForUpdate()
+            ->select([
+                'od.id_order_detail', 'od.product_quantity', 'cod.qtd_sent', 'cod.qtd_sent_first',
+                'cod.shipped_date', 'cod.shipped_date_end', 'cod.delivery_date', 'cod.delivery_date_end',
+            ])->get();
+
+        $preparedLines = 0;
+        foreach ($details as $detail) {
+            if ((int) $detail->qtd_sent < 1) {
+                continue;
+            }
+
+            $firstShippedAt = $this->validDate($detail->shipped_date) ?? $this->validDate($fallbackShippedAt);
+            if (!$firstShippedAt) {
+                throw ValidationException::withMessages(['order_id' => 'No shipment date was found for this order.']);
+            }
+
+            $updates = ['delivered' => 1];
+            if (!$this->validDate($detail->delivery_date)) {
+                $updates['delivery_date'] = $firstShippedAt->copy()->addDays(5)->format('Y-m-d H:i:s');
+            }
+
+            if ((int) $detail->qtd_sent > (int) $detail->qtd_sent_first && !$this->validDate($detail->delivery_date_end)) {
+                $lastShippedAt = $this->validDate($detail->shipped_date_end) ?? $firstShippedAt;
+                $updates['delivery_date_end'] = $lastShippedAt->copy()->addDays(5)->format('Y-m-d H:i:s');
+            }
+
+            DB::connection('mysql2')->table($this->psTable('custom_order_detail'))
+                ->where('id_order_detail', (int) $detail->id_order_detail)
+                ->update($updates);
+            $preparedLines++;
+        }
+
+        if ($preparedLines === 0) {
+            throw ValidationException::withMessages(['order_id' => 'This order has no fully dispatched lines.']);
+        }
+    }
+
+    private function validDate(?string $value): ?Carbon
+    {
+        if (!$value || str_starts_with($value, '0000-00-00')) {
+            return null;
+        }
+
+        return Carbon::parse($value);
     }
 
     private function findOrder(int $orderId): ?object

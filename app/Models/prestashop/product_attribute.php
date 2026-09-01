@@ -153,10 +153,10 @@ class product_attribute extends PrestashopModel
                     ->where($productShopTable . '.active', 1);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->leftJoin($stockTable, function ($join) use ($productAttributeTable, $stockTable, $asmShopId) {
+            ->join($stockTable, function ($join) use ($productAttributeTable, $stockTable, $asmShopId) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
                     ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->whereIn($stockTable . '.id_shop', [$asmShopId, 0]);
+                    ->where($stockTable . '.id_shop', $asmShopId);
             })
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')
@@ -203,6 +203,7 @@ class product_attribute extends PrestashopModel
         }
 
         $no_images = $query->get();
+        product::hydrateFirstStockDays($no_images, true);
 
         foreach ($no_images as $image) {
             if (isset($image->id_product)) {

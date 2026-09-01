@@ -795,6 +795,53 @@ class product extends PrestashopModel
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * Replaces product creation age with the first positive OMS stock entry.
+     * OMS history started on 14/07/2026, which is the explicit fallback date.
+     */
+    public static function hydrateFirstStockDays(iterable $rows, bool $perAttribute = false): void
+    {
+        $rows = collect($rows);
+        $productIds = $rows->pluck('id_product')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+        if ($productIds === []) {
+            return;
+        }
+
+        $firstStockDates = [];
+        try {
+            $historyQuery = DB::connection('mysql')->table('oms_stock_history')
+                ->select('product_id', 'product_attribute_id', DB::raw('MIN(created_at) AS first_stock_at'))
+                ->whereIn('product_id', $productIds)
+                ->where('ps_quantity_delta', '>', 0)
+                ->where('ps_quantity_after', '>', 0)
+                ->whereNotNull('created_at');
+
+            if ($perAttribute) {
+                $attributeIds = $rows->pluck('id_product_attribute')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+                if ($attributeIds === []) {
+                    return;
+                }
+                $historyQuery->whereIn('product_attribute_id', $attributeIds);
+            } else {
+                $historyQuery->where('product_attribute_id', 0);
+            }
+
+            foreach ($historyQuery->groupBy('product_id', 'product_attribute_id')->get() as $history) {
+                $firstStockDates[(int) $history->product_id . ':' . (int) $history->product_attribute_id] = $history->first_stock_at;
+            }
+        } catch (\Throwable $exception) {
+            // A temporary OMS database outage must not hide the photography panels.
+        }
+
+        $fallbackDate = Carbon::create(2026, 7, 14)->startOfDay();
+        $today = Carbon::today();
+        foreach ($rows as $row) {
+            $attributeId = $perAttribute ? (int) ($row->id_product_attribute ?? 0) : 0;
+            $firstStockAt = $firstStockDates[(int) $row->id_product . ':' . $attributeId] ?? null;
+            $startDate = $firstStockAt ? Carbon::parse($firstStockAt)->startOfDay() : $fallbackDate;
+            $row->days = $startDate->isFuture() ? 0 : $startDate->diffInDays($today);
+        }
+    }
     public static function dashboard_no_real_photos($type)
     {
         $data = [];
@@ -825,7 +872,8 @@ class product extends PrestashopModel
             })
             ->join($stockTable, function ($join) use ($productTable, $stockTable, $asmShopId) {
                 $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->where($stockTable . '.id_shop', $asmShopId);
+                    ->where($stockTable . '.id_shop', $asmShopId)
+                    ->where($stockTable . '.id_product_attribute', 0);
             })
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($stockTable . '.quantity', '>', 0)
@@ -847,6 +895,8 @@ class product extends PrestashopModel
                 $manufacturerTable . '.name'
             )
             ->get();
+
+        self::hydrateFirstStockDays($bd_data);
 
         foreach ($bd_data as $item) {
             $data[] = [
@@ -884,7 +934,11 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin($imageTable, $productTable . '.id_product', '=', $imageTable . '.id_product')
-            ->leftJoin($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+            ->leftJoin($stockTable, function ($join) use ($productTable, $stockTable, $asmShopId) {
+                $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->where($stockTable . '.id_shop', $asmShopId)
+                    ->where($stockTable . '.id_product_attribute', 0);
+            })
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->join($productShopTable, function ($join) use ($productTable, $productShopTable, $asmShopId) {
                 $join->on($productShopTable . '.id_product', '=', $productTable . '.id_product')
@@ -911,8 +965,9 @@ class product extends PrestashopModel
             ->havingRaw('COUNT(DISTINCT ' . $imageTable . '.id_image) < 5')
             ->orderBy($productTable . '.date_add')
             ->orderByRaw('CAST(' . $productTable . '.id_product AS UNSIGNED) ASC')
-            ->get()
-            ->toArray();
+            ->get();
+
+        self::hydrateFirstStockDays($products);
 
         return self::productDashboardResponse(
             trans('dashboard.PRODUCTS - No 5 photos'),

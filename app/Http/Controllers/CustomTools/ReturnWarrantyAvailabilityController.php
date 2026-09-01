@@ -45,19 +45,21 @@ class ReturnWarrantyAvailabilityController extends Controller
             return redirect()->route('web.tools.return_warranty.index', ['order_id' => $orderId])
                 ->with('error', 'A encomenda indicada não existe.');
         }
-
-        $this->assertAvailabilityColumnsExist();
         DB::connection('mysql2')->transaction(function () use ($orderId) {
             $this->populateCurrentFrontEligibility($orderId);
 
-            DB::connection('mysql2')->table($this->psTable('custom_orders'))->updateOrInsert(
-                ['id_order' => $orderId],
-                [
+            $updates = ['parcels_upd' => 1];
+            if ($this->hasAvailabilityColumns()) {
+                $updates = array_merge($updates, [
                     'return_warranty_enabled' => 1,
                     'return_warranty_enabled_at' => now(),
                     'return_warranty_enabled_by' => (int) auth()->id(),
-                    'parcels_upd' => 1,
-                ]
+                ]);
+            }
+
+            DB::connection('mysql2')->table($this->psTable('custom_orders'))->updateOrInsert(
+                ['id_order' => $orderId],
+                $updates
             );
         });
 
@@ -200,14 +202,16 @@ class ReturnWarrantyAvailabilityController extends Controller
             ->orderBy('oc.date_add')->select(['oc.id_order_carrier', 'oc.tracking_number', 'oc.date_add', 'c.name as carrier_name'])->get();
     }
 
-    private function assertAvailabilityColumnsExist(): void
+    private function hasAvailabilityColumns(): bool
     {
         $table = $this->psTable('custom_orders');
         foreach (['return_warranty_enabled', 'return_warranty_enabled_at', 'return_warranty_enabled_by'] as $column) {
             if (!Schema::connection('mysql2')->hasColumn($table, $column)) {
-                abort(503, 'A migração da ferramenta Return / Warranty availability ainda não foi executada.');
+                return false;
             }
         }
+
+        return true;
     }
 
     private function psTable(string $table): string

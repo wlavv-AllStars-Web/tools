@@ -50,6 +50,7 @@ use App\Http\Controllers\CustomTools\SafetyCheckController;
 use App\Http\Controllers\CustomTools\CarrierExpeditionCheckController;
 use App\Http\Controllers\CustomTools\CarrierEndOfDayDocumentController;
 use App\Http\Controllers\CustomTools\LogisticsRmaCheckController;
+use App\Http\Controllers\CustomTools\ReturnWarrantyAvailabilityController;
 use App\Http\Controllers\CustomTools\LogisticsInventoryController;
 use App\Http\Controllers\CustomTools\HomepageAdminController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
@@ -94,6 +95,11 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('web')->name('web.tools.')->group(function () {
+        Route::prefix('return-warranty')->name('return_warranty.')->group(function () {
+            Route::get('/', [ReturnWarrantyAvailabilityController::class, 'index'])->name('index');
+            Route::post('/enable', [ReturnWarrantyAvailabilityController::class, 'enable'])->name('enable');
+        });
+
         Route::get('/tracking', [translationPhraseController::class, 'create'])->name('tracking.index');
         Route::post('/tracking', [translationPhraseController::class, 'store'])->name('tracking.store');
         Route::get('/seo', [SiteSeoCompareController::class, 'index'])->name('seo.index');

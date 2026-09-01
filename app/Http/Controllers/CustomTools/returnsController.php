@@ -12,6 +12,7 @@ use App\Models\modules\refund\refund;
 use App\Models\prestashop\order_return;
 use App\Models\prestashop\order_return_history;
 use App\Models\prestashop\order_return_detail;
+use App\Models\prestashop\language;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\CustomTools\mailsController;
@@ -39,7 +40,9 @@ class returnsController extends Controller{
             $list = 0;
         }
 
-        return view('customTools.returns.index', compact('breadcrumbs', 'returns', 'list'));
+        $languageIsoById = language::query()->pluck('iso_code', 'id_lang')->all();
+
+        return view('customTools.returns.index', compact('breadcrumbs', 'returns', 'list', 'languageIsoById'));
     }
     
     public function getModal($id){

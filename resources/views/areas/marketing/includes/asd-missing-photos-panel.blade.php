@@ -1,10 +1,9 @@
-@if($asdMissingImageBrands->isNotEmpty())
-    @php($missingImagesTotal = $asdMissingImageBrands->sum('missing_images_count'))
+@php($missingImagesTotal = $asdMissingImageBrands->sum('missing_images_count'))
     <div class="col-lg-4">
         <div class="navbar navbar-light customPanel">
             <div class="panel panel-default" style="display: flow-root;">
                 <div class="panel-heading text-center" style="cursor: pointer; text-transform: uppercase;">
-                    <div onclick="$('#studio_asd_missing_photos').toggle()" style="height: 100px; border-radius: 5px; padding: 5px 0; color: white; background-color: red;">
+                    <div onclick="$('#studio_asd_missing_photos').toggle()" style="height: 100px; border-radius: 5px; padding: 5px 0; color: white; background-color: {{ $missingImagesTotal > 0 ? 'red' : 'green' }};">
                         <div style="font-size: 35px">{{ $missingImagesTotal }}</div>
                         <div style="font-size: 16px; margin: 0 10px;">NO ASD PHOTOS</div>
                     </div>
@@ -20,4 +19,3 @@
             </div>
         </div>
     </div>
-@endif

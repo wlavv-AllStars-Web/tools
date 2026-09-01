@@ -84,6 +84,7 @@ class ReturnWarrantyAvailabilityController extends Controller
             ])->get();
 
         $preparedLines = 0;
+        $eligibleDetailIds = [];
         foreach ($details as $detail) {
             if ((int) $detail->qtd_sent < 1) {
                 continue;
@@ -107,11 +108,60 @@ class ReturnWarrantyAvailabilityController extends Controller
             DB::connection('mysql2')->table($this->psTable('custom_order_detail'))
                 ->where('id_order_detail', (int) $detail->id_order_detail)
                 ->update($updates);
+            $eligibleDetailIds[] = (int) $detail->id_order_detail;
             $preparedLines++;
         }
 
         if ($preparedLines === 0) {
-            throw ValidationException::withMessages(['order_id' => 'This order has no fully dispatched lines.']);
+            throw ValidationException::withMessages(['order_id' => 'This order has no dispatched lines.']);
+        }
+
+        $this->populateShipmentCycleEligibility(
+            $orderId,
+            $eligibleDetailIds,
+            $this->validDate($fallbackShippedAt)
+        );
+    }
+
+    /**
+     * The customer page prioritizes custom_order_shipment over legacy order-detail dates.
+     */
+    private function populateShipmentCycleEligibility(int $orderId, array $eligibleDetailIds, ?Carbon $fallbackShippedAt): void
+    {
+        $shipmentsTable = $this->psTable('custom_order_shipment');
+        if (!Schema::connection('mysql2')->hasTable($shipmentsTable) || $eligibleDetailIds === []) {
+            return;
+        }
+
+        $cycles = DB::connection('mysql2')->table($shipmentsTable)
+            ->where('id_order', $orderId)
+            ->whereIn('id_order_detail', $eligibleDetailIds)
+            ->lockForUpdate()
+            ->select(['id_custom_order_shipment', 'id_order_detail', 'qty_shipped', 'shipped_date', 'delivery_date'])
+            ->get();
+
+        foreach ($cycles as $cycle) {
+            if ((int) $cycle->qty_shipped < 1) {
+                continue;
+            }
+
+            $shippedAt = $this->validDate($cycle->shipped_date) ?? $fallbackShippedAt;
+            if (!$shippedAt) {
+                throw ValidationException::withMessages([
+                    'order_id' => 'No shipment date was found for this shipment cycle.',
+                ]);
+            }
+
+            $updates = ['delivered' => 1, 'date_upd' => now()];
+            if (!$this->validDate($cycle->delivery_date)) {
+                $updates['delivery_date'] = $shippedAt->copy()->addDays(5)->format('Y-m-d H:i:s');
+            }
+
+            DB::connection('mysql2')->table($shipmentsTable)
+                ->where('id_custom_order_shipment', (int) $cycle->id_custom_order_shipment)
+                ->where('id_order', $orderId)
+                ->where('id_order_detail', (int) $cycle->id_order_detail)
+                ->update($updates);
         }
     }
 

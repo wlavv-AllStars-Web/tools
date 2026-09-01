@@ -59,6 +59,7 @@ class webController extends Controller{
         $accessList[] = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.logs'),               'url' => route('logs.index'),                       'icon' => '<i style="font-size: 40px;" class="fa fa-history" aria-hidden="true"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.trackingTranslation'),'url' => route('web.tools.tracking.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-language"></i>'];
+        $accessList[]                           = ['name' => 'Return / Warranty',                    'url' => route('web.tools.return_warranty.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-arrow-rotate-left"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.changesTracker'),     'url' => route('web.tools.changes.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-code"></i>'];
 
         /**

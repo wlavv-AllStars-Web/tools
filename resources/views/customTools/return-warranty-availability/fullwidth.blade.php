@@ -113,7 +113,7 @@
                         @foreach ($trackings as $tracking)
                             <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2">
                                 <div><strong>{{ $tracking->tracking_number }}</strong><span class="text-muted ms-2">{{ $tracking->carrier_name ?: 'Transportadora nao identificada' }}</span><span class="text-muted ms-2 small">{{ $tracking->date_add ? \Carbon\Carbon::parse($tracking->date_add)->format('d/m/Y H:i') : '' }}</span></div>
-                                <a class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener" href="https://tracking.all-stars-motorsport.com/?tracking={{ rawurlencode($tracking->tracking_number) }}">Abrir tracking</a>
+                                <a class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener" href="https://tracking.all-stars-motorsport.com/?tracking_number={{ rawurlencode($tracking->tracking_number) }}">Abrir tracking</a>
                             </div>
                         @endforeach
                     </div>

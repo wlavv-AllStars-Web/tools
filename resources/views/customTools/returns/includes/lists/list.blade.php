@@ -25,10 +25,9 @@
             @endphp
             <tr>
                 <td style="text-align: center;">
-                    @php($orderLanguage = $languageIsoById[(int) optional($order)->id_lang] ?? null)
-                    @if($orderLanguage === 'en') <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/en.png" alt="English" width="25" height="20"> @endif
-                    @if($orderLanguage === 'es') <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/es.png" alt="Spanish" width="25" height="20"> @endif
-                    @if($orderLanguage === 'fr') <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/fr.png" alt="French" width="25" height="20"> @endif
+                    @if(optional($order)->id_lang == 2) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/en.png" alt="English" width="25" height="20"> @endif
+                    @if(optional($order)->id_lang == 4) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/es.png" alt="Spanish" width="25" height="20"> @endif
+                    @if(optional($order)->id_lang == 5) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/fr.png" alt="French" width="25" height="20"> @endif
                 </td>
                 <td>{{date('d-m-Y', strtotime($return->date_add))}}</td>
                 <td style="cursor: pointer;" @if($orderAdminUrl) onclick="window.open(@json($orderAdminUrl), '_blank')" @endif>{{$return->id_order}}</td>

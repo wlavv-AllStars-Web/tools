@@ -136,6 +136,7 @@ class product_attribute extends PrestashopModel
         $query = self::select(
                 $productTable . '.id_product',
                 DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
+                DB::raw('MAX(' . $stockTable . '.quantity) AS quantity'),
                 $productAttributeTable . '.id_product_attribute',
                 $productTable . '.id_category_default',
                 DB::raw('COUNT(DISTINCT ' . $productAttributeImageTable . '.id_image) AS nr_images'),
@@ -204,6 +205,7 @@ class product_attribute extends PrestashopModel
 
         $no_images = $query->get();
         product::hydrateFirstStockDays($no_images, true);
+        $no_images = $no_images->sortByDesc('days')->values();
 
         foreach ($no_images as $image) {
             if (isset($image->id_product)) {
@@ -211,6 +213,7 @@ class product_attribute extends PrestashopModel
                     'clean' => $image->id_product_attribute,
                     'id_product' => $image->id_product,
                     'days' => $image->days,
+                    'quantity' => (int) $image->quantity,
                     'id_product_attribute' => $image->id_product_attribute,
                     'id_category_default' => $image->id_category_default,
                     'nr_images' => $image->nr_images,
@@ -227,7 +230,7 @@ class product_attribute extends PrestashopModel
             'col' => 4,
             'item_id' => $type . '_attributes_no_5_pics',
             'prestashop' => PrestashopAdminLinkService::dashboardProductLink('id_product', 'ASM'),
-            'columns' => ['days', 'reference', 'brand', 'housing'],
+            'columns' => ['days', 'quantity', 'reference', 'brand', 'housing'],
             'counter' => count($products),
             'data' => array_values($products)
         ];

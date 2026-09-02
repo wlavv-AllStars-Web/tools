@@ -876,6 +876,7 @@ class product extends PrestashopModel
         $bd_data = self::select(
                 $productTable . '.id_product',
                 DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
+                DB::raw('MAX(' . $stockTable . '.quantity) AS quantity'),
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name AS brand')
             )
@@ -921,11 +922,13 @@ class product extends PrestashopModel
             ->get();
 
         self::hydrateFirstStockDays($bd_data);
+        $bd_data = $bd_data->sortByDesc('days')->values();
 
         foreach ($bd_data as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
                 'days' => $item->days,
+                'quantity' => (int) $item->quantity,
                 'reference' => $item->reference,
                 'brand' => $item->brand ?? ''
             ];
@@ -935,7 +938,7 @@ class product extends PrestashopModel
             trans('dashboard.No real photos'),
             $type,
             'no_real_photos',
-            ['days', 'id_product', 'reference', 'brand'],
+            ['days', 'id_product', 'quantity', 'reference', 'brand'],
             $data
         );
     }
@@ -951,6 +954,7 @@ class product extends PrestashopModel
         $products = self::select(
                 $productTable . '.id_product',
                 DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
+                DB::raw('MAX(' . $stockTable . '.quantity) AS quantity'),
                 $productTable . '.id_category_default',
                 DB::raw('COUNT(DISTINCT ' . $imageTable . '.id_image) AS nr_images'),
                 $productTable . '.reference',
@@ -995,12 +999,26 @@ class product extends PrestashopModel
             ->get();
 
         self::hydrateFirstStockDays($products);
+        $products = $products
+            ->sortByDesc('days')
+            ->values()
+            ->map(function ($product) {
+                return [
+                    'id_product' => $product->id_product,
+                    'days' => $product->days,
+                    'quantity' => (int) $product->quantity,
+                    'reference' => $product->reference,
+                    'brand' => $product->brand ?? '',
+                    'housing' => $product->housing,
+                ];
+            })
+            ->all();
 
         return self::productDashboardResponse(
             trans('dashboard.PRODUCTS - No 5 photos'),
             $type,
             'products_no_5_pics',
-            ['days', 'reference', 'brand', 'housing'],
+            ['days', 'quantity', 'reference', 'brand', 'housing'],
             $products
         );
     }

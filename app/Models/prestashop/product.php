@@ -868,6 +868,7 @@ class product extends PrestashopModel
         $data = [];
         $productTable = self::tableName('product');
         $stockTable = self::tableName('stock_available');
+        $productAttributeTable = self::tableName('product_attribute');
         $customProductTable = self::tableName('custom_product');
         $productShopTable = self::tableName('product_shop');
         $manufacturerTable = self::tableName('manufacturer');
@@ -899,6 +900,11 @@ class product extends PrestashopModel
             })
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($stockTable . '.quantity', '>', 0)
+            ->whereNotExists(function ($attributeQuery) use ($productAttributeTable, $productTable) {
+                $attributeQuery->select(DB::raw(1))
+                    ->from($productAttributeTable)
+                    ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product');
+            })
             ->where(function ($query) use ($customProductTable) {
                 $query->whereNull($customProductTable . '.real_photos')
                     ->orWhere($customProductTable . '.real_photos', 0);
@@ -947,6 +953,7 @@ class product extends PrestashopModel
         $productTable = self::tableName('product');
         $imageTable = self::tableName('image');
         $stockTable = self::tableName('stock_available');
+        $productAttributeTable = self::tableName('product_attribute');
         $manufacturerTable = self::tableName('manufacturer');
         $productShopTable = self::tableName('product_shop');
         $asmShopId = PrestashopAdminLinkService::shopId('ASM') ?: 2;
@@ -974,6 +981,11 @@ class product extends PrestashopModel
                     ->where($productShopTable . '.active', 1);
             })
             ->where($productShopTable . '.visibility', 'both')
+            ->whereNotExists(function ($attributeQuery) use ($productAttributeTable, $productTable) {
+                $attributeQuery->select(DB::raw(1))
+                    ->from($productAttributeTable)
+                    ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product');
+            })
             ->where($productTable . '.id_category_default', '<>', 526)
             ->where($productTable . '.reference', 'not like', 'VAT-%')
             ->where($productTable . '.reference', 'not like', '%parts')

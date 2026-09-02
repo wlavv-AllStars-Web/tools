@@ -153,10 +153,10 @@ class product_attribute extends PrestashopModel
                     ->where($productShopTable . '.active', 1);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->join($stockTable, function ($join) use ($productAttributeTable, $stockTable, $asmShopId) {
+            ->join($stockTable, function ($join) use ($productAttributeTable, $stockTable) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
                     ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->where($stockTable . '.id_shop', $asmShopId);
+                    ->where($stockTable . '.id_shop', 0);
             })
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->leftJoin($productAttributeImageTable, $productAttributeTable . '.id_product_attribute', '=', $productAttributeImageTable . '.id_product_attribute')

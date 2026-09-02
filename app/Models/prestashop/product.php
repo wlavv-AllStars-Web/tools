@@ -845,19 +845,19 @@ class product extends PrestashopModel
     /**
      * A pack is photographable only when every component can make at least one pack.
      */
-    protected static function requireAvailablePackComponents($query, string $productTable, string $stockTable, int $shopId): void
+    protected static function requireAvailablePackComponents($query, string $productTable, string $stockTable): void
     {
         $packTable = self::tableName('pack');
         $packComponents = 'marketing_pack_component';
         $componentStock = 'marketing_component_stock';
 
-        $query->whereNotExists(function ($unavailableComponents) use ($packTable, $packComponents, $componentStock, $productTable, $stockTable, $shopId) {
+        $query->whereNotExists(function ($unavailableComponents) use ($packTable, $packComponents, $componentStock, $productTable, $stockTable) {
             $unavailableComponents->select(DB::raw(1))
                 ->from($packTable . ' AS ' . $packComponents)
-                ->leftJoin($stockTable . ' AS ' . $componentStock, function ($join) use ($packComponents, $componentStock, $shopId) {
+                ->leftJoin($stockTable . ' AS ' . $componentStock, function ($join) use ($packComponents, $componentStock) {
                     $join->on($componentStock . '.id_product', '=', $packComponents . '.id_product_item')
                         ->on($componentStock . '.id_product_attribute', '=', $packComponents . '.id_product_attribute_item')
-                        ->where($componentStock . '.id_shop', $shopId);
+                        ->where($componentStock . '.id_shop', 0);
                 })
                 ->whereColumn($packComponents . '.id_product_pack', $productTable . '.id_product')
                 ->whereRaw('COALESCE(' . $componentStock . '.quantity, 0) < GREATEST(' . $packComponents . '.quantity, 1)');
@@ -891,9 +891,9 @@ class product extends PrestashopModel
                     ->where($productShopTable . '.active', 1)
                     ->where($productShopTable . '.visibility', 'both');
             })
-            ->join($stockTable, function ($join) use ($productTable, $stockTable, $asmShopId) {
+            ->join($stockTable, function ($join) use ($productTable, $stockTable) {
                 $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->where($stockTable . '.id_shop', $asmShopId)
+                    ->where($stockTable . '.id_shop', 0)
                     ->where($stockTable . '.id_product_attribute', 0);
             })
             ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
@@ -907,8 +907,8 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
-            ->tap(function ($query) use ($productTable, $stockTable, $asmShopId) {
-                self::requireAvailablePackComponents($query, $productTable, $stockTable, $asmShopId);
+            ->tap(function ($query) use ($productTable, $stockTable) {
+                self::requireAvailablePackComponents($query, $productTable, $stockTable);
             })
             ->orderBy($productTable . '.date_add')
             ->orderBy($productTable . '.id_product')
@@ -958,9 +958,9 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin($imageTable, $productTable . '.id_product', '=', $imageTable . '.id_product')
-            ->leftJoin($stockTable, function ($join) use ($productTable, $stockTable, $asmShopId) {
+            ->leftJoin($stockTable, function ($join) use ($productTable, $stockTable) {
                 $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->where($stockTable . '.id_shop', $asmShopId)
+                    ->where($stockTable . '.id_shop', 0)
                     ->where($stockTable . '.id_product_attribute', 0);
             })
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
@@ -976,8 +976,8 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
-            ->tap(function ($query) use ($productTable, $stockTable, $asmShopId) {
-                self::requireAvailablePackComponents($query, $productTable, $stockTable, $asmShopId);
+            ->tap(function ($query) use ($productTable, $stockTable) {
+                self::requireAvailablePackComponents($query, $productTable, $stockTable);
             })
             ->groupBy(
                 $productTable . '.id_product',

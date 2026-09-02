@@ -842,6 +842,27 @@ class product extends PrestashopModel
             $row->days = $startDate->isFuture() ? 0 : $startDate->diffInDays($today);
         }
     }
+    /**
+     * A pack is photographable only when every component can make at least one pack.
+     */
+    protected static function requireAvailablePackComponents($query, string $productTable, string $stockTable, int $shopId): void
+    {
+        $packTable = self::tableName('pack');
+        $packComponents = 'marketing_pack_component';
+        $componentStock = 'marketing_component_stock';
+
+        $query->whereNotExists(function ($unavailableComponents) use ($packTable, $packComponents, $componentStock, $productTable, $stockTable, $shopId) {
+            $unavailableComponents->select(DB::raw(1))
+                ->from($packTable . ' AS ' . $packComponents)
+                ->leftJoin($stockTable . ' AS ' . $componentStock, function ($join) use ($packComponents, $componentStock, $shopId) {
+                    $join->on($componentStock . '.id_product', '=', $packComponents . '.id_product_item')
+                        ->on($componentStock . '.id_product_attribute', '=', $packComponents . '.id_product_attribute_item')
+                        ->where($componentStock . '.id_shop', $shopId);
+                })
+                ->whereColumn($packComponents . '.id_product_pack', $productTable . '.id_product')
+                ->whereRaw('COALESCE(' . $componentStock . '.quantity, 0) < GREATEST(' . $packComponents . '.quantity, 1)');
+        });
+    }
     public static function dashboard_no_real_photos($type)
     {
         $data = [];
@@ -886,6 +907,9 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
+            ->tap(function ($query) use ($productTable, $stockTable, $asmShopId) {
+                self::requireAvailablePackComponents($query, $productTable, $stockTable, $asmShopId);
+            })
             ->orderBy($productTable . '.date_add')
             ->orderBy($productTable . '.id_product')
             ->groupBy(
@@ -952,6 +976,9 @@ class product extends PrestashopModel
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', '<>', 'PICK-UP')
             ->where($productTable . '.reference', '<>', 'SHIP-PICK')
+            ->tap(function ($query) use ($productTable, $stockTable, $asmShopId) {
+                self::requireAvailablePackComponents($query, $productTable, $stockTable, $asmShopId);
+            })
             ->groupBy(
                 $productTable . '.id_product',
                 $productTable . '.date_add',

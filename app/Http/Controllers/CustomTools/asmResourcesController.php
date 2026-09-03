@@ -113,6 +113,31 @@ class asmResourcesController extends Controller
             ->with('success', 'YouTube updated successfully for ' . $brand->name . '.');
     }
 
+    public function uploadInstallationInstructions(Request $request, int $id_manufacturer)
+    {
+        $brand = $this->getShopBrandOrFail($id_manufacturer);
+
+        $request->validate([
+            'installation_instructions' => ['required', 'file', 'mimes:pdf', 'max:20480'],
+        ]);
+
+        $folder = 'uploads/asm/instructions';
+        $destinationPath = public_path($folder);
+
+        if (!is_dir($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+
+        $request->file('installation_instructions')->move(
+            $destinationPath,
+            $brand->id_manufacturer . '.pdf'
+        );
+
+        return redirect()
+            ->route('web.tools.resources.asm.index')
+            ->with('success', 'Installation instructions uploaded successfully for ' . $brand->name . '.');
+    }
+
     private function getShopBrandOrFail(int $idManufacturer)
     {
         $brand = DB::connection('mysql2')

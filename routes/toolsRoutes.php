@@ -108,6 +108,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/raw-text', [SiteTextSideBySideController::class, 'compare'])->name('raw_text.compare');
         Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
         Route::post('/resources/asm/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('resources.asm.upload');
+        Route::post('/resources/asm/{id_manufacturer}/installation-instructions', [asmResourcesController::class, 'uploadInstallationInstructions'])->name('resources.asm.installation_instructions.upload');
         Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
         Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
         Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');

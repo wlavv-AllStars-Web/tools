@@ -200,6 +200,13 @@
         min-width: 260px;
     }
 
+    .asm-installation-instructions-form {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 210px;
+    }
+
     .asm-manufacturer-logo {
         width: 64px;
         height: 42px;
@@ -253,6 +260,7 @@
                             <th style="width: 15%;">Image EN</th>
                             <th style="width: 15%;">Image ES</th>
                             <th style="width: 15%;">Image FR</th>
+                            <th style="width: 18%;">Installation instructions</th>
                             <th style="width: 45%;">YouTube</th>
                         </tr>
                     </thead>
@@ -352,6 +360,48 @@
                                     </td>
                                 @endforeach
 
+                                @php
+                                    $installationInstructionsPath = 'uploads/asm/instructions/' . $brand->id_manufacturer . '.pdf';
+                                    $installationInstructionsExists = file_exists(public_path($installationInstructionsPath));
+                                    $installationInstructionsInputId = 'installation_instructions_' . $brand->id_manufacturer;
+                                @endphp
+
+                                <td>
+                                    <form
+                                        method="POST"
+                                        action="{{ route('web.tools.resources.asm.installation_instructions.upload', $brand->id_manufacturer) }}"
+                                        enctype="multipart/form-data"
+                                        class="asm-installation-instructions-form"
+                                    >
+                                        @csrf
+
+                                        @if($installationInstructionsExists)
+                                            <a
+                                                href="{{ asset($installationInstructionsPath) }}?v={{ filemtime(public_path($installationInstructionsPath)) }}"
+                                                target="_blank"
+                                                rel="noopener"
+                                                class="btn btn-sm btn-outline-success"
+                                                title="Open current installation instructions"
+                                            >
+                                                <i class="fa-solid fa-file-pdf"></i>
+                                            </a>
+                                        @endif
+
+                                        <label class="btn btn-sm {{ $installationInstructionsExists ? 'btn-outline-primary' : 'btn-primary' }} mb-0" for="{{ $installationInstructionsInputId }}">
+                                            <i class="fa-solid fa-upload me-1"></i>{{ $installationInstructionsExists ? 'Replace PDF' : 'Upload PDF' }}
+                                        </label>
+
+                                        <input
+                                            id="{{ $installationInstructionsInputId }}"
+                                            type="file"
+                                            name="installation_instructions"
+                                            class="asm-file-input"
+                                            accept="application/pdf,.pdf"
+                                            onchange="this.form.submit();"
+                                        >
+                                    </form>
+                                </td>
+
                                 <td>
                                     <form method="POST" action="{{ route('web.tools.resources.asm.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
                                         @csrf
@@ -366,7 +416,7 @@
 
                         @if($brands->isEmpty())
                             <tr>
-                                <td colspan="7" class="text-center text-muted p-4">
+                                <td colspan="8" class="text-center text-muted p-4">
                                     No brands found for shop 2.
                                 </td>
                             </tr>
@@ -379,7 +429,8 @@
                 Final paths:
                 <code>/uploads/asm/product/{id_manufacturer}_EN.webp</code>,
                 <code>/uploads/asm/product/{id_manufacturer}_ES.webp</code>,
-                <code>/uploads/asm/product/{id_manufacturer}_FR.webp</code>
+                <code>/uploads/asm/product/{id_manufacturer}_FR.webp</code>,
+                <code>/uploads/asm/instructions/{id_manufacturer}.pdf</code>
             </div>
         </div>
     </div>

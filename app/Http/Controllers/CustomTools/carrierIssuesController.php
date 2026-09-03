@@ -129,7 +129,7 @@ class carrierIssuesController extends Controller
         
         $asm = self::requestDataFromShop($rows, '', 2, 'ASM');
         
-        $asd = json_decode(json_encode(self::requestDataFromASD($rows)), true);
+        $asd = self::requestDataFromASD($rows);
 
         return View::make('customTools/carrierIssues/verification/verify/' . $carrier, compact('carrier', 'asm', 'asd', 'total', 'oversized_weight', 'oversized_size'))->render();
     }
@@ -160,7 +160,7 @@ class carrierIssuesController extends Controller
 
         $asm = self::requestDataFromShop($rows, 'NACEX', 2, 'ASM');
         
-        $asd = json_decode(json_encode(self::requestDataFromASD($rows, 'NACEX')), true);
+        $asd = self::requestDataFromASD($rows, 'NACEX');
 
         return View::make('customTools/carrierIssues/verification/verify/nacex', compact('carrier', 'asm', 'asd', 'total', 'oversized_weight', 'oversized_size'))->render();
     }
@@ -195,7 +195,7 @@ class carrierIssuesController extends Controller
 
         $asm = self::requestDataFromShop($rows, 'UPS', 2, 'ASM');
 
-        $asd = json_decode(json_encode(self::requestDataFromASD($rows, 'UPS')), true);
+        $asd = self::requestDataFromASD($rows, 'UPS');
 
         return View::make('customTools/carrierIssues/verification/verify/ups', compact('carrier', 'asm', 'asd', 'total', 'oversized_weight', 'oversized_size'))->render();
         

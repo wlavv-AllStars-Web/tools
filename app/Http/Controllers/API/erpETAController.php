@@ -357,14 +357,14 @@ class erpETAController extends Controller
                     });
                 }
             })
-            ->orderBy('id_stock_available')
+            ->where('id_shop', 0)
+            ->where('id_shop_group', 1)
             ->get(['id_product', 'id_product_attribute', 'quantity'])
             ->groupBy(fn ($row) => $row->id_product . '-' . $row->id_product_attribute);
 
-        // Direct products use getPrestashopStockQty() (first row). Pack components
-        // use pack::availablePackQty() (keyBy(), therefore the last row).
+        // All quantities are read from the single shared stock row of shop group 1.
         $stockByPair = $stockRowsByPair->map(fn ($rows) => (int) $rows->first()->quantity);
-        $packStockByPair = $stockRowsByPair->map(fn ($rows) => (int) $rows->last()->quantity);
+        $packStockByPair = $stockByPair;
 
         $incomingByPair = $this->getOmsIncomingForProductBatch($stockPairs->all());
         $results = [];
@@ -638,6 +638,8 @@ class erpETAController extends Controller
     {
         $stock = stock_available::where('id_product', $idProduct)
             ->where('id_product_attribute', $idProductAttr)
+            ->where('id_shop', 0)
+            ->where('id_shop_group', 1)
             ->first();
 
         return $stock ? (int) $stock->quantity : 0;

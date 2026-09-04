@@ -107,6 +107,8 @@ class pack extends PrestashopModel
         }
 
         $stocks = stock_available::select(['id_product', 'id_product_attribute', 'quantity'])
+            ->where('id_shop', 0)
+            ->where('id_shop_group', 1)
             ->where(function ($q) use ($items) {
                 foreach ($items as $it) {
                     $q->orWhere(function ($qq) use ($it) {

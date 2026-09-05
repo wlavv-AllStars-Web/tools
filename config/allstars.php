@@ -22,6 +22,7 @@ $asmBaseUrl = $normalizeBaseUrl(env('ASM_PRODUCTION'), 'https://asm.allstars-gro
 $asdBaseUrl = $normalizeBaseUrl(env('ASD_PRODUCTION'), 'https://asd.allstars-group.com');
 $webtoolsBaseUrl = $normalizeBaseUrl(env('WEBTOOLS_PRODUCTION'), env('APP_URL', 'http://localhost'));
 $resourcesBaseUrl = $normalizeBaseUrl(env('RESOURCES_PRODUCTION'), 'https://resources.allstars-group.com');
+$asdResourcesBaseUrl = $normalizeBaseUrl(env('ASD_RESOURCES_PRODUCTION'), $resourcesBaseUrl);
 
 $asmDomain = env('ASM_DOMAIN', $hostFromUrl($asmBaseUrl));
 $asdDomain = env('ASD_DOMAIN', $hostFromUrl($asdBaseUrl));
@@ -59,6 +60,9 @@ return [
 
         'resources' => [
             'base_url' => $resourcesBaseUrl,
+            // ASD homepage media may use its own CDN hostname without changing
+            // the shared resources URL used by ASM and the remaining services.
+            'homepage_asd_base_url' => $asdResourcesBaseUrl,
             'domain' => $hostFromUrl($resourcesBaseUrl),
             'homepage_asd_path' => env('RESOURCES_ASD_HOMEPAGE_PATH', 'asd/homepage'),
             'homepage_asd_storage_path' => env('RESOURCES_ASD_HOMEPAGE_STORAGE_PATH', 'uploads/asd/homepage'),

@@ -102,6 +102,6 @@ class HomepageASDAdminController extends Controller{
 
         $path = preg_replace('#^uploads/#', '', ltrim($path, '/'));
 
-        return rtrim((string) config('allstars.services.resources.base_url'), '/') . '/' . $path;
+        return rtrim((string) config('allstars.services.resources.homepage_asd_base_url'), '/') . '/' . $path;
     }
 }

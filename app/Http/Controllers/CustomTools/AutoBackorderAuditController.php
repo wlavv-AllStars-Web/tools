@@ -20,7 +20,7 @@ class AutoBackorderAuditController extends Controller
 
         abort_unless(Carbon::hasFormat($selectedDate, 'Y-m-d'), 422, 'Data inválida.');
 
-        return view('customTools.auto-backorder.index', [
+        return view('customTools.auto-backorder.audit', [
             'selectedDate' => $selectedDate,
             'audits' => AutoBackorderAudit::query()
                 ->whereDate('audit_date', $selectedDate)

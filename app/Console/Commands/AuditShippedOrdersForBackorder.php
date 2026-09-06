@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class AuditShippedOrdersForBackorder extends Command
 {
-    protected $signature = 'auto-backorder:audit {--date= : Audit date in YYYY-MM-DD format}';
+    protected $signature = 'auto-backorder:audit {--date= : Audit date in YYYY-MM-DD format} {--executed-at= : Recorded execution timestamp in YYYY-MM-DD HH:MM:SS format}';
 
     protected $description = 'Audits shipped orders with unpicked non-technical products (control = 0).';
 
@@ -18,6 +18,10 @@ class AuditShippedOrdersForBackorder extends Command
         $auditDate = $this->option('date')
             ? Carbon::createFromFormat('Y-m-d', (string) $this->option('date'))->startOfDay()
             : now()->startOfDay();
+
+        $executedAt = $this->option('executed-at')
+            ? Carbon::createFromFormat('Y-m-d H:i:s', (string) $this->option('executed-at'))
+            : now();
 
         $rows = DB::connection('mysql2')
             ->table('ps_orders as o')
@@ -62,7 +66,7 @@ class AuditShippedOrdersForBackorder extends Command
                     'order_reference' => $first->order_reference,
                     'original_state' => (int) $first->current_state,
                     'target_state' => (int) config('auto_backorder.backorder_state'),
-                    'detected_at' => now(),
+                    'detected_at' => $executedAt,
                     'reason' => 'Encomenda em shipped com produto(s) não picado(s) (control = 0).',
                     'unpicked_products' => $products,
                     'state_changed' => false,

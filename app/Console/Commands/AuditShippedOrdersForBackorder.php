@@ -42,6 +42,11 @@ class AuditShippedOrdersForBackorder extends Command
             ->where(function ($query) {
                 $query->whereNull('cod.control')->orWhere('cod.control', 0);
             })
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('ps_pack as pack')
+                    ->whereColumn('pack.id_product_pack', 'od.product_id');
+            })
             ->orderBy('o.id_order')
             ->orderBy('od.id_order_detail')
             ->get()

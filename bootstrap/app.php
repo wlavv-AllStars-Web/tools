@@ -15,6 +15,12 @@ $app = new Illuminate\Foundation\Application(
     $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
 );
 
+// The workspace owns the live Tools credentials; do not duplicate them in this project.
+$workspaceEnvironmentPath = dirname(__DIR__, 3);
+if (is_file($workspaceEnvironmentPath . DIRECTORY_SEPARATOR . '.env')) {
+    $app->useEnvironmentPath($workspaceEnvironmentPath);
+
+}
 /*
 |--------------------------------------------------------------------------
 | Bind Important Interfaces

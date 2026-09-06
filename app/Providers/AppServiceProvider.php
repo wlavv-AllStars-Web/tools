@@ -155,6 +155,7 @@ class AppServiceProvider extends ServiceProvider
             'web.tools.tracking.' => ['web', 'web.index', 'Tracking'],
             'web.tools.seo.' => ['web', 'web.index', 'SEO'],
             'web.tools.raw_text.' => ['web', 'web.index', 'Raw text'],
+            'web.tools.auto_backorder.' => ['web', 'web.index', 'Auto backorder'],
             'web.tools.changes.' => ['web', 'web.index', 'Changes'],
             'web.tools.db_migration.' => ['web', 'web.index', 'Migration tool'],
             'finance.tools.intrastat.' => ['finance', 'finance.index', 'Intrastat'],

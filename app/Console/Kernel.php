@@ -9,6 +9,7 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         \App\Console\Commands\ProcessDueVatValidationsCommand::class,
+        \App\Console\Commands\AuditShippedOrdersForBackorder::class,
     ];
     
     protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule): void
@@ -19,6 +20,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('youtube:check-broken-links')->cron('30 4 */3 * *')->withoutOverlapping();
         $schedule->command('newsletter:send-pending --limit=10')->everyFiveMinutes()->withoutOverlapping();
         $schedule->command('web:export-products')->dailyAt('01:00')->withoutOverlapping();
+        $schedule->command('auto-backorder:audit')->dailyAt(config('auto_backorder.schedule_time', '01:30'))->withoutOverlapping();
     }
 
     protected function commands(): void

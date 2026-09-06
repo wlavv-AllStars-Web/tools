@@ -51,6 +51,7 @@ use App\Http\Controllers\CustomTools\CarrierExpeditionCheckController;
 use App\Http\Controllers\CustomTools\CarrierEndOfDayDocumentController;
 use App\Http\Controllers\CustomTools\LogisticsRmaCheckController;
 use App\Http\Controllers\CustomTools\ReturnWarrantyAvailabilityController;
+use App\Http\Controllers\CustomTools\AutoBackorderAuditController;
 use App\Http\Controllers\CustomTools\LogisticsInventoryController;
 use App\Http\Controllers\CustomTools\HomepageAdminController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
@@ -95,6 +96,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('web')->name('web.tools.')->group(function () {
+        Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');
+        Route::post('/auto-backorder/run', [AutoBackorderAuditController::class, 'runManually'])->name('auto_backorder.run');
+
         Route::prefix('return-warranty')->name('return_warranty.')->group(function () {
             Route::get('/', [ReturnWarrantyAvailabilityController::class, 'index'])->name('index');
             Route::post('/enable', [ReturnWarrantyAvailabilityController::class, 'enable'])->name('enable');

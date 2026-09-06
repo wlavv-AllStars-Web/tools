@@ -33,14 +33,33 @@ return [
             ]) : [],
         ],
 
+        'tools_novo' => [
+            'driver' => 'mysql',
+            'host' => env('DB_TOOLS_NOVO_HOST', '127.0.0.1'),
+            'port' => env('DB_TOOLS_NOVO_PORT', '3306'),
+            'database' => env('DB_TOOLS_NOVO_DATABASE'),
+            'username' => env('DB_TOOLS_NOVO_USERNAME'),
+            'password' => env('DB_TOOLS_NOVO_PASSWORD', ''),
+            'unix_socket' => env('DB_TOOLS_NOVO_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('DB_TOOLS_NOVO_MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mysql2' => [
             'driver' => 'mysql',
             /**'url' => env('DATABASE_URL'),**/
-            'host' => env('DB2_HOST', '127.0.0.1'),
-            'port' => env('DB2_PORT', '3306'),
-            'database' => env('DB2_DATABASE', 'forge'),
-            'username' => env('DB2_USERNAME', 'forge'),
-            'password' => env('DB2_PASSWORD', ''),
+            'host' => env('DB_PS9_HOST', env('DB2_HOST', '127.0.0.1')),
+            'port' => env('DB_PS9_PORT', env('DB2_PORT', '3306')),
+            'database' => env('DB_PS9_DATABASE', env('DB2_DATABASE', 'forge')),
+            'username' => env('DB_PS9_USERNAME', env('DB2_USERNAME', 'forge')),
+            'password' => env('DB_PS9_PASSWORD', env('DB2_PASSWORD', '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',

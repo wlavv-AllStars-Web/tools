@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container-fluid py-4">
-        <div class="panel panel-default" style="display: flow-root;">
+        <div class="panel panel-default" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="display: flow-root;">
                 <form method="GET" action="{{ route('web.tools.auto_backorder.index') }}" style="float: left; margin: 0;">
                     <label for="audit-date" class="me-2">Data</label>
@@ -25,11 +25,15 @@
             </div>
         @endif
 
-        <div class="alert alert-info">
-            Modo tempor&aacute;rio: auditoria apenas. N&atilde;o s&atilde;o alterados estados nem hist&oacute;rico das encomendas.
+        <div class="panel panel-default" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
+            <div class="panel-body" style="padding: 15px;">
+                <div class="alert alert-info" style="margin: 0;">
+                    Modo tempor&aacute;rio: auditoria apenas. N&atilde;o s&atilde;o alterados estados nem hist&oacute;rico das encomendas.
+                </div>
+            </div>
         </div>
 
-        <div class="panel panel-default" style="display: flow-root;">
+        <div class="panel panel-default" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="padding: 0; overflow-x: auto;">
                 <table class="table table-striped align-middle mb-0">
                     <thead>
@@ -46,18 +50,10 @@
                                 <td>
                                     <strong>#{{ $audit->id_order }}</strong>
                                     @if ($audit->order_reference)
-                                        <span class="text-muted d-block small">{{ $audit->order_reference }}</span>
+                                        <span class="text-muted"> | </span>{{ $audit->order_reference }}
                                     @endif
                                 </td>
-                                <td>
-                                    <ul class="mb-0 ps-3">
-                                        @foreach ($audit->unpicked_products as $product)
-                                            <li>
-                                                <code>{{ $product['reference'] ?: 'sem refer&ecirc;ncia' }}</code>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </td>
+                                <td>{{ collect($audit->unpicked_products)->pluck('reference')->filter()->implode(' | ') }}</td>
                             </tr>
                         @empty
                             <tr>

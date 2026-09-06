@@ -5,6 +5,7 @@ namespace App\Http\Controllers\CustomTools;
 use App\Http\Controllers\Controller;
 use App\Models\AutoBackorderAudit;
 use Carbon\Carbon;
+use App\Services\Prestashop\PrestashopAdminLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
@@ -26,7 +27,10 @@ class AutoBackorderAuditController extends Controller
                 ->whereDate('audit_date', $selectedDate)
                 ->orderByDesc('detected_at')
                 ->orderByDesc('id')
-                ->get(),
+                ->get()
+                ->each(function (AutoBackorderAudit $audit) {
+                    $audit->prestashop_url = PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $audit->id_order, 'ASM');
+                }),
             'canRunManually' => in_array((int) auth()->id(), config('auto_backorder.manual_run_user_ids', []), true),
         ]);
     }

@@ -36,13 +36,12 @@
                         <tr>
                             <th>Data/hora</th>
                             <th>Encomenda</th>
-                            <th>Motivo</th>
                             <th>Produtos n&atilde;o picados</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($audits as $audit)
-                            <tr>
+                            <tr style="{{ $audit->prestashop_url ? 'cursor: pointer;' : '' }}" @if ($audit->prestashop_url) onclick="window.open(@json($audit->prestashop_url), '_blank')" @endif>
                                 <td>{{ $audit->detected_at?->format('d/m/Y H:i:s') }}</td>
                                 <td>
                                     <strong>#{{ $audit->id_order }}</strong>
@@ -50,14 +49,11 @@
                                         <span class="text-muted d-block small">{{ $audit->order_reference }}</span>
                                     @endif
                                 </td>
-                                <td>{{ $audit->reason }}</td>
                                 <td>
                                     <ul class="mb-0 ps-3">
                                         @foreach ($audit->unpicked_products as $product)
                                             <li>
                                                 <code>{{ $product['reference'] ?: 'sem refer&ecirc;ncia' }}</code>
-                                                @if ($product['name']) &mdash; {{ $product['name'] }} @endif
-                                                <span class="text-muted">(qtd. {{ $product['quantity'] }})</span>
                                             </li>
                                         @endforeach
                                     </ul>
@@ -65,7 +61,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">N&atilde;o existem altera&ccedil;&otilde;es registadas nesta data.</td>
+                                <td colspan="3" class="text-center text-muted py-4">N&atilde;o existem altera&ccedil;&otilde;es registadas nesta data.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class AutoBackorderAudit extends Model
 {
-    protected $connection = 'tools_novo';
-
     protected $fillable = [
         'id_order',
         'order_reference',

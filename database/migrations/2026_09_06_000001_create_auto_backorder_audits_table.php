@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('tools_novo')->create('auto_backorder_audits', function (Blueprint $table) {
+        Schema::create('auto_backorder_audits', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('id_order');
             $table->string('order_reference', 64)->nullable();
@@ -28,6 +28,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('tools_novo')->dropIfExists('auto_backorder_audits');
+        Schema::dropIfExists('auto_backorder_audits');
     }
 };

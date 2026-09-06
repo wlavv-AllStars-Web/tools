@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container-fluid py-4">
-        <div class="panel panel-default" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
+        <div class="panel panel-default customPanel" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="display: flow-root;">
                 <form method="GET" action="{{ route('web.tools.auto_backorder.index') }}" style="float: left; margin: 0;">
                     <label for="audit-date" class="me-2">Data</label>
@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <div class="panel panel-default" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
+        <div class="panel panel-default customPanel" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="padding: 15px;">
                 <div class="alert alert-info" style="margin: 0;">
                     Modo tempor&aacute;rio: auditoria apenas. N&atilde;o s&atilde;o alterados estados nem hist&oacute;rico das encomendas.
@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <div class="panel panel-default" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
+        <div class="panel panel-default customPanel" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="padding: 0; overflow-x: auto;">
                 <table class="table table-striped align-middle mb-0">
                     <thead>

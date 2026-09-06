@@ -45,7 +45,7 @@
                     </thead>
                     <tbody>
                         @forelse ($audits as $audit)
-                            <tr style="{{ $audit->prestashop_url ? 'cursor: pointer;' : '' }}" @if ($audit->prestashop_url) onclick="window.open(@json($audit->prestashop_url), '_blank')" @endif>
+                            <tr style="{{ $audit->prestashop_url ? 'cursor: pointer;' : '' }}" @if ($audit->prestashop_url) onclick="window.open('{{ $audit->prestashop_url }}', '_blank');" @endif>
                                 <td>{{ $audit->detected_at?->format('d/m/Y H:i:s') }}</td>
                                 <td>
                                     <strong>#{{ $audit->id_order }}</strong>

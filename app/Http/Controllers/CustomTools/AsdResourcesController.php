@@ -186,54 +186,43 @@ class ASDResourcesController extends Controller
             'filter' => ['nullable', 'in:all,missing'],
         ]);
         $page = (int) ($validated['page'] ?? 1);
-        $filter = $validated['filter'] ?? 'all';
+        $filter = $validated['filter'] ?? 'missing';
         $perPage = 10;
 
-        $productsQuery = DB::connection('mysql2')
-            ->table('ps_product as p')
-            ->join('ps_product_shop as ps', function ($join) {
-                $join->on('ps.id_product', '=', 'p.id_product')
-                    ->where('ps.id_shop', $this->asdShopId);
-            })
-            ->leftJoin('ps_product_lang as pl', function ($join) {
-                $join->on('pl.id_product', '=', 'p.id_product')
-                    ->where('pl.id_shop', $this->asdShopId)
-                    ->where('pl.id_lang', 1);
-            })
-            ->where('p.id_manufacturer', $id_manufacturer)
-            ->select('p.id_product', 'p.reference', 'pl.name', 'pl.link_rewrite')
-            ->orderByRaw("CASE WHEN p.reference IS NULL OR TRIM(p.reference) = '' THEN 1 ELSE 0 END")
-            ->orderBy('p.reference')
-            ->orderBy('p.id_product');
-
+        $rowsQuery = $this->studioImageRowsQuery($id_manufacturer);
         if ($filter === 'missing') {
-            $productsQuery->whereNotExists(function ($query) {
-                $query->selectRaw('1')
-                    ->from('ps_image as i')
-                    ->join('ps_image_shop as imageShop', function ($join) {
-                        $join->on('imageShop.id_image', '=', 'i.id_image')
-                            ->where('imageShop.id_shop', $this->asdShopId);
-                    })
-                    ->whereColumn('i.id_product', 'p.id_product');
-            });
+            $rowsQuery->where('ai.has_image', 0);
         }
 
-        $total = (clone $productsQuery)->count();
-        $products = $productsQuery->forPage($page, $perPage)->get();
-        $images = $this->studioImagesByProduct(
-            $products->pluck('id_product')->map(fn ($id) => (int) $id)->all(),
-            $products->mapWithKeys(fn ($product) => [
-                (int) $product->id_product => trim((string) $product->link_rewrite),
-            ])->all()
-        );
+        $total = (clone $rowsQuery)->count();
+        $rows = $rowsQuery
+            ->orderBy('ai.reference')
+            ->forPage($page, $perPage)
+            ->get();
 
         return response()->json([
-            'data' => $products->map(fn ($product) => [
-                'id_product' => (int) $product->id_product,
-                'reference' => trim((string) $product->reference) ?: '-',
-                'name' => trim((string) $product->name) ?: 'No English name',
-                'images' => $images->get((int) $product->id_product, collect())->values()->all(),
-            ])->values(),
+            'data' => $rows->map(function ($row) use ($id_manufacturer) {
+                $imageUrl = (int) $row->has_image === 1
+                    ? AsdImage::resolveImagePathForRow(
+                        $id_manufacturer,
+                        (int) $row->id_product_attribute,
+                        (string) $row->reference,
+                        $row->image_name,
+                        $row->image_code
+                    )
+                    : null;
+
+                return [
+                    'id_product' => (int) $row->id_product,
+                    'reference' => trim((string) $row->reference) ?: '-',
+                    'name' => '',
+                    'images' => $imageUrl ? [[
+                        'thumbnail_url' => $imageUrl,
+                        'large_url' => $imageUrl,
+                        'cover' => false,
+                    ]] : [],
+                ];
+            })->values(),
             'meta' => [
                 'page' => $page,
                 'per_page' => $perPage,
@@ -244,6 +233,35 @@ class ASDResourcesController extends Controller
         ]);
     }
 
+    private function studioImageRowsQuery(int $idManufacturer)
+    {
+        return AsdImage::query()
+            ->from('ps_custom_asd_images as ai')
+            ->join('ps_product as p', 'p.id_product', '=', 'ai.id_product')
+            ->leftJoin('ps_custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin('ps_custom_product_attribute as cpa', function ($join) {
+                $join->on('cpa.id_product_attribute', '=', 'ai.id_product_attribute')
+                    ->where('ai.id_product_attribute', '>', 0);
+            })
+            ->leftJoin('ps_stock_available as sa', function ($join) {
+                $join->on('sa.id_product', '=', 'ai.id_product')
+                    ->on('sa.id_product_attribute', '=', 'ai.id_product_attribute')
+                    ->where('sa.id_shop', $this->asdShopId);
+            })
+            ->where('ai.id_manufacturer', $idManufacturer)
+            ->where(function ($query) {
+                $query->whereRaw('COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) <> 1')
+                    ->orWhereRaw('COALESCE(sa.quantity, 0) > 0');
+            })
+            ->select([
+                'ai.id_product',
+                'ai.id_product_attribute',
+                'ai.reference',
+                'ai.image_name',
+                'ai.image_code',
+                'ai.has_image',
+            ]);
+    }
     public function studioUploadImages(Request $request, int $id_manufacturer)
     {
         $brand = $this->getAsdBrandOrFail($id_manufacturer);
@@ -388,50 +406,6 @@ class ASDResourcesController extends Controller
             ->where('ms.id_shop', $this->asdShopId)
             ->where('m.id_manufacturer', $idManufacturer)
             ->firstOrFail();
-    }
-
-    private function studioImagesByProduct(array $productIds, array $linkRewrites)
-    {
-        if ($productIds === []) {
-            return collect();
-        }
-
-        return DB::connection('mysql2')
-            ->table('ps_image as i')
-            ->join('ps_image_shop as imageShop', function ($join) {
-                $join->on('imageShop.id_image', '=', 'i.id_image')
-                    ->where('imageShop.id_shop', $this->asdShopId);
-            })
-            ->whereIn('i.id_product', $productIds)
-            ->orderBy('i.id_product')
-            ->orderBy('i.position')
-            ->get(['i.id_product', 'i.id_image', 'imageShop.cover'])
-            ->groupBy(fn ($image) => (int) $image->id_product)
-            ->map(fn ($rows) => $rows->map(fn ($image) => [
-                'id_image' => (int) $image->id_image,
-                'cover' => (bool) $image->cover,
-                'thumbnail_url' => $this->studioImageUrl(
-                    (int) $image->id_image,
-                    'tm_medium_default',
-                    $linkRewrites[(int) $image->id_product] ?? ''
-                ),
-                'large_url' => $this->studioImageUrl(
-                    (int) $image->id_image,
-                    'large_default',
-                    $linkRewrites[(int) $image->id_product] ?? ''
-                ),
-            ]));
-    }
-
-    private function studioImageUrl(int $idImage, string $type, string $linkRewrite): string
-    {
-        $baseUrl = rtrim((string) config('allstars.stores.ASD.base_url'), '/');
-
-        if ($linkRewrite !== '') {
-            return $baseUrl . '/' . $idImage . '-' . $type . '/' . $linkRewrite . '.jpg';
-        }
-
-        return $baseUrl . '/img/p/' . implode('/', str_split((string) $idImage)) . '/' . $idImage . '-' . $type . '.jpg';
     }
 
     private function getBrandReferences(int $idManufacturer)

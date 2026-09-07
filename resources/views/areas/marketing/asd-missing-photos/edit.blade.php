@@ -25,8 +25,8 @@
         <section>
             <h5 class="studio-asd-gallery-title">ASD product photos</h5>
             <div class="studio-asd-gallery-toolbar" role="group" aria-label="Product image filter">
-                <button type="button" class="btn btn-sm btn-primary" data-asd-image-filter="all">All images</button>
-                <button type="button" class="btn btn-sm btn-outline-primary" data-asd-image-filter="missing">Missing images</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-asd-image-filter="all">All images</button>
+                <button type="button" class="btn btn-sm btn-primary" data-asd-image-filter="missing">Missing images</button>
             </div>
             <div id="studioAsdProductGallery" class="studio-asd-gallery" data-products-url="{{ route('web.tools.resources.asd.studio_products', $brand->id_manufacturer) }}"></div>
             <div id="studioAsdProductLoader" class="studio-asd-loader" hidden><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading product photos...</div>
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let page = 0;
     let loading = false;
     let hasMore = true;
-    let filter = 'all';
+    let filter = 'missing';
     const element = (tag, className, text) => {
         const node = document.createElement(tag);
         if (className) node.className = className;
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!product.images.length) {
             const tile = element('article', 'studio-asd-image-tile');
             tile.append(
-                element('div', 'studio-asd-no-images', 'No PrestaShop image'),
+                element('div', 'studio-asd-no-images', 'Image missing'),
                 element('div', 'studio-asd-image-reference', product.reference)
             );
             gallery.append(tile);

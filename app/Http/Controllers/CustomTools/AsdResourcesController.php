@@ -187,7 +187,7 @@ class ASDResourcesController extends Controller
         ]);
         $page = (int) ($validated['page'] ?? 1);
         $filter = $validated['filter'] ?? 'missing';
-        $perPage = 50;
+        $perPage = 24;
 
         $rowsQuery = $this->studioImageRowsQuery($id_manufacturer);
         if ($filter === 'missing') {

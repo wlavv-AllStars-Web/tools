@@ -335,37 +335,11 @@ class PrestashopAdminLinkService
 
     public static function bridgeBackOfficeAdminUrl(string $targetController, array $targetParams = [], string $store = 'ASM'): ?string
     {
-        $store = static::normalizeStore($store);
-
-        $baseUrl = static::adminBaseUrl();
-        $adminFolder = static::adminFolder($store);
-        $bridgeToken = static::bridgeToken($store);
-
-        if (!$baseUrl || !$adminFolder || !$bridgeToken) {
-            return null;
-        }
-
-        $targetParams = array_merge(static::shopContextParams($store), $targetParams);
-        $encodedTargetParams = base64_encode(http_build_query($targetParams));
-        $params = [
-            static::bridgeTokenParameter($store) => $bridgeToken,
-            'target_controller' => $targetController,
-            'target_params' => $encodedTargetParams,
-        ];
-
-        if (static::bridgeUsesHmac($store)) {
-            $timestamp = time();
-            $params['bridge_ts'] = $timestamp;
-            $params['bridge_signature'] = hash_hmac(
-                'sha256',
-                $targetController . '|' . $encodedTargetParams . '|' . $timestamp,
-                static::bridgeHmacSecret($store)
-            );
-        }
-
-        return rtrim($baseUrl, '/') . '/' . trim($adminFolder, '/') . '/asgwebtoolsbridge.php?' . http_build_query($params);
+        // The legacy direct admin endpoint does not receive an authenticated employee
+        // identity. Always use the secure module redirect, which validates the mapped
+        // employee and creates a complete Back Office session before forwarding.
+        return static::bridgeAdminUrl($targetController, $targetParams, $store);
     }
-
     public static function moduleManageUrl(string $store = 'ASM'): ?string
     {
         return static::bridgeAdminUrl('AdminModulesSf', [], $store);

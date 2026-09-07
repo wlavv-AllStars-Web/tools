@@ -115,20 +115,24 @@ class PrestashopAdminLinkService
             'admin_folder' => trim($adminFolder, '/'),
         ];
 
-        if ($employeeId = static::employeeId($store)) {
-            $params['id_employee'] = $employeeId;
+        $employeeId = static::employeeId($store);
+        $employeeEmail = static::employeeEmail();
+
+        // A bridge request always represents the authenticated Tools user. Do not
+        // issue an employee-less URL: the employee identity is part of the HMAC.
+        if (!$employeeId || !$employeeEmail) {
+            return null;
         }
 
-        if ($employeeEmail = static::employeeEmail()) {
-            $params['employee_email'] = $employeeEmail;
-        }
+        $params['id_employee'] = $employeeId;
+        $params['employee_email'] = $employeeEmail;
 
         if (static::bridgeUsesHmac($store)) {
             $timestamp = time();
             $params['bridge_ts'] = $timestamp;
             $params['bridge_signature'] = hash_hmac(
                 'sha256',
-                $targetController . '|' . $targetParams . '|' . $timestamp,
+                $targetController . '|' . $targetParams . '|' . $timestamp . '|' . $employeeId . '|' . $employeeEmail,
                 static::bridgeHmacSecret($store)
             );
         }

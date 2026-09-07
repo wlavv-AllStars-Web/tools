@@ -1077,6 +1077,45 @@ class dashboard extends Model
         return self::productsPriceIssue($tab, $panel);
     }
 
+    public static function productsWithOtherShopDefaultVat($tab, $panel)
+    {
+        $prefix = self::prefix();
+        $shop = strtoupper((string) ($panel->store ?? ''));
+        $otherShop = match ($shop) {
+            'ASM' => 'ASD',
+            'ASD' => 'ASM',
+            default => throw new \InvalidArgumentException('The VAT cross-shop panel requires ASM or ASD.'),
+        };
+
+        $shopId = self::shopId($shop);
+        $otherShopId = self::shopId($otherShop);
+        $otherDefaultTaxGroup = $otherShop === 'ASD' ? 33 : 30;
+
+        $rows = DB::connection('mysql2')
+            ->table($prefix . 'product_shop as ps')
+            ->join($prefix . 'product as p', 'p.id_product', '=', 'ps.id_product')
+            ->where('ps.id_shop', $shopId)
+            ->where('ps.id_tax_rules_group', $otherDefaultTaxGroup)
+            ->select(['ps.id_product', 'p.reference', 'ps.id_tax_rules_group'])
+            ->orderBy('ps.id_product', 'ASC')
+            ->get();
+
+        return self::dashboardPanel(
+            sprintf('SHOP %d PRODUCTS WITH SHOP %d DEFAULT VAT', $shopId, $otherShopId),
+            'counter',
+            'shop_' . $shopId . '_with_shop_' . $otherShopId . '_default_vat',
+            ['id_product', 'reference', 'id_tax_rules_group'],
+            $rows->map(fn ($item) => [
+                'id_product' => $item->id_product,
+                'reference' => $item->reference,
+                'id_tax_rules_group' => $item->id_tax_rules_group,
+                'url' => PrestashopAdminLinkService::dashboardProductAdminUrl((int) $item->id_product, $shop),
+            ]),
+            [],
+            PrestashopAdminLinkService::dashboardProductLink('id_product', $shop)
+        );
+    }
+
 
     
 }

@@ -16,7 +16,7 @@
     .studio-asd-image-reference { padding: 8px 9px; border-top: 1px solid #eee; font-size: .8rem; font-weight: 700; overflow-wrap: anywhere; }
     .studio-asd-no-images { display: grid; place-items: center; aspect-ratio: 1; padding: 12px; color: #777; text-align: center; background: #f8f9fa; }
     .studio-asd-loader { min-height: 48px; display: grid; place-items: center; color: #777; }
-    .studio-asd-sentinel { height: 2px; }
+    .studio-asd-pagination { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 18px 0 6px; }
     @media (max-width: 960px) { .studio-asd-layout { grid-template-columns: 1fr; } .studio-asd-photos-card { position: static; width: 100%; } }
 </style>
 
@@ -29,8 +29,12 @@
                 <button type="button" class="btn btn-sm btn-primary" data-asd-image-filter="missing">Missing images</button>
             </div>
             <div id="studioAsdProductGallery" class="studio-asd-gallery" data-products-url="{{ route('web.tools.resources.asd.studio_products', $brand->id_manufacturer) }}"></div>
+            <div class="studio-asd-pagination" id="studioAsdProductPagination">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="studioAsdPreviousPage">Previous</button>
+                <span class="small text-muted" id="studioAsdPageStatus"></span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="studioAsdNextPage">Next</button>
+            </div>
             <div id="studioAsdProductLoader" class="studio-asd-loader" hidden><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading product photos...</div>
-            <div id="studioAsdProductSentinel" class="studio-asd-sentinel"></div>
         </section>
 
         <div class="studio-asd-photos-card">
@@ -88,12 +92,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const gallery = document.getElementById('studioAsdProductGallery');
     const loader = document.getElementById('studioAsdProductLoader');
-    const sentinel = document.getElementById('studioAsdProductSentinel');
-    if (!gallery || !loader || !sentinel) return;
+    const previousPage = document.getElementById('studioAsdPreviousPage');
+    const nextPage = document.getElementById('studioAsdNextPage');
+    const pageStatus = document.getElementById('studioAsdPageStatus');
+    if (!gallery || !loader || !previousPage || !nextPage || !pageStatus) return;
 
-    let page = 0;
+    let page = 1;
+    let totalPages = 1;
     let loading = false;
-    let hasMore = true;
     let filter = 'missing';
     const element = (tag, className, text) => {
         const node = document.createElement(tag);
@@ -131,24 +137,33 @@ document.addEventListener('DOMContentLoaded', function () {
             gallery.append(tile);
         });
     };
-    const loadProducts = async () => {
-        if (loading || !hasMore) return;
+    const updatePagination = (meta) => {
+        page = meta.page;
+        totalPages = Math.max(1, Math.ceil(meta.total / meta.per_page));
+        pageStatus.textContent = meta.total ? `Page ${page} of ${totalPages} (${meta.total})` : 'No references';
+        previousPage.disabled = page <= 1;
+        nextPage.disabled = page >= totalPages;
+    };
+    const loadProducts = async (targetPage = 1) => {
+        if (loading) return;
         loading = true;
         loader.hidden = false;
+        previousPage.disabled = true;
+        nextPage.disabled = true;
+        gallery.replaceChildren();
         try {
             const url = new URL(gallery.dataset.productsUrl, window.location.origin);
-            url.searchParams.set('page', String(page + 1));
+            url.searchParams.set('page', String(targetPage));
             url.searchParams.set('filter', filter);
             const response = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             if (!response.ok) throw new Error(String(response.status));
             const payload = await response.json();
             payload.data.forEach(renderProduct);
-            page = payload.meta.page;
-            hasMore = payload.meta.has_more;
-            if (!hasMore && !gallery.children.length) gallery.append(element('div', 'alert alert-info', 'No product images found for this ASD brand.'));
+            if (!payload.data.length) gallery.append(element('div', 'alert alert-info', 'No product images found for this ASD brand.'));
+            updatePagination(payload.meta);
         } catch (error) {
             gallery.append(element('div', 'alert alert-danger', 'Could not load ASD product photos.'));
-            hasMore = false;
+            pageStatus.textContent = '';
         } finally {
             loading = false;
             loader.hidden = true;
@@ -159,21 +174,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const nextFilter = button.dataset.asdImageFilter;
             if (nextFilter === filter) return;
             filter = nextFilter;
-            page = 0;
-            hasMore = true;
-            gallery.replaceChildren();
             document.querySelectorAll('[data-asd-image-filter]').forEach((item) => {
                 const active = item.dataset.asdImageFilter === filter;
                 item.classList.toggle('btn-primary', active);
                 item.classList.toggle('btn-outline-primary', !active);
             });
-            loadProducts();
+            loadProducts(1);
         });
     });
-    new IntersectionObserver((entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) loadProducts();
-    }, { rootMargin: '600px 0px' }).observe(sentinel);
-    loadProducts();
+    previousPage.addEventListener('click', () => loadProducts(page - 1));
+    nextPage.addEventListener('click', () => loadProducts(page + 1));
+    loadProducts(1);
 });
 </script>
 @endpush

@@ -132,4 +132,6 @@ return [
     
     "VAT verification - Failed" => "VAT verification - Failed",
     'SHIPPING ETA ALERT' => 'SHIPPING ETA ALERT',
+    'Shop 2 VAT = Shop 3 default' => 'ASM VAT = ASD default',
+    'Shop 3 VAT = Shop 2 default' => 'ASD VAT = ASM default',
 ];

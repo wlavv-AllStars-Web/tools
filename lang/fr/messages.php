@@ -291,5 +291,6 @@ return [
     'product_image_review_image' => 'image',
     'product_image_review_cover' => 'Couverture',
     'product_image_review_load_error' => 'Impossible de charger les produits. Veuillez réessayer.',
-    'product_image_review_open_product' => 'Voir le produit dans ASM'
+    'product_image_review_open_product' => 'Voir le produit dans ASM',
+    'web.tools.auto_backorder.index' => 'Auto Backorder report',
 ];

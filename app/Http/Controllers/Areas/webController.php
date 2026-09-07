@@ -61,7 +61,7 @@ class webController extends Controller{
         $accessList[]                           = ['name' =>  trans('messages.trackingTranslation'),'url' => route('web.tools.tracking.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-language"></i>'];
         $accessList[]                           = ['name' => 'Return / Warranty',                    'url' => route('web.tools.return_warranty.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-arrow-rotate-left"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.changesTracker'),     'url' => route('web.tools.changes.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-code"></i>'];
-        $accessList[]                           = ['name' => 'Auto backorder',                       'url' => route('web.tools.auto_backorder.index'),    'icon' => '<i style="font-size: 40px;" class="fa-solid fa-rotate-left"></i>'];
+        $accessList[]                           = ['name' => trans('messages.web.tools.auto_backorder.index'), 'url' => route('web.tools.auto_backorder.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-rotate-left"></i>'];
 
         /**
         $accessList[]                           = ['name' =>  trans('messages.purchasePrice'),      'url' => route('purchasePrice.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];

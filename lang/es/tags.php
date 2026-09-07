@@ -54,4 +54,5 @@ return [
     'id_shipping' => 'ID',
     'eta_date' => 'ETA',
     'days' => 'DIAS',
+    'id_tax_rules_group' => 'Tax Rule ID',
 ];

@@ -310,5 +310,6 @@ return [
     'product_image_review_image' => 'imagen',
     'product_image_review_cover' => 'Portada',
     'product_image_review_load_error' => 'No se pudieron cargar los productos. Inténtalo de nuevo.',
-    'product_image_review_open_product' => 'Ver producto en ASM'
+    'product_image_review_open_product' => 'Ver producto en ASM',
+    'web.tools.auto_backorder.index' => 'Auto Backorder report',
 ];

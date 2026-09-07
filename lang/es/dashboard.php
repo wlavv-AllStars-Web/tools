@@ -46,4 +46,6 @@ return [
     'Negative stock' => 'NEGATIVE STOCK',
     'Out of stock' => 'OUT OF STOCK',
     'SHIPPING ETA ALERT' => 'ALERTA ETA ENVIO',
+    'Shop 2 VAT = Shop 3 default' => 'IVA ASM = predeterminado ASD',
+    'Shop 3 VAT = Shop 2 default' => 'IVA ASD = predeterminado ASM',
 ];

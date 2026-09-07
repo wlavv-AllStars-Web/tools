@@ -115,6 +115,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/resources/asm/{id_manufacturer}/installation-instructions', [asmResourcesController::class, 'uploadInstallationInstructions'])->name('resources.asm.installation_instructions.upload');
         Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
         Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
+        Route::get('/resources/asd/{id_manufacturer}/studio-products', [AsdResourcesController::class, 'studioProducts'])->name('resources.asd.studio_products');
         Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
         Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
         Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');

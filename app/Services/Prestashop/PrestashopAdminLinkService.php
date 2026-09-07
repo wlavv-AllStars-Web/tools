@@ -115,7 +115,7 @@ class PrestashopAdminLinkService
             'admin_folder' => trim($adminFolder, '/'),
         ];
 
-        if ($employeeId = static::employeeId()) {
+        if ($employeeId = static::employeeId($store)) {
             $params['id_employee'] = $employeeId;
         }
 
@@ -254,28 +254,29 @@ class PrestashopAdminLinkService
         return $parameter !== '' ? $parameter : 'bridge_key';
     }
 
-    public static function employeeId(): ?int
+    public static function employeeId(string $store = 'ASM'): ?int
     {
-        $user = auth()->user();
+        $store = static::normalizeStore($store);
+        $mappedEmployeeId = (int) config("prestashop.bridge_employee_ids.{$store}", 0);
 
-        if (!$user) {
+        // Authenticate maps each NewTools user to the dedicated employee for ASM and ASD.
+        if ($mappedEmployeeId > 0) {
+            return $mappedEmployeeId;
+        }
+
+        $email = auth()->user()?->email;
+        if (empty($email)) {
             return null;
         }
 
-        if (!empty($user->email)) {
-            $idEmployee = DB::connection('mysql2')
-                ->table(PrestashopAdminTokenService::prefix() . 'employee')
-                ->where('email', $user->email)
-                ->value('id_employee');
+        $idEmployee = DB::connection('mysql2')
+            ->table(PrestashopAdminTokenService::prefix() . 'employee')
+            ->where('email', $email)
+            ->value('id_employee');
 
-            if ($idEmployee) {
-                return (int) $idEmployee;
-            }
-        }
-
-        return $user->id ? (int) $user->id : null;
+        // Never fall back to the NewTools user ID: it is not a ps_employee ID.
+        return $idEmployee ? (int) $idEmployee : null;
     }
-
     public static function employeeEmail(): ?string
     {
         $email = auth()->user()?->email;

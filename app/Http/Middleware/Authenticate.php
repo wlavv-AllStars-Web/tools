@@ -63,9 +63,14 @@ class Authenticate extends Middleware
         $ids[106] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Lorenzo'];
         $ids[111] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'José'];
         $ids[999] = (object) ['asm' => 63,  'asd' => 16,  'name' => 'Dashboard'];
-        Config::set(['token' => User::getTokens($ids[auth()->user()->id]->asm)]);
-        Config::set(['tokenASD' => User::getTokensASD($ids[auth()->user()->id]->asd)]);
-
+        $employeeMap = $ids[(int) auth()->id()] ?? null;
+        Config::set(['token' => User::getTokens($employeeMap->asm ?? 0)]);
+        Config::set(['tokenASD' => User::getTokensASD($employeeMap->asd ?? 0)]);
+        Config::set(['prestashop.bridge_employee_ids' => [
+            // The same PrestaShop employee is valid in both shop contexts.
+            'ASM' => (int) ($employeeMap->asm ?? 0),
+            'ASD' => (int) ($employeeMap->asm ?? 0),
+        ]]);
         return $next($request);
     }
 }

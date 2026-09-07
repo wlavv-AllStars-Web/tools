@@ -219,3 +219,5 @@ function getDailyStats(){
 } 
 
 </script>
+
+@include('areas.marketing.includes.js')

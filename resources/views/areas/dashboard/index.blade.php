@@ -1,9 +1,5 @@
 @extends('layouts.app')
 
-@push('scripts')
-    @include('areas.marketing.includes.js')
-@endpush
-
     @include("areas.dashboard.includes.js")
     @include("areas.dashboard.includes.css")
 

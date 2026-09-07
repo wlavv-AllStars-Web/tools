@@ -173,6 +173,7 @@
             width: $('#edit_width').val(),
             height: $('#edit_height').val(),
             depth: $('#edit_depth').val(),
+            dim_verify: $('#edit_dim_verify').is(':checked') ? 1 : 0,
             search_term: scanInput.value.trim()
         }, 'Measures updated successfully.');
     }

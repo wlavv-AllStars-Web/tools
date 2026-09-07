@@ -269,6 +269,12 @@
                                             <label class="form-label">Depth</label>
                                             <input type="number" step="0.01" min="0" class="form-control" id="edit_depth" value="{{ number_format((float) $product->depth, 2, '.', '') }}" style="text-align: center;">
                                         </div>
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="edit_dim_verify" value="1" @checked((int) ($product->dim_verify ?? 0) === 1)>
+                                                <label class="form-check-label" for="edit_dim_verify">Dimensions verified</label>
+                                            </div>
+                                        </div>
                                         <div class="col-12 d-grid mt-2">
                                             <button class="btn btn-outline-dark" type="button" onclick="updateMeasures()">
                                                 <i class="fa-solid fa-ruler-combined"></i> Update measures

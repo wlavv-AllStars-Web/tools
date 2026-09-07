@@ -190,6 +190,7 @@ class housingController extends Controller
             'width' => ['required', 'numeric', 'min:0'],
             'height' => ['required', 'numeric', 'min:0'],
             'depth' => ['required', 'numeric', 'min:0'],
+            'dim_verify' => ['required', 'boolean'],
             'search_term' => ['nullable', 'string', 'max:191'],
         ]);
 
@@ -215,11 +216,23 @@ class housingController extends Controller
             }
         }
 
+        $dimVerify = (int) $validated['dim_verify'];
+        $oldDimVerify = $this->getDimVerify((int) $target->id_product);
+        if ($oldDimVerify !== $dimVerify) {
+            $this->setDimVerify((int) $target->id_product, $dimVerify);
+            $changes[] = [
+                'field_name' => 'dim_verify',
+                'old_value' => (string) $oldDimVerify,
+                'new_value' => (string) $dimVerify,
+            ];
+        }
         if (empty($changes)) {
             return response()->json(['ok' => true, 'message' => 'No changes detected.']);
         }
 
-        $target->save();
+        if ($target->isDirty()) {
+            $target->save();
+        }
 
         $this->storeHistoryBatch($resolved, 'update_measures', $changes, [
             'search_term' => $validated['search_term'] ?? null,
@@ -624,7 +637,36 @@ class housingController extends Controller
             'width' => (string) ($baseProduct->width ?? 0),
             'height' => (string) ($baseProduct->height ?? 0),
             'depth' => (string) ($baseProduct->depth ?? 0),
+            'dim_verify' => $this->getDimVerify((int) $baseProduct->id_product),
         ];
+    }
+
+    private function getDimVerify(int $idProduct): int
+    {
+        $table = $this->psPrefix() . 'custom_product';
+
+        if (!Schema::connection('mysql2')->hasTable($table) || !Schema::connection('mysql2')->hasColumn($table, 'dim_verify')) {
+            return 0;
+        }
+
+        return (int) (DB::connection('mysql2')->table($table)->where('id_product', $idProduct)->value('dim_verify') ?? 0);
+    }
+
+    private function setDimVerify(int $idProduct, int $dimVerify): void
+    {
+        $table = $this->psPrefix() . 'custom_product';
+
+        if (!Schema::connection('mysql2')->hasTable($table) || !Schema::connection('mysql2')->hasColumn($table, 'dim_verify')) {
+            throw new \RuntimeException('dim_verify is not available in ps_custom_product.');
+        }
+
+        $query = DB::connection('mysql2')->table($table)->where('id_product', $idProduct);
+        if ($query->exists()) {
+            $query->update(['dim_verify' => $dimVerify]);
+            return;
+        }
+
+        $query->insert(['id_product' => $idProduct, 'dim_verify' => $dimVerify]);
     }
 
     private function decorateForList(array $match): array

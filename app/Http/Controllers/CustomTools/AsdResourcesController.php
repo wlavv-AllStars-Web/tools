@@ -183,8 +183,10 @@ class ASDResourcesController extends Controller
 
         $validated = $request->validate([
             'page' => ['nullable', 'integer', 'min:1'],
+            'filter' => ['nullable', 'in:all,missing'],
         ]);
         $page = (int) ($validated['page'] ?? 1);
+        $filter = $validated['filter'] ?? 'all';
         $perPage = 10;
 
         $productsQuery = DB::connection('mysql2')
@@ -203,6 +205,18 @@ class ASDResourcesController extends Controller
             ->orderByRaw("CASE WHEN p.reference IS NULL OR TRIM(p.reference) = '' THEN 1 ELSE 0 END")
             ->orderBy('p.reference')
             ->orderBy('p.id_product');
+
+        if ($filter === 'missing') {
+            $productsQuery->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('ps_image as i')
+                    ->join('ps_image_shop as imageShop', function ($join) {
+                        $join->on('imageShop.id_image', '=', 'i.id_image')
+                            ->where('imageShop.id_shop', $this->asdShopId);
+                    })
+                    ->whereColumn('i.id_product', 'p.id_product');
+            });
+        }
 
         $total = (clone $productsQuery)->count();
         $products = $productsQuery->forPage($page, $perPage)->get();

@@ -7,12 +7,14 @@
     .studio-asd-photos-brand { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
     .studio-asd-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 22px; align-items: start; }
     .studio-asd-gallery-title { margin: 0 0 12px; font-size: 1.05rem; font-weight: 700; }
+    .studio-asd-gallery-toolbar { display: flex; gap: 8px; margin: 0 0 12px; }
     .studio-asd-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
     .studio-asd-image-tile { min-width: 0; overflow: hidden; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
     .studio-asd-image { position: relative; display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; background: #fff; }
     .studio-asd-image img { width: 100%; height: 100%; object-fit: contain; }
     .studio-asd-image-cover { position: absolute; top: 5px; left: 5px; padding: 2px 5px; border-radius: 3px; background: #0d6efd; color: #fff; font-size: .65rem; font-weight: 700; text-transform: uppercase; }
     .studio-asd-image-reference { padding: 8px 9px; border-top: 1px solid #eee; font-size: .8rem; font-weight: 700; overflow-wrap: anywhere; }
+    .studio-asd-no-images { display: grid; place-items: center; aspect-ratio: 1; padding: 12px; color: #777; text-align: center; background: #f8f9fa; }
     .studio-asd-loader { min-height: 48px; display: grid; place-items: center; color: #777; }
     .studio-asd-sentinel { height: 2px; }
     @media (max-width: 960px) { .studio-asd-layout { grid-template-columns: 1fr; } .studio-asd-photos-card { position: static; width: 100%; } }
@@ -22,6 +24,10 @@
     <div class="studio-asd-layout">
         <section>
             <h5 class="studio-asd-gallery-title">ASD product photos</h5>
+            <div class="studio-asd-gallery-toolbar" role="group" aria-label="Product image filter">
+                <button type="button" class="btn btn-sm btn-primary" data-asd-image-filter="all">All images</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-asd-image-filter="missing">Missing images</button>
+            </div>
             <div id="studioAsdProductGallery" class="studio-asd-gallery" data-products-url="{{ route('web.tools.resources.asd.studio_products', $brand->id_manufacturer) }}"></div>
             <div id="studioAsdProductLoader" class="studio-asd-loader" hidden><i class="fa-solid fa-spinner fa-spin me-2"></i> Loading product photos...</div>
             <div id="studioAsdProductSentinel" class="studio-asd-sentinel"></div>
@@ -33,9 +39,7 @@
                     <h4 style="margin: 0;">{{ $brand->name }}</h4>
                     <small class="text-muted">ASD - manufacturer #{{ $brand->id_manufacturer }}</small>
                 </div>
-                <a href="{{ route('web.tools.resources.asd.images', ['id_manufacturer' => $brand->id_manufacturer, 'filter' => 'missing']) }}" class="btn btn-outline-success">
-                    <i class="fa-solid fa-images"></i> IMAGES
-                </a>
+
             </div>
 
             @if(session('success'))
@@ -90,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let page = 0;
     let loading = false;
     let hasMore = true;
+    let filter = 'all';
     const element = (tag, className, text) => {
         const node = document.createElement(tag);
         if (className) node.className = className;
@@ -97,6 +102,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return node;
     };
     const renderProduct = (product) => {
+        if (!product.images.length) {
+            const tile = element('article', 'studio-asd-image-tile');
+            tile.append(
+                element('div', 'studio-asd-no-images', 'No PrestaShop image'),
+                element('div', 'studio-asd-image-reference', product.reference)
+            );
+            gallery.append(tile);
+            return;
+        }
         product.images.forEach((image) => {
             const tile = element('article', 'studio-asd-image-tile');
             const link = element('a', 'studio-asd-image');
@@ -124,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const url = new URL(gallery.dataset.productsUrl, window.location.origin);
             url.searchParams.set('page', String(page + 1));
+            url.searchParams.set('filter', filter);
             const response = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             if (!response.ok) throw new Error(String(response.status));
             const payload = await response.json();
@@ -139,6 +154,22 @@ document.addEventListener('DOMContentLoaded', function () {
             loader.hidden = true;
         }
     };
+    document.querySelectorAll('[data-asd-image-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const nextFilter = button.dataset.asdImageFilter;
+            if (nextFilter === filter) return;
+            filter = nextFilter;
+            page = 0;
+            hasMore = true;
+            gallery.replaceChildren();
+            document.querySelectorAll('[data-asd-image-filter]').forEach((item) => {
+                const active = item.dataset.asdImageFilter === filter;
+                item.classList.toggle('btn-primary', active);
+                item.classList.toggle('btn-outline-primary', !active);
+            });
+            loadProducts();
+        });
+    });
     new IntersectionObserver((entries) => {
         if (entries.some((entry) => entry.isIntersecting)) loadProducts();
     }, { rootMargin: '600px 0px' }).observe(sentinel);

@@ -546,7 +546,9 @@ class stockEntryController extends Controller
 
     private function prestashopStockArrive(int $productId, int $productAttributeId): int
     {
-        $prefix = env('DB2_DB_prefix');
+        // Use the same safe prefix fallback as OmsProcurementBridge. A missing
+        // environment value must resolve to ps_, never to an unprefixed table.
+        $prefix = env('DB2_prefix', env('DB2_DB_prefix', 'ps_'));
 
         if($productAttributeId > 0){
             return (int) DB::connection('mysql2')
@@ -567,7 +569,9 @@ class stockEntryController extends Controller
             return;
         }
 
-        $prefix = env('DB2_DB_prefix');
+        // Use the same safe prefix fallback as OmsProcurementBridge. A missing
+        // environment value must resolve to ps_, never to an unprefixed table.
+        $prefix = env('DB2_prefix', env('DB2_DB_prefix', 'ps_'));
 
         if($productAttributeId > 0){
             $exists = DB::connection('mysql2')

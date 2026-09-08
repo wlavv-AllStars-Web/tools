@@ -28,7 +28,6 @@
         <div class="panel panel-default customPanel" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="padding: 15px;">
                 <div class="alert alert-info" style="margin: 0;">
-                    Modo tempor&aacute;rio: auditoria apenas. N&atilde;o s&atilde;o alterados estados nem hist&oacute;rico das encomendas.
                 </div>
             </div>
         </div>

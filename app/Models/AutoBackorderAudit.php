@@ -16,6 +16,9 @@ class AutoBackorderAudit extends Model
         'reason',
         'unpicked_products',
         'state_changed',
+        'state_change_attempted_at',
+        'state_changed_at',
+        'state_change_error',
     ];
 
     protected $casts = [
@@ -23,5 +26,7 @@ class AutoBackorderAudit extends Model
         'detected_at' => 'datetime',
         'unpicked_products' => 'array',
         'state_changed' => 'boolean',
+        'state_change_attempted_at' => 'datetime',
+        'state_changed_at' => 'datetime',
     ];
 }

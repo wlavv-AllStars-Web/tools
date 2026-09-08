@@ -34,11 +34,11 @@ class AuditShippedOrdersForBackorder extends Command
                 'od.id_order_detail',
                 'od.product_reference',
                 'od.product_name',
-                'od.product_quantity',
+                DB::raw('GREATEST(od.product_quantity - COALESCE(od.product_quantity_refunded, 0), 0) as pending_quantity'),
                 DB::raw('COALESCE(cod.control, 0) as control'),
             ])
             ->where('o.current_state', config('auto_backorder.shipped_state'))
-            ->where('od.product_quantity', '>', 0)
+            ->whereRaw('od.product_quantity > COALESCE(od.product_quantity_refunded, 0)')
             ->where(function ($query) {
                 $query->whereNull('cod.control')->orWhere('cod.control', 0);
             })
@@ -54,6 +54,9 @@ class AuditShippedOrdersForBackorder extends Command
 
         $orders = $rows->groupBy('id_order');
         $created = 0;
+        $changed = 0;
+        $notChanged = 0;
+        $auditOnly = (bool) config('auto_backorder.audit_only', true);
 
         foreach ($orders as $orderRows) {
             $first = $orderRows->first();
@@ -61,7 +64,7 @@ class AuditShippedOrdersForBackorder extends Command
                 'id_order_detail' => (int) $row->id_order_detail,
                 'reference' => $row->product_reference,
                 'name' => $row->product_name,
-                'quantity' => (int) $row->product_quantity,
+                'quantity' => (int) $row->pending_quantity,
                 'control' => (int) $row->control,
             ])->values()->all();
 
@@ -79,6 +82,31 @@ class AuditShippedOrdersForBackorder extends Command
             );
 
             $created += $audit->wasRecentlyCreated ? 1 : 0;
+
+            if (!$auditOnly && !$audit->state_changed) {
+                $result = $this->moveOrderToBackorder(
+                    (int) $first->id_order,
+                    (int) $first->current_state,
+                    (int) config('auto_backorder.backorder_state'),
+                );
+
+                $attemptedAt = now();
+                if ($result === null) {
+                    $audit->update([
+                        'state_changed' => true,
+                        'state_change_attempted_at' => $attemptedAt,
+                        'state_changed_at' => $attemptedAt,
+                        'state_change_error' => null,
+                    ]);
+                    $changed++;
+                } else {
+                    $audit->update([
+                        'state_change_attempted_at' => $attemptedAt,
+                        'state_change_error' => $result,
+                    ]);
+                    $notChanged++;
+                }
+            }
         }
 
         $this->info(sprintf('%d encomenda(s) elegível(eis); %d novo(s) registo(s) de auditoria.', $orders->count(), $created));
@@ -101,5 +129,67 @@ class AuditShippedOrdersForBackorder extends Command
         }
 
         return false;
+    }
+
+    private function moveOrderToBackorder(int $idOrder, int $expectedState, int $targetState): ?string
+    {
+        try {
+            return DB::connection('mysql2')->transaction(function () use ($idOrder, $expectedState, $targetState): ?string {
+                $order = DB::connection('mysql2')->table('ps_orders')->where('id_order', $idOrder)->lockForUpdate()->first(['id_order', 'current_state']);
+
+                if (!$order) {
+                    return 'Order no longer exists.';
+                }
+
+                if ((int) $order->current_state !== $expectedState) {
+                    return sprintf('Current state is no longer %d.', $expectedState);
+                }
+
+                if (!$this->hasUnpickedNonTechnicalProduct($idOrder)) {
+                    return 'No eligible unpicked products remain.';
+                }
+
+                $updated = DB::connection('mysql2')->table('ps_orders')->where('id_order', $idOrder)->where('current_state', $expectedState)->update([
+                    'current_state' => $targetState,
+                    'date_upd' => now()->toDateTimeString(),
+                ]);
+
+                if ($updated !== 1) {
+                    return 'Order was changed concurrently.';
+                }
+
+                DB::connection('mysql2')->table('ps_order_history')->insert([
+                    'id_employee' => (int) config('auto_backorder.system_employee_id', 0),
+                    'id_order' => $idOrder,
+                    'id_order_state' => $targetState,
+                    'date_add' => now()->toDateTimeString(),
+                ]);
+
+                return null;
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return 'State change failed: ' . $exception->getMessage();
+        }
+    }
+
+    private function hasUnpickedNonTechnicalProduct(int $idOrder): bool
+    {
+        $rows = DB::connection('mysql2')
+            ->table('ps_order_detail as od')
+            ->leftJoin('ps_custom_order_detail as cod', 'cod.id_order_detail', '=', 'od.id_order_detail')
+            ->select('od.product_reference')
+            ->where('od.id_order', $idOrder)
+            ->whereRaw('od.product_quantity > COALESCE(od.product_quantity_refunded, 0)')
+            ->where(function ($query) {
+                $query->whereNull('cod.control')->orWhere('cod.control', 0);
+            })
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')->from('ps_pack as pack')->whereColumn('pack.id_product_pack', 'od.product_id');
+            })
+            ->get();
+
+        return $rows->contains(fn (object $row) => !$this->isTechnicalReference((string) $row->product_reference));
     }
 }

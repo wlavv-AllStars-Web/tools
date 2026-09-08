@@ -7,6 +7,8 @@ return [
      */
     'audit_only' => env('AUTO_BACKORDER_AUDIT_ONLY', true),
 
+    'system_employee_id' => (int) env('AUTO_BACKORDER_SYSTEM_EMPLOYEE_ID', 0),
+
     'shipped_state' => (int) env('AUTO_BACKORDER_SHIPPED_STATE', 4),
     'backorder_state' => (int) env('AUTO_BACKORDER_BACKORDER_STATE', 15),
     'schedule_time' => env('AUTO_BACKORDER_SCHEDULE_TIME', '01:30'),

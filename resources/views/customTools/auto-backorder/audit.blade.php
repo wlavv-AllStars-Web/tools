@@ -25,12 +25,6 @@
             </div>
         @endif
 
-        <div class="panel panel-default customPanel" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
-            <div class="panel-body" style="padding: 15px;">
-                <div class="alert alert-info" style="margin: 0;">
-                </div>
-            </div>
-        </div>
 
         <div class="panel panel-default customPanel" style="display: flow-root; margin: 0 0 20px; border: 1px solid #ddd; border-radius: 4px;">
             <div class="panel-body" style="padding: 0; overflow-x: auto;">

@@ -5,7 +5,7 @@
                 <div class="panel-heading text-center" style="padding: 15px;">
                     <form action="{{ route('marketing.product_images.index') }}" method="GET" style="margin: 0;">
                         <label for="studioImageManufacturer" style="display: block; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">
-                            {{ __('messages.product_image_review') }}
+                            ASM - Product Image Review
                         </label>
                         <select id="studioImageManufacturer" name="manufacturer_id" class="form-control" onchange="if (this.value) this.form.submit()">
                             <option value="">{{ __('messages.product_image_review_select_brand') }}</option>

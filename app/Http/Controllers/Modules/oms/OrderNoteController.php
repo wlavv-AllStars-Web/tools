@@ -455,6 +455,80 @@ class OrderNoteController extends Controller
         }
         return response()->json(['success' => true]);
     }
+
+    public function updateRelatedProductPrice(Request $request, OrderNote $orderNote, OrderNoteLine $line): JsonResponse
+    {
+        if ((int) $line->order_note_id !== (int) $orderNote->id) { abort(404); }
+
+        $data = $request->validate([
+            'product_id' => ['required', 'integer', 'min:1'],
+            'product_attribute_id' => ['nullable', 'integer', 'min:0'],
+            'purchase_supplier_price' => ['nullable', 'numeric', 'min:0'],
+            'purchase_eur_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_supplier_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_eur_price' => ['nullable', 'numeric', 'min:0'],
+        ]);
+        $productId = (int) $data['product_id'];
+        $attributeId = (int) ($data['product_attribute_id'] ?? 0);
+        $sourceProductId = (int) $line->product_id;
+        $sourceAttributeId = (int) ($line->product_attribute_id ?? 0);
+        $db = DB::connection('mysql2');
+        $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+
+        $isAllowed = false;
+        if ($attributeId > 0) {
+            $isAllowed = $sourceAttributeId > 0
+                && $productId === $sourceProductId
+                && $db->table($prefix.'product_attribute')
+                    ->where('id_product', $productId)
+                    ->where('id_product_attribute', $attributeId)
+                    ->exists();
+        } else {
+            $isAllowed = $productId === $sourceProductId
+                || $db->table($prefix.'pack')
+                    ->where('id_product_pack', $productId)
+                    ->where('id_product_item', $sourceProductId)
+                    ->when($sourceAttributeId > 0, function ($query) use ($sourceAttributeId) {
+                        $query->where(function ($component) use ($sourceAttributeId) {
+                            $component->where('id_product_attribute_item', 0)
+                                ->orWhere('id_product_attribute_item', $sourceAttributeId);
+                        });
+                    })
+                    ->exists();
+        }
+        abort_unless($isAllowed, 422, 'This product is not related to the current order-note line.');
+
+        $cataloguePrices = [];
+        $baseCurrencyPrices = [];
+        if (array_key_exists('purchase_eur_price', $data)) {
+            $cataloguePrices['wholesale_price'] = round((float) $data['purchase_eur_price'], 6);
+        }
+        if (array_key_exists('sale_eur_price', $data)) {
+            $cataloguePrices['price'] = round((float) $data['sale_eur_price'], 6);
+        }
+        if (array_key_exists('purchase_supplier_price', $data)) {
+            $baseCurrencyPrices['wholesale_price_base_currency'] = round((float) $data['purchase_supplier_price'], 6);
+        }
+        if (array_key_exists('sale_supplier_price', $data)) {
+            $baseCurrencyPrices['price_base_currency'] = round((float) $data['sale_supplier_price'], 6);
+        }
+        abort_if(!$cataloguePrices && !$baseCurrencyPrices, 422, 'A purchase or sale price is required.');
+
+        if ($cataloguePrices) {
+            $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
+                ->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)
+                ->update($cataloguePrices);
+        }
+        if ($baseCurrencyPrices) {
+            $identity = $attributeId > 0
+                ? ['id_product' => $productId, 'id_product_attribute' => $attributeId]
+                : ['id_product' => $productId];
+            $db->table($prefix.($attributeId > 0 ? 'custom_product_attribute' : 'custom_product'))
+                ->updateOrInsert($identity, $baseCurrencyPrices);
+        }
+
+        return response()->json(['success' => true]);
+    }
     public function destroyLine(Request $request, OrderNote $orderNote, OrderNoteLine $line)
     {
         if ((int) $line->order_note_id !== (int) $orderNote->id) {

@@ -6,10 +6,32 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 
 require __DIR__.'/vendor/autoload.php';
+
+// Local development keeps the audit credentials in the workspace .env.
+$workspaceRoot = dirname(__DIR__, 2);
+if (is_file($workspaceRoot.'/.env')) {
+    Dotenv\Dotenv::createImmutable($workspaceRoot)->safeLoad();
+}
+
 $app = require __DIR__.'/bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 
+config(['database.connections.oms_audit' => [
+    'driver' => 'mysql',
+    'host' => env('DB_TOOLS_NOVO_HOST'),
+    'port' => env('DB_TOOLS_NOVO_PORT', '3306'),
+    'database' => env('DB_TOOLS_NOVO_DATABASE'),
+    'username' => env('DB_TOOLS_NOVO_USERNAME'),
+    'password' => env('DB_TOOLS_NOVO_PASSWORD'),
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+    'prefix' => '',
+    'strict' => false,
+]]);
+
+$oms = DB::connection('oms_audit');
 $ps = DB::connection('mysql2');
+$oms->disableQueryLog();
 $ps->disableQueryLog();
 $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
 $outputDirectory = public_path('admin/download');
@@ -18,13 +40,23 @@ $path = $outputDirectory.'/oms_catalogue_audit_backup_'.now()->format('Ymd_His')
 $handle = fopen($path, 'wb');
 if ($handle === false) throw new RuntimeException('Unable to create backup file.');
 
-$totals = DB::table('oms_order_note_lines')->selectRaw('product_id, COALESCE(product_attribute_id, 0) as product_attribute_id, SUM(COALESCE(qty_ordered, 0)) as qty_ordered, SUM(COALESCE(qty_billed_total, 0)) as qty_invoiced, SUM(COALESCE(qty_received_total, 0)) as qty_received')->groupBy('product_id', 'product_attribute_id')->get()->keyBy(fn ($row) => (int) $row->product_id.':'.(int) $row->product_attribute_id);
-
+$totals = [];
+foreach ($oms->table('oms_order_note_lines')->selectRaw('product_id, COALESCE(product_attribute_id, 0) as product_attribute_id, SUM(COALESCE(qty_ordered, 0)) as qty_ordered')->groupBy('product_id', 'product_attribute_id')->get() as $row) {
+    $key = (int) $row->product_id.':'.(int) $row->product_attribute_id;
+    $totals[$key] = (object) ['qty_ordered' => (int) $row->qty_ordered, 'qty_invoiced' => 0, 'qty_received' => 0];
+}
+foreach ($oms->table('oms_billed_order_lines')->selectRaw('product_id, COALESCE(product_attribute_id, 0) as product_attribute_id, SUM(COALESCE(qty_billed, 0)) as qty_invoiced, SUM(COALESCE(qty_received, 0)) as qty_received')->groupBy('product_id', 'product_attribute_id')->get() as $row) {
+    $key = (int) $row->product_id.':'.(int) $row->product_attribute_id;
+    $total = $totals[$key] ?? (object) ['qty_ordered' => 0, 'qty_invoiced' => 0, 'qty_received' => 0];
+    $total->qty_invoiced = (int) $row->qty_invoiced;
+    $total->qty_received = (int) $row->qty_received;
+    $totals[$key] = $total;
+}
 fwrite($handle, "\xEF\xBB\xBF");
 fputcsv($handle, ['record_type','id_product','id_product_attribute','id_shop','id_shop_group','reference','parent_reference','ean13','stock_available','stock_arrive','purchase_price_eur','sale_price_eur_final','purchase_price_supplier','sale_price_supplier_final','parent_purchase_supplier','parent_sale_supplier','purchase_price_supplier_impact','sale_price_supplier_impact','sale_price_eur_impact','oms_qty_ordered','oms_qty_invoiced','oms_qty_received'], ';');
 $write = static function (object $row, string $type) use ($handle, $totals): void {
     $attributeId = (int) ($row->id_product_attribute ?? 0);
-    $qty = $totals->get((int) $row->id_product.':'.$attributeId);
+    $qty = $totals[(int) $row->id_product.':'.$attributeId] ?? null;
     fputcsv($handle, [$type,(int)$row->id_product,$attributeId,$row->id_shop,$row->id_shop_group,(string)$row->reference,(string)$row->parent_reference,(string)$row->ean13,$row->stock_available,$row->stock_arrive,$row->purchase_price_eur,$row->sale_price_eur_final,$row->purchase_price_supplier,$row->sale_price_supplier_final,$row->parent_purchase_supplier,$row->parent_sale_supplier,$row->purchase_price_supplier_impact,$row->sale_price_supplier_impact,$row->sale_price_eur_impact,$qty?->qty_ordered ?? 0,$qty?->qty_invoiced ?? 0,$qty?->qty_received ?? 0], ';');
 };
 

@@ -154,6 +154,11 @@ class SimplifiedOrderNoteController extends Controller
             $isAttribute = (bool) $attribute;
             $billed = (int) ($invoiced[$line->id] ?? 0);
             $key = (int) $line->product_id.'|'.(int) ($line->product_attribute_id ?? 0);
+            $salesEur = (float) ($isAttribute ? ($product->sales_eur + $attribute->sales_eur) : $product->sales_eur);
+            $saleConversionRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
+            if ($saleConversionRate <= 0) {
+                $saleConversionRate = 1.0;
+            }
 
             return [
                 'line_id' => (int) $line->id,
@@ -167,7 +172,7 @@ class SimplifiedOrderNoteController extends Controller
                 'dim_verified' => (int) ($product->dim_verify ?? 0) === 1,
                 'weight' => (float) ($product->weight ?? 0), 'width' => (float) ($product->width ?? 0), 'height' => (float) ($product->height ?? 0), 'depth' => (float) ($product->depth ?? 0),
                 'manufacturer' => trim((string) ($product->manufacturer_name ?? '')), 'end_of_life' => (int) ($product->end_of_life ?? 0) === 1,
-                'related_products' => $this->relatedProducts((int) $line->product_id, (int) ($line->product_attribute_id ?? 0), $prefix),
+                'related_products' => $this->relatedProducts((int) $line->product_id, (int) ($line->product_attribute_id ?? 0), $prefix, $saleConversionRate),
                 'backorders' => $backorders->get($key, collect())->values(),
                 'ordered' => (int) $line->qty_ordered,
                 'invoiced' => $billed,
@@ -176,8 +181,8 @@ class SimplifiedOrderNoteController extends Controller
                 'invoices' => ($lineInvoices->get($line->id, collect()))->values(),
                 'purchase_supplier' => (float) ($isAttribute ? $attribute->purchase_supplier : $product->purchase_supplier),
                 'purchase_eur' => (float) ($isAttribute ? $attribute->purchase_eur : $product->purchase_eur),
-                'sales_supplier' => (float) ($isAttribute ? ($product->sales_supplier + $attribute->sales_supplier) : $product->sales_supplier),
-                'sales_eur' => (float) ($isAttribute ? ($product->sales_eur + $attribute->sales_eur) : $product->sales_eur),
+                'sales_supplier' => round($salesEur * $saleConversionRate, 6),
+                'sales_eur' => $salesEur,
                 'currency_iso' => (string) ($currencyMeta['currency_iso'] ?? 'EUR'),
             ];
         });
@@ -188,7 +193,7 @@ class SimplifiedOrderNoteController extends Controller
      * Returns combinations of the same parent and packs using this exact component.
      * The stock fields remain scoped to the product/attribute shown in each row.
      */
-    private function relatedProducts(int $productId, int $attributeId, string $prefix)
+    private function relatedProducts(int $productId, int $attributeId, string $prefix, float $saleConversionRate)
     {
         $connection = DB::connection('mysql2');
         $attributeNames = "GROUP_CONCAT(DISTINCT attribute_lang.name ORDER BY attribute_lang.name SEPARATOR ', ') as attributes";
@@ -237,7 +242,10 @@ class SimplifiedOrderNoteController extends Controller
             ->selectRaw("'Pack' as relationship, product.id_product as relationship_id, product.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, '' as attributes, COALESCE(product.ean13, '') as barcode, COALESCE(product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_product.stock_arrive, 0) as stock_arrive, product.wholesale_price as purchase_eur, product.price as sales_eur, COALESCE(custom_product.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(custom_product.price_base_currency, 0) as sales_supplier")
             ->get();
 
-        return $siblings->concat($packs)->unique(fn ($row) => $row->relationship.':'.$row->relationship_id)->values();
+        return $siblings->concat($packs)->unique(fn ($row) => $row->relationship.':'.$row->relationship_id)->map(function ($row) use ($saleConversionRate) {
+            $row->sales_supplier = round((float) $row->sales_eur * $saleConversionRate, 6);
+            return $row;
+        })->values();
     }
     private function productImageUrl(int $imageId): ?string
     {

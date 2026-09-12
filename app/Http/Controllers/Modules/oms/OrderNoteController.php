@@ -235,8 +235,8 @@ class OrderNoteController extends Controller
                         'order_note_id' => (int) $orderNote->id, 'billed_order_id' => null,
                         'supplier_invoice_id' => null, 'reception_id' => null,
                         'product_id' => $snapshot['product_id'], 'product_attribute_id' => $snapshot['attribute_id'],
-                        'ps_quantity_before' => null, 'ps_quantity_delta' => 0, 'ps_quantity_after' => null,
-                        'ps_quantity_arrive_before' => null, 'ps_quantity_arrive_delta' => -$remainingArrive, 'ps_quantity_arrive_after' => null,
+                        'ps_quantity_before' => 0, 'ps_quantity_delta' => 0, 'ps_quantity_after' => 0,
+                        'ps_quantity_arrive_before' => $remainingArrive, 'ps_quantity_arrive_delta' => -$remainingArrive, 'ps_quantity_arrive_after' => 0,
                         'user_id' => auth()->id(), 'user_name_snapshot' => auth()->user()?->name ?: 'OMS',
                         'user_email_snapshot' => auth()->user()?->email, 'created_at' => now(),
                     ]);
@@ -652,8 +652,8 @@ class OrderNoteController extends Controller
                     'order_note_id' => (int) $orderNote->id, 'billed_order_id' => null,
                     'supplier_invoice_id' => null, 'reception_id' => null,
                     'product_id' => $productId, 'product_attribute_id' => $attributeId,
-                    'ps_quantity_before' => null, 'ps_quantity_delta' => 0, 'ps_quantity_after' => null,
-                    'ps_quantity_arrive_before' => null, 'ps_quantity_arrive_delta' => -$remainingArrive, 'ps_quantity_arrive_after' => null,
+                    'ps_quantity_before' => 0, 'ps_quantity_delta' => 0, 'ps_quantity_after' => 0,
+                    'ps_quantity_arrive_before' => $remainingArrive, 'ps_quantity_arrive_delta' => -$remainingArrive, 'ps_quantity_arrive_after' => 0,
                     'user_id' => auth()->id(), 'user_name_snapshot' => auth()->user()?->name ?: 'OMS',
                     'user_email_snapshot' => auth()->user()?->email, 'created_at' => now(),
                 ]);

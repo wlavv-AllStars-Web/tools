@@ -1095,6 +1095,9 @@ class OrderNoteController extends Controller
             ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
                 $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
             })
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
                 $join->on('cpa.id_product', '=', 'p.id_product')

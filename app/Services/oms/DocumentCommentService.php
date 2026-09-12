@@ -9,8 +9,12 @@ class DocumentCommentService
 {
     public function saveOrderNoteNotes(OrderNote $orderNote, array $data): OrderNote
     {
-        $orderNote->internal_note = $data['internal_note'] ?? $orderNote->internal_note;
-        $orderNote->logistic_note = $data['logistic_note'] ?? $orderNote->logistic_note;
+        if (array_key_exists('internal_note', $data)) {
+            $orderNote->internal_note = $data['internal_note'];
+        }
+        if (array_key_exists('logistic_note', $data)) {
+            $orderNote->logistic_note = $data['logistic_note'];
+        }
         $orderNote->save();
 
         return $orderNote->fresh();
@@ -18,8 +22,12 @@ class DocumentCommentService
 
     public function saveBilledOrderNotes(BilledOrder $billedOrder, array $data): BilledOrder
     {
-        $billedOrder->internal_note = $data['internal_note'] ?? $billedOrder->internal_note;
-        $billedOrder->logistic_note = $data['logistic_note'] ?? $billedOrder->logistic_note;
+        if (array_key_exists('internal_note', $data)) {
+            $billedOrder->internal_note = $data['internal_note'];
+        }
+        if (array_key_exists('logistic_note', $data)) {
+            $billedOrder->logistic_note = $data['logistic_note'];
+        }
         $billedOrder->save();
 
         return $billedOrder->fresh();

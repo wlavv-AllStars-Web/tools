@@ -10,6 +10,7 @@ use App\Services\oms\SupplierInvoiceWorkflowService;
 use App\Services\Prestashop\PrestashopAdminLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SimplifiedOrderNoteController extends Controller
 {
@@ -86,6 +87,9 @@ class SimplifiedOrderNoteController extends Controller
         }
 
         $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+        $schema = Schema::connection('mysql2');
+        $hasProductTechnicalImage = $schema->hasColumn($prefix . 'custom_product', 'technical_image_id');
+        $hasAttributeTechnicalImage = $schema->hasColumn($prefix . 'custom_product_attribute', 'technical_image_id');
         $invoiced = BilledOrderLine::whereIn('order_note_line_id', $lineIds)
             ->selectRaw('order_note_line_id, SUM(qty_billed) as qty')
             ->groupBy('order_note_line_id')
@@ -111,15 +115,13 @@ class SimplifiedOrderNoteController extends Controller
                     ->where('stock.id_shop', '=', 0);
             })
             ->whereIn('p.id_product', $productIds)
-            ->groupBy('p.id_product', 'p.reference', 'p.ean13', 'cover.id_image', 'cp.technical_image_id', 'p.location', 'p.wholesale_price', 'p.price', 'stock.quantity', 'cp.dim_verify', 'cp.wholesale_price_base_currency', 'cp.price_base_currency')
-            ->selectRaw('p.id_product, p.reference, p.ean13 as barcode, cover.id_image as cover_image_id, cp.technical_image_id as technical_image_id, p.location as housing, COALESCE(stock.quantity, 0) as stock_qty, p.wholesale_price as purchase_eur, p.price as sales_eur, COALESCE(cp.dim_verify, 0) as dim_verify, COALESCE(cp.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(cp.price_base_currency, 0) as sales_supplier, MIN(l.name) as name')
+            ->groupBy('p.id_product', 'p.reference', 'p.ean13', 'cover.id_image', 'p.location', 'p.wholesale_price', 'p.price', 'stock.quantity', 'cp.dim_verify', 'cp.wholesale_price_base_currency', 'cp.price_base_currency')
+            ->when($hasProductTechnicalImage, fn ($query) => $query->groupBy('cp.technical_image_id'))
+            ->selectRaw('p.id_product, p.reference, p.ean13 as barcode, cover.id_image as cover_image_id, ' . ($hasProductTechnicalImage ? 'cp.technical_image_id' : 'NULL') . ' as technical_image_id, p.location as housing, COALESCE(stock.quantity, 0) as stock_qty, p.wholesale_price as purchase_eur, p.price as sales_eur, COALESCE(cp.dim_verify, 0) as dim_verify, COALESCE(cp.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(cp.price_base_currency, 0) as sales_supplier, MIN(l.name) as name')
             ->get()->keyBy('id_product');
         $attributes = $attributeIds->isEmpty() ? collect() : DB::connection('mysql2')->table($prefix.'product_attribute as a')
             ->leftJoin($prefix.'custom_product_attribute as ca', function ($join) {
                 $join->on('ca.id_product_attribute', '=', 'a.id_product_attribute')->on('ca.id_product', '=', 'a.id_product');
-            })
-            ->leftJoin($prefix.'image as cover', function ($join) {
-                $join->on('cover.id_product', '=', 'p.id_product')->where('cover.cover', '=', 1);
             })
             ->leftJoin($prefix.'stock_available as stock', function ($join) {
                 $join->on('stock.id_product', '=', 'a.id_product')
@@ -127,7 +129,7 @@ class SimplifiedOrderNoteController extends Controller
                     ->where('stock.id_shop', '=', 0);
             })
             ->whereIn('a.id_product_attribute', $attributeIds)
-            ->selectRaw('a.id_product_attribute, a.reference, a.ean13 as barcode, ca.technical_image_id as technical_image_id, ca.location as housing, COALESCE(stock.quantity, 0) as stock_qty, a.wholesale_price as purchase_eur, a.price as sales_eur, COALESCE(ca.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(ca.price_base_currency, 0) as sales_supplier')
+            ->selectRaw('a.id_product_attribute, a.reference, a.ean13 as barcode, ' . ($hasAttributeTechnicalImage ? 'ca.technical_image_id' : 'NULL') . ' as technical_image_id, ca.location as housing, COALESCE(stock.quantity, 0) as stock_qty, a.wholesale_price as purchase_eur, a.price as sales_eur, COALESCE(ca.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(ca.price_base_currency, 0) as sales_supplier')
             ->get()->keyBy('id_product_attribute');
         $backorders = $this->backorders($productIds, $prefix);
 

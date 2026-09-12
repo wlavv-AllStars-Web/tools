@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Modules\oms;
 
 use App\Http\Controllers\Controller;
 use App\Models\modules\oms\BilledOrder;
+use App\Models\modules\oms\BilledOrderLine;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\OrderNoteLine;
 use App\Models\modules\oms\SupplierInvoice;
@@ -621,35 +622,64 @@ class OrderNoteController extends Controller
             abort(404);
         }
 
-        $qtyBilled = (int) $line->qty_billed_total;
-        $qtyReceived = (int) $line->qty_received_total;
+        $billedLines = BilledOrderLine::query()
+            ->with('billedOrder')
+            ->where('order_note_line_id', $line->id)
+            ->get();
+        $billedQuantity = (int) $billedLines->sum('qty_billed');
+        $invoiceIds = $billedLines->pluck('billedOrder.supplier_invoice_id')->filter()->unique();
+        $productId = (int) $line->product_id;
+        $attributeId = (int) ($line->product_attribute_id ?? 0);
+        $orderedQuantity = (int) $line->qty_ordered;
 
-        if ($qtyBilled > 0 || $qtyReceived > 0) {
-            return $this->lineMutationBlockedResponse(
-                $request,
-                'This line cannot be removed because it already has invoiced or received quantities.'
-            );
+        try {
+            // Revert invoicing first. This removes related receptions, restores
+            // stock/stock_arrive and records every reversal in OMS history.
+            foreach ($billedLines as $billedLine) {
+                $this->billedOrderReversalService->revertLine($billedLine, (int) $billedLine->qty_billed, true);
+            }
+
+            DB::transaction(function () use ($line, $orderNote, $productId, $attributeId, $orderedQuantity, $billedQuantity, $invoiceIds) {
+                // Once billed quantities have been reversed, this is the still-open
+                // ordered amount that remains in stock_arrive for this line.
+                $remainingArrive = max(0, $orderedQuantity - $billedQuantity);
+                if ($remainingArrive > 0) {
+                    $this->stockArriveService->adjust($productId, $attributeId, -$remainingArrive);
+                }
+
+                DB::table('oms_stock_history')->insert([
+                    'source_type' => 'order_note_line_delete', 'source_id' => (int) $line->id,
+                    'order_note_id' => (int) $orderNote->id, 'billed_order_id' => null,
+                    'supplier_invoice_id' => null, 'reception_id' => null,
+                    'product_id' => $productId, 'product_attribute_id' => $attributeId,
+                    'ps_quantity_before' => null, 'ps_quantity_delta' => 0, 'ps_quantity_after' => null,
+                    'ps_quantity_arrive_before' => null, 'ps_quantity_arrive_delta' => -$remainingArrive, 'ps_quantity_arrive_after' => null,
+                    'user_id' => auth()->id(), 'user_name_snapshot' => auth()->user()?->name ?: 'OMS',
+                    'user_email_snapshot' => auth()->user()?->email, 'created_at' => now(),
+                ]);
+
+                $line->delete();
+                foreach ($invoiceIds as $invoiceId) {
+                    if (! DB::table('oms_billed_orders')->where('supplier_invoice_id', $invoiceId)->exists()) {
+                        DB::table('oms_supplier_invoices')->where('id', $invoiceId)->delete();
+                    }
+                }
+            });
+            $this->refreshOrderNoteStatus($orderNote->fresh(['lines', 'billedOrders']));
+        } catch (\Throwable $exception) {
+            report($exception);
+            return $this->lineMutationBlockedResponse($request, 'Unable to remove this line: '.$exception->getMessage());
         }
-
-        $this->adjustCustomStockArrive(
-            (int) $line->product_id,
-            $line->product_attribute_id ? (int) $line->product_attribute_id : null,
-            -1 * (int) $line->qty_ordered
-        );
-
-        $line->delete();
-        $this->refreshOrderNoteStatus($orderNote);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(array_merge([
                 'success' => true,
-                'message' => 'Product removed from order note.',
+                'message' => 'Product line, its invoice quantities and receptions were removed.',
             ], $this->buildBuilderPayload($orderNote, $request)));
         }
 
-        return back()->with('success', 'Product removed from order note.');
+        return back()->with('success', 'Product line, its invoice quantities and receptions were removed.');
     }
-
     public function supplierProducts(Request $request, OrderNote $orderNote): JsonResponse|string
     {
         $search = trim((string) $request->get('q', ''));

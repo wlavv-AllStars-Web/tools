@@ -1205,6 +1205,24 @@ class OrderNoteController extends Controller
         return back()->with('success', 'Order note line notes updated successfully.');
     }
 
+    public function exportCsv(OrderNote $orderNote)
+    {
+        $orderNote->load('lines');
+
+        $prefix = $this->psPrefix();
+
+        return response()->streamDownload(function () use ($orderNote, $prefix) {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['reference', 'product_id', 'product_attribute_id', 'qty_ordered'], ';');
+            foreach ($orderNote->lines as $line) {
+                $reference = $line->product_attribute_id
+                    ? DB::connection('mysql2')->table($prefix.'product_attribute')->where('id_product_attribute', $line->product_attribute_id)->value('reference')
+                    : DB::connection('mysql2')->table($prefix.'product')->where('id_product', $line->product_id)->value('reference');
+                fputcsv($output, [$reference ?: '', $line->product_id, $line->product_attribute_id ?: '', $line->qty_ordered], ';');
+            }
+            fclose($output);
+        }, 'order-note-'.$orderNote->id.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
     public function exportXlsx(OrderNote $orderNote)
     {
         $orderNote->load(['lines', 'supplier', 'billedOrders']);

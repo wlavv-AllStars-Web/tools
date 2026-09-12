@@ -220,6 +220,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/order-notes/{orderNote}/import/csv/confirm', [OrderNoteController::class, 'importCsvConfirm'])->name('order_notes.import.confirm');
             Route::post('/order-notes/{orderNote}/notes', [OrderNoteController::class, 'saveNotes'])->name('order_notes.notes.save');
             Route::post('/order-notes/{orderNote}/lines/{line}/notes', [OrderNoteController::class, 'saveLineNotes'])->name('order_notes.lines.notes.save');
+            Route::get('/order-notes/{orderNote}/export/csv', [OrderNoteController::class, 'exportCsv'])->name('order_notes.export.csv');
             Route::get('/order-notes/{orderNote}/export/xlsx', [OrderNoteController::class, 'exportXlsx'])->name('order_notes.export.xlsx');
             Route::get('/order-notes/{orderNote}/export/pdf', [OrderNoteController::class, 'exportPdf'])->name('order_notes.export.pdf');
             Route::get('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'create'])->name('invoices.create');
@@ -645,7 +646,8 @@ Route::middleware(['web', 'auth'])
         Route::post('/order-notes/{orderNote}/import/csv/confirm', [OrderNoteController::class, 'importCsvConfirm'])->name('order_notes.import.confirm');
         Route::post('/order-notes/{orderNote}/notes', [OrderNoteController::class, 'saveNotes'])->name('order_notes.notes.save');
         Route::post('/order-notes/{orderNote}/lines/{line}/notes', [OrderNoteController::class, 'saveLineNotes'])->name('order_notes.lines.notes.save');
-        Route::get('/order-notes/{orderNote}/export/xlsx', [OrderNoteController::class, 'exportXlsx'])->name('order_notes.export.xlsx');
+        Route::get('/order-notes/{orderNote}/export/csv', [OrderNoteController::class, 'exportCsv'])->name('order_notes.export.csv');
+            Route::get('/order-notes/{orderNote}/export/xlsx', [OrderNoteController::class, 'exportXlsx'])->name('order_notes.export.xlsx');
         Route::get('/order-notes/{orderNote}/export/pdf', [OrderNoteController::class, 'exportPdf'])->name('order_notes.export.pdf');
         Route::get('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'create'])->name('invoices.create');
         Route::post('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'store'])->name('invoices.store');

@@ -36,25 +36,23 @@
 @php($hasOrderNoteComments = $orderNote->has_any_note)
 @php($internalComment = trim((string) $orderNote->internal_note))
 @php($logisticComment = trim((string) $orderNote->logistic_note))
+@php($orderInvoices = $orderNote->billedOrders()->with('invoice')->get()->pluck('invoice')->filter()->unique('id')->values())
 <div class="oms-simple-comments-ribbon {{ $hasOrderNoteComments ? 'has-comments' : '' }}">
     <i class="fa-solid fa-note-sticky comments-icon"></i>
     <div class="comments-content">
         <div class="comments-title">ORDER NOTE COMMENTS</div>
-        <div class="comments-summary">
-            @if($hasOrderNoteComments)
-                @if($internalComment !== '')<span class="comment-type">Internal:</span> {{ \Illuminate\Support\Str::limit($internalComment, 150) }}@endif
-                @if($internalComment !== '' && $logisticComment !== '')<span class="comment-separator">&middot;</span>@endif
-                @if($logisticComment !== '')<span class="comment-type">Logistic:</span> {{ \Illuminate\Support\Str::limit($logisticComment, 150) }}@endif
-            @else
-                No comments have been added to this order note.
-            @endif
-        </div>
+        <div class="comments-summary">@if($hasOrderNoteComments){{ IlluminateSupportStr::limit(trim($internalComment.' '.$logisticComment), 180) }}@else No comments have been added to this order note.@endif</div>
     </div>
-    <button type="button" class="btn {{ $hasOrderNoteComments ? 'btn-warning' : 'btn-outline-secondary' }} btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#omsSimpleCommentsModal">
-        <i class="fa-solid fa-pen me-1"></i>{{ $hasOrderNoteComments ? 'Edit comments' : 'Add comments' }}
-    </button>
-</div>
-<div class="modal fade" id="omsSimpleCommentsModal" tabindex="-1" aria-labelledby="omsSimpleCommentsModalLabel" aria-hidden="true">
+    <button type="button" class="btn {{ $hasOrderNoteComments ? 'btn-warning' : 'btn-outline-secondary' }} btn-sm" data-bs-toggle="modal" data-bs-target="#omsSimpleCommentsModal"><i class="fa-solid fa-pen me-1"></i>Comments</button>
+    <a class="btn btn-outline-success btn-sm" href="{{ route('erp.oms.order_notes.export.csv', $orderNote) }}"><i class="fa-solid fa-file-csv me-1"></i>Order CSV</a>
+    <a class="btn btn-outline-danger btn-sm" href="{{ route('erp.oms.order_notes.export.pdf', $orderNote) }}"><i class="fa-solid fa-file-pdf me-1"></i>Order PDF</a>
+    @if($orderInvoices->isNotEmpty())
+        <div class="dropdown"><button class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown"><i class="fa-solid fa-file-invoice me-1"></i>Download invoice</button><ul class="dropdown-menu dropdown-menu-end">@foreach($orderInvoices as $invoice)<li><a class="dropdown-item" href="{{ route('erp.oms.invoices.export.xlsx', $invoice) }}">{{ $invoice->invoice_reference }}</a></li>@endforeach</ul></div>
+    @endif
+    @if($orderNote->status !== 'closed')
+        <form method="POST" action="{{ route('erp.oms.order_notes.import.preview', $orderNote) }}" enctype="multipart/form-data" class="d-inline"><input id="omsSimpleCsvUpload" type="file" name="csv_file" accept=".csv,text/csv" class="d-none" onchange="this.form.submit()">@csrf<label for="omsSimpleCsvUpload" class="btn btn-outline-primary btn-sm mb-0"><i class="fa-solid fa-upload me-1"></i>Upload order</label></form>
+    @endif
+</div><div class="modal fade" id="omsSimpleCommentsModal" tabindex="-1" aria-labelledby="omsSimpleCommentsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form method="POST" action="{{ route('erp.oms.order_notes.notes.save', $orderNote) }}" class="modal-content">
             @csrf

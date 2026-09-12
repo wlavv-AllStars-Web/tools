@@ -35,8 +35,8 @@ class SimplifiedOrderNoteController extends Controller
                 ->leftJoin('oms_order_note_lines as line', 'line.order_note_id', '=', 'oms_order_notes.id')
                 ->leftJoinSub($receivedByNote, 'received', fn ($join) => $join->on('received.order_note_id', '=', 'oms_order_notes.id'))
                 ->where('oms_order_notes.supplier_id', $supplierId)
-                ->groupBy('oms_order_notes.id', 'oms_order_notes.supplier_id', 'oms_order_notes.reference', 'oms_order_notes.status', 'oms_order_notes.created_at')
-                ->selectRaw('oms_order_notes.id, oms_order_notes.supplier_id, oms_order_notes.reference, oms_order_notes.status, oms_order_notes.created_at, COALESCE(SUM(line.qty_ordered), 0) as total_ordered, COALESCE(MAX(received.qty_received), 0) as total_received')
+                ->groupBy('oms_order_notes.id', 'oms_order_notes.supplier_id', 'oms_order_notes.reference', 'oms_order_notes.status', 'oms_order_notes.internal_note', 'oms_order_notes.logistic_note', 'oms_order_notes.created_at')
+                ->selectRaw('oms_order_notes.id, oms_order_notes.supplier_id, oms_order_notes.reference, oms_order_notes.status, oms_order_notes.internal_note, oms_order_notes.logistic_note, oms_order_notes.created_at, COALESCE(SUM(line.qty_ordered), 0) as total_ordered, COALESCE(MAX(received.qty_received), 0) as total_received')
                 ->havingRaw($documentScope === 'closed'
                     ? 'COALESCE(SUM(line.qty_ordered), 0) > 0 AND COALESCE(MAX(received.qty_received), 0) >= COALESCE(SUM(line.qty_ordered), 0)'
                     : "(COALESCE(SUM(line.qty_ordered), 0) = 0 AND oms_order_notes.status = 'order_note') OR COALESCE(MAX(received.qty_received), 0) < COALESCE(SUM(line.qty_ordered), 0)")

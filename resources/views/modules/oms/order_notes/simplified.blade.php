@@ -41,7 +41,7 @@
     <i class="fa-solid fa-note-sticky comments-icon"></i>
     <div class="comments-content">
         <div class="comments-title">ORDER NOTE COMMENTS</div>
-        <div class="comments-summary">@if($hasOrderNoteComments){{ IlluminateSupportStr::limit(trim($internalComment.' '.$logisticComment), 180) }}@else No comments have been added to this order note.@endif</div>
+        <div class="comments-summary">@if($hasOrderNoteComments){{ str(trim($internalComment.' '.$logisticComment))->limit(180) }}@else No comments have been added to this order note.@endif</div>
     </div>
     <button type="button" class="btn {{ $hasOrderNoteComments ? 'btn-warning' : 'btn-outline-secondary' }} btn-sm" data-bs-toggle="modal" data-bs-target="#omsSimpleCommentsModal"><i class="fa-solid fa-pen me-1"></i>Comments</button>
     <a class="btn btn-outline-success btn-sm" href="{{ route('erp.oms.order_notes.export.csv', $orderNote) }}"><i class="fa-solid fa-file-csv me-1"></i>Order CSV</a>

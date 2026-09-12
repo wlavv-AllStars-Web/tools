@@ -936,6 +936,14 @@ class SupplierInvoiceWorkflowService
         ];
     }
 
+    public function reopenInvoice(SupplierInvoice $invoice): void
+    {
+        if ($invoice->status !== 'confirmed') {
+            return;
+        }
+        $invoice->status = 'draft';
+        $invoice->save();
+    }
     public function closeInvoice(SupplierInvoice $invoice): void
     {
         if ($invoice->status !== 'draft') {

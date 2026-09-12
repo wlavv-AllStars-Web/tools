@@ -251,6 +251,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/invoices/{invoice}/reverse', [SupplierInvoiceController::class, 'reverseInvoice'])->name('invoices.reverse');
             Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
             Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
+            Route::post('/invoices/{invoice}/reopen', [SupplierInvoiceController::class, 'reopen'])->name('invoices.reopen');
             Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
             Route::get('/invoices/{invoice}/export/xlsx', [SupplierInvoiceController::class, 'exportXlsx'])->name('invoices.export.xlsx');
             Route::get('/invoices/{invoice}/export/pdf', [SupplierInvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');
@@ -672,6 +673,7 @@ Route::middleware(['web', 'auth'])
         Route::post('/invoices/{invoice}/reverse', [SupplierInvoiceController::class, 'reverseInvoice'])->name('invoices.reverse');
         Route::post('/invoices/{invoice}/shipment', [SupplierInvoiceController::class, 'saveShipmentRelation'])->name('invoices.shipment.save');
         Route::post('/invoices/{invoice}/close', [SupplierInvoiceController::class, 'close'])->name('invoices.close');
+            Route::post('/invoices/{invoice}/reopen', [SupplierInvoiceController::class, 'reopen'])->name('invoices.reopen');
         Route::post('/invoices/{invoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('invoices.cancel');
         Route::get('/invoices/{invoice}/export/xlsx', [SupplierInvoiceController::class, 'exportXlsx'])->name('invoices.export.xlsx');
         Route::get('/invoices/{invoice}/export/pdf', [SupplierInvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');

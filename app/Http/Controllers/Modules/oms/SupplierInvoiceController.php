@@ -398,6 +398,11 @@ class SupplierInvoiceController extends Controller
             : 'Shipment relation removed successfully.');
     }
 
+    public function reopen(SupplierInvoice $invoice)
+    {
+        $this->workflowService->reopenInvoice($invoice);
+        return back()->with('success', 'Invoice reopened. It is available for order-note changes again.');
+    }
     public function close(SupplierInvoice $invoice)
     {
         $this->workflowService->closeInvoice($invoice);

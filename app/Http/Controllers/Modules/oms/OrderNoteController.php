@@ -767,6 +767,9 @@ class OrderNoteController extends Controller
                     ->where('pl.id_shop', '=', 1);
             })
             ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->where('p.id_supplier', $supplierId)
             ->where('p.id_product', $productId)
@@ -787,6 +790,9 @@ class OrderNoteController extends Controller
                     ->where('pl.id_shop', '=', 1);
             })
             ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
                 $join->on('cpa.id_product', '=', 'p.id_product')
@@ -818,6 +824,9 @@ class OrderNoteController extends Controller
                     ->where('pl.id_shop', '=', 1);
             })
             ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
                 $join->on('cpa.id_product', '=', 'p.id_product')
@@ -852,6 +861,9 @@ class OrderNoteController extends Controller
                     ->where('pl.id_shop', '=', 1);
             })
             ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'product_supplier as ps_main', function ($join) use ($supplierId) {
                 $join->on('ps_main.id_product', '=', 'p.id_product')
@@ -1080,6 +1092,9 @@ class OrderNoteController extends Controller
             })
             ->leftJoin($prefix . 'product_attribute as pa', 'pa.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'pack as pack', 'pack.id_product_pack', '=', 'p.id_product')
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'custom_product_attribute as cpa', function ($join) {
                 $join->on('cpa.id_product', '=', 'p.id_product')
@@ -1088,7 +1103,7 @@ class OrderNoteController extends Controller
             ->selectRaw('
                 p.id_product as product_id,
                 pa.id_product_attribute as product_attribute_id,
-                COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,
+                COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,`r`n                COALESCE(NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as parent_reference,`r`n                COALESCE(NULLIF(pa.ean13, ""), NULLIF(p.ean13, ""), "") as barcode,`r`n                COALESCE(stock.quantity, 0) as stock_qty,
                 COALESCE(NULLIF(pl.name, ""), NULLIF(p.reference, ""), CONCAT("Product #", p.id_product)) as display_name,
                 p.id_supplier as supplier_id,
                 p.id_manufacturer as manufacturer_id,
@@ -1392,6 +1407,9 @@ class OrderNoteController extends Controller
 
         $product = DB::connection('mysql2')
             ->table($prefix . 'product as p')
+            ->leftJoin($prefix . 'stock_available as stock', function ($join) use ($prefix) {
+                $join->on('stock.id_product', '=', 'p.id_product')->where('stock.id_shop', '=', 0)->whereRaw('stock.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+            })
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'product_attribute as pa', function ($join) use ($productAttributeId) {
                 $join->on('pa.id_product', '=', 'p.id_product')

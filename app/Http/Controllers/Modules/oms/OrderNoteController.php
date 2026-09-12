@@ -1094,7 +1094,7 @@ class OrderNoteController extends Controller
                 COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,
                 COALESCE(NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as parent_reference,
                 COALESCE(NULLIF(pa.ean13, ""), NULLIF(p.ean13, ""), "") as barcode,
-                COALESCE(stock.quantity, 0) as stock_qty,
+                COALESCE(stock.quantity, 0) as stock_qty, COALESCE(cpa.stock_arrive, cp.stock_arrive, 0) as stock_arrive,
                 COALESCE(NULLIF(pl.name, ""), NULLIF(p.reference, ""), CONCAT("Product #", p.id_product)) as display_name,
                 p.id_supplier as supplier_id,
                 p.id_manufacturer as manufacturer_id,

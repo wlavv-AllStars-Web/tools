@@ -75,6 +75,7 @@ use App\Http\Controllers\Modules\oms\SupplierTermLevelController;
 use App\Http\Controllers\Modules\oms\LogisticContainerController;
 use App\Http\Controllers\Modules\oms\HistoryController;
 use App\Http\Controllers\Modules\oms\OmsSearchController;
+use App\Http\Controllers\Areas\TrustpilotController;
 
 use App\Models\modules\checklist\daily_checklist;
 
@@ -98,6 +99,13 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('web')->name('web.tools.')->group(function () {
         Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');
         Route::post('/auto-backorder/run', [AutoBackorderAuditController::class, 'runManually'])->name('auto_backorder.run');
+
+        Route::prefix('trustpilot')->name('trustpilot.')->group(function () {
+            Route::get('/', [TrustpilotController::class, 'index'])->name('index');
+            Route::post('/', [TrustpilotController::class, 'store'])->name('store');
+            Route::put('/{trustpilot}', [TrustpilotController::class, 'update'])->name('update');
+            Route::delete('/{trustpilot}', [TrustpilotController::class, 'destroy'])->name('destroy');
+        });
 
         Route::prefix('return-warranty')->name('return_warranty.')->group(function () {
             Route::get('/', [ReturnWarrantyAvailabilityController::class, 'index'])->name('index');

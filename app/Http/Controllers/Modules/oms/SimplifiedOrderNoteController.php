@@ -160,6 +160,25 @@ class SimplifiedOrderNoteController extends Controller
                 $saleConversionRate = 1.0;
             }
 
+            // Supplier-currency sales are stored as the parent price plus the combination
+            // impact. Re-converting the final EUR value here applies the SALE rate twice.
+            // The EUR core impact is only a fallback for legacy combinations without a
+            // custom supplier-currency impact yet.
+            $parentSalesSupplier = (float) ($product->sales_supplier ?? 0);
+            if ($parentSalesSupplier == 0.0 && (float) ($product->sales_eur ?? 0) != 0.0) {
+                $parentSalesSupplier = (float) $product->sales_eur * $saleConversionRate;
+            }
+
+            $attributeSalesSupplierImpact = 0.0;
+            if ($isAttribute) {
+                $attributeSalesSupplierImpact = (float) ($attribute->sales_supplier ?? 0);
+                if ($attributeSalesSupplierImpact == 0.0 && (float) ($attribute->sales_eur ?? 0) != 0.0) {
+                    $attributeSalesSupplierImpact = (float) $attribute->sales_eur * $saleConversionRate;
+                }
+            }
+
+            $salesSupplier = $parentSalesSupplier + $attributeSalesSupplierImpact;
+
             return [
                 'line_id' => (int) $line->id,
                 'reference' => trim((string) ($attribute->reference ?? $product->reference ?? '')) ?: '-',
@@ -172,7 +191,7 @@ class SimplifiedOrderNoteController extends Controller
                 'dim_verified' => (int) ($product->dim_verify ?? 0) === 1,
                 'weight' => (float) ($product->weight ?? 0), 'width' => (float) ($product->width ?? 0), 'height' => (float) ($product->height ?? 0), 'depth' => (float) ($product->depth ?? 0),
                 'manufacturer' => trim((string) ($product->manufacturer_name ?? '')), 'end_of_life' => (int) ($product->end_of_life ?? 0) === 1,
-                'related_products' => $this->relatedProducts((int) $line->product_id, (int) ($line->product_attribute_id ?? 0), $prefix, $saleConversionRate),
+                'related_products' => $this->relatedProducts((int) $line->product_id, (int) ($line->product_attribute_id ?? 0), $prefix),
                 'backorders' => $backorders->get($key, collect())->values(),
                 'ordered' => (int) $line->qty_ordered,
                 'invoiced' => $billed,
@@ -181,7 +200,7 @@ class SimplifiedOrderNoteController extends Controller
                 'invoices' => ($lineInvoices->get($line->id, collect()))->values(),
                 'purchase_supplier' => (float) ($isAttribute ? $attribute->purchase_supplier : $product->purchase_supplier),
                 'purchase_eur' => (float) ($isAttribute ? $attribute->purchase_eur : $product->purchase_eur),
-                'sales_supplier' => round($salesEur * $saleConversionRate, 6),
+                'sales_supplier' => round($salesSupplier, 6),
                 'sales_eur' => $salesEur,
                 'currency_iso' => (string) ($currencyMeta['currency_iso'] ?? 'EUR'),
             ];
@@ -193,7 +212,7 @@ class SimplifiedOrderNoteController extends Controller
      * Returns combinations of the same parent and packs using this exact component.
      * The stock fields remain scoped to the product/attribute shown in each row.
      */
-    private function relatedProducts(int $productId, int $attributeId, string $prefix, float $saleConversionRate)
+    private function relatedProducts(int $productId, int $attributeId, string $prefix)
     {
         $connection = DB::connection('mysql2');
         $attributeNames = "GROUP_CONCAT(DISTINCT attribute_lang.name ORDER BY attribute_lang.name SEPARATOR ', ') as attributes";
@@ -242,10 +261,9 @@ class SimplifiedOrderNoteController extends Controller
             ->selectRaw("'Pack' as relationship, product.id_product as relationship_id, product.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, '' as attributes, COALESCE(product.ean13, '') as barcode, COALESCE(product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_product.stock_arrive, 0) as stock_arrive, product.wholesale_price as purchase_eur, product.price as sales_eur, COALESCE(custom_product.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(custom_product.price_base_currency, 0) as sales_supplier")
             ->get();
 
-        return $siblings->concat($packs)->unique(fn ($row) => $row->relationship.':'.$row->relationship_id)->map(function ($row) use ($saleConversionRate) {
-            $row->sales_supplier = round((float) $row->sales_eur * $saleConversionRate, 6);
-            return $row;
-        })->values();
+        return $siblings->concat($packs)
+            ->unique(fn ($row) => $row->relationship.':'.$row->relationship_id)
+            ->values();
     }
     private function productImageUrl(int $imageId): ?string
     {

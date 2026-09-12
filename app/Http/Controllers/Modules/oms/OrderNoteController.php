@@ -517,48 +517,56 @@ class OrderNoteController extends Controller
         $saleEur = $saleSupplier === null ? null : ($isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6));
         abort_if($purchaseSupplier === null && $saleSupplier === null, 422, 'A purchase or sale price is required.');
 
-        $cataloguePrices = [];
-        $baseCurrencyPrices = [];
-        if ($purchaseSupplier !== null) {
-            $cataloguePrices['wholesale_price'] = $purchaseEur;
-            $baseCurrencyPrices['wholesale_price_base_currency'] = $purchaseSupplier;
-        }
-        if ($saleSupplier !== null) {
-            if ($attributeId > 0) {
-                // The input is the final combination price; PS stores only the impact over its parent.
-                $parent = $db->table($prefix.'product as p')
-                    ->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
-                    ->where('p.id_product', $productId)
-                    ->first(['p.price as sale_eur', 'cp.price_base_currency as sale_supplier']);
-                abort_unless($parent, 422, 'Parent product not found.');
-                $parentSaleEur = (float) $parent->sale_eur;
-                $parentSaleSupplier = $parent->sale_supplier === null
-                    ? ($isEur || $saleRate <= 0 ? $parentSaleEur : round($parentSaleEur * $saleRate, 6))
-                    : (float) $parent->sale_supplier;
-                $cataloguePrices['price'] = round($saleEur - $parentSaleEur, 6);
-                $baseCurrencyPrices['price_base_currency'] = round($saleSupplier - $parentSaleSupplier, 6);
-                $baseCurrencyPrices['price_display_base_currency'] = $baseCurrencyPrices['price_base_currency'];
-            } else {
-                $cataloguePrices['price'] = $saleEur;
-                $baseCurrencyPrices['price_base_currency'] = $saleSupplier;
-                $baseCurrencyPrices['price_display_base_currency'] = $saleSupplier;
-            }
-        }
+        $targets = $this->priceTargetsForReference($productId, $attributeId);
 
-        $db->transaction(function () use ($db, $prefix, $productId, $attributeId, $cataloguePrices, $baseCurrencyPrices) {
-            $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
-                ->where('id_product', $productId)
-                ->when($attributeId > 0, fn ($query) => $query->where('id_product_attribute', $attributeId))
-                ->update($cataloguePrices);
-            $db->table($prefix.($attributeId > 0 ? 'product_attribute_shop' : 'product_shop'))
-                ->where('id_product', $productId)
-                ->when($attributeId > 0, fn ($query) => $query->where('id_product_attribute', $attributeId))
-                ->update($cataloguePrices);
-            $identity = $attributeId > 0
-                ? ['id_product' => $productId, 'id_product_attribute' => $attributeId]
-                : ['id_product' => $productId];
-            $db->table($prefix.($attributeId > 0 ? 'custom_product_attribute' : 'custom_product'))
-                ->updateOrInsert($identity, $baseCurrencyPrices);
+        $db->transaction(function () use ($db, $prefix, $targets, $purchaseSupplier, $purchaseEur, $saleSupplier, $saleEur, $saleRate, $isEur) {
+            foreach ($targets as $target) {
+                $targetProductId = (int) $target->id_product;
+                $targetAttributeId = (int) $target->id_product_attribute;
+                $cataloguePrices = [];
+                $baseCurrencyPrices = [];
+
+                if ($purchaseSupplier !== null) {
+                    $cataloguePrices['wholesale_price'] = $purchaseEur;
+                    $baseCurrencyPrices['wholesale_price_base_currency'] = $purchaseSupplier;
+                }
+
+                if ($saleSupplier !== null) {
+                    if ($targetAttributeId > 0) {
+                        // Same final price for equal references; impact is specific to each parent product.
+                        $parent = $db->table($prefix.'product as p')
+                            ->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+                            ->where('p.id_product', $targetProductId)
+                            ->first(['p.price as sale_eur', 'cp.price_base_currency as sale_supplier']);
+                        abort_unless($parent, 422, 'Parent product not found.');
+                        $parentSaleEur = (float) $parent->sale_eur;
+                        $parentSaleSupplier = $parent->sale_supplier === null
+                            ? ($isEur || $saleRate <= 0 ? $parentSaleEur : round($parentSaleEur * $saleRate, 6))
+                            : (float) $parent->sale_supplier;
+                        $cataloguePrices['price'] = round($saleEur - $parentSaleEur, 6);
+                        $baseCurrencyPrices['price_base_currency'] = round($saleSupplier - $parentSaleSupplier, 6);
+                        $baseCurrencyPrices['price_display_base_currency'] = $baseCurrencyPrices['price_base_currency'];
+                    } else {
+                        $cataloguePrices['price'] = $saleEur;
+                        $baseCurrencyPrices['price_base_currency'] = $saleSupplier;
+                        $baseCurrencyPrices['price_display_base_currency'] = $saleSupplier;
+                    }
+                }
+
+                $db->table($prefix.($targetAttributeId > 0 ? 'product_attribute' : 'product'))
+                    ->where('id_product', $targetProductId)
+                    ->when($targetAttributeId > 0, fn ($query) => $query->where('id_product_attribute', $targetAttributeId))
+                    ->update($cataloguePrices);
+                $db->table($prefix.($targetAttributeId > 0 ? 'product_attribute_shop' : 'product_shop'))
+                    ->where('id_product', $targetProductId)
+                    ->when($targetAttributeId > 0, fn ($query) => $query->where('id_product_attribute', $targetAttributeId))
+                    ->update($cataloguePrices);
+                $identity = $targetAttributeId > 0
+                    ? ['id_product' => $targetProductId, 'id_product_attribute' => $targetAttributeId]
+                    : ['id_product' => $targetProductId];
+                $db->table($prefix.($targetAttributeId > 0 ? 'custom_product_attribute' : 'custom_product'))
+                    ->updateOrInsert($identity, $baseCurrencyPrices);
+            }
         });
 
         return response()->json(['success' => true, 'prices' => [
@@ -568,6 +576,45 @@ class OrderNoteController extends Controller
             'sale_eur_price' => $saleEur,
         ]]);
     }
+
+    /** Match the same sellable reference only: attributes with attributes, products with products. */
+    protected function priceTargetsForReference(int $productId, int $productAttributeId): Collection
+    {
+        $db = DB::connection('mysql2');
+        $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+
+        if ($productAttributeId > 0) {
+            $reference = trim((string) $db->table($prefix.'product_attribute')
+                ->where('id_product', $productId)
+                ->where('id_product_attribute', $productAttributeId)
+                ->value('reference'));
+            if ($reference === '') {
+                return collect([(object) ['id_product' => $productId, 'id_product_attribute' => $productAttributeId]]);
+            }
+
+            return $db->table($prefix.'product_attribute')
+                ->where('reference', $reference)
+                ->get(['id_product', 'id_product_attribute'])
+                ->map(fn ($row) => (object) ['id_product' => (int) $row->id_product, 'id_product_attribute' => (int) $row->id_product_attribute])
+                ->unique(fn ($row) => $row->id_product.':'.$row->id_product_attribute)
+                ->values();
+        }
+
+        $reference = trim((string) $db->table($prefix.'product')
+            ->where('id_product', $productId)
+            ->value('reference'));
+        if ($reference === '') {
+            return collect([(object) ['id_product' => $productId, 'id_product_attribute' => 0]]);
+        }
+
+        return $db->table($prefix.'product')
+            ->where('reference', $reference)
+            ->get(['id_product'])
+            ->map(fn ($row) => (object) ['id_product' => (int) $row->id_product, 'id_product_attribute' => 0])
+            ->unique(fn ($row) => $row->id_product.':0')
+            ->values();
+    }
+
     public function destroyLine(Request $request, OrderNote $orderNote, OrderNoteLine $line)
     {
         if ((int) $line->order_note_id !== (int) $orderNote->id) {

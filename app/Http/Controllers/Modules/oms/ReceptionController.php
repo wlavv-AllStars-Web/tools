@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Modules\oms;
 
 use App\Http\Controllers\Controller;
 use App\Models\modules\oms\BilledOrder;
+use App\Models\modules\oms\BilledOrderLine;
 use App\Models\modules\oms\Reception;
 use App\Models\modules\oms\SupplierInvoice;
 use App\Services\oms\ExportService;
 use App\Services\oms\ReceptionHistoryService;
 use App\Services\oms\StockArriveService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -277,6 +279,40 @@ class ReceptionController extends Controller
         return redirect()->route('erp.oms.receptions.index', ['billed_order_id' => $billedOrder->id])->with('success', 'Reception registered successfully.');
     }
 
+    public function correctLine(Request $request, BilledOrderLine $line): JsonResponse
+    {
+        $data = $request->validate(['qty_received' => ['required', 'integer', 'min:0']]);
+        $line->load(['billedOrder.invoice', 'billedOrder.orderNote']);
+        $billedOrder = $line->billedOrder;
+        abort_unless($billedOrder, 404);
+        $current = (int) DB::table('oms_reception_lines')->where('billed_order_line_id', $line->id)->sum('qty_received');
+        $target = (int) $data['qty_received'];
+        if ($target > (int) $line->qty_billed) return response()->json(['message' => 'Received quantity cannot exceed billed quantity.'], 422);
+        $delta = $target - $current;
+        if ($delta === 0) return response()->json(['success' => true]);
+        DB::transaction(function () use ($line, $billedOrder, $target, $delta) {
+            $receptionId = null;
+            if ($delta > 0) {
+                $receptionId = DB::table('oms_receptions')->insertGetId(['billed_order_id' => $billedOrder->id, 'created_by' => Auth::id(), 'created_at' => now(), 'updated_at' => now()]);
+                DB::table('oms_reception_lines')->insert(['reception_id' => $receptionId, 'billed_order_line_id' => $line->id, 'qty_received' => $delta, 'created_at' => now(), 'updated_at' => now()]);
+            } else {
+                $remaining = abs($delta);
+                foreach (DB::table('oms_reception_lines')->where('billed_order_line_id', $line->id)->orderByDesc('id')->get() as $receptionLine) {
+                    $take = min($remaining, (int) $receptionLine->qty_received);
+                    $left = (int) $receptionLine->qty_received - $take;
+                    $left > 0 ? DB::table('oms_reception_lines')->where('id', $receptionLine->id)->update(['qty_received' => $left, 'updated_at' => now()]) : DB::table('oms_reception_lines')->where('id', $receptionLine->id)->delete();
+                    $remaining -= $take; if ($remaining === 0) break;
+                }
+            }
+            DB::table('oms_billed_order_lines')->where('id', $line->id)->update(['qty_received' => $target, 'updated_at' => now()]);
+            $productId=(int)$line->product_id; $attributeId=(int)($line->product_attribute_id ?? 0); $before=$this->getPrestashopQuantity($productId,$attributeId); $arriveBefore=$this->getPrestashopStockArrive($productId,$attributeId);
+            $this->incrementPrestashopStock($productId,$attributeId,$delta); $this->stockArriveService->adjust($productId,$attributeId,-$delta);
+            $after=$this->getPrestashopQuantity($productId,$attributeId); $arriveAfter=$this->getPrestashopStockArrive($productId,$attributeId); $ref=$this->getProductReferenceSnapshot($productId,$attributeId); $user=$this->getUserSnapshot();
+            DB::table('oms_stock_history')->insert(['source_type'=>'reception_correction','source_id'=>$line->id,'order_note_id'=>$billedOrder->order_note_id,'billed_order_id'=>$billedOrder->id,'supplier_invoice_id'=>$billedOrder->supplier_invoice_id,'reception_id'=>$receptionId,'product_id'=>$productId,'product_attribute_id'=>$attributeId,'product_reference_snapshot'=>$ref['product_reference_snapshot'],'attribute_reference_snapshot'=>$ref['attribute_reference_snapshot'],'display_reference_snapshot'=>$ref['display_reference_snapshot'],'ps_quantity_before'=>$before,'ps_quantity_delta'=>$delta,'ps_quantity_after'=>$after,'ps_quantity_arrive_before'=>$arriveBefore,'ps_quantity_arrive_delta'=>-$delta,'ps_quantity_arrive_after'=>$arriveAfter,'user_id'=>$user['user_id'],'user_name_snapshot'=>$user['user_name_snapshot'],'user_email_snapshot'=>$user['user_email_snapshot'],'created_at'=>now()]);
+            $this->supplierInvoiceWorkflowService->refreshOrderNoteStatus($billedOrder->orderNote->fresh(['lines','billedOrders']));
+        });
+        return response()->json(['success' => true]);
+    }
     public function history(BilledOrder $billedOrder)
     {
         $rows = $this->receptionHistoryService->getByBilledOrder((int) $billedOrder->id);

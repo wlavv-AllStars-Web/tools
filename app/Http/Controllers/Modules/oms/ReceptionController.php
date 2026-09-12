@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Modules\oms;
 use App\Http\Controllers\Controller;
 use App\Models\modules\oms\BilledOrder;
 use App\Models\modules\oms\BilledOrderLine;
+use App\Models\modules\oms\OrderNote;
+use App\Models\modules\oms\OrderNoteLine;
 use App\Models\modules\oms\Reception;
 use App\Models\modules\oms\SupplierInvoice;
 use App\Services\oms\ExportService;
@@ -279,6 +281,37 @@ class ReceptionController extends Controller
         return redirect()->route('erp.oms.receptions.index', ['billed_order_id' => $billedOrder->id])->with('success', 'Reception registered successfully.');
     }
 
+    /** Correct received quantity as a total for one order-note line, not for one invoice. */
+    public function correctOrderNoteLine(Request $request, OrderNote $orderNote, OrderNoteLine $line): JsonResponse
+    {
+        abort_unless((int) $line->order_note_id === (int) $orderNote->id, 404);
+        $target = (int) $request->validate(['qty_received' => ['required', 'integer', 'min:0']])['qty_received'];
+        $billedLines = BilledOrderLine::query()
+            ->where('order_note_line_id', $line->id)
+            ->orderBy('id')
+            ->get();
+        $billedTotal = (int) $billedLines->sum('qty_billed');
+        if ($target > $billedTotal) {
+            return response()->json(['message' => 'Received quantity cannot exceed the total invoiced quantity for this order-note line.'], 422);
+        }
+
+        // Invoice lines are accounting detail only. Allocate the requested order-note
+        // total deterministically, without making the user receive invoice by invoice.
+        $remaining = $target;
+        foreach ($billedLines as $billedLine) {
+            $allocation = min($remaining, (int) $billedLine->qty_billed);
+            $remaining -= $allocation;
+            $response = $this->correctLine(
+                Request::create('/', 'PATCH', ['qty_received' => $allocation]),
+                $billedLine
+            );
+            if ($response->getStatusCode() >= 400) {
+                return $response;
+            }
+        }
+
+        return response()->json(['success' => true]);
+    }
     public function correctLine(Request $request, BilledOrderLine $line): JsonResponse
     {
         $data = $request->validate(['qty_received' => ['required', 'integer', 'min:0']]);

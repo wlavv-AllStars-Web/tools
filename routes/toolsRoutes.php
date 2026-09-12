@@ -238,6 +238,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
             Route::get('/receptions', [ReceptionController::class, 'index'])->name('receptions.index');
             Route::post('/billed-orders/{billedOrder}/receive', [ReceptionController::class, 'store'])->name('receptions.store');
+            Route::patch('/order-notes/{orderNote}/lines/{line}/received', [ReceptionController::class, 'correctOrderNoteLine'])->name('order_notes.lines.received.update');
             Route::patch('/billed-order-lines/{line}/received', [ReceptionController::class, 'correctLine'])->name('receptions.lines.correct');
             Route::get('/billed-orders/{billedOrder}/receptions', [ReceptionController::class, 'history'])->name('receptions.history');
             Route::get('/invoices/{invoice}/receptions', [ReceptionController::class, 'invoiceHistory'])->name('receptions.invoice_history');
@@ -662,6 +663,7 @@ Route::middleware(['web', 'auth'])
 
         Route::get('/receptions', [ReceptionController::class, 'index'])->name('receptions.index');
         Route::post('/billed-orders/{billedOrder}/receive', [ReceptionController::class, 'store'])->name('receptions.store');
+            Route::patch('/order-notes/{orderNote}/lines/{line}/received', [ReceptionController::class, 'correctOrderNoteLine'])->name('order_notes.lines.received.update');
             Route::patch('/billed-order-lines/{line}/received', [ReceptionController::class, 'correctLine'])->name('receptions.lines.correct');
         Route::get('/billed-orders/{billedOrder}/receptions', [ReceptionController::class, 'history'])->name('receptions.history');
         Route::get('/invoices/{invoice}/receptions', [ReceptionController::class, 'invoiceHistory'])->name('receptions.invoice_history');

@@ -413,7 +413,7 @@
                 <div class="oms-selected-chip">
                     <i class="fa-solid fa-file-lines text-primary"></i>
                     <button type="button" class="btn btn-link p-0 border-0 fw-semibold js-edit-order-note-reference">{{ $orderNote->reference }} <i class="fa-solid fa-pen ms-1 small"></i></button>
-                    <span class="text-muted">·</span>
+                    <span class="text-muted">Â·</span>
                     <span>{{ $supplierName }}</span>
                 </div>
             </div>
@@ -433,15 +433,13 @@
                 </a>
                 
 
-                @if($orderNote->can_delete)
-                    <form action="{{ route('erp.oms.order_notes.destroy', $orderNote) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete order note?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger oms-compact-btn">
-                            <i class="fa-solid fa-trash me-1"></i> Delete
-                        </button>
-                    </form>
-                @endif
+                <form action="{{ route('erp.oms.order_notes.destroy', $orderNote) }}" method="POST" class="d-inline" onsubmit="return confirm('This is irreversible. All invoice lines, quantity arrive and received stock related to this order note will be reversed. Continue?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-sm btn-outline-danger oms-compact-btn">
+                        <i class="fa-solid fa-trash me-1"></i> Delete order note
+                    </button>
+                </form>
                 
             </div>
         </div>
@@ -492,7 +490,7 @@
                     <div class="oms-summary-list mb-3">
                         <div class="oms-summary-row">
                             <div class="oms-summary-key">Volume</div>
-                            <div class="oms-summary-value">{{ number_format((float) data_get($orderNoteLogistics, 'totals.volume_m3', 0), 3, ',', '.') }} m³</div>
+                            <div class="oms-summary-value">{{ number_format((float) data_get($orderNoteLogistics, 'totals.volume_m3', 0), 3, ',', '.') }} mÂ³</div>
                         </div>
                         <div class="oms-summary-row">
                             <div class="oms-summary-key">Weight</div>
@@ -509,7 +507,7 @@
                             <div class="fw-semibold mb-1">Best fit</div>
                             @foreach(data_get($orderNoteLogistics, 'suggestions', []) as $container)
                                 <div class="d-flex justify-content-between {{ !$loop->last ? 'mb-1' : '' }}">
-                                    <span>{{ ucfirst((string) data_get($container, 'type', 'container')) }} · {{ data_get($container, 'name', '-') }}</span>
+                                    <span>{{ ucfirst((string) data_get($container, 'type', 'container')) }} Â· {{ data_get($container, 'name', '-') }}</span>
                                     <strong>{{ (int) data_get($container, 'units_needed', 0) }}x</strong>
                                 </div>
                             @endforeach
@@ -613,7 +611,7 @@
 
                                             $lineEan13 = trim((string) data_get($attributeRow, 'attribute_ean13', '')) ?: trim((string) data_get($productRow, 'ean13', ''));
                                             $lineLocation = trim((string) data_get($attributeRow, 'attribute_location', '')) ?: trim((string) data_get($productRow, 'location', ''));
-                                            $lineLocation = $lineLocation !== '' ? $lineLocation : '—';
+                                            $lineLocation = $lineLocation !== '' ? $lineLocation : 'â€”';
 
                                             $stockKey = $lineProductId . '|' . max(0, $lineAttributeId);
                                             $fallbackStockKey = $lineProductId . '|0';
@@ -718,7 +716,7 @@
                                                             </div>
                                                             <div class="oms-detail-box">
                                                                 <div class="detail-label">EAN13</div>
-                                                                <div class="detail-value oms-copyable js-copy-on-click" data-copy-text="{{ e($lineEan13 ?: '—') }}">{{ $lineEan13 ?: '—' }}</div>
+                                                                <div class="detail-value oms-copyable js-copy-on-click" data-copy-text="{{ e($lineEan13 ?: 'â€”') }}">{{ $lineEan13 ?: 'â€”' }}</div>
                                                             </div>
                                                             <div class="oms-detail-box">
                                                                 <div class="detail-label">Current stock</div>

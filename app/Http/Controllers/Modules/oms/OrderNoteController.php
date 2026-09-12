@@ -14,7 +14,9 @@ use App\Services\oms\OrderNoteLogisticsService;
 use App\Services\oms\OrderNotePrintService;
 use App\Services\oms\SupplierMapService;
 use App\Services\oms\StockArriveService;
+use App\Services\oms\BilledOrderReversalService;
 use App\Services\oms\SupplierTermsService;
+use App\Services\oms\SupplierInvoiceWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,7 +32,9 @@ class OrderNoteController extends Controller
         protected ExportService $exportService,
         protected SupplierMapService $supplierMapService,
         protected StockArriveService $stockArriveService,
+        protected BilledOrderReversalService $billedOrderReversalService,
         protected SupplierTermsService $supplierTermsService,
+        protected SupplierInvoiceWorkflowService $supplierInvoiceWorkflow,
         protected OrderNoteLogisticsService $orderNoteLogisticsService,
         protected OrderNotePrintService $orderNotePrintService,
     ) {
@@ -128,6 +132,7 @@ class OrderNoteController extends Controller
             'reference' => ['nullable', 'string', 'max:191'],
             'internal_note' => ['nullable', 'string'],
             'logistic_note' => ['nullable', 'string'],
+            'return_to' => ['nullable', 'in:simple'],
         ]);
 
         $orderNote = OrderNote::create([
@@ -137,6 +142,14 @@ class OrderNoteController extends Controller
             'internal_note' => $data['internal_note'] ?? null,
             'logistic_note' => $data['logistic_note'] ?? null,
         ]);
+
+        if (($data['return_to'] ?? null) === 'simple') {
+            return redirect()->route('erp.oms.simple', [
+                'supplier_id' => $orderNote->supplier_id,
+                'order_note_id' => $orderNote->id,
+                'document_scope' => 'open',
+            ])->with('success', 'Order note created successfully.');
+        }
 
         return redirect()->route('erp.oms.order_notes.create', [
             'order_note_id' => $orderNote->id,
@@ -188,17 +201,61 @@ class OrderNoteController extends Controller
 
     public function destroy(OrderNote $orderNote)
     {
-        $linesCount = method_exists($orderNote, 'lines') ? $orderNote->lines()->count() : 0;
-        $billedOrdersCount = method_exists($orderNote, 'billedOrders') ? $orderNote->billedOrders()->count() : 0;
+        $orderNote->load(['lines', 'billedOrders.lines']);
+        $lineSnapshots = $orderNote->lines->map(fn (OrderNoteLine $line) => [
+            'id' => (int) $line->id,
+            'product_id' => (int) $line->product_id,
+            'attribute_id' => (int) ($line->product_attribute_id ?? 0),
+            'ordered' => (int) $line->qty_ordered,
+            'billed' => (int) $line->qty_billed_total,
+        ]);
+        $invoiceIds = $orderNote->billedOrders->pluck('supplier_invoice_id')->filter()->unique();
 
-        if ($linesCount > 0 || $billedOrdersCount > 0 || $orderNote->status !== 'order_note') {
-            return back()->with('error', 'This order note cannot be deleted.');
+        try {
+            // This reverses receptions first, including real stock and stock_arrive,
+            // and records each reversal in oms_stock_history.
+            foreach ($orderNote->billedOrders as $billedOrder) {
+                if ($billedOrder->lines->isNotEmpty()) {
+                    $this->billedOrderReversalService->revertBilledOrder($billedOrder, true);
+                }
+            }
+
+            DB::transaction(function () use ($orderNote, $lineSnapshots, $invoiceIds) {
+                foreach ($lineSnapshots as $snapshot) {
+                    // After billing/reception reversal, only the still-open ordered
+                    // quantity remains in stock_arrive and must be removed.
+                    $remainingArrive = max(0, $snapshot['ordered'] - $snapshot['billed']);
+                    if ($remainingArrive > 0) {
+                        $this->stockArriveService->adjust($snapshot['product_id'], $snapshot['attribute_id'], -$remainingArrive);
+                    }
+
+                    DB::table('oms_stock_history')->insert([
+                        'source_type' => 'order_note_delete', 'source_id' => $snapshot['id'],
+                        'order_note_id' => (int) $orderNote->id, 'billed_order_id' => null,
+                        'supplier_invoice_id' => null, 'reception_id' => null,
+                        'product_id' => $snapshot['product_id'], 'product_attribute_id' => $snapshot['attribute_id'],
+                        'ps_quantity_before' => null, 'ps_quantity_delta' => 0, 'ps_quantity_after' => null,
+                        'ps_quantity_arrive_before' => null, 'ps_quantity_arrive_delta' => -$remainingArrive, 'ps_quantity_arrive_after' => null,
+                        'user_id' => auth()->id(), 'user_name_snapshot' => auth()->user()?->name ?: 'OMS',
+                        'user_email_snapshot' => auth()->user()?->email, 'created_at' => now(),
+                    ]);
+                }
+
+                $orderNote->lines()->delete();
+                $orderNote->delete();
+                foreach ($invoiceIds as $invoiceId) {
+                    if (! DB::table('oms_billed_orders')->where('supplier_invoice_id', $invoiceId)->exists()) {
+                        DB::table('oms_supplier_invoices')->where('id', $invoiceId)->delete();
+                    }
+                }
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+            return back()->with('error', 'The order note could not be removed: '.$exception->getMessage());
         }
 
-        $orderNote->delete();
-
         return redirect()->route('erp.oms.dashboard')
-            ->with('success', 'Order note deleted successfully.');
+            ->with('success', 'Order note, linked invoice lines and related stock movements were removed.');
     }
 
     public function addLine(Request $request, OrderNote $orderNote)
@@ -212,6 +269,34 @@ class OrderNoteController extends Controller
         $productId = (int) $data['product_id'];
         $productAttributeId = !empty($data['product_attribute_id']) ? (int) $data['product_attribute_id'] : null;
         $qtyOrdered = (int) $data['qty_ordered'];
+        if ($orderNote->status === 'closed') {
+            return $this->lineMutationBlockedResponse($request, 'Closed order notes cannot be changed.');
+        }
+
+        $productBelongsToSupplier = DB::connection('mysql2')
+            ->table($this->psPrefix() . 'product as product')
+            ->where('product.id_product', $productId)
+            ->where('product.id_supplier', $orderNote->supplier_id)
+            ->when($productAttributeId !== null, function ($query) use ($productAttributeId) {
+                $query->whereExists(function ($attributeQuery) use ($productAttributeId) {
+                    $attributeQuery->selectRaw('1')
+                        ->from($this->psPrefix() . 'product_attribute as attribute')
+                        ->whereColumn('attribute.id_product', 'product.id_product')
+                        ->where('attribute.id_product_attribute', $productAttributeId);
+                });
+            })
+            ->exists();
+
+        if (! $productBelongsToSupplier) {
+            return $this->lineMutationBlockedResponse($request, 'The selected product does not belong to this supplier.');
+        }
+
+        if ($productAttributeId === null && DB::connection('mysql2')->table($this->psPrefix() . 'product_attribute')->where('id_product', $productId)->exists()) {
+            return $this->lineMutationBlockedResponse(
+                $request,
+                'This product has combinations. Select the combination that is actually purchased.'
+            );
+        }
 
         if ($this->isPrestashopPack($productId)) {
             return $this->lineMutationBlockedResponse($request, 'Packs cannot be added to order notes. Add the individual component products instead.');
@@ -979,6 +1064,13 @@ class OrderNoteController extends Controller
                 COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,
                 COALESCE(NULLIF(pl.name, ""), NULLIF(p.reference, ""), CONCAT("Product #", p.id_product)) as display_name,
                 p.id_supplier as supplier_id,
+                p.id_manufacturer as manufacturer_id,
+                p.wholesale_price as purchase_eur,
+                p.price as sale_eur,
+                pa.wholesale_price as attribute_purchase_eur,
+                pa.price as attribute_sale_eur,
+                COALESCE(cpa.wholesale_price_base_currency, cp.wholesale_price_base_currency, 0) as purchase_supplier,
+                COALESCE(cp.price_base_currency, 0) + COALESCE(cpa.price_base_currency, 0) as sale_supplier,
                 COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) as end_of_life
             ')
             ->where('p.id_supplier', $supplierId)
@@ -1000,12 +1092,49 @@ class OrderNoteController extends Controller
             ->limit(120)
             ->get();
 
-        return $products->map(function ($row) use ($addedKeys) {
+        $currencyByManufacturer = $products
+            ->filter(fn ($product) => (int) ($product->id_manufacturer ?? 0) > 0)
+            ->groupBy('id_manufacturer')
+            ->map(function (Collection $manufacturerProducts) use ($orderNoteId) {
+                $productId = (int) $manufacturerProducts->first()->product_id;
+                $currencyOrderNote = new OrderNote(['id' => $orderNoteId]);
+
+                return $this->supplierInvoiceWorkflow->resolveCurrencyForOrderNote(
+                    $currencyOrderNote,
+                    collect([(object) ['product_id' => $productId]])
+                );
+            });
+
+        return $products->map(function ($row) use ($addedKeys, $currencyByManufacturer) {
             $row->product_id = (int) $row->product_id;
             $row->product_attribute_id = $row->product_attribute_id ? (int) $row->product_attribute_id : 0;
             $row->already_added = $addedKeys->has($row->product_id . ':' . $row->product_attribute_id) ? 1 : 0;
             $row->is_new_candidate = $row->already_added ? 0 : 1;
             $row->end_of_life = (int) ($row->end_of_life ?? 0);
+
+            $currencyMeta = $currencyByManufacturer->get((int) ($row->manufacturer_id ?? 0), [
+                'currency_iso' => 'EUR',
+                'purchase_conversion_rate' => 1.0,
+                'sale_conversion_rate' => 1.0,
+                'is_eur' => true,
+            ]);
+            $purchaseEur = (float) ($row->product_attribute_id ? $row->attribute_purchase_eur : $row->purchase_eur);
+            $saleEur = (float) ($row->sale_eur ?? 0) + (float) ($row->product_attribute_id ? $row->attribute_sale_eur : 0);
+            $purchaseSupplier = (float) ($row->purchase_supplier ?? 0);
+            $saleSupplier = (float) ($row->sale_supplier ?? 0);
+
+            $row->purchase_eur = $purchaseEur;
+            $row->sale_eur = $saleEur;
+            $row->purchase_supplier = $purchaseSupplier > 0
+                ? $purchaseSupplier
+                : round($purchaseEur * (float) ($currencyMeta['purchase_conversion_rate'] ?? 1), 6);
+            $row->sale_supplier = $saleSupplier > 0
+                ? $saleSupplier
+                : round($saleEur * (float) ($currencyMeta['sale_conversion_rate'] ?? 1), 6);
+            $row->currency_iso = (string) ($currencyMeta['currency_iso'] ?? 'EUR');
+            $row->purchase_conversion_rate = (float) ($currencyMeta['purchase_conversion_rate'] ?? 1);
+            $row->sale_conversion_rate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
+
             return $row;
         });
     }
@@ -1083,7 +1212,7 @@ class OrderNoteController extends Controller
                 'id' => (int) $line->id,
                 'product_id' => (int) $line->product_id,
                 'product_attribute_id' => $line->product_attribute_id ? (int) $line->product_attribute_id : 0,
-                'sku' => $sku !== '' ? $sku : '—',
+                'sku' => $sku !== '' ? $sku : "\u{2014}",
                 'name' => $name,
                 'qty_ordered' => (int) $line->qty_ordered,
                 'qty_billed' => (int) $line->qty_billed_total,

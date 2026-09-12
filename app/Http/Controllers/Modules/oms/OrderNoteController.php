@@ -409,6 +409,15 @@ class OrderNoteController extends Controller
             'sale_supplier_price' => ['nullable', 'numeric', 'min:0'],
             'sale_eur_price' => ['nullable', 'numeric', 'min:0'],
         ]);
+        if (array_key_exists('purchase_supplier_price', $data) || array_key_exists('sale_supplier_price', $data)) {
+            $request->merge([
+                'product_id' => (int) $line->product_id,
+                'product_attribute_id' => (int) ($line->product_attribute_id ?? 0),
+            ]);
+
+            return $this->updateRelatedProductPrice($request, $orderNote, $line);
+        }
+
         $db = DB::connection('mysql2');
         $productId = (int) $line->product_id;
         $attributeId = (int) ($line->product_attribute_id ?? 0);
@@ -498,36 +507,66 @@ class OrderNoteController extends Controller
         }
         abort_unless($isAllowed, 422, 'This product is not related to the current order-note line.');
 
+        $currencyMeta = $this->supplierInvoiceWorkflow->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
+        $purchaseRate = (float) ($currencyMeta['purchase_conversion_rate'] ?? 1);
+        $saleRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
+        $isEur = (bool) ($currencyMeta['is_eur'] ?? false);
+        $purchaseSupplier = array_key_exists('purchase_supplier_price', $data) ? round((float) $data['purchase_supplier_price'], 6) : null;
+        $saleSupplier = array_key_exists('sale_supplier_price', $data) ? round((float) $data['sale_supplier_price'], 6) : null;
+        $purchaseEur = $purchaseSupplier === null ? null : ($isEur || $purchaseRate <= 0 ? $purchaseSupplier : round($purchaseSupplier / $purchaseRate, 6));
+        $saleEur = $saleSupplier === null ? null : ($isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6));
+        abort_if($purchaseSupplier === null && $saleSupplier === null, 422, 'A purchase or sale price is required.');
+
         $cataloguePrices = [];
         $baseCurrencyPrices = [];
-        if (array_key_exists('purchase_eur_price', $data)) {
-            $cataloguePrices['wholesale_price'] = round((float) $data['purchase_eur_price'], 6);
+        if ($purchaseSupplier !== null) {
+            $cataloguePrices['wholesale_price'] = $purchaseEur;
+            $baseCurrencyPrices['wholesale_price_base_currency'] = $purchaseSupplier;
         }
-        if (array_key_exists('sale_eur_price', $data)) {
-            $cataloguePrices['price'] = round((float) $data['sale_eur_price'], 6);
+        if ($saleSupplier !== null) {
+            if ($attributeId > 0) {
+                // The input is the final combination price; PS stores only the impact over its parent.
+                $parent = $db->table($prefix.'product as p')
+                    ->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+                    ->where('p.id_product', $productId)
+                    ->first(['p.price as sale_eur', 'cp.price_base_currency as sale_supplier']);
+                abort_unless($parent, 422, 'Parent product not found.');
+                $parentSaleEur = (float) $parent->sale_eur;
+                $parentSaleSupplier = $parent->sale_supplier === null
+                    ? ($isEur || $saleRate <= 0 ? $parentSaleEur : round($parentSaleEur * $saleRate, 6))
+                    : (float) $parent->sale_supplier;
+                $cataloguePrices['price'] = round($saleEur - $parentSaleEur, 6);
+                $baseCurrencyPrices['price_base_currency'] = round($saleSupplier - $parentSaleSupplier, 6);
+                $baseCurrencyPrices['price_display_base_currency'] = $baseCurrencyPrices['price_base_currency'];
+            } else {
+                $cataloguePrices['price'] = $saleEur;
+                $baseCurrencyPrices['price_base_currency'] = $saleSupplier;
+                $baseCurrencyPrices['price_display_base_currency'] = $saleSupplier;
+            }
         }
-        if (array_key_exists('purchase_supplier_price', $data)) {
-            $baseCurrencyPrices['wholesale_price_base_currency'] = round((float) $data['purchase_supplier_price'], 6);
-        }
-        if (array_key_exists('sale_supplier_price', $data)) {
-            $baseCurrencyPrices['price_base_currency'] = round((float) $data['sale_supplier_price'], 6);
-        }
-        abort_if(!$cataloguePrices && !$baseCurrencyPrices, 422, 'A purchase or sale price is required.');
 
-        if ($cataloguePrices) {
+        $db->transaction(function () use ($db, $prefix, $productId, $attributeId, $cataloguePrices, $baseCurrencyPrices) {
             $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
-                ->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)
+                ->where('id_product', $productId)
+                ->when($attributeId > 0, fn ($query) => $query->where('id_product_attribute', $attributeId))
                 ->update($cataloguePrices);
-        }
-        if ($baseCurrencyPrices) {
+            $db->table($prefix.($attributeId > 0 ? 'product_attribute_shop' : 'product_shop'))
+                ->where('id_product', $productId)
+                ->when($attributeId > 0, fn ($query) => $query->where('id_product_attribute', $attributeId))
+                ->update($cataloguePrices);
             $identity = $attributeId > 0
                 ? ['id_product' => $productId, 'id_product_attribute' => $attributeId]
                 : ['id_product' => $productId];
             $db->table($prefix.($attributeId > 0 ? 'custom_product_attribute' : 'custom_product'))
                 ->updateOrInsert($identity, $baseCurrencyPrices);
-        }
+        });
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'prices' => [
+            'purchase_supplier_price' => $purchaseSupplier,
+            'purchase_eur_price' => $purchaseEur,
+            'sale_supplier_price' => $saleSupplier,
+            'sale_eur_price' => $saleEur,
+        ]]);
     }
     public function destroyLine(Request $request, OrderNote $orderNote, OrderNoteLine $line)
     {

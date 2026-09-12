@@ -34,6 +34,11 @@
                             <i class="fa-solid fa-lock me-1"></i> Close Invoice
                         </button>
                     </form>
+                @elseif($status === 'confirmed')
+                    <form action="{{ route('erp.oms.invoices.reopen', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Reopen this invoice?');">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-success btn-sm rounded-2 oms-btn-icon"><i class="fa-solid fa-lock-open me-1"></i> Reopen Invoice</button>
+                    </form>
                 @endif
                 <a href="{{ route('erp.oms.receptions.index', ['invoice_id' => $invoice->id]) }}" class="btn btn-outline-warning btn-sm rounded-2 oms-btn-icon">
                     <i class="fa-solid fa-boxes-stacked me-1"></i> Reception

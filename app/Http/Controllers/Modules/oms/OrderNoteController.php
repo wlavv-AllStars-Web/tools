@@ -1103,7 +1103,10 @@ class OrderNoteController extends Controller
             ->selectRaw('
                 p.id_product as product_id,
                 pa.id_product_attribute as product_attribute_id,
-                COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,`r`n                COALESCE(NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as parent_reference,`r`n                COALESCE(NULLIF(pa.ean13, ""), NULLIF(p.ean13, ""), "") as barcode,`r`n                COALESCE(stock.quantity, 0) as stock_qty,
+                COALESCE(NULLIF(pa.reference, ""), NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as sku,
+                COALESCE(NULLIF(p.reference, ""), NULLIF(p.supplier_reference, ""), CAST(p.id_product as CHAR)) as parent_reference,
+                COALESCE(NULLIF(pa.ean13, ""), NULLIF(p.ean13, ""), "") as barcode,
+                COALESCE(stock.quantity, 0) as stock_qty,
                 COALESCE(NULLIF(pl.name, ""), NULLIF(p.reference, ""), CONCAT("Product #", p.id_product)) as display_name,
                 p.id_supplier as supplier_id,
                 p.id_manufacturer as manufacturer_id,

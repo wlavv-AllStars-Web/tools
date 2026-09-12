@@ -100,6 +100,18 @@ class SimplifiedOrderNoteController extends Controller
             ->selectRaw('order_note_line_id, SUM(qty_billed) as qty')
             ->groupBy('order_note_line_id')
             ->pluck('qty', 'order_note_line_id');
+        $lineInvoices = BilledOrderLine::query()
+            ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
+            ->join('oms_supplier_invoices as invoice', 'invoice.id', '=', 'billed_order.supplier_invoice_id')
+            ->whereIn('oms_billed_order_lines.order_note_line_id', $lineIds)
+            ->select([
+                'oms_billed_order_lines.order_note_line_id',
+                'invoice.id as invoice_id',
+                'invoice.invoice_reference',
+            ])
+            ->distinct()
+            ->get()
+            ->groupBy('order_note_line_id');
         $received = DB::table('oms_reception_lines as r')
             ->join('oms_billed_order_lines as b', 'b.id', '=', 'r.billed_order_line_id')
             ->whereIn('b.order_note_line_id', $lineIds)
@@ -140,7 +152,7 @@ class SimplifiedOrderNoteController extends Controller
             ->get()->keyBy('id_product_attribute');
         $backorders = $this->backorders($productIds, $prefix);
 
-        return $lines->map(function ($line) use ($products, $attributes, $invoiced, $received, $backorders, $currencyMeta) {
+        return $lines->map(function ($line) use ($products, $attributes, $invoiced, $received, $lineInvoices, $backorders, $currencyMeta) {
             $product = $products->get($line->product_id);
             $attribute = $line->product_attribute_id ? $attributes->get($line->product_attribute_id) : null;
             $isAttribute = (bool) $attribute;
@@ -163,6 +175,7 @@ class SimplifiedOrderNoteController extends Controller
                 'invoiced' => $billed,
                 'remaining' => max(0, (int) $line->qty_ordered - $billed),
                 'received' => (int) ($received[$line->id] ?? 0),
+                'invoices' => ($lineInvoices->get($line->id, collect()))->values(),
                 'purchase_supplier' => (float) ($isAttribute ? $attribute->purchase_supplier : $product->purchase_supplier),
                 'purchase_eur' => (float) ($isAttribute ? $attribute->purchase_eur : $product->purchase_eur),
                 'sales_supplier' => (float) ($isAttribute ? ($product->sales_supplier + $attribute->sales_supplier) : $product->sales_supplier),

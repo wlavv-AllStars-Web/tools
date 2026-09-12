@@ -110,7 +110,7 @@ class SupplierInvoiceController extends Controller
         $data = $request->validate(['invoice_reference' => ['required', 'string', 'max:100'], 'invoice_date' => ['nullable', 'date']]);
         $meta = $this->workflowService->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
         $invoice = SupplierInvoice::create(['supplier_id' => (int) $orderNote->supplier_id, 'invoice_reference' => trim($data['invoice_reference']), 'invoice_date' => $data['invoice_date'] ?? now()->toDateString(), 'currency_id' => (int) $meta['currency_id'], 'currency_iso' => (string) $meta['currency_iso'], 'conversion_rate' => (float) $meta['purchase_conversion_rate'], 'status' => 'draft']);
-        return redirect()->route('erp.oms.simple', ['supplier_id' => $orderNote->supplier_id, 'document_scope' => 'open', 'order_note_id' => $orderNote->id, 'working_invoice_id' => $invoice->id])->with('success', 'Invoice draft created.');
+        return redirect()->route('erp.oms.simple', ['supplier_id' => $orderNote->supplier_id, 'document_scope' => 'open', 'order_note_id' => $orderNote->id])->with('success', 'Invoice draft created.');
     }
     public function store(Request $request, OrderNote $orderNote)
     {

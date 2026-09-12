@@ -68,7 +68,6 @@ class SimplifiedOrderNoteController extends Controller
             'documentScope' => $documentScope,
             'orderNote' => $orderNote,
             'currencyMeta' => $currencyMeta,
-            'workingInvoiceId' => (int) $request->integer('working_invoice_id'),
             'draftInvoices' => $orderNote
                 ? $this->invoiceWorkflow->getDraftInvoicesForSupplier((int) $orderNote->supplier_id)
                 : collect(),

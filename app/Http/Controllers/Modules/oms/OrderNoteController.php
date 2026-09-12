@@ -200,7 +200,7 @@ class OrderNoteController extends Controller
             ->with('success', 'Order note updated successfully.');
     }
 
-    public function destroy(OrderNote $orderNote)
+    public function destroy(Request $request, OrderNote $orderNote)
     {
         $orderNote->load(['lines', 'billedOrders.lines']);
         $lineSnapshots = $orderNote->lines->map(fn (OrderNoteLine $line) => [
@@ -252,7 +252,22 @@ class OrderNoteController extends Controller
             });
         } catch (\Throwable $exception) {
             report($exception);
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The order note could not be removed: '.$exception->getMessage(),
+                ], 422);
+            }
+
             return back()->with('error', 'The order note could not be removed: '.$exception->getMessage());
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order note, linked invoice lines and related stock movements were removed.',
+            ]);
         }
 
         return redirect()->route('erp.oms.dashboard')

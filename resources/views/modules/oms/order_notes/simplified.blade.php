@@ -27,13 +27,42 @@
             <div class="oms-counter counter-products"><i class="fa-solid fa-boxes-stacked"></i><small>Products</small><b>{{ $summary['products'] }}</b></div>
             <div class="oms-counter counter-billed"><i class="fa-solid fa-file-invoice"></i><small>Billed</small><b>{{ $summary['invoiced'] }}</b></div>
             <div class="oms-counter counter-received"><i class="fa-solid fa-truck"></i><small>Received</small><b>{{ $summary['received'] }}</b></div>
-            <div class="oms-counter counter-purchase"><i class="fa-solid fa-coins"></i><small>Purchase</small><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><span class="eur">&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</span></div><button type="button" class="btn btn-outline-danger btn-sm text-nowrap js-remove-order ms-2" data-url="{{ route('erp.oms.order_notes.destroy', $orderNote) }}"><i class="fa-solid fa-trash me-1" style="font-size: 24px;"></i><div style="margin-top: 5px">DOCUMENT</div></button>
+            <div class="oms-counter counter-purchase"><i class="fa-solid fa-coins"></i><small>Purchase</small><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><span class="eur">&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</span></div><button type="button" class="btn btn-sm text-nowrap ms-2 {{ $orderNote->has_any_note ? 'btn-outline-warning' : 'btn-outline-secondary' }}" data-bs-toggle="modal" data-bs-target="#omsSimpleCommentsModal" title="Edit order note comments"><i class="fa-solid fa-note-sticky me-1" style="font-size: 20px;"></i><div style="margin-top: 5px">COMMENTS</div></button><button type="button" class="btn btn-outline-danger btn-sm text-nowrap js-remove-order ms-2" data-url="{{ route('erp.oms.order_notes.destroy', $orderNote) }}"><i class="fa-solid fa-trash me-1" style="font-size: 24px;"></i><div style="margin-top: 5px">DOCUMENT</div></button>
         </div>@endif
     </div>
 </form>
 
 @if($orderNote)
-@php($showNew=$simplifiedOmsRows->contains(fn($r)=>!$r['dim_verified'])) @php($showBackorders=$simplifiedOmsRows->contains(fn($r)=>$r['backorders']->isNotEmpty())) @php($showInvoices=$simplifiedOmsRows->contains(fn($r)=>(int)$r['invoiced']>0))
+<div class="modal fade" id="omsSimpleCommentsModal" tabindex="-1" aria-labelledby="omsSimpleCommentsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="POST" action="{{ route('erp.oms.order_notes.notes.save', $orderNote) }}" class="modal-content">
+            @csrf
+            <div class="modal-header">
+                <h5 class="modal-title" id="omsSimpleCommentsModalLabel"><i class="fa-solid fa-note-sticky me-2"></i>Order note comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="omsSimpleInternalComment" class="form-label">Internal comment</label>
+                        <textarea id="omsSimpleInternalComment" name="internal_note" class="form-control" rows="8" placeholder="Internal context for this order note...">{{ $orderNote->internal_note }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="omsSimpleLogisticComment" class="form-label">Logistic comment</label>
+                        <textarea id="omsSimpleLogisticComment" name="logistic_note" class="form-control" rows="8" placeholder="Logistic information for this order note...">{{ $orderNote->logistic_note }}</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i>Save comments</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
+@if($orderNote)@php($showNew=$simplifiedOmsRows->contains(fn($r)=>!$r['dim_verified'])) @php($showBackorders=$simplifiedOmsRows->contains(fn($r)=>$r['backorders']->isNotEmpty())) @php($showInvoices=$simplifiedOmsRows->contains(fn($r)=>(int)$r['invoiced']>0))
 <form id="omsInvoiceForm" class="card container-fluid py-3 oms-simple" method="POST" action="{{ route('erp.oms.invoices.store', $orderNote) }}">
 @csrf
 <div class="head invoice-head row g-3 align-items-end" style="margin-bottom:10px">

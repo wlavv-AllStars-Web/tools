@@ -393,6 +393,33 @@ class OrderNoteController extends Controller
         return back()->with('success', 'Order note line updated successfully.');
     }
 
+    public function updateLineProductMeta(Request $request, OrderNote $orderNote, OrderNoteLine $line): JsonResponse
+    {
+        if ((int) $line->order_note_id !== (int) $orderNote->id) { abort(404); }
+
+        $data = $request->validate([
+            'ean13' => ['nullable', 'string', 'max:32'],
+            'housing' => ['nullable', 'string', 'max:255'],
+            'weight' => ['nullable', 'numeric', 'min:0'],
+            'width' => ['nullable', 'numeric', 'min:0'],
+            'height' => ['nullable', 'numeric', 'min:0'],
+            'depth' => ['nullable', 'numeric', 'min:0'],
+        ]);
+        $db = DB::connection('mysql2');
+        $productId = (int) $line->product_id;
+        $attributeId = (int) ($line->product_attribute_id ?? 0);
+        $product = collect($data)->only(['weight', 'width', 'height', 'depth'])->filter(fn ($value) => $value !== null)->all();
+        if ($product) { $db->table('ps_product')->where('id_product', $productId)->update($product); }
+        if (array_key_exists('ean13', $data)) {
+            $db->table($attributeId > 0 ? 'ps_product_attribute' : 'ps_product')->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)->update(['ean13' => $data['ean13']]);
+        }
+        if (array_key_exists('housing', $data)) {
+            if ($attributeId > 0) {
+                $db->table('ps_custom_product_attribute')->updateOrInsert(['id_product_attribute' => $attributeId], ['location' => $data['housing']]);
+            } else { $db->table('ps_product')->where('id_product', $productId)->update(['location' => $data['housing']]); }
+        }
+        return response()->json(['success' => true]);
+    }
     public function destroyLine(Request $request, OrderNote $orderNote, OrderNoteLine $line)
     {
         if ((int) $line->order_note_id !== (int) $orderNote->id) {

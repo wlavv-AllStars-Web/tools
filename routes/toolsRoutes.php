@@ -211,6 +211,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::delete('/order-notes/{orderNote}', [OrderNoteController::class, 'destroy'])->name('order_notes.destroy');
             Route::post('/order-notes/{orderNote}/lines', [OrderNoteController::class, 'addLine'])->name('order_notes.lines.store');
             Route::patch('/order-notes/{orderNote}/lines/{line}', [OrderNoteController::class, 'updateLine'])->name('order_notes.lines.update');
+            Route::patch('/order-notes/{orderNote}/lines/{line}/product-meta', [OrderNoteController::class, 'updateLineProductMeta'])->name('order_notes.lines.product_meta');
             Route::delete('/order-notes/{orderNote}/lines/{line}', [OrderNoteController::class, 'destroyLine'])->name('order_notes.lines.destroy');
             Route::get('/order-notes/{orderNote}/supplier-products', [OrderNoteController::class, 'supplierProducts'])->name('order_notes.supplier_products');
             Route::post('/order-notes/{orderNote}/import/csv/preview', [OrderNoteController::class, 'importCsvPreview'])->name('order_notes.import.preview');
@@ -630,6 +631,7 @@ Route::middleware(['web', 'auth'])
         Route::delete('/order-notes/{orderNote}', [OrderNoteController::class, 'destroy'])->name('order_notes.destroy');
         Route::post('/order-notes/{orderNote}/lines', [OrderNoteController::class, 'addLine'])->name('order_notes.lines.store');
         Route::patch('/order-notes/{orderNote}/lines/{line}', [OrderNoteController::class, 'updateLine'])->name('order_notes.lines.update');
+            Route::patch('/order-notes/{orderNote}/lines/{line}/product-meta', [OrderNoteController::class, 'updateLineProductMeta'])->name('order_notes.lines.product_meta');
         Route::delete('/order-notes/{orderNote}/lines/{line}', [OrderNoteController::class, 'destroyLine'])->name('order_notes.lines.destroy');
         Route::get('/order-notes/{orderNote}/supplier-products', [OrderNoteController::class, 'supplierProducts'])->name('order_notes.supplier_products');
         Route::post('/order-notes/{orderNote}/import/csv/preview', [OrderNoteController::class, 'importCsvPreview'])->name('order_notes.import.preview');

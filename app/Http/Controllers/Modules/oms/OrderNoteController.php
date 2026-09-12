@@ -450,7 +450,7 @@ class OrderNoteController extends Controller
         }
         if (array_key_exists('housing', $data)) {
             if ($attributeId > 0) {
-                $db->table('ps_custom_product_attribute')->updateOrInsert(['id_product_attribute' => $attributeId], ['location' => $data['housing']]);
+                $db->table('ps_custom_product_attribute')->updateOrInsert(['id_product' => $productId, 'id_product_attribute' => $attributeId], ['location' => $data['housing']]);
             } else { $db->table('ps_product')->where('id_product', $productId)->update(['location' => $data['housing']]); }
         }
         return response()->json(['success' => true]);

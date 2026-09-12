@@ -104,14 +104,8 @@ class SimplifiedOrderNoteController extends Controller
             ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
             ->join('oms_supplier_invoices as invoice', 'invoice.id', '=', 'billed_order.supplier_invoice_id')
             ->whereIn('oms_billed_order_lines.order_note_line_id', $lineIds)
-            ->select([
-                'oms_billed_order_lines.order_note_line_id',
-                'oms_billed_order_lines.id as billed_line_id',
-                'oms_billed_order_lines.qty_billed',
-                'invoice.id as invoice_id',
-                'invoice.invoice_reference',
-            ])
-            ->distinct()
+            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, invoice.id as invoice_id, invoice.invoice_reference')
+            ->groupBy('oms_billed_order_lines.order_note_line_id', 'invoice.id', 'invoice.invoice_reference')
             ->get()
             ->groupBy('order_note_line_id');
         $received = DB::table('oms_reception_lines as r')

@@ -404,12 +404,47 @@ class OrderNoteController extends Controller
             'width' => ['nullable', 'numeric', 'min:0'],
             'height' => ['nullable', 'numeric', 'min:0'],
             'depth' => ['nullable', 'numeric', 'min:0'],
+            'purchase_supplier_price' => ['nullable', 'numeric', 'min:0'],
+            'purchase_eur_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_supplier_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_eur_price' => ['nullable', 'numeric', 'min:0'],
         ]);
         $db = DB::connection('mysql2');
         $productId = (int) $line->product_id;
         $attributeId = (int) ($line->product_attribute_id ?? 0);
+        // Physical dimensions always belong to the parent product, including when
+        // this order-note line is a combination.
         $product = collect($data)->only(['weight', 'width', 'height', 'depth'])->filter(fn ($value) => $value !== null)->all();
         if ($product) { $db->table('ps_product')->where('id_product', $productId)->update($product); }
+
+        // Prices belong to the exact sellable record shown in the line. Both the
+        // EUR and supplier-currency values are updated in the same request.
+        $cataloguePrices = [];
+        $baseCurrencyPrices = [];
+        if (array_key_exists('purchase_eur_price', $data)) {
+            $cataloguePrices['wholesale_price'] = round((float) $data['purchase_eur_price'], 6);
+        }
+        if (array_key_exists('sale_eur_price', $data)) {
+            $cataloguePrices['price'] = round((float) $data['sale_eur_price'], 6);
+        }
+        if (array_key_exists('purchase_supplier_price', $data)) {
+            $baseCurrencyPrices['wholesale_price_base_currency'] = round((float) $data['purchase_supplier_price'], 6);
+        }
+        if (array_key_exists('sale_supplier_price', $data)) {
+            $baseCurrencyPrices['price_base_currency'] = round((float) $data['sale_supplier_price'], 6);
+        }
+        if ($cataloguePrices) {
+            $db->table($attributeId > 0 ? 'ps_product_attribute' : 'ps_product')
+                ->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)
+                ->update($cataloguePrices);
+        }
+        if ($baseCurrencyPrices) {
+            $identity = $attributeId > 0
+                ? ['id_product' => $productId, 'id_product_attribute' => $attributeId]
+                : ['id_product' => $productId];
+            $db->table($attributeId > 0 ? 'ps_custom_product_attribute' : 'ps_custom_product')
+                ->updateOrInsert($identity, $baseCurrencyPrices);
+        }
         if (array_key_exists('ean13', $data)) {
             $db->table($attributeId > 0 ? 'ps_product_attribute' : 'ps_product')->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)->update(['ean13' => $data['ean13']]);
         }

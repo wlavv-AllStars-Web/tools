@@ -2,7 +2,7 @@
 
 @section('content')
 @php($currencyIso = $currencyMeta['currency_iso'] ?? 'EUR')
-@php($currencySymbol = ['EUR' => '€', 'USD' => '$', 'GBP' => '£']->get($currencyIso, $currencyIso))
+@php($currencySymbol = (['EUR' => '€', 'USD' => '$', 'GBP' => '£'][$currencyIso] ?? $currencyIso))
 <div class="container-fluid py-3 oms-simple" style="padding-left: 0;padding-right: 0;">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 <style>

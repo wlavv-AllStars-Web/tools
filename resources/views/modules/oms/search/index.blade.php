@@ -12,7 +12,7 @@
 @endphp
 <div class="container-fluid py-3 oms-premium oms-search-results">
     <div class="mb-3">
-        <h4 class="mb-1">OMS Search</h4>
+        <h4 class="mb-1">{{ __('messages.erp.oms.search') }}</h4>
         @if($search !== '')
             <div class="text-muted">Results for <strong>{{ $search }}</strong></div>
         @else

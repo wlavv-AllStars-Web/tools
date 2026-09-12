@@ -43,6 +43,12 @@ class SimplifiedOrderNoteController extends Controller
                 ->latest('oms_order_notes.created_at')
                 ->get()
             : collect();
+
+        if ($supplierId > 0 && $documentScope === 'open' && $orderNotes->isEmpty()) {
+            $request->merge(['document_scope' => 'closed']);
+            return $this->index($request);
+        }
+
         $orderNote = $orderNotes->firstWhere('id', (int) $request->integer('order_note_id')) ?? $orderNotes->first();
 
         if ($orderNote) {

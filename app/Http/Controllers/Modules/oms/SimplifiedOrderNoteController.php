@@ -107,6 +107,7 @@ class SimplifiedOrderNoteController extends Controller
             ->select([
                 'oms_billed_order_lines.order_note_line_id',
                 'oms_billed_order_lines.id as billed_line_id',
+                'oms_billed_order_lines.qty_billed',
                 'invoice.id as invoice_id',
                 'invoice.invoice_reference',
             ])

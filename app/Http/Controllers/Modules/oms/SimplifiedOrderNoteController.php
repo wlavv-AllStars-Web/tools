@@ -154,7 +154,7 @@ class SimplifiedOrderNoteController extends Controller
             ->get()->keyBy('id_product_attribute');
         $backorders = $this->backorders($productIds, $prefix);
 
-        return $lines->map(function ($line) use ($products, $attributes, $invoiced, $received, $lineInvoices, $backorders, $currencyMeta) {
+        return $lines->map(function ($line) use ($products, $attributes, $invoiced, $received, $lineInvoices, $backorders, $currencyMeta, $prefix) {
             $product = $products->get($line->product_id);
             $attribute = $line->product_attribute_id ? $attributes->get($line->product_attribute_id) : null;
             $isAttribute = (bool) $attribute;
@@ -173,6 +173,7 @@ class SimplifiedOrderNoteController extends Controller
                 'dim_verified' => (int) ($product->dim_verify ?? 0) === 1,
                 'weight' => (float) ($product->weight ?? 0), 'width' => (float) ($product->width ?? 0), 'height' => (float) ($product->height ?? 0), 'depth' => (float) ($product->depth ?? 0),
                 'manufacturer' => trim((string) ($product->manufacturer_name ?? '')), 'end_of_life' => (int) ($product->end_of_life ?? 0) === 1,
+                'related_products' => $this->relatedProducts((int) $line->product_id, (int) ($line->product_attribute_id ?? 0), $prefix),
                 'backorders' => $backorders->get($key, collect())->values(),
                 'ordered' => (int) $line->qty_ordered,
                 'invoiced' => $billed,
@@ -188,6 +189,62 @@ class SimplifiedOrderNoteController extends Controller
         });
     }
 
+
+    /**
+     * Returns combinations of the same parent and packs using this exact component.
+     * The stock fields remain scoped to the product/attribute shown in each row.
+     */
+    private function relatedProducts(int $productId, int $attributeId, string $prefix)
+    {
+        $connection = DB::connection('mysql2');
+        $attributeNames = "GROUP_CONCAT(DISTINCT attribute_lang.name ORDER BY attribute_lang.name SEPARATOR ', ') as attributes";
+
+        $siblings = collect();
+        if ($attributeId > 0) {
+            $siblings = $connection->table($prefix.'product_attribute as attribute')
+                ->join($prefix.'product as product', 'product.id_product', '=', 'attribute.id_product')
+                ->leftJoin($prefix.'custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
+                ->leftJoin($prefix.'custom_product_attribute as custom_attribute', function ($join) {
+                    $join->on('custom_attribute.id_product', '=', 'attribute.id_product')
+                        ->on('custom_attribute.id_product_attribute', '=', 'attribute.id_product_attribute');
+                })
+                ->leftJoin($prefix.'stock_available as stock', function ($join) {
+                    $join->on('stock.id_product', '=', 'attribute.id_product')
+                        ->on('stock.id_product_attribute', '=', 'attribute.id_product_attribute')
+                        ->where('stock.id_shop', '=', 0);
+                })
+                ->leftJoin($prefix.'product_attribute_combination as attribute_combination', 'attribute_combination.id_product_attribute', '=', 'attribute.id_product_attribute')
+                ->leftJoin($prefix.'attribute_lang as attribute_lang', function ($join) {
+                    $join->on('attribute_lang.id_attribute', '=', 'attribute_combination.id_attribute')
+                        ->where('attribute_lang.id_lang', '=', 1);
+                })
+                ->where('attribute.id_product', $productId)
+                ->groupBy('attribute.id_product_attribute', 'attribute.reference', 'attribute.ean13', 'attribute.wholesale_price', 'attribute.price', 'custom_attribute.location', 'custom_attribute.stock_arrive', 'custom_attribute.wholesale_price_base_currency', 'custom_attribute.price_base_currency', 'stock.quantity', 'product.reference', 'product.ean13', 'product.location', 'product.wholesale_price', 'product.price', 'custom_product.stock_arrive', 'custom_product.wholesale_price_base_currency', 'custom_product.price_base_currency')
+                ->selectRaw("'Combination' as relationship, attribute.id_product_attribute as relationship_id, COALESCE(NULLIF(attribute.reference, ''), NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, {$attributeNames}, COALESCE(NULLIF(attribute.ean13, ''), product.ean13, '') as barcode, COALESCE(NULLIF(custom_attribute.location, ''), product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_attribute.stock_arrive, custom_product.stock_arrive, 0) as stock_arrive, attribute.wholesale_price as purchase_eur, (product.price + attribute.price) as sales_eur, COALESCE(custom_attribute.wholesale_price_base_currency, custom_product.wholesale_price_base_currency, 0) as purchase_supplier, (COALESCE(custom_product.price_base_currency, 0) + COALESCE(custom_attribute.price_base_currency, 0)) as sales_supplier")
+                ->get();
+        }
+
+        $packs = $connection->table($prefix.'pack as pack')
+            ->join($prefix.'product as product', 'product.id_product', '=', 'pack.id_product_pack')
+            ->leftJoin($prefix.'custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
+            ->leftJoin($prefix.'stock_available as stock', function ($join) {
+                $join->on('stock.id_product', '=', 'product.id_product')
+                    ->where('stock.id_product_attribute', '=', 0)
+                    ->where('stock.id_shop', '=', 0);
+            })
+            ->where('pack.id_product_item', $productId)
+            ->when($attributeId > 0, function ($query) use ($attributeId) {
+                $query->where(function ($component) use ($attributeId) {
+                    $component->where('pack.id_product_attribute_item', '=', 0)
+                        ->orWhere('pack.id_product_attribute_item', '=', $attributeId);
+                });
+            })
+            ->groupBy('product.id_product', 'product.reference', 'product.ean13', 'product.location', 'product.wholesale_price', 'product.price', 'custom_product.stock_arrive', 'custom_product.wholesale_price_base_currency', 'custom_product.price_base_currency', 'stock.quantity')
+            ->selectRaw("'Pack' as relationship, product.id_product as relationship_id, COALESCE(NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, '' as attributes, COALESCE(product.ean13, '') as barcode, COALESCE(product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_product.stock_arrive, 0) as stock_arrive, product.wholesale_price as purchase_eur, product.price as sales_eur, COALESCE(custom_product.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(custom_product.price_base_currency, 0) as sales_supplier")
+            ->get();
+
+        return $siblings->concat($packs)->unique(fn ($row) => $row->relationship.':'.$row->relationship_id)->values();
+    }
     private function productImageUrl(int $imageId): ?string
     {
         if ($imageId <= 0) {

@@ -857,8 +857,11 @@ class OrderNoteController extends Controller
 
         $request->session()->forget($this->getCsvImportSessionKey((int) $orderNote->id));
 
-        $redirect = redirect()->route('erp.oms.order_notes.show', $orderNote)
-            ->with('success', 'CSV import completed successfully. Created lines: ' . $created . '. Updated lines: ' . $updated . '.');
+        $redirect = redirect()->route('erp.oms.simple', [
+            'supplier_id' => (int) $orderNote->supplier_id,
+            'document_scope' => 'open',
+            'order_note_id' => (int) $orderNote->id,
+        ])->with('success', 'CSV import completed successfully. Created lines: ' . $created . '. Updated lines: ' . $updated . '.');
 
         return !empty($endOfLifeWarnings)
             ? $redirect->with('warning', implode(' ', array_unique($endOfLifeWarnings)))

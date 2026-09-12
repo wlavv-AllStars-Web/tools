@@ -223,6 +223,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/order-notes/{orderNote}/export/pdf', [OrderNoteController::class, 'exportPdf'])->name('order_notes.export.pdf');
             Route::get('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'create'])->name('invoices.create');
             Route::post('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'store'])->name('invoices.store');
+            Route::post('/order-notes/{orderNote}/invoice-draft', [SupplierInvoiceController::class, 'createDraft'])->name('invoices.draft.store');
             Route::patch('/order-notes/{orderNote}/combination-prices/{productAttributeId}', [SupplierInvoiceController::class, 'updateCombinationPrice'])->name('invoices.combination-prices.update');
             Route::post('/order-notes/{orderNote}/bill', [BillingController::class, 'store'])->name('billing.store');
 
@@ -645,6 +646,7 @@ Route::middleware(['web', 'auth'])
         Route::get('/order-notes/{orderNote}/export/pdf', [OrderNoteController::class, 'exportPdf'])->name('order_notes.export.pdf');
         Route::get('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'create'])->name('invoices.create');
         Route::post('/order-notes/{orderNote}/invoice', [SupplierInvoiceController::class, 'store'])->name('invoices.store');
+            Route::post('/order-notes/{orderNote}/invoice-draft', [SupplierInvoiceController::class, 'createDraft'])->name('invoices.draft.store');
             Route::patch('/order-notes/{orderNote}/combination-prices/{productAttributeId}', [SupplierInvoiceController::class, 'updateCombinationPrice'])->name('invoices.combination-prices.update');
         Route::post('/order-notes/{orderNote}/bill', [BillingController::class, 'store'])->name('billing.store');
 

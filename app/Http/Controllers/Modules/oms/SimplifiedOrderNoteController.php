@@ -22,7 +22,7 @@ class SimplifiedOrderNoteController extends Controller
     {
         $supplierId = (int) $request->integer('supplier_id');
         $suppliers = suppliers::select(['id_supplier', 'name'])->orderBy('name')->get();
-        $documentScope = $request->get('document_scope') === 'closed' ? 'closed' : 'open';
+        $documentScope = in_array($request->get('document_scope'), ['open', 'billed', 'closed'], true) ? $request->get('document_scope') : 'open';
         // Reception quantity is authoritative: old documents can have a stale status.
         $receivedByNote = DB::table('oms_reception_lines as reception')
             ->join('oms_billed_order_lines as billed_line', 'billed_line.id', '=', 'reception.billed_order_line_id')
@@ -37,9 +37,11 @@ class SimplifiedOrderNoteController extends Controller
                 ->where('oms_order_notes.supplier_id', $supplierId)
                 ->groupBy('oms_order_notes.id', 'oms_order_notes.supplier_id', 'oms_order_notes.reference', 'oms_order_notes.status', 'oms_order_notes.internal_note', 'oms_order_notes.logistic_note', 'oms_order_notes.created_at')
                 ->selectRaw('oms_order_notes.id, oms_order_notes.supplier_id, oms_order_notes.reference, oms_order_notes.status, oms_order_notes.internal_note, oms_order_notes.logistic_note, oms_order_notes.created_at, COALESCE(SUM(line.qty_ordered), 0) as total_ordered, COALESCE(MAX(received.qty_received), 0) as total_received')
-                ->havingRaw($documentScope === 'closed'
-                    ? 'COALESCE(SUM(line.qty_ordered), 0) > 0 AND COALESCE(MAX(received.qty_received), 0) >= COALESCE(SUM(line.qty_ordered), 0)'
-                    : "(COALESCE(SUM(line.qty_ordered), 0) = 0 AND oms_order_notes.status = 'order_note') OR COALESCE(MAX(received.qty_received), 0) < COALESCE(SUM(line.qty_ordered), 0)")
+                ->havingRaw(match ($documentScope) {
+                    'closed' => 'COALESCE(SUM(line.qty_ordered), 0) > 0 AND COALESCE(MAX(received.qty_received), 0) >= COALESCE(SUM(line.qty_ordered), 0)',
+                    'billed' => "oms_order_notes.status = 'billed' AND COALESCE(MAX(received.qty_received), 0) < COALESCE(SUM(line.qty_ordered), 0)",
+                    default => "oms_order_notes.status = 'order_note'",
+                })
                 ->latest('oms_order_notes.created_at')
                 ->get()
             : collect();

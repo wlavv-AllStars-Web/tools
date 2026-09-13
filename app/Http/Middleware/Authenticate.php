@@ -56,10 +56,8 @@ class Authenticate extends Middleware
         $ids[99] = (object) ['asm' => 99,  'asd' => 0,   'name' => 'Bruno Bogalhas'];
         $ids[101] = (object) ['asm' => 97,  'asd' => 42,  'name' => 'Sandra'];
         $ids[102] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Joao'];
-        $ids[103] = (object) ['asm' => 103, 'asd' => 103, 'name' => 'Rosario'];
+        $ids[107] = (object) ['asm' => 107, 'asd' => 107, 'name' => 'Rosario'];
         $ids[105] = (object) ['asm' => 102, 'asd' => 44,  'name' => 'Tania'];
-        $ids[107] = (object) ['asm' => 104, 'asd' => 0,   'name' => 'Helder'];
-        $ids[109] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Angela'];
         $ids[106] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'Lorenzo'];
         $ids[111] = (object) ['asm' => 0,   'asd' => 0,   'name' => 'José'];
         $ids[999] = (object) ['asm' => 63,  'asd' => 16,  'name' => 'Dashboard'];

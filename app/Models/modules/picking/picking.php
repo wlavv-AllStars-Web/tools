@@ -193,6 +193,7 @@ class picking extends Model
     public static function add(){
         // Order-state classification is owned exclusively by PrestaShop.
         self::removeNonPreparationPickingRows();
+        self::removeObsoletePickingRows();
         self::addData([3, 35], 'preparation');
     }
         
@@ -364,6 +365,98 @@ class picking extends Model
         self::where('status', 'preparation')
             ->whereNotIn('id_order', $preparationOrderIds)
             ->delete();
+    }
+
+    /**
+     * The picking table stores pack components, not the parent pack. If an order
+     * is later corrected, stale component rows must not remain available to pick.
+     */
+    private static function removeObsoletePickingRows(): void
+    {
+        $orderIds = self::where('status', 'preparation')
+            ->pluck('id_order')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($orderIds)) {
+            return;
+        }
+
+        $orders = orders::with('order_detail')
+            ->whereIn('id_order', $orderIds)
+            ->whereIn('current_state', [3, 35])
+            ->get()
+            ->keyBy('id_order');
+
+        foreach ($orderIds as $idOrder) {
+            $order = $orders->get((int) $idOrder);
+            if (!$order) {
+                continue;
+            }
+
+            $requiredRows = self::requiredPickingRowKeys($order);
+
+            self::where('id_order', $idOrder)
+                ->get()
+                ->each(function ($row) use ($requiredRows) {
+                    $key = self::pickingRowKey(
+                        (int) $row->id_product,
+                        (int) $row->id_product_attribute
+                    );
+
+                    if (isset($requiredRows[$key])) {
+                        return;
+                    }
+
+                    $row->delete();
+                });
+        }
+    }
+
+    private static function requiredPickingRowKeys($order): array
+    {
+        $keys = [];
+        $customDetails = self::customOrderDetails($order);
+
+        foreach ($order->order_detail as $detail) {
+            $quantity = max(0, (int) $detail->product_quantity - self::qtdSent($detail, $customDetails));
+
+            if ($quantity <= 0 || self::isTechnicalProductRow($detail)) {
+                continue;
+            }
+
+            $isPack = pack::is_pack((int) $detail->product_id);
+            $isGoodiesPack = $isPack && self::isGoodiesPack((int) $detail->product_id);
+
+            if ($isPack && !$isGoodiesPack) {
+                foreach (pack::getPackItems((int) $detail->product_id) as $packItem) {
+                    $componentQuantity = $quantity * (int) $packItem->quantity;
+                    if ($componentQuantity <= 0) {
+                        continue;
+                    }
+
+                    $keys[self::pickingRowKey(
+                        (int) $packItem->id_product_item,
+                        (int) $packItem->id_product_attribute_item
+                    )] = true;
+                }
+
+                continue;
+            }
+
+            $keys[self::pickingRowKey(
+                (int) $detail->product_id,
+                (int) $detail->product_attribute_id
+            )] = true;
+        }
+
+        return $keys;
+    }
+
+    private static function pickingRowKey(int $idProduct, int $idProductAttribute): string
+    {
+        return $idProduct . ':' . $idProductAttribute;
     }
 
     private static function orderHasEnoughStock($order): bool

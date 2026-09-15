@@ -40,6 +40,9 @@ class picking extends Model
         
         $data_order = self::withoutTechnicalPickingRows(self::where('status', $status))
             ->where('row_done', 0)
+            // A legacy picking row can remain after an order detail was
+            // corrected to zero. It is not a product to pick.
+            ->where('quantity', '>', 0)
             ->when(!empty($shops), fn ($query) => $query->whereIn('id_shop', $shops))
             ->groupBy('id_order')
             ->get();
@@ -55,7 +58,9 @@ class picking extends Model
                 'order_main' => $orderMain,
                 'order_messages' => self::orderMessages((int) $order->id_order),
                 'order' => self::withoutTechnicalPickingRows(
-                    self::where('id_order', $order->id_order)->where('row_done', 0)
+                    self::where('id_order', $order->id_order)
+                        ->where('row_done', 0)
+                        ->where('quantity', '>', 0)
                 )
                     ->get()
                     ->map(function ($row) use ($languageId) {
@@ -505,7 +510,7 @@ class picking extends Model
     }
         
     private static function insertData($row, $quantity, $status, $carrier_name){
-        if (self::isTechnicalProductRow($row)) {
+        if ($quantity <= 0 || self::isTechnicalProductRow($row)) {
             return;
         }
         
@@ -859,9 +864,13 @@ class picking extends Model
     }
     private static function orderDone($id_order) {
         
-        $rowsOfOrder = self::withoutTechnicalPickingRows(picking::where('id_order', $id_order))->count();
+        $rowsOfOrder = self::withoutTechnicalPickingRows(
+            picking::where('id_order', $id_order)->where('quantity', '>', 0)
+        )->count();
         $pickedRowsOfOrder = self::withoutTechnicalPickingRows(
-            picking::where('id_order', $id_order)->where('row_done', 1)
+            picking::where('id_order', $id_order)
+                ->where('quantity', '>', 0)
+                ->where('row_done', 1)
         )->count();
         
         if( $rowsOfOrder == $pickedRowsOfOrder ) return 1;

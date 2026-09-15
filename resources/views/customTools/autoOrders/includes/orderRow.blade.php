@@ -8,7 +8,7 @@
     <td class="table_cell td_orders_others"><span title="{{$product->name}}">{{$product->stock}}</span></td>
     <td class="table_cell td_orders_others"><span title="{{$product->name}}">{{$product->arrive}}</span></td>
     <td class="table_cell td_orders_others"><span title="{{$product->name}}">{{$product->sold}}</span></td>
-    <td class="table_cell td_orders_quantity"><input onblur="updateOrder($(this))" reference="{{$product->reference}}" style="width: 100px;" type="number" name="quantity['{{$product->supplier}}'][]" value="{{$product->quantity}}"></td>
+    <td class="table_cell td_orders_quantity"><input onblur="updateOrder($(this), {{$product->id_supplier}})" reference="{{$product->reference}}" style="width: 100px;" type="number" name="quantity['{{$product->supplier}}'][]" value="{{$product->quantity}}"></td>
 </tr>
 <tr id="orderNewRow_{{$product->id_supplier}}">
     <td colspan="5"></td>

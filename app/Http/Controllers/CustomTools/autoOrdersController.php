@@ -222,21 +222,33 @@ class autoOrdersController extends Controller
     
     public function updateOrder(Request $request){
 
-        if(isset($request->reference)){
+        $reference = trim((string) $request->input('reference', ''));
+        $idSupplier = (int) $request->input('id_supplier', 0);
 
-            if($request->quantity > 0){
+        if ($reference !== '' && $idSupplier > 0) {
+            $line = AutoOrdersPurchaseList::where('id_supplier', $idSupplier)
+                ->where('reference', $reference);
 
-                AutoOrdersPurchaseList::where('reference', '=', $request->reference)->update(['quantity' => $request->quantity ]);
-                return response()->json([ 'success' => true, 'type' => 'add', 'quantity_order' => AutoOrdersPurchaseList::where('id_supplier', '=', $request->id_supplier)->count() ]);
-            }else{
-                
-                AutoOrdersPurchaseList::where('reference', '=', $request->reference)->delete();
-                return response()->json([ 'success' => true, 'type' => 'remove', 'quantity_order' => AutoOrdersPurchaseList::where('id_supplier', '=', $request->id_supplier)->count() ]);
+            if ((int) $request->quantity > 0) {
+                $line->update(['quantity' => $request->quantity]);
+
+                return response()->json([
+                    'success' => true,
+                    'type' => 'add',
+                    'quantity_order' => AutoOrdersPurchaseList::where('id_supplier', $idSupplier)->count(),
+                ]);
             }
-            return response()->json([ 'success' => true ]);
-        }else{
-            return response()->json([ 'success' => false ]);
+
+            $line->delete();
+
+            return response()->json([
+                'success' => true,
+                'type' => 'remove',
+                'quantity_order' => AutoOrdersPurchaseList::where('id_supplier', $idSupplier)->count(),
+            ]);
         }
+
+        return response()->json([ 'success' => false ], 422);
 
     }
     

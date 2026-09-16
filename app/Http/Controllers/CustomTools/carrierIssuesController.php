@@ -227,7 +227,9 @@ class carrierIssuesController extends Controller
         
         $shop_rows = array();
         $count = 0;
-        $prefix = env('DB2_DB_prefix');
+        // PrestaShop tables are prefixed. Keep a safe default for queued/CLI execution.
+        // Without it, an absent setting queries non-existent tables such as orders.
+        $prefix = env('DB2_DB_prefix') ?: env('DB2_prefix') ?: 'ps_';
             
         foreach($data AS $row){
         

@@ -426,7 +426,17 @@ class housingController extends Controller
     {
         $search = trim($search);
 
-        if ($this->isHousingCode($search)) {
+        // A reference may share the XX-XX-XX format used for a housing code.
+        // Resolve exact product identifiers first, and only fall back to housing
+        // lookup when they produced no result.
+        $matches = collect()
+            ->merge($this->queryAttributesBy('ean13', $search))
+            ->merge($this->queryAttributesBy('reference', $search))
+            ->merge($this->queryProductsBy('ean13', $search))
+            ->merge($this->queryProductsBy('reference', $search))
+            ->unique(fn ($item) => $item['row_key'])
+            ->values();
+        if ($matches->isEmpty() && $this->isHousingCode($search)) {
             $matches = collect()
                 ->merge($this->queryAttributeHousing($search))
                 ->merge($this->queryProductsBy('location', $search))
@@ -441,14 +451,6 @@ class housingController extends Controller
                 'is_housing_search' => true,
             ];
         }
-
-        $matches = collect()
-            ->merge($this->queryAttributesBy('ean13', $search))
-            ->merge($this->queryAttributesBy('reference', $search))
-            ->merge($this->queryProductsBy('ean13', $search))
-            ->merge($this->queryProductsBy('reference', $search))
-            ->unique(fn ($item) => $item['row_key'])
-            ->values();
 
         if ($matches->count() === 1) {
             $product = $this->decorateForView($matches->first());

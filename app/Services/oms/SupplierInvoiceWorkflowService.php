@@ -944,6 +944,21 @@ class SupplierInvoiceWorkflowService
         $invoice->status = 'draft';
         $invoice->save();
     }
+    public function closeInvoiceIfFullyReceived(SupplierInvoice $invoice): void
+    {
+        if ($invoice->status !== 'draft') {
+            return;
+        }
+
+        $lines = BilledOrderLine::query()
+            ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
+            ->where('billed_order.supplier_invoice_id', $invoice->id)
+            ->get(['oms_billed_order_lines.qty_billed', 'oms_billed_order_lines.qty_received']);
+
+        if ($lines->isNotEmpty() && $lines->every(fn (BilledOrderLine $line) => (int) $line->qty_received >= (int) $line->qty_billed)) {
+            $this->closeInvoice($invoice);
+        }
+    }
     public function closeInvoice(SupplierInvoice $invoice): void
     {
         if ($invoice->status !== 'draft') {

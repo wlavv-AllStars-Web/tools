@@ -275,6 +275,9 @@ class ReceptionController extends Controller
                 $this->supplierInvoiceWorkflowService->refreshOrderNoteStatus(
                     $billedOrder->orderNote->fresh(['lines', 'billedOrders'])
                 );
+                if ($billedOrder->invoice) {
+                    $this->supplierInvoiceWorkflowService->closeInvoiceIfFullyReceived($billedOrder->invoice);
+                }
             }
         });
 
@@ -343,6 +346,9 @@ class ReceptionController extends Controller
             $after=$this->getPrestashopQuantity($productId,$attributeId); $arriveAfter=$this->getPrestashopStockArrive($productId,$attributeId); $ref=$this->getProductReferenceSnapshot($productId,$attributeId); $user=$this->getUserSnapshot();
             DB::table('oms_stock_history')->insert(['source_type'=>'reception_correction','source_id'=>$line->id,'order_note_id'=>$billedOrder->order_note_id,'billed_order_id'=>$billedOrder->id,'supplier_invoice_id'=>$billedOrder->supplier_invoice_id,'reception_id'=>$receptionId,'product_id'=>$productId,'product_attribute_id'=>$attributeId,'product_reference_snapshot'=>$ref['product_reference_snapshot'],'attribute_reference_snapshot'=>$ref['attribute_reference_snapshot'],'display_reference_snapshot'=>$ref['display_reference_snapshot'],'ps_quantity_before'=>$before,'ps_quantity_delta'=>$delta,'ps_quantity_after'=>$after,'ps_quantity_arrive_before'=>$arriveBefore,'ps_quantity_arrive_delta'=>-$delta,'ps_quantity_arrive_after'=>$arriveAfter,'user_id'=>$user['user_id'],'user_name_snapshot'=>$user['user_name_snapshot'],'user_email_snapshot'=>$user['user_email_snapshot'],'created_at'=>now()]);
             $this->supplierInvoiceWorkflowService->refreshOrderNoteStatus($billedOrder->orderNote->fresh(['lines','billedOrders']));
+            if ($billedOrder->invoice) {
+                $this->supplierInvoiceWorkflowService->closeInvoiceIfFullyReceived($billedOrder->invoice);
+            }
         });
         return response()->json(['success' => true]);
     }

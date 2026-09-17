@@ -44,6 +44,15 @@ class BilledOrderController extends Controller
     {
         $billedOrder->load(['orderNote.supplier', 'invoice', 'lines', 'receptions']);
 
+        $orderNote = $billedOrder->orderNote;
+        abort_unless($orderNote, 404);
+
+        return redirect()->route('erp.oms.simple', [
+            'supplier_id' => $orderNote->supplier_id,
+            'document_scope' => $orderNote->status === 'closed' ? 'closed' : 'open',
+            'order_note_id' => $orderNote->id,
+        ]);
+
         $billedOrder->setRelation(
             'lines',
             $this->billedOrderDisplayService->hydrateLines($billedOrder->lines)

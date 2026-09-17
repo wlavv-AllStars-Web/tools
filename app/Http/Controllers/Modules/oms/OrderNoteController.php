@@ -160,6 +160,11 @@ class OrderNoteController extends Controller
 
     public function show(OrderNote $orderNote)
     {
+        return redirect()->route('erp.oms.simple', [
+            'supplier_id' => $orderNote->supplier_id,
+            'document_scope' => $orderNote->status === 'closed' ? 'closed' : 'open',
+            'order_note_id' => $orderNote->id,
+        ]);
         $orderNote->load(['supplier', 'lines', 'billedOrders']);
 
         $builderLines = $this->getOrderNoteProductsForBuilder((int) $orderNote->id);

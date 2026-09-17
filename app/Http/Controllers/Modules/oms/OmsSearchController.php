@@ -41,8 +41,9 @@ class OmsSearchController extends Controller
 
         $billedRows = $this->matchingQuery('oms_billed_order_lines as l', $productIds, $attributeIds, 'l.product_id', 'l.product_attribute_id')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'l.billed_order_id')
+            ->join('oms_order_notes as onn', 'onn.id', '=', 'bo.order_note_id')
             ->leftJoin('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
-            ->select('l.*', 'bo.reference as document_reference', 'bo.status as document_status', 'bo.order_note_id', 'si.invoice_reference', 'si.status as invoice_status', 'bo.created_at as document_date')
+            ->select('l.*', 'bo.reference as document_reference', 'bo.status as document_status', 'bo.order_note_id', 'onn.supplier_id', 'onn.status as order_note_status', 'si.invoice_reference', 'si.status as invoice_status', 'bo.created_at as document_date')
             ->orderByDesc('bo.id')
             ->get();
 
@@ -50,8 +51,9 @@ class OmsSearchController extends Controller
             ->join('oms_reception_lines as rl', 'rl.billed_order_line_id', '=', 'bol.id')
             ->join('oms_receptions as r', 'r.id', '=', 'rl.reception_id')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
+            ->join('oms_order_notes as onn', 'onn.id', '=', 'bo.order_note_id')
             ->leftJoin('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
-            ->select('rl.*', 'bol.product_id', 'bol.product_attribute_id', 'bol.billed_order_id', 'bo.reference as document_reference', 'si.invoice_reference', 'r.created_at as document_date')
+            ->select('rl.*', 'bol.product_id', 'bol.product_attribute_id', 'bol.billed_order_id', 'bo.order_note_id', 'onn.supplier_id', 'onn.status as order_note_status', 'bo.reference as document_reference', 'si.invoice_reference', 'r.created_at as document_date')
             ->orderByDesc('r.id')
             ->get();
 

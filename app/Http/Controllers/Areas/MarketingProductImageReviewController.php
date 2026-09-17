@@ -63,8 +63,9 @@ class MarketingProductImageReviewController extends Controller
         $query = DB::connection('mysql2')->table($prefix.'product as p')
             ->join($prefix.'product_shop as ps', fn ($join) => $join->on('ps.id_product', '=', 'p.id_product')->where('ps.id_shop', $shopId))
             ->leftJoin($prefix.'product_lang as pl', fn ($join) => $join->on('pl.id_product', '=', 'p.id_product')->where('pl.id_shop', $shopId)->where('pl.id_lang', $languageId))
+            ->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->where('p.id_manufacturer', $manufacturerId)
-            ->select('p.id_product', 'p.reference', 'pl.name', 'pl.link_rewrite')
+            ->select('p.id_product', 'p.reference', 'pl.name', 'pl.link_rewrite', 'cp.technical_image_id')
             ->orderByRaw("CASE WHEN p.reference IS NULL OR TRIM(p.reference) = '' THEN 1 ELSE 0 END")
             ->orderBy('p.reference')->orderBy('p.id_product');
 
@@ -74,7 +75,8 @@ class MarketingProductImageReviewController extends Controller
             $products->pluck('id_product')->map(fn ($id) => (int) $id)->all(),
             $products->mapWithKeys(fn ($product) => [
                 (int) $product->id_product => trim((string) $product->link_rewrite),
-            ])->all()
+            ])->all(),
+            $products->mapWithKeys(fn ($product) => [(int) $product->id_product => (int) ($product->technical_image_id ?? 0)])->all()
         );
 
         return response()->json([
@@ -95,6 +97,31 @@ class MarketingProductImageReviewController extends Controller
         ]);
     }
 
+    public function setTechnicalImage(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'product_id' => ['required', 'integer', 'min:1'],
+            'image_id' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $prefix = $this->prefix();
+        $productId = (int) $data['product_id'];
+        $imageId = (int) $data['image_id'];
+        $belongsToProduct = DB::connection('mysql2')->table($prefix.'image')
+            ->where('id_image', $imageId)
+            ->where('id_product', $productId)
+            ->exists();
+
+        abort_unless($belongsToProduct, 422, 'The selected image does not belong to this product.');
+
+        DB::connection('mysql2')->table($prefix.'custom_product')->updateOrInsert(
+            ['id_product' => $productId],
+            ['technical_image_id' => $imageId]
+        );
+
+        return response()->json(['success' => true, 'technical_image_id' => $imageId]);
+    }
+
     private function manufacturerQuery()
     {
         $prefix = $this->prefix();
@@ -106,7 +133,7 @@ class MarketingProductImageReviewController extends Controller
             ->where('m.active', 1);
     }
 
-    private function imagesByProduct(array $productIds, array $linkRewrites)
+    private function imagesByProduct(array $productIds, array $linkRewrites, array $technicalImageIds)
     {
         if ($productIds === []) return collect();
         $prefix = $this->prefix();
@@ -120,6 +147,7 @@ class MarketingProductImageReviewController extends Controller
                 'id_image' => (int) $image->id_image,
                 'position' => (int) $image->position,
                 'cover' => (bool) $image->cover,
+                'technical' => (int) $image->id_image === (int) ($technicalImageIds[(int) $image->id_product] ?? 0),
                 'thumbnail_url' => $this->friendlyImageUrl(
                     (int) $image->id_image,
                     'tm_medium_default',

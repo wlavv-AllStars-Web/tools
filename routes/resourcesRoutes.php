@@ -56,6 +56,7 @@ Route::get('logistics', [logisticsController::class, 'index'])->name('logistics.
 Route::get('marketing', [marketingController::class, 'index'])->name('marketing.index');
 Route::get('marketing/product-images', [MarketingProductImageReviewController::class, 'index'])->name('marketing.product_images.index');
 Route::get('marketing/product-images/products', [MarketingProductImageReviewController::class, 'products'])->name('marketing.product_images.products');
+Route::post('marketing/product-images/technical-image', [MarketingProductImageReviewController::class, 'setTechnicalImage'])->name('marketing.product_images.technical_image');
 Route::get('marketing/asd-missing-photos/{id_manufacturer}', [AsdResourcesController::class, 'studioEdit'])->name('marketing.asd_missing_photos.edit');
 Route::post('marketing/asd-missing-photos/{id_manufacturer}/images', [AsdResourcesController::class, 'studioUploadImages'])->name('marketing.asd_missing_photos.images.upload');
 Route::post( 'customTools/marketing/post', [marketingController::class, 'post'])->name('marketing.post');

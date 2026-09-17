@@ -96,6 +96,7 @@ class SimplifiedOrderNoteController extends Controller
                 'reference_product' => (string) $row['reference'],
                 'name' => (string) $row['name'],
                 'qty_billed' => (int) $invoice->qty_billed,
+                'row' => $row,
             ]);
         })->groupBy('id')->map(function ($entries) {
             $first = $entries->first();

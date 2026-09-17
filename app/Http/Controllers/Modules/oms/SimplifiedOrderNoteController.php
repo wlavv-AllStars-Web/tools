@@ -74,6 +74,7 @@ class SimplifiedOrderNoteController extends Controller
                 ? $this->invoiceWorkflow->getDraftInvoicesForSupplier((int) $orderNote->supplier_id)
                 : collect(),
             'simplifiedOmsRows' => $rows,
+            'invoicedInvoices' => $this->invoicedInvoices($rows),
             'summary' => [
                 'lines' => $rows->count(),
                 'products' => (int) $rows->sum('ordered'),
@@ -85,6 +86,28 @@ class SimplifiedOrderNoteController extends Controller
         ]);
     }
 
+    private function invoicedInvoices($rows)
+    {
+        return $rows->flatMap(function (array $row) {
+            return $row['invoices']->map(fn ($invoice) => [
+                'id' => (int) $invoice->invoice_id,
+                'reference' => (string) $invoice->invoice_reference,
+                'line_id' => (int) $row['line_id'],
+                'reference_product' => (string) $row['reference'],
+                'name' => (string) $row['name'],
+                'qty_billed' => (int) $invoice->qty_billed,
+            ]);
+        })->groupBy('id')->map(function ($entries) {
+            $first = $entries->first();
+
+            return [
+                'id' => $first['id'],
+                'reference' => $first['reference'],
+                'lines' => $entries->values(),
+                'qty_billed' => (int) $entries->sum('qty_billed'),
+            ];
+        })->values();
+    }
     private function rows(OrderNote $orderNote, ?array $currencyMeta)
     {
         $lines = $orderNote->lines;
@@ -132,9 +155,9 @@ class SimplifiedOrderNoteController extends Controller
                     ->where('stock.id_shop', '=', 0);
             })
             ->whereIn('p.id_product', $productIds)
-            ->groupBy('p.id_product', 'p.reference', 'p.ean13', 'cover.id_image', 'p.location', 'p.weight', 'p.width', 'p.height', 'p.depth', 'manufacturer.name', 'cp.wmdeprecated', 'p.wholesale_price', 'p.price', 'stock.quantity', 'cp.dim_verify', 'cp.wholesale_price_base_currency', 'cp.price_base_currency')
+            ->groupBy('p.id_product', 'p.reference', 'p.ean13', 'cover.id_image', 'p.location', 'p.weight', 'p.width', 'p.height', 'p.depth', 'manufacturer.name', 'cp.wmdeprecated', 'p.wholesale_price', 'p.price', 'stock.quantity', 'cp.dim_verify', 'cp.wholesale_price_base_currency', 'cp.price_base_currency', 'cp.discount_percentage')
             ->when($hasProductTechnicalImage, fn ($query) => $query->groupBy('cp.technical_image_id'))
-            ->selectRaw('p.id_product, p.reference, p.ean13 as barcode, cover.id_image as cover_image_id, ' . ($hasProductTechnicalImage ? 'cp.technical_image_id' : 'NULL') . ' as technical_image_id, p.location as housing, p.weight, p.width, p.height, p.depth, manufacturer.name as manufacturer_name, COALESCE(cp.wmdeprecated, 0) as end_of_life, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(cp.stock_arrive, 0) as stock_arrive, p.wholesale_price as purchase_eur, p.price as sales_eur, COALESCE(cp.dim_verify, 0) as dim_verify, COALESCE(cp.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(cp.price_base_currency, 0) as sales_supplier, MIN(l.name) as name')
+            ->selectRaw('p.id_product, p.reference, p.ean13 as barcode, cover.id_image as cover_image_id, ' . ($hasProductTechnicalImage ? 'cp.technical_image_id' : 'NULL') . ' as technical_image_id, p.location as housing, p.weight, p.width, p.height, p.depth, manufacturer.name as manufacturer_name, COALESCE(cp.wmdeprecated, 0) as end_of_life, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(cp.stock_arrive, 0) as stock_arrive, p.wholesale_price as purchase_eur, p.price as sales_eur, COALESCE(cp.dim_verify, 0) as dim_verify, COALESCE(cp.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(cp.price_base_currency, 0) as sales_supplier, COALESCE(cp.discount_percentage, 0) as discount_percentage, MIN(l.name) as name')
             ->get()->keyBy('id_product');
         $attributes = $attributeIds->isEmpty() ? collect() : DB::connection('mysql2')->table($prefix.'product_attribute as a')
             ->leftJoin($prefix.'custom_product_attribute as ca', function ($join) {
@@ -202,6 +225,7 @@ class SimplifiedOrderNoteController extends Controller
                 'invoices' => ($lineInvoices->get($line->id, collect()))->values(),
                 'purchase_supplier' => (float) ($isAttribute ? $attribute->purchase_supplier : $product->purchase_supplier),
                 'purchase_eur' => (float) ($isAttribute ? $attribute->purchase_eur : $product->purchase_eur),
+                'discount_percentage' => (float) ($product->discount_percentage ?? 0),
                 'sales_supplier' => round($salesSupplier, 6),
                 'sales_eur' => $salesEur,
                 'currency_iso' => (string) ($currencyMeta['currency_iso'] ?? 'EUR'),

@@ -424,6 +424,7 @@ class OrderNoteController extends Controller
             'purchase_eur_price' => ['nullable', 'numeric', 'min:0'],
             'sale_supplier_price' => ['nullable', 'numeric', 'min:0'],
             'sale_eur_price' => ['nullable', 'numeric', 'min:0'],
+            'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:99.99'],
         ]);
         if (array_key_exists('purchase_supplier_price', $data) || array_key_exists('sale_supplier_price', $data)) {
             $request->merge([
@@ -433,6 +434,10 @@ class OrderNoteController extends Controller
 
             return $this->updateRelatedProductPrice($request, $orderNote, $line);
         }
+        if (array_key_exists('discount_percentage', $data)) {
+            return $this->updateLinePurchaseDiscount($orderNote, $line, (float) $data['discount_percentage']);
+        }
+
 
         $db = DB::connection('mysql2');
         $productId = (int) $line->product_id;
@@ -479,6 +484,65 @@ class OrderNoteController extends Controller
             } else { $db->table('ps_product')->where('id_product', $productId)->update(['location' => $data['housing']]); }
         }
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Stores the product discount and recalculates only the purchase price.
+     */
+    private function updateLinePurchaseDiscount(OrderNote $orderNote, OrderNoteLine $line, float $discount): JsonResponse
+    {
+        $db = DB::connection('mysql2');
+        $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+        $productId = (int) $line->product_id;
+        $attributeId = (int) ($line->product_attribute_id ?? 0);
+        $customProduct = $db->table($prefix.'custom_product')->where('id_product', $productId)
+            ->first(['discount_percentage', 'wholesale_price_base_currency']);
+        $oldDiscount = (float) ($customProduct->discount_percentage ?? 0);
+        abort_if($oldDiscount >= 100, 422, 'The current 100% discount cannot be changed without first setting the purchase price.');
+
+        $cataloguePurchase = (float) $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
+            ->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)
+            ->value('wholesale_price');
+        $storedPurchase = $attributeId > 0
+            ? $db->table($prefix.'custom_product_attribute')->where('id_product', $productId)->where('id_product_attribute', $attributeId)->value('wholesale_price_base_currency')
+            : ($customProduct->wholesale_price_base_currency ?? null);
+
+        $currencyMeta = $this->supplierInvoiceWorkflow->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
+        $purchaseRate = (float) ($currencyMeta['purchase_conversion_rate'] ?? 1);
+        $isEur = (bool) ($currencyMeta['is_eur'] ?? false);
+        $currentPurchase = $storedPurchase === null
+            ? ($isEur || $purchaseRate <= 0 ? $cataloguePurchase : $cataloguePurchase * $purchaseRate)
+            : (float) $storedPurchase;
+        $basePurchase = $currentPurchase / (1 - ($oldDiscount / 100));
+        $newPurchase = round($basePurchase * (1 - ($discount / 100)), 6);
+        $newPurchaseEur = $isEur || $purchaseRate <= 0 ? $newPurchase : round($newPurchase / $purchaseRate, 6);
+
+        $db->transaction(function () use ($db, $prefix, $productId, $attributeId, $discount, $newPurchase, $newPurchaseEur) {
+            $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
+                ->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)
+                ->update(['wholesale_price' => $newPurchaseEur]);
+            $db->table($prefix.'custom_product')->updateOrInsert(
+                ['id_product' => $productId],
+                ['discount_percentage' => round($discount, 4)]
+            );
+            if ($attributeId > 0) {
+                $db->table($prefix.'custom_product_attribute')->updateOrInsert(
+                    ['id_product' => $productId, 'id_product_attribute' => $attributeId],
+                    ['wholesale_price_base_currency' => $newPurchase]
+                );
+            } else {
+                $db->table($prefix.'custom_product')->where('id_product', $productId)->update([
+                    'wholesale_price_base_currency' => $newPurchase,
+                ]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'discount_percentage' => round($discount, 4),
+            'purchase_supplier_price' => $newPurchase,
+            'purchase_eur_price' => $newPurchaseEur,
+        ]);
     }
 
     public function updateRelatedProductPrice(Request $request, OrderNote $orderNote, OrderNoteLine $line): JsonResponse

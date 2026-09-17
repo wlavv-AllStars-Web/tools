@@ -33,40 +33,23 @@ class AutoOrdersCandidate extends Model
     }
     
     public static function getAllBrands(){
-
-        $data = new AutoOrdersCandidate();
-        $brands = $data
+        $brands = self::query()
             ->select('id_manufacturer', 'manufacturer')
+            ->selectRaw("COUNT(DISTINCT reference, COALESCE(attr_reference, '')) as counter")
             ->where('ordered', 0)
             ->withoutTechnicalProducts()
             ->groupBy('id_manufacturer', 'manufacturer')
             ->orderBy('manufacturer')
             ->get();
 
-        $dataRows = array();
-
-        foreach($brands AS $brand){
-
-            $brand_rows = new AutoOrdersCandidate();
-            
-            $data_brand_Rows = $brand_rows
-                ->select('reference', 'attr_reference')
-                ->where('id_manufacturer', '=', $brand->id_manufacturer)
-                ->where('ordered', 0)
-                ->groupBy('reference', 'attr_reference')
-                ->orderBy('reference')
-                ->get();
-
-            $dataRows[$brand->manufacturer] = [
+        return $brands->mapWithKeys(function ($brand) {
+            return [$brand->manufacturer => [
                 'id_manufacturer' => $brand->id_manufacturer,
                 'export' => '/admin/download/' . $brand->id_manufacturer . '_' . str_replace(' ', '_', $brand->manufacturer) . '_' . date('ymd') . '.csv',
                 'name' => $brand->manufacturer,
-                'products' => $data_brand_Rows,
-                'counter'  => count($data_brand_Rows)
-            ];
-        }
-
-        return $dataRows;
+                'counter' => (int) $brand->counter,
+            ]];
+        })->all();
     }
 
     public static function insert($data, $origin){

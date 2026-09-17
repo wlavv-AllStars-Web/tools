@@ -197,6 +197,7 @@ class AutoOrder extends Model
     protected static function filterAndGroupImportRows(array $rows): array
     {
         $data = [];
+        $importedSourceKeys = self::importedSourceKeys($rows);
 
         foreach ($rows as $row) {
             $idOrder = (int) $row['id_order'];
@@ -204,7 +205,7 @@ class AutoOrder extends Model
             $idProduct = (int) $row['id_product'];
             $idProductAttribute = (int) $row['id_product_attribute'];
 
-            if (self::alreadyImported($idOrderDetail, $idProduct, $idProductAttribute)) {
+            if (isset($importedSourceKeys[self::sourceKey($idOrderDetail, $idProduct, $idProductAttribute)])) {
                 continue;
             }
 
@@ -263,25 +264,41 @@ class AutoOrder extends Model
         }
     }
 
-    protected static function alreadyImported(int $idOrderDetail, int $idProduct, int $idProductAttribute): bool
+    protected static function importedSourceKeys(array $rows): array
     {
-        $tracked = DB::connection('mysql')
-            ->table(self::importedOrderDetailsTable())
-            ->where('id_order_detail', $idOrderDetail)
-            ->where('id_product', $idProduct)
-            ->where('id_product_attribute', $idProductAttribute)
-            ->exists();
+        $orderDetailIds = array_values(array_unique(array_map(
+            static fn (array $row): int => (int) $row['id_order_detail'],
+            $rows
+        )));
 
-        if ($tracked) {
-            return true;
+        if ($orderDetailIds === []) {
+            return [];
         }
 
-        return DB::connection('mysql')
-            ->table('auto_orders_candidates')
-            ->where('id_order_detail', $idOrderDetail)
-            ->where('id_product', $idProduct)
-            ->where('id_product_attribute', $idProductAttribute)
-            ->exists();
+        $imported = [];
+
+        foreach (array_chunk($orderDetailIds, 1000) as $ids) {
+            foreach (DB::connection('mysql')->table(self::importedOrderDetailsTable())
+                ->select('id_order_detail', 'id_product', 'id_product_attribute')
+                ->whereIn('id_order_detail', $ids)
+                ->get() as $row) {
+                $imported[self::sourceKey($row->id_order_detail, $row->id_product, $row->id_product_attribute)] = true;
+            }
+
+            foreach (DB::connection('mysql')->table('auto_orders_candidates')
+                ->select('id_order_detail', 'id_product', 'id_product_attribute')
+                ->whereIn('id_order_detail', $ids)
+                ->get() as $row) {
+                $imported[self::sourceKey($row->id_order_detail, $row->id_product, $row->id_product_attribute)] = true;
+            }
+        }
+
+        return $imported;
+    }
+
+    protected static function sourceKey(int $idOrderDetail, int $idProduct, int $idProductAttribute): string
+    {
+        return implode(':', [$idOrderDetail, $idProduct, $idProductAttribute]);
     }
 
     protected static function markOrderLinesAsImported(array $rows): void

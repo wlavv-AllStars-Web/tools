@@ -115,8 +115,8 @@ class SupplierInvoiceController extends Controller
     public function store(Request $request, OrderNote $orderNote)
     {
         $data = $request->validate([
-            'existing_invoice_id' => ['nullable', 'integer'],
-            'invoice_reference' => ['nullable', 'string', 'max:100'],
+            'existing_invoice_id' => ['nullable', 'integer', 'required_without:invoice_reference'],
+            'invoice_reference' => ['nullable', 'string', 'max:100', 'required_without:existing_invoice_id'],
             'invoice_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date'],
             'internal_note' => ['nullable', 'string'],

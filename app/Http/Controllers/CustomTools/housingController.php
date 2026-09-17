@@ -287,7 +287,7 @@ class housingController extends Controller
         $validated = $request->validate([
             'id_product' => ['required', 'integer', 'min:1'],
             'id_product_attribute' => ['nullable', 'integer', 'min:0'],
-            'ean13' => ['required', 'string', 'max:32'],
+            'ean13' => ['required', 'string', 'max:25'],
             'search_term' => ['nullable', 'string', 'max:191'],
         ]);
 
@@ -304,8 +304,17 @@ class housingController extends Controller
             return response()->json(['ok' => true, 'message' => 'No changes detected.']);
         }
 
-        $target->ean13 = $newEan13;
-        $target->save();
+        if ($resolved['type'] === 'attribute') {
+            DB::connection('mysql2')
+                ->table($this->psPrefix() . 'product_attribute')
+                ->where('id_product_attribute', (int) $target->id_product_attribute)
+                ->update(['ean13' => $newEan13]);
+        } else {
+            DB::connection('mysql2')
+                ->table($this->psPrefix() . 'product')
+                ->where('id_product', (int) $target->id_product)
+                ->update(['ean13' => $newEan13]);
+        }
 
         $this->storeHistoryBatch($resolved, 'update_ean13', [[
             'field_name' => 'ean13',

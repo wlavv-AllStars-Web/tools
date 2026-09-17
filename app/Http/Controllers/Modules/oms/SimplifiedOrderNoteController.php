@@ -92,6 +92,8 @@ class SimplifiedOrderNoteController extends Controller
                 'id' => (int) $invoice->invoice_id,
                 'reference' => (string) $invoice->invoice_reference,
                 'line_id' => (int) $row['line_id'],
+                'billed_line_id' => (int) $invoice->billed_line_id,
+                'qty_received' => (int) ($invoice->qty_received ?? 0),
                 'reference_product' => (string) $row['reference'],
                 'name' => (string) $row['name'],
                 'qty_billed' => (int) $invoice->qty_billed,
@@ -129,7 +131,7 @@ class SimplifiedOrderNoteController extends Controller
             ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
             ->join('oms_supplier_invoices as invoice', 'invoice.id', '=', 'billed_order.supplier_invoice_id')
             ->whereIn('oms_billed_order_lines.order_note_line_id', $lineIds)
-            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, invoice.id as invoice_id, invoice.invoice_reference')
+            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, SUM(oms_billed_order_lines.qty_received) as qty_received, invoice.id as invoice_id, invoice.invoice_reference')
             ->groupBy('oms_billed_order_lines.order_note_line_id', 'invoice.id', 'invoice.invoice_reference')
             ->get()
             ->groupBy('order_note_line_id');

@@ -92,9 +92,9 @@
 @endforelse
 </tbody></table></div>
 <div class="d-flex justify-content-end mt-3">
-    <div class="col-12 col-md-5 col-lg-4">
+    <div class="col-12 col-md-5 col-lg-4 text-center">
         <label for="invoiceSubmission" class="label">Invoice</label>
-        <select id="invoiceSubmission" class="form-select">
+        <select id="invoiceSubmission" class="form-select text-center">
             <option value="">Seleccione opção</option>
             <option value="__create__">Criar invoice</option>
             @foreach($draftInvoices as $draft)<option value="{{ $draft->id }}">{{ $draft->invoice_reference }}</option>@endforeach

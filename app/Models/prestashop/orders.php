@@ -210,7 +210,10 @@ class orders extends PrestashopModel
         $orders = self::select($ordersTable . '.id_order', $ordersTable . '.reference')
             ->join($customerTable, $ordersTable . '.id_customer', '=', $customerTable . '.id_customer')
             ->where($ordersTable . '.current_state', 29)
-            ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+            ->whereIn($ordersTable . '.id_shop', [
+                PrestashopAdminLinkService::shopId('ASM'),
+                PrestashopAdminLinkService::shopId('ASD'),
+            ])
             ->get();
 
         foreach ($orders as $order) {
@@ -633,7 +636,10 @@ class orders extends PrestashopModel
             ->when($hasCustomNotForReview, function ($query) use ($ordersTable, $customOrdersTable) {
                 $query->leftJoin($customOrdersTable, $customOrdersTable . '.id_order', '=', $ordersTable . '.id_order');
             })
-            ->where($ordersTable . '.id_shop', PrestashopAdminLinkService::shopId('ASM'))
+            ->whereIn($ordersTable . '.id_shop', [
+                PrestashopAdminLinkService::shopId('ASM'),
+                PrestashopAdminLinkService::shopId('ASD'),
+            ])
             ->where($ordersTable . '.current_state', 4)
             ->whereNotNull($customerTable . '.email')
             ->where($customerTable . '.email', '<>', '')

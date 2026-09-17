@@ -89,6 +89,15 @@ function addToOrder(element){
 
 function updateOrder(element, id_supplier){
 
+    const quantity = Number(element.val());
+    const row = element.closest('tr');
+    const isRemoval = quantity <= 0;
+
+    // Remove the line immediately; restore it if the background request fails.
+    if (isRemoval) {
+        row.detach();
+    }
+
     $.ajax({
         url: "{{ route('autoOrders.updateOrder') }}",
         type: "POST",
@@ -102,21 +111,25 @@ function updateOrder(element, id_supplier){
         success: function (success) {
             
             if(success.success){
-                Swal.fire(element.attr('reference') + '{{ __("messages.quantity updated!")}}', '', 'success')
-
                 if(success.type == 'remove'){
-
-                    element.closest('tr').remove();
+                    row.remove();
                 }
                 
                 $('#item_counter_' + id_supplier).text(success.quantity_order);
                 
             }else{
+                if (isRemoval) {
+                    row.insertBefore('#orderNewRow_' + id_supplier);
+                }
                 Swal.fire('{{ __("messages.Can not add the product to the order!")}}', '', 'error')
             }
 
         }, 
         error: function (error) {
+            if (isRemoval) {
+                row.insertBefore('#orderNewRow_' + id_supplier);
+            }
+            Swal.fire(error.responseJSON?.message || '{{ __("messages.Can not add the product to the order!")}}', '', 'error');
             console.log(`Error ${error}`);
         }
     });

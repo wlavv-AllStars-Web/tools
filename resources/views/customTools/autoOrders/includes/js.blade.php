@@ -238,6 +238,13 @@ function cleanBrand(manufacturer, key){
         denyButtonText: '{{ __("messages.CANCEL")}}'
     }).then((result) => {
         if (result.isConfirmed) {
+            const brandRow = $('#row_brand_' + key);
+            const brandList = brandRow.parent();
+            const nextRow = brandRow.next();
+
+            // Keep the UI responsive while the deletion is processed in the background.
+            brandRow.detach();
+
             $.ajax({
                 url: "{{ route('autoOrders.cleanBranditems') }}",
                 type: "POST",
@@ -245,8 +252,23 @@ function cleanBrand(manufacturer, key){
                 dataType: "json",
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (data) {
-                    $('#row_brand_'+key).remove();
-                    location.reload();
+                    if (!data.success) {
+                        if (nextRow.length) {
+                            brandRow.insertBefore(nextRow);
+                        } else {
+                            brandList.append(brandRow);
+                        }
+                        Swal.fire('{{ __("messages.Fail to clean. Please verify!")}}', '', 'error');
+                    }
+                },
+                error: function (error) {
+                    if (nextRow.length) {
+                        brandRow.insertBefore(nextRow);
+                    } else {
+                        brandList.append(brandRow);
+                    }
+                    Swal.fire(error.responseJSON?.message || '{{ __("messages.Fail to clean. Please verify!")}}', '', 'error');
+                    console.log(error.responseText || error);
                 }
             });
 

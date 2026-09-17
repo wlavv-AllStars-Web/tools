@@ -91,8 +91,9 @@
 @empty<tr><td colspan="15" class="empty">This order note has no product lines.</td></tr>
 @endforelse
 </tbody></table></div>
-<div class="d-flex justify-content-end mt-3">
-    <div class="col-12 col-md-5 col-lg-4 text-center">
+<div class="row mt-3">
+    <div class="col-lg-5"></div>
+    <div class="col-12 col-lg-2 text-center">
         <label for="invoiceSubmission" class="label">Invoice</label>
         <select id="invoiceSubmission" class="form-select text-center">
             <option value="">Seleccione opção</option>
@@ -104,6 +105,7 @@
         <input type="hidden" name="invoice_action" value="save_draft">
         <input type="hidden" name="invoice_date" value="{{ now()->toDateString() }}">
     </div>
+    <div class="col-lg-5"></div>
 </div>
 </form>
 @if($invoicedInvoices->isNotEmpty())

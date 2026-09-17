@@ -593,6 +593,14 @@ class OrderNoteController extends Controller
         $isEur = (bool) ($currencyMeta['is_eur'] ?? false);
         $purchaseSupplier = array_key_exists('purchase_supplier_price', $data) ? round((float) $data['purchase_supplier_price'], 6) : null;
         $saleSupplier = array_key_exists('sale_supplier_price', $data) ? round((float) $data['sale_supplier_price'], 6) : null;
+        $discount = $saleSupplier === null ? 0.0 : (float) $db->table($prefix.'custom_product')
+            ->where('id_product', $productId)
+            ->value('discount_percentage');
+
+        if ($saleSupplier !== null && $discount > 0) {
+            $purchaseSupplier = round($saleSupplier * (1 - ($discount / 100)), 6);
+        }
+
         $purchaseEur = $purchaseSupplier === null ? null : ($isEur || $purchaseRate <= 0 ? $purchaseSupplier : round($purchaseSupplier / $purchaseRate, 6));
         $saleEur = $saleSupplier === null ? null : ($isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6));
         abort_if($purchaseSupplier === null && $saleSupplier === null, 422, 'A purchase or sale price is required.');

@@ -504,7 +504,6 @@ class OrderNoteController extends Controller
             ->first(['price_base_currency']);
 
         $currencyMeta = $this->supplierInvoiceWorkflow->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
-        $purchaseRate = (float) ($currencyMeta['purchase_conversion_rate'] ?? 1);
         $saleRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
         $isEur = (bool) ($currencyMeta['is_eur'] ?? false);
 
@@ -515,6 +514,7 @@ class OrderNoteController extends Controller
         }
 
         $attributeSaleSupplier = 0.0;
+        $attributeSaleEur = 0.0;
         if ($attributeId > 0) {
             $attribute = $db->table($prefix.'product_attribute as pa')
                 ->leftJoin($prefix.'custom_product_attribute as cpa', function ($join) {
@@ -527,6 +527,7 @@ class OrderNoteController extends Controller
             abort_unless($attribute, 422, 'Product combination not found.');
 
             $attributeSaleSupplier = (float) ($attribute->sale_supplier ?? 0);
+            $attributeSaleEur = (float) ($attribute->sale_eur ?? 0);
             if ($attributeSaleSupplier == 0.0 && (float) $attribute->sale_eur != 0.0) {
                 $attributeSaleSupplier = $isEur || $saleRate <= 0
                     ? (float) $attribute->sale_eur
@@ -535,7 +536,7 @@ class OrderNoteController extends Controller
         }
 
         $newPurchase = round(($parentSaleSupplier + $attributeSaleSupplier) * (1 - ($discount / 100)), 6);
-        $newPurchaseEur = $isEur || $purchaseRate <= 0 ? $newPurchase : round($newPurchase / $purchaseRate, 6);
+        $newPurchaseEur = round(($parentSaleEur + $attributeSaleEur) * (1 - ($discount / 100)), 6);
 
         $db->transaction(function () use ($db, $prefix, $productId, $attributeId, $discount, $newPurchase, $newPurchaseEur) {
             $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
@@ -612,17 +613,20 @@ class OrderNoteController extends Controller
         $saleRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
         $isEur = (bool) ($currencyMeta['is_eur'] ?? false);
         $purchaseSupplier = array_key_exists('purchase_supplier_price', $data) ? round((float) $data['purchase_supplier_price'], 6) : null;
+        $purchaseEur = array_key_exists('purchase_eur_price', $data) ? round((float) $data['purchase_eur_price'], 6) : null;
         $saleSupplier = array_key_exists('sale_supplier_price', $data) ? round((float) $data['sale_supplier_price'], 6) : null;
+        $saleEur = array_key_exists('sale_eur_price', $data) ? round((float) $data['sale_eur_price'], 6) : null;
         $discount = $saleSupplier === null ? 0.0 : (float) $db->table($prefix.'custom_product')
             ->where('id_product', $productId)
             ->value('discount_percentage');
 
         if ($saleSupplier !== null) {
             $purchaseSupplier = round($saleSupplier * (1 - ($discount / 100)), 6);
+            $saleEur ??= $isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6);
+            $purchaseEur = round($saleEur * (1 - ($discount / 100)), 6);
         }
 
-        $purchaseEur = $purchaseSupplier === null ? null : ($isEur || $purchaseRate <= 0 ? $purchaseSupplier : round($purchaseSupplier / $purchaseRate, 6));
-        $saleEur = $saleSupplier === null ? null : ($isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6));
+        $purchaseEur ??= $purchaseSupplier === null ? null : ($isEur || $purchaseRate <= 0 ? $purchaseSupplier : round($purchaseSupplier / $purchaseRate, 6));
         abort_if($purchaseSupplier === null && $saleSupplier === null, 422, 'A purchase or sale price is required.');
 
         $targets = $this->priceTargetsForReference($productId, $attributeId);

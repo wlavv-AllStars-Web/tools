@@ -23,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\View;
 
 class OrderNoteController extends Controller
@@ -133,6 +134,7 @@ class OrderNoteController extends Controller
             'reference' => ['nullable', 'string', 'max:191'],
             'internal_note' => ['nullable', 'string'],
             'logistic_note' => ['nullable', 'string'],
+            'order_date' => ['nullable', 'date'],
             'return_to' => ['nullable', 'in:simple'],
         ]);
 
@@ -143,6 +145,10 @@ class OrderNoteController extends Controller
             'internal_note' => $data['internal_note'] ?? null,
             'logistic_note' => $data['logistic_note'] ?? null,
         ]);
+
+        if (!empty($data['order_date'])) {
+            $orderNote->forceFill(['created_at' => Carbon::parse($data['order_date'])->startOfDay()])->save();
+        }
 
         if (($data['return_to'] ?? null) === 'simple') {
             return redirect()->route('erp.oms.simple', [

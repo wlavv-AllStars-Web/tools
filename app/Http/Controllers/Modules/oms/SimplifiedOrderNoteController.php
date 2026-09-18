@@ -63,7 +63,7 @@ class SimplifiedOrderNoteController extends Controller
 
 
         $rows = $orderNote ? $this->rows($orderNote, $currencyMeta) : collect();
-        $invoicedInvoices = $this->invoicedInvoices($orderNote, $rows, $currencyMeta);
+        $invoicedInvoices = $orderNote ? $this->invoicedInvoices($orderNote, $rows, $currencyMeta) : collect();
         $availableShipments = $orderNote
             ? shipping::query()
                 ->where('supplier', (int) $orderNote->supplier_id)

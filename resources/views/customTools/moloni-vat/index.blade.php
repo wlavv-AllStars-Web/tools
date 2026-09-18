@@ -36,7 +36,7 @@
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead><tr><th>Estado</th><th>VAT</th><th>Última tentativa</th><th>Válido até</th><th>Encomendas</th><th>Detalhe</th><th></th></tr></thead>
+                <thead><tr><th>Estado</th><th>VAT</th><th>Última tentativa</th><th>Válido até</th><th>Cliente</th><th>Empresa</th><th>Loja</th><th>Encomendas</th><th>Detalhe</th><th></th></tr></thead>
                 <tbody>
                 @forelse($validations as $validation)
                     @php($color=['valid'=>'success','invalid'=>'danger','missing_vat'=>'danger','manual_review'=>'danger','pending'=>'warning','processing'=>'warning','retry_scheduled'=>'warning'][$validation->status]??'secondary')
@@ -46,6 +46,9 @@
                         <td><strong>{{ $validation->country_iso }}{{ $vatForDisplay }}</strong><small class="d-block text-muted">tentativas: {{ $validation->attempts }}</small></td>
                         <td>{{ $validation->last_attempt_at?->format('d/m/Y H:i')??'—' }}</td>
                         <td>{{ $validation->valid_until?->format('d/m/Y H:i')??'—' }}</td>
+                        <td>@forelse($validation->orders as $link)<span class="d-block">{{ $link->customer_name?:'—' }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
+                        <td>@forelse($validation->orders as $link)<span class="d-block">{{ $link->company?:'—' }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
+                        <td>@forelse($validation->orders as $link)<span class="badge text-bg-{{ $link->store==='ASD'?'info':'secondary' }} d-block mb-1">{{ $link->store }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
                         <td>
                             @foreach($validation->orders as $link)
                                 @if($link->prestashop_url)<a class="d-block" target="_blank" href="{{ $link->prestashop_url }}">#{{ $link->id_order }} {{ $link->order_reference }}</a>@else<span class="d-block">#{{ $link->id_order }} {{ $link->order_reference }}</span>@endif
@@ -56,7 +59,7 @@
                         <td>@if($validation->status!=='valid')<form method="POST" action="{{ route('web.tools.moloni_vat.retry',$validation) }}">@csrf<button class="btn btn-sm btn-outline-primary" type="submit">Tentar agora</button></form>@endif</td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-muted py-4">Sem registos.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-4">Sem registos.</td></tr>
                 @endforelse
                 </tbody>
             </table>

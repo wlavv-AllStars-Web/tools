@@ -16,7 +16,7 @@ class MoloniVatValidationController extends Controller
     public function index(Request $request)
     {
         $status=$request->string('status')->toString();
-        $query=MoloniVatValidation::query()->with(['orders'=>fn($q)=>$q->latest('id')->limit(10)])->withCount('orders')->latest('updated_at');
+        $query=MoloniVatValidation::query()->with(['orders'=>fn($q)=>$q->latest('id')])->withCount('orders')->latest('updated_at');
         if($status!=='')$query->where('status',$status);
         $validations=$query->paginate(50)->withQueryString();
         $this->attachOrderMetadata($validations->getCollection());
@@ -71,11 +71,22 @@ class MoloniVatValidationController extends Controller
         $ids=$validations->flatMap(fn($v)=>$v->orders->pluck('id_order'))->unique()->values();
         if($ids->isEmpty())return;
         $prefix=env('DB2_DB_prefix','ps_');
-        $orders=DB::connection('mysql2')->table($prefix.'orders')->whereIn('id_order',$ids)->pluck('reference','id_order');
+        $orders=DB::connection('mysql2')->table($prefix.'orders as o')
+            ->leftJoin($prefix.'customer as c','c.id_customer','=','o.id_customer')
+            ->leftJoin($prefix.'address as a','a.id_address','=','o.id_address_invoice')
+            ->whereIn('o.id_order',$ids)
+            ->select(['o.id_order','o.reference','o.id_shop','c.firstname','c.lastname','a.company'])
+            ->get()
+            ->keyBy('id_order');
+
         foreach($validations as $validation){
             foreach($validation->orders as $link){
-                $link->order_reference=$orders[$link->id_order]??null;
-                $link->prestashop_url=PrestashopAdminLinkService::dashboardOrderAdminUrl((int)$link->id_order,'ASM');
+                $order=$orders->get((int)$link->id_order);
+                $link->order_reference=$order?->reference;
+                $link->customer_name=trim(($order?->firstname??'').' '.($order?->lastname??''));
+                $link->company=trim((string)($order?->company??''));
+                $link->store=(int)($order?->id_shop??0)===3?'ASD':'ASM';
+                $link->prestashop_url=PrestashopAdminLinkService::dashboardOrderAdminUrl((int)$link->id_order,$link->store);
             }
         }
     }

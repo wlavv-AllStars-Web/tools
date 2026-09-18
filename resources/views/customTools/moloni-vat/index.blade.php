@@ -31,7 +31,8 @@
                     @php($color=['valid'=>'success','invalid'=>'danger','missing_vat'=>'danger','manual_review'=>'danger','pending'=>'warning','processing'=>'warning','retry_scheduled'=>'warning'][$validation->status]??'secondary')
                     <tr>
                         <td><span class="badge text-bg-{{ $color }}">{{ $statuses[$validation->status]??$validation->status }}</span></td>
-                        <td><strong>{{ $validation->country_iso }}{{ $validation->vat_number }}</strong><small class="d-block text-muted">tentativas: {{ $validation->attempts }}</small></td>
+                        @php($vatForDisplay=\App\Models\modules\moloni_vat_validation\MoloniVatValidation::normalizeVatNumber($validation->vat_number,$validation->country_iso))
+                        <td><strong>{{ $validation->country_iso }}{{ $vatForDisplay }}</strong><small class="d-block text-muted">tentativas: {{ $validation->attempts }}</small></td>
                         <td>{{ $validation->last_attempt_at?->format('d/m/Y H:i')??'—' }}</td>
                         <td>{{ $validation->valid_until?->format('d/m/Y H:i')??'—' }}</td>
                         <td>

@@ -63,7 +63,7 @@ class SimplifiedOrderNoteController extends Controller
 
 
         $rows = $orderNote ? $this->rows($orderNote, $currencyMeta) : collect();
-        $invoicedInvoices = $this->invoicedInvoices($rows);
+        $invoicedInvoices = $this->invoicedInvoices($orderNote, $rows, $currencyMeta);
         $availableShipments = $orderNote
             ? shipping::query()
                 ->where('supplier', (int) $orderNote->supplier_id)
@@ -96,23 +96,63 @@ class SimplifiedOrderNoteController extends Controller
         ]);
     }
 
-    private function invoicedInvoices($rows)
+    private function invoicedInvoices(OrderNote $orderNote, $rows, ?array $currencyMeta)
     {
-        return $rows->flatMap(function (array $row) {
-            return $row['invoices']->map(fn ($invoice) => [
-                'id' => (int) $invoice->invoice_id,
-                'reference' => (string) $invoice->invoice_reference,
-                'invoice_date' => $invoice->invoice_date,
-                'shipment_id' => (int) ($invoice->shipment_id ?? 0),
-                'line_id' => (int) $row['line_id'],
-                'billed_line_id' => (int) $invoice->billed_line_id,
-                'qty_received' => (int) ($invoice->qty_received ?? 0),
-                'reference_product' => (string) $row['reference'],
-                'name' => (string) $row['name'],
-                'qty_billed' => (int) $invoice->qty_billed,
+        $invoiceIds = $rows->flatMap(fn (array $row) => $row['invoices']->pluck('invoice_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($invoiceIds->isEmpty()) {
+            return collect();
+        }
+
+        $invoiceLines = BilledOrderLine::query()
+            ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
+            ->join('oms_supplier_invoices as invoice', 'invoice.id', '=', 'billed_order.supplier_invoice_id')
+            ->whereIn('invoice.id', $invoiceIds)
+            ->selectRaw('MIN(oms_billed_order_lines.id) as billed_line_id, oms_billed_order_lines.order_note_line_id, billed_order.order_note_id, invoice.id as invoice_id, invoice.invoice_reference, invoice.invoice_date, invoice.shipment_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, SUM(oms_billed_order_lines.qty_received) as qty_received')
+            ->groupBy('oms_billed_order_lines.order_note_line_id', 'billed_order.order_note_id', 'invoice.id', 'invoice.invoice_reference', 'invoice.invoice_date', 'invoice.shipment_id')
+            ->get();
+
+        $rowsByLineId = $rows->keyBy('line_id');
+        $foreignOrderNoteIds = $invoiceLines->pluck('order_note_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0 && $id !== (int) $orderNote->id)
+            ->unique();
+
+        if ($foreignOrderNoteIds->isNotEmpty()) {
+            OrderNote::query()
+                ->with('lines')
+                ->whereIn('id', $foreignOrderNoteIds)
+                ->get()
+                ->each(function (OrderNote $foreignOrderNote) use ($currencyMeta, &$rowsByLineId) {
+                    $this->rows($foreignOrderNote, $currencyMeta)->each(function (array $row) use (&$rowsByLineId) {
+                        $rowsByLineId->put($row['line_id'], $row);
+                    });
+                });
+        }
+
+        return $invoiceLines->map(function ($invoiceLine) use ($rowsByLineId, $orderNote) {
+            $row = $rowsByLineId->get((int) $invoiceLine->order_note_line_id);
+
+            if (!$row) {
+                return null;
+            }
+
+            return [
+                'id' => (int) $invoiceLine->invoice_id,
+                'reference' => (string) $invoiceLine->invoice_reference,
+                'invoice_date' => $invoiceLine->invoice_date,
+                'shipment_id' => (int) ($invoiceLine->shipment_id ?? 0),
+                'line_id' => (int) $invoiceLine->order_note_line_id,
+                'billed_line_id' => (int) $invoiceLine->billed_line_id,
+                'qty_received' => (int) ($invoiceLine->qty_received ?? 0),
+                'qty_billed' => (int) $invoiceLine->qty_billed,
+                'belongs_to_current_order_note' => (int) $invoiceLine->order_note_id === (int) $orderNote->id,
                 'row' => $row,
-            ]);
-        })->groupBy('id')->map(function ($entries) {
+            ];
+        })->filter()->groupBy('id')->map(function ($entries) {
             $first = $entries->first();
 
             return [

@@ -322,13 +322,36 @@ class SupplierInvoiceController extends Controller
             return response()->json(['success' => false, 'message' => 'This invoice line cannot be removed because it already has received quantities.'], 422);
         }
 
-        $line->delete();
+        $invoiceDeleted = DB::transaction(function () use ($invoice, $line, $billedOrder) {
+            $line->delete();
+
+            if (! $billedOrder->lines()->exists()) {
+                $billedOrder->delete();
+            }
+
+            $hasInvoiceLines = BilledOrderLine::query()
+                ->whereIn('billed_order_id', $invoice->billedOrders()->select('id'))
+                ->exists();
+
+            if (! $hasInvoiceLines) {
+                $invoice->billedOrders()->delete();
+                $invoice->delete();
+
+                return true;
+            }
+
+            return false;
+        });
 
         if ($billedOrder->orderNote) {
             $this->workflowService->refreshOrderNoteStatus($billedOrder->orderNote->fresh(['lines', 'billedOrders']));
         }
 
-        return response()->json(['success' => true, 'message' => 'Invoice line removed successfully.']);
+        return response()->json([
+            'success' => true,
+            'invoice_deleted' => $invoiceDeleted,
+            'message' => $invoiceDeleted ? 'Invoice was removed because it no longer has lines.' : 'Invoice line removed successfully.',
+        ]);
     }
 
     public function reverseLine(Request $request, SupplierInvoice $invoice, BilledOrderLine $line)

@@ -11,6 +11,7 @@ use App\Http\Controllers\API\AsdAlertApiController;
 use App\Http\Controllers\CustomTools\checkVatController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\pickingController;
+use App\Http\Controllers\CustomTools\MoloniVatValidationController;
 
 Route::group([
     'middleware' => ['api', 'cors'],
@@ -20,6 +21,10 @@ Route::group([
     Route::post('/vat/add', [CheckVatController::class, 'apiAdd'])->name('api.vat.add');
     Route::get('/vat/add/{id_customer}/{vat_number}/{country_iso}/{token}', [CheckVatController::class, 'apiAdd'])->whereNumber('id_customer')->name('api.vat.add.get');
     
+    /** Moloni VIES tracking: used by the invoice module and the PrestaShop order-detail alert. */
+    Route::post('/moloni/vat-validations/orders', [MoloniVatValidationController::class, 'register'])->name('api.moloni.vat.register');
+    Route::get('/moloni/vat-validations/orders/{idOrder}', [MoloniVatValidationController::class, 'orderStatus'])->whereNumber('idOrder')->name('api.moloni.vat.order_status');
+
     /** API to homepage **/
     Route::get('/homepage', [HomepageApiController::class, 'index' ]);  
     

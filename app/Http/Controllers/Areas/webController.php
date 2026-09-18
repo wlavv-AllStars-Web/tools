@@ -63,6 +63,7 @@ class webController extends Controller{
         $accessList[]                           = ['name' =>  trans('messages.changesTracker'),     'url' => route('web.tools.changes.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-code"></i>'];
         $accessList[]                           = ['name' => trans('messages.web.tools.auto_backorder.index'), 'url' => route('web.tools.auto_backorder.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-rotate-left"></i>'];
         $accessList[]                           = ['name' => trans('messages.trustpilot'), 'url' => route('web.tools.trustpilot.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-star"></i>'];
+        $accessList[]                           = ['name' => 'Moloni · VIES VAT', 'url' => route('web.tools.moloni_vat.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-building-circle-check"></i>'];
 
         /**
         $accessList[]                           = ['name' =>  trans('messages.purchasePrice'),      'url' => route('purchasePrice.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];

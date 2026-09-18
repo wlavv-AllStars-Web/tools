@@ -9,6 +9,8 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         \App\Console\Commands\ProcessDueVatValidationsCommand::class,
+        \App\Console\Commands\ProcessDueMoloniVatValidationsCommand::class,
+        \App\Console\Commands\ReconcileMoloniVatValidationsCommand::class,
         \App\Console\Commands\AuditShippedOrdersForBackorder::class,
         \App\Console\Commands\RemovePackLinesFromAutoBackorderAudits::class,
     ];
@@ -17,6 +19,8 @@ class Kernel extends ConsoleKernel
     {
         // Order-state classification is owned exclusively by PrestaShop.
         $schedule->command('vat:validate-due --limit=25')->everyMinute()->withoutOverlapping();
+        $schedule->command('moloni-vat:validate-due --limit=25')->everyMinute()->withoutOverlapping();
+        $schedule->command('moloni-vat:reconcile --limit=250')->everyFifteenMinutes()->withoutOverlapping();
         $schedule->command('asd-images:sync')->dailyAt('03:00')->withoutOverlapping();
         $schedule->command('youtube:check-broken-links')->cron('30 4 */3 * *')->withoutOverlapping();
         $schedule->command('newsletter:send-pending --limit=10')->everyFiveMinutes()->withoutOverlapping();

@@ -63,6 +63,7 @@ use App\Http\Controllers\CustomTools\PaymentLinkRequestController;
 use App\Http\Controllers\CustomTools\ProductStoreVisibilityController;
 use App\Http\Controllers\CustomTools\AsdAlertController;
 use App\Http\Controllers\CustomTools\ToolsMigrationController;
+use App\Http\Controllers\CustomTools\MoloniVatValidationController;
 
 use App\Http\Controllers\CustomTools\CurrencyVariationController;
 use App\Http\Controllers\Modules\oms\DashboardController as OmsDashboardController;
@@ -97,6 +98,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('web')->name('web.tools.')->group(function () {
+        Route::get('/moloni-vat', [MoloniVatValidationController::class, 'index'])->name('moloni_vat.index');
+        Route::post('/moloni-vat/{validation}/retry', [MoloniVatValidationController::class, 'retry'])->name('moloni_vat.retry');
+
         Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');
         Route::post('/auto-backorder/run', [AutoBackorderAuditController::class, 'runManually'])->name('auto_backorder.run');
 

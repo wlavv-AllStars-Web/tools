@@ -36,7 +36,9 @@ class OrderNotePrintService
         $pdf->SetFont('dejavusans', '', 9);
         $pdf->writeHTML($this->html($orderNote, $supplierMap, $rows->all(), $symbol, $totalQuantity, $total), true, false, true, false, '');
 
-        $filename = 'order-note-' . $orderNote->id . '-print.pdf';
+        $reference = preg_replace('/[^\pL\pN._-]+/u', '_', (string) $orderNote->reference) ?? '';
+        $reference = trim($reference, '._-');
+        $filename = ($reference !== '' ? $reference : 'order-note-' . $orderNote->id) . '.pdf';
 
         return response($pdf->Output($filename, 'S'), 200, [
             'Content-Type' => 'application/pdf',

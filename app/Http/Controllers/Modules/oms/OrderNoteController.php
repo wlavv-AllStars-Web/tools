@@ -1327,8 +1327,16 @@ class OrderNoteController extends Controller
                 fputcsv($output, [$reference ?: '', $line->product_id, $line->product_attribute_id ?: '', $line->qty_ordered], ';');
             }
             fclose($output);
-        }, 'order-note-'.$orderNote->id.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }, $this->orderNoteExportFilename($orderNote, 'csv'), ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
+    private function orderNoteExportFilename(OrderNote $orderNote, string $extension): string
+    {
+        $reference = preg_replace('/[^\pL\pN._-]+/u', '_', (string) $orderNote->reference) ?? '';
+        $reference = trim($reference, '._-');
+
+        return ($reference !== '' ? $reference : 'order-note-' . $orderNote->id) . '.' . $extension;
+    }
+
     public function exportXlsx(OrderNote $orderNote)
     {
         $orderNote->load(['lines', 'supplier', 'billedOrders']);

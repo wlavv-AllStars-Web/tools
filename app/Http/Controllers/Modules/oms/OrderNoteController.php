@@ -622,7 +622,9 @@ class OrderNoteController extends Controller
         if ($saleSupplier !== null) {
             $purchaseSupplier = round($saleSupplier * (1 - ($discount / 100)), 6);
             $saleEur ??= $isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6);
-            $purchaseEur = round($saleEur * (1 - ($discount / 100)), 6);
+            $purchaseEur = $isEur || $purchaseRate <= 0
+                ? $purchaseSupplier
+                : round($purchaseSupplier / $purchaseRate, 6);
         }
 
         $purchaseEur ??= $purchaseSupplier === null ? null : ($isEur || $purchaseRate <= 0 ? $purchaseSupplier : round($purchaseSupplier / $purchaseRate, 6));

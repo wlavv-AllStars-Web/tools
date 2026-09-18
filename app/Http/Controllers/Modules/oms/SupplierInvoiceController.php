@@ -180,8 +180,15 @@ class SupplierInvoiceController extends Controller
             ->groupBy('context_id')
             ->map(fn ($rows) => $rows->first());
 
-        $linkedShipmentIds = shipping_erp::getShippingIdsForErp((int) $invoice->id)
+        // Direct invoice association is canonical. Keep the legacy lookup only so
+        // existing order-level relations remain visible during the transition.
+        $legacyShipmentIds = shipping_erp::getShippingIdsForErp((int) $invoice->id)
             ->map(fn ($id) => (int) $id)
+            ->values();
+        $linkedShipmentIds = collect([(int) ($invoice->shipment_id ?? 0)])
+            ->filter()
+            ->merge($legacyShipmentIds)
+            ->unique()
             ->values();
 
         $availableShipments = shipping::query()
@@ -191,7 +198,7 @@ class SupplierInvoiceController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $selectedShipmentId = (int) ($linkedShipmentIds->first() ?? 0);
+        $selectedShipmentId = (int) ($invoice->shipment_id ?: ($legacyShipmentIds->first() ?? 0));
 
         $canReverseInvoices = $this->canReverseInvoices();
 
@@ -425,7 +432,7 @@ class SupplierInvoiceController extends Controller
             }
         }
 
-        shipping_erp::replaceErpRelation((int) $invoice->id, $shipmentId);
+        $invoice->update(['shipment_id' => $shipmentId]);
 
         return back()->with('success', $shipmentId
             ? 'Shipment relation saved successfully.'

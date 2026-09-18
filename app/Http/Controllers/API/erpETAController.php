@@ -41,25 +41,25 @@ class erpETAController extends Controller
 
         $labels = [
             'in_stock' =>       [1 => 'In stock: ',         4 => 'En stock: ',          5 => 'En stock: '],
-            'shipped_within' => [1 => 'Shipped within: ',   4 => 'Enviado dentro de: ', 5 => 'Expédié sous: '],
-            'available_on' =>   [1 => 'Availability: ',     4 => 'Disponibilidad: ',    5 => 'Disponibilité: '],
+            'shipped_within' => [1 => 'Shipped within: ',   4 => 'Enviado dentro de: ', 5 => 'ExpÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©diÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© sous: '],
+            'available_on' =>   [1 => 'Availability: ',     4 => 'Disponibilidad: ',    5 => 'DisponibilitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©: '],
         ];
 
         $tooltips = [
             'out_of_stock_generic' => [
                 1 => 'This product is currently out of stock and there are no pending OMS incoming quantities linked to an active shipment.',
-                4 => 'Este producto no está disponible en stock y no existen cantidades pendientes en el OMS vinculadas a un envío activo.',
-                5 => 'Ce produit n’est pas en stock et aucune quantité entrante OMS n’est liée à un envoi actif.',
+                4 => 'Este producto no estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ disponible en stock y no existen cantidades pendientes en el OMS vinculadas a un envÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o activo.',
+                5 => 'Ce produit nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢est pas en stock et aucune quantitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© entrante OMS nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢est liÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  un envoi actif.',
             ],
             'in_stock_generic' => [
                 1 => 'This product is currently in stock in our warehouses.',
-                4 => 'Este producto está actualmente en stock en nuestros almacenes.',
-                5 => 'Ce produit est actuellement en stock dans nos entrepôts.',
+                4 => 'Este producto estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ actualmente en stock en nuestros almacenes.',
+                5 => 'Ce produit est actuellement en stock dans nos entrepÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ts.',
             ],
             'incoming_with_eta' => [
                 1 => 'This item has invoiced quantities in OMS that are still pending reception and already linked to a shipment. The displayed date is the latest ETA recorded for the shipment.',
-                4 => 'Este artículo tiene cantidades facturadas en el OMS aún pendientes de recepción y ya vinculadas a un envío. La fecha mostrada es la última ETA registrada para ese envío.',
-                5 => 'Cet article a des quantités facturées dans l’OMS encore en attente de réception et déjà liées à un envoi. La date affichée correspond à la dernière ETA enregistrée pour cet envoi.',
+                4 => 'Este artÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­culo tiene cantidades facturadas en el OMS aÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºn pendientes de recepciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n y ya vinculadas a un envÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o. La fecha mostrada es la ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºltima ETA registrada para ese envÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o.',
+                5 => 'Cet article a des quantitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s facturÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es dans lÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢OMS encore en attente de rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ception et dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  liÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  un envoi. La date affichÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e correspond ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  la derniÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re ETA enregistrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e pour cet envoi.',
             ],
         ];
 
@@ -122,6 +122,7 @@ class erpETAController extends Controller
                     'message' => $message,
                     'eta' => $incoming['eta'],
                     'shipment_id' => $incoming['shipment_id'],
+                    'shipment_source' => $incoming['shipment_source'] ?? null,
                 ]);
             }
 
@@ -399,6 +400,7 @@ class erpETAController extends Controller
                         'eta' => $incoming['eta'],
                         'quantity' => $incoming['quantity'],
                         'shipment_id' => $incoming['shipment_id'],
+                    'shipment_source' => $incoming['shipment_source'] ?? null,
                     ]
                     : ['status' => 'out_of_stock', 'quantity' => 'OUT OF STOCK'];
                 continue;
@@ -452,13 +454,30 @@ class erpETAController extends Controller
         $rows = DB::table('oms_billed_order_lines as bol')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
             ->join('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
-            ->leftJoin('shipping_erp as se', 'se.id_erp', '=', 'si.id')
-            ->leftJoin('shipping as s', 's.id', '=', 'se.id_shipping')
+            // The invoice relation is canonical. shipping_erp remains the fallback for
+            // legacy order-level transport associations during the migration period.
+            ->leftJoin('shipping as invoice_shipping', 'invoice_shipping.id', '=', 'si.shipment_id')
+            ->leftJoin('shipping_erp as legacy_shipping_relation', 'legacy_shipping_relation.id_erp', '=', 'bo.id')
+            ->leftJoin('shipping as legacy_shipping', 'legacy_shipping.id', '=', 'legacy_shipping_relation.id_shipping')
+            // Earlier OMS versions stored invoice IDs in shipping_erp as well. It is
+            // deliberately the last fallback because that table has no type column.
+            ->leftJoin('shipping_erp as transitional_invoice_relation', 'transitional_invoice_relation.id_erp', '=', 'si.id')
+            ->leftJoin('shipping as transitional_invoice_shipping', 'transitional_invoice_shipping.id', '=', 'transitional_invoice_relation.id_shipping')
             ->leftJoin(DB::raw('(
                 SELECT sd.id_shipping, MAX(sd.date) as eta_date
                 FROM shipping_delay sd
                 GROUP BY sd.id_shipping
-            ) as eta_map'), 'eta_map.id_shipping', '=', 's.id')
+            ) as invoice_eta_map'), 'invoice_eta_map.id_shipping', '=', 'invoice_shipping.id')
+            ->leftJoin(DB::raw('(
+                SELECT sd.id_shipping, MAX(sd.date) as eta_date
+                FROM shipping_delay sd
+                GROUP BY sd.id_shipping
+            ) as legacy_eta_map'), 'legacy_eta_map.id_shipping', '=', 'legacy_shipping.id')
+            ->leftJoin(DB::raw('(
+                SELECT sd.id_shipping, MAX(sd.date) as eta_date
+                FROM shipping_delay sd
+                GROUP BY sd.id_shipping
+            ) as transitional_invoice_eta_map'), 'transitional_invoice_eta_map.id_shipping', '=', 'transitional_invoice_shipping.id')
             ->leftJoin(DB::raw('(
                 SELECT rl.billed_order_line_id, SUM(rl.qty_received) as qty_received_sum
                 FROM oms_reception_lines rl
@@ -474,8 +493,18 @@ class erpETAController extends Controller
                 COALESCE(bol.product_attribute_id, 0) as product_attribute_id,
                 bol.qty_billed,
                 COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) as qty_received_real,
-                s.id as shipment_id,
-                eta_map.eta_date as eta_date
+                COALESCE(invoice_shipping.id, legacy_shipping.id, transitional_invoice_shipping.id) as shipment_id,
+                CASE
+                    WHEN invoice_shipping.id IS NOT NULL THEN \'supplier_invoice\'
+                    WHEN legacy_shipping.id IS NOT NULL THEN \'billed_order\'
+                    WHEN transitional_invoice_shipping.id IS NOT NULL THEN \'legacy_invoice\'
+                    ELSE NULL
+                END as shipment_source,
+                CASE
+                    WHEN invoice_shipping.id IS NOT NULL THEN invoice_eta_map.eta_date
+                    WHEN legacy_shipping.id IS NOT NULL THEN legacy_eta_map.eta_date
+                    ELSE transitional_invoice_eta_map.eta_date
+                END as eta_date
             ')
             ->get();
 
@@ -492,7 +521,7 @@ class erpETAController extends Controller
             }
 
             if (!isset($incoming[$key])) {
-                $incoming[$key] = ['quantity' => 0, 'shipment_id' => null, 'eta' => null];
+                $incoming[$key] = ['quantity' => 0, 'shipment_id' => null, 'shipment_source' => null, 'eta' => null];
             }
             $incoming[$key]['quantity'] += $outstanding;
 
@@ -500,6 +529,7 @@ class erpETAController extends Controller
                 && ($incoming[$key]['eta'] === null || $row->eta_date < $incoming[$key]['eta'])) {
                 $incoming[$key]['eta'] = (string) $row->eta_date;
                 $incoming[$key]['shipment_id'] = (int) $row->shipment_id;
+                $incoming[$key]['shipment_source'] = $row->shipment_source;
             }
         }
 
@@ -549,6 +579,7 @@ class erpETAController extends Controller
                     'eta' => $incoming['eta'],
                     'quantity' => $incoming['quantity'],
                     'shipment_id' => $incoming['shipment_id'],
+                    'shipment_source' => $incoming['shipment_source'] ?? null,
                 ];
             }
 
@@ -650,13 +681,30 @@ class erpETAController extends Controller
         $rows = DB::table('oms_billed_order_lines as bol')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
             ->join('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
-            ->leftJoin('shipping_erp as se', 'se.id_erp', '=', 'si.id')
-            ->leftJoin('shipping as s', 's.id', '=', 'se.id_shipping')
+            // The invoice relation is canonical. shipping_erp remains the fallback for
+            // legacy order-level transport associations during the migration period.
+            ->leftJoin('shipping as invoice_shipping', 'invoice_shipping.id', '=', 'si.shipment_id')
+            ->leftJoin('shipping_erp as legacy_shipping_relation', 'legacy_shipping_relation.id_erp', '=', 'bo.id')
+            ->leftJoin('shipping as legacy_shipping', 'legacy_shipping.id', '=', 'legacy_shipping_relation.id_shipping')
+            // Earlier OMS versions stored invoice IDs in shipping_erp as well. It is
+            // deliberately the last fallback because that table has no type column.
+            ->leftJoin('shipping_erp as transitional_invoice_relation', 'transitional_invoice_relation.id_erp', '=', 'si.id')
+            ->leftJoin('shipping as transitional_invoice_shipping', 'transitional_invoice_shipping.id', '=', 'transitional_invoice_relation.id_shipping')
             ->leftJoin(DB::raw('(
                 SELECT sd.id_shipping, MAX(sd.date) as eta_date
                 FROM shipping_delay sd
                 GROUP BY sd.id_shipping
-            ) as eta_map'), 'eta_map.id_shipping', '=', 's.id')
+            ) as invoice_eta_map'), 'invoice_eta_map.id_shipping', '=', 'invoice_shipping.id')
+            ->leftJoin(DB::raw('(
+                SELECT sd.id_shipping, MAX(sd.date) as eta_date
+                FROM shipping_delay sd
+                GROUP BY sd.id_shipping
+            ) as legacy_eta_map'), 'legacy_eta_map.id_shipping', '=', 'legacy_shipping.id')
+            ->leftJoin(DB::raw('(
+                SELECT sd.id_shipping, MAX(sd.date) as eta_date
+                FROM shipping_delay sd
+                GROUP BY sd.id_shipping
+            ) as transitional_invoice_eta_map'), 'transitional_invoice_eta_map.id_shipping', '=', 'transitional_invoice_shipping.id')
             ->leftJoin(DB::raw('(
                 SELECT rl.billed_order_line_id, SUM(rl.qty_received) as qty_received_sum
                 FROM oms_reception_lines rl
@@ -681,13 +729,24 @@ class erpETAController extends Controller
                 bol.id,
                 bol.qty_billed,
                 COALESCE(rl_sum.qty_received_sum, bol.qty_received, 0) as qty_received_real,
-                s.id as shipment_id,
-                eta_map.eta_date as eta_date
+                COALESCE(invoice_shipping.id, legacy_shipping.id, transitional_invoice_shipping.id) as shipment_id,
+                CASE
+                    WHEN invoice_shipping.id IS NOT NULL THEN \'supplier_invoice\'
+                    WHEN legacy_shipping.id IS NOT NULL THEN \'billed_order\'
+                    WHEN transitional_invoice_shipping.id IS NOT NULL THEN \'legacy_invoice\'
+                    ELSE NULL
+                END as shipment_source,
+                CASE
+                    WHEN invoice_shipping.id IS NOT NULL THEN invoice_eta_map.eta_date
+                    WHEN legacy_shipping.id IS NOT NULL THEN legacy_eta_map.eta_date
+                    ELSE transitional_invoice_eta_map.eta_date
+                END as eta_date
             ')
             ->get();
 
         $quantity = 0;
         $selectedShipmentId = null;
+        $selectedShipmentSource = null;
         $selectedEta = null;
 
         foreach ($rows as $row) {
@@ -702,6 +761,7 @@ class erpETAController extends Controller
                 if ($selectedEta === null || $row->eta_date < $selectedEta) {
                     $selectedEta = (string) $row->eta_date;
                     $selectedShipmentId = (int) $row->shipment_id;
+                    $selectedShipmentSource = $row->shipment_source;
                 }
             }
         }
@@ -709,6 +769,7 @@ class erpETAController extends Controller
         return [
             'quantity' => $quantity,
             'shipment_id' => $selectedShipmentId,
+            'shipment_source' => $selectedShipmentSource,
             'eta' => $selectedEta,
         ];
     }

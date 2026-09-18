@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Modules\oms;
 use App\Http\Controllers\Controller;
 use App\Models\modules\oms\BilledOrderLine;
 use App\Models\modules\oms\OrderNote;
+use App\Models\modules\shipping\shipping;
 use App\Models\prestashop\suppliers;
 use App\Services\oms\SupplierInvoiceWorkflowService;
 use App\Services\Prestashop\PrestashopAdminLinkService;
@@ -62,6 +63,15 @@ class SimplifiedOrderNoteController extends Controller
 
 
         $rows = $orderNote ? $this->rows($orderNote, $currencyMeta) : collect();
+        $invoicedInvoices = $this->invoicedInvoices($rows);
+        $availableShipments = $orderNote
+            ? shipping::query()
+                ->where('supplier', (int) $orderNote->supplier_id)
+                ->whereIn('status', [1, 2])
+                ->orderByDesc('id')
+                ->get()
+            : collect();
+
         return view('modules.oms.order_notes.simplified', [
             'suppliers' => $suppliers,
             'selectedSupplierId' => $supplierId,
@@ -73,7 +83,8 @@ class SimplifiedOrderNoteController extends Controller
                 ? $this->invoiceWorkflow->getDraftInvoicesForSupplier((int) $orderNote->supplier_id)
                 : collect(),
             'simplifiedOmsRows' => $rows,
-            'invoicedInvoices' => $this->invoicedInvoices($rows),
+            'invoicedInvoices' => $invoicedInvoices,
+            'availableShipments' => $availableShipments,
             'summary' => [
                 'lines' => $rows->count(),
                 'products' => (int) $rows->sum('ordered'),
@@ -91,6 +102,7 @@ class SimplifiedOrderNoteController extends Controller
             return $row['invoices']->map(fn ($invoice) => [
                 'id' => (int) $invoice->invoice_id,
                 'reference' => (string) $invoice->invoice_reference,
+                'shipment_id' => (int) ($invoice->shipment_id ?? 0),
                 'line_id' => (int) $row['line_id'],
                 'billed_line_id' => (int) $invoice->billed_line_id,
                 'qty_received' => (int) ($invoice->qty_received ?? 0),
@@ -105,6 +117,7 @@ class SimplifiedOrderNoteController extends Controller
             return [
                 'id' => $first['id'],
                 'reference' => $first['reference'],
+                'shipment_id' => $first['shipment_id'],
                 'lines' => $entries->values(),
                 'qty_billed' => (int) $entries->sum('qty_billed'),
             ];
@@ -131,8 +144,8 @@ class SimplifiedOrderNoteController extends Controller
             ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
             ->join('oms_supplier_invoices as invoice', 'invoice.id', '=', 'billed_order.supplier_invoice_id')
             ->whereIn('oms_billed_order_lines.order_note_line_id', $lineIds)
-            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, SUM(oms_billed_order_lines.qty_received) as qty_received, invoice.id as invoice_id, invoice.invoice_reference')
-            ->groupBy('oms_billed_order_lines.order_note_line_id', 'invoice.id', 'invoice.invoice_reference')
+            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, SUM(oms_billed_order_lines.qty_received) as qty_received, invoice.id as invoice_id, invoice.invoice_reference, invoice.shipment_id')
+            ->groupBy('oms_billed_order_lines.order_note_line_id', 'invoice.id', 'invoice.invoice_reference', 'invoice.shipment_id')
             ->get()
             ->groupBy('order_note_line_id');
         $received = DB::table('oms_reception_lines as r')

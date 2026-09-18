@@ -5,6 +5,7 @@ namespace App\Models\modules\oms;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\prestashop\suppliers;
+use App\Models\modules\shipping\shipping;
 
 class SupplierInvoice extends BaseOmsModel
 {
@@ -12,6 +13,7 @@ class SupplierInvoice extends BaseOmsModel
 
     protected $fillable = [
         'supplier_id',
+        'shipment_id',
         'invoice_reference',
         'invoice_date',
         'due_date',
@@ -25,6 +27,7 @@ class SupplierInvoice extends BaseOmsModel
 
     protected $casts = [
         'supplier_id' => 'integer',
+        'shipment_id' => 'integer',
         'currency_id' => 'integer',
         'conversion_rate' => 'decimal:6',
         'invoice_date' => 'date',
@@ -41,6 +44,11 @@ class SupplierInvoice extends BaseOmsModel
     public function billedOrders(): HasMany
     {
         return $this->hasMany(BilledOrder::class, 'supplier_invoice_id', 'id');
+    }
+
+    public function shipment(): BelongsTo
+    {
+        return $this->belongsTo(shipping::class, 'shipment_id');
     }
 
     public function getHasAnyNoteAttribute(): bool

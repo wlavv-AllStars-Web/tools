@@ -492,7 +492,7 @@ class OrderNoteController extends Controller
     }
 
     /**
-     * Stores the product discount and recalculates only the purchase price.
+     * Stores the product discount and calculates purchase from the current sale price.
      */
     private function updateLinePurchaseDiscount(OrderNote $orderNote, OrderNoteLine $line, float $discount): JsonResponse
     {
@@ -501,25 +501,40 @@ class OrderNoteController extends Controller
         $productId = (int) $line->product_id;
         $attributeId = (int) ($line->product_attribute_id ?? 0);
         $customProduct = $db->table($prefix.'custom_product')->where('id_product', $productId)
-            ->first(['discount_percentage', 'wholesale_price_base_currency']);
-        $oldDiscount = (float) ($customProduct->discount_percentage ?? 0);
-        abort_if($oldDiscount >= 100, 422, 'The current 100% discount cannot be changed without first setting the purchase price.');
-
-        $cataloguePurchase = (float) $db->table($prefix.($attributeId > 0 ? 'product_attribute' : 'product'))
-            ->where($attributeId > 0 ? 'id_product_attribute' : 'id_product', $attributeId > 0 ? $attributeId : $productId)
-            ->value('wholesale_price');
-        $storedPurchase = $attributeId > 0
-            ? $db->table($prefix.'custom_product_attribute')->where('id_product', $productId)->where('id_product_attribute', $attributeId)->value('wholesale_price_base_currency')
-            : ($customProduct->wholesale_price_base_currency ?? null);
+            ->first(['price_base_currency']);
 
         $currencyMeta = $this->supplierInvoiceWorkflow->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
         $purchaseRate = (float) ($currencyMeta['purchase_conversion_rate'] ?? 1);
+        $saleRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
         $isEur = (bool) ($currencyMeta['is_eur'] ?? false);
-        $currentPurchase = $storedPurchase === null
-            ? ($isEur || $purchaseRate <= 0 ? $cataloguePurchase : $cataloguePurchase * $purchaseRate)
-            : (float) $storedPurchase;
-        $basePurchase = $currentPurchase / (1 - ($oldDiscount / 100));
-        $newPurchase = round($basePurchase * (1 - ($discount / 100)), 6);
+
+        $parentSaleEur = (float) $db->table($prefix.'product')->where('id_product', $productId)->value('price');
+        $parentSaleSupplier = (float) ($customProduct?->price_base_currency ?? 0);
+        if ($parentSaleSupplier == 0.0 && $parentSaleEur != 0.0) {
+            $parentSaleSupplier = $isEur || $saleRate <= 0 ? $parentSaleEur : $parentSaleEur * $saleRate;
+        }
+
+        $attributeSaleSupplier = 0.0;
+        if ($attributeId > 0) {
+            $attribute = $db->table($prefix.'product_attribute as pa')
+                ->leftJoin($prefix.'custom_product_attribute as cpa', function ($join) {
+                    $join->on('cpa.id_product', '=', 'pa.id_product')
+                        ->on('cpa.id_product_attribute', '=', 'pa.id_product_attribute');
+                })
+                ->where('pa.id_product', $productId)
+                ->where('pa.id_product_attribute', $attributeId)
+                ->first(['pa.price as sale_eur', 'cpa.price_base_currency as sale_supplier']);
+            abort_unless($attribute, 422, 'Product combination not found.');
+
+            $attributeSaleSupplier = (float) ($attribute->sale_supplier ?? 0);
+            if ($attributeSaleSupplier == 0.0 && (float) $attribute->sale_eur != 0.0) {
+                $attributeSaleSupplier = $isEur || $saleRate <= 0
+                    ? (float) $attribute->sale_eur
+                    : (float) $attribute->sale_eur * $saleRate;
+            }
+        }
+
+        $newPurchase = round(($parentSaleSupplier + $attributeSaleSupplier) * (1 - ($discount / 100)), 6);
         $newPurchaseEur = $isEur || $purchaseRate <= 0 ? $newPurchase : round($newPurchase / $purchaseRate, 6);
 
         $db->transaction(function () use ($db, $prefix, $productId, $attributeId, $discount, $newPurchase, $newPurchaseEur) {
@@ -602,7 +617,7 @@ class OrderNoteController extends Controller
             ->where('id_product', $productId)
             ->value('discount_percentage');
 
-        if ($saleSupplier !== null && $discount > 0) {
+        if ($saleSupplier !== null) {
             $purchaseSupplier = round($saleSupplier * (1 - ($discount / 100)), 6);
         }
 

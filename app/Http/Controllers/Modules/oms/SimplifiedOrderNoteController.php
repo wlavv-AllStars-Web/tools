@@ -181,7 +181,10 @@ class SimplifiedOrderNoteController extends Controller
             $isAttribute = (bool) $attribute;
             $billed = (int) ($invoiced[$line->id] ?? 0);
             $key = (int) $line->product_id.'|'.(int) ($line->product_attribute_id ?? 0);
-            $salesEur = (float) ($isAttribute ? ($product->sales_eur + $attribute->sales_eur) : $product->sales_eur);
+            // Historic OMS lines can point to a product that has since been removed from PrestaShop.
+            $productSalesEur = (float) ($product?->sales_eur ?? 0);
+            $attributeSalesEur = (float) ($attribute?->sales_eur ?? 0);
+            $salesEur = $productSalesEur + ($isAttribute ? $attributeSalesEur : 0);
             $saleConversionRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
             if ($saleConversionRate <= 0) {
                 $saleConversionRate = 1.0;
@@ -225,8 +228,8 @@ class SimplifiedOrderNoteController extends Controller
                 'remaining' => max(0, (int) $line->qty_ordered - $billed),
                 'received' => (int) ($received[$line->id] ?? 0),
                 'invoices' => ($lineInvoices->get($line->id, collect()))->values(),
-                'purchase_supplier' => (float) ($isAttribute ? $attribute->purchase_supplier : $product->purchase_supplier),
-                'purchase_eur' => (float) ($isAttribute ? $attribute->purchase_eur : $product->purchase_eur),
+                'purchase_supplier' => (float) ($isAttribute ? ($attribute?->purchase_supplier ?? 0) : ($product?->purchase_supplier ?? 0)),
+                'purchase_eur' => (float) ($isAttribute ? ($attribute?->purchase_eur ?? 0) : ($product?->purchase_eur ?? 0)),
                 'discount_percentage' => (float) ($product->discount_percentage ?? 0),
                 'sales_supplier' => round($salesSupplier, 6),
                 'sales_eur' => $salesEur,

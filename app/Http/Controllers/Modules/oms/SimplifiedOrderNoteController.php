@@ -102,6 +102,7 @@ class SimplifiedOrderNoteController extends Controller
             return $row['invoices']->map(fn ($invoice) => [
                 'id' => (int) $invoice->invoice_id,
                 'reference' => (string) $invoice->invoice_reference,
+                'invoice_date' => $invoice->invoice_date,
                 'shipment_id' => (int) ($invoice->shipment_id ?? 0),
                 'line_id' => (int) $row['line_id'],
                 'billed_line_id' => (int) $invoice->billed_line_id,
@@ -117,6 +118,7 @@ class SimplifiedOrderNoteController extends Controller
             return [
                 'id' => $first['id'],
                 'reference' => $first['reference'],
+                'invoice_date' => $first['invoice_date'],
                 'shipment_id' => $first['shipment_id'],
                 'lines' => $entries->values(),
                 'qty_billed' => (int) $entries->sum('qty_billed'),
@@ -144,8 +146,8 @@ class SimplifiedOrderNoteController extends Controller
             ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'oms_billed_order_lines.billed_order_id')
             ->join('oms_supplier_invoices as invoice', 'invoice.id', '=', 'billed_order.supplier_invoice_id')
             ->whereIn('oms_billed_order_lines.order_note_line_id', $lineIds)
-            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, SUM(oms_billed_order_lines.qty_received) as qty_received, invoice.id as invoice_id, invoice.invoice_reference, invoice.shipment_id')
-            ->groupBy('oms_billed_order_lines.order_note_line_id', 'invoice.id', 'invoice.invoice_reference', 'invoice.shipment_id')
+            ->selectRaw('oms_billed_order_lines.order_note_line_id, MIN(oms_billed_order_lines.id) as billed_line_id, SUM(oms_billed_order_lines.qty_billed) as qty_billed, SUM(oms_billed_order_lines.qty_received) as qty_received, invoice.id as invoice_id, invoice.invoice_reference, invoice.invoice_date, invoice.shipment_id')
+            ->groupBy('oms_billed_order_lines.order_note_line_id', 'invoice.id', 'invoice.invoice_reference', 'invoice.invoice_date', 'invoice.shipment_id')
             ->get()
             ->groupBy('order_note_line_id');
         $received = DB::table('oms_reception_lines as r')

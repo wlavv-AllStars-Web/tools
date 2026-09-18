@@ -136,7 +136,11 @@ class SupplierInvoiceController extends Controller
             ? 'Supplier invoice closed successfully.'
             : 'Supplier invoice saved as draft successfully.';
 
-        $redirect = redirect()->route('erp.oms.invoices.show', $invoice)
+        $redirect = redirect()->route('erp.oms.simple', [
+            'supplier_id' => $orderNote->supplier_id,
+            'document_scope' => 'open',
+            'order_note_id' => $orderNote->id,
+        ])
             ->with('success', $message);
 
         if ($skippedInvalidPriceLines->isNotEmpty()) {

@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
 
             return [
                 ['name' => 'administration', 'url' => route('administration.index')],
-                ['name' => 'OMS', 'url' => route('erp.oms.dashboard'), 'no_translation' => 1],
+                ['name' => 'OMS', 'url' => route('erp.oms.simple'), 'no_translation' => 1],
                 ['name' => $this->routeTailLabel($routeName, 'erp.oms.'), 'url' => url()->current(), 'no_translation' => 1],
             ];
         }

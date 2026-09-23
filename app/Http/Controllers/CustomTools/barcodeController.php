@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\prestashop\orders;
 use App\Models\prestashop\orders_details;
+use App\Models\prestashop\custom_product;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_attribute;
 
@@ -199,6 +200,7 @@ class barcodeController extends Controller
                 $housing = (isset($item->housing)) ? $item->housing : 'N/D';
                 $elementType = 'stand';
                 $image_code = 'p_'.$item->id_product;
+                $product->wmdeprecated = (int) custom_product::where('id_product', $product->id_product)->value('wmdeprecated');
             }
             
             if($elementType == 'stand_attr'){
@@ -209,6 +211,10 @@ class barcodeController extends Controller
                 $image_code = 'a_'.$item->id_product_attribute;
             }
             
+            if ($product) {
+                $product->wmdeprecated = (int) custom_product::where('id_product', $product->id_product)->value('wmdeprecated');
+            }
+                $item->cdeprecated = $product->wmdeprecated;
             $reference = (isset($item->reference)) ? $item->reference : 'N/D';
             $id_order = (isset($item->id_order)) ? $item->id_order : 'N/D';
 

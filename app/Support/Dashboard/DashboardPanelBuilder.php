@@ -115,7 +115,10 @@ class DashboardPanelBuilder
         }
 
         if (is_array($data)) {
-            return array_values($data);
+            return array_values(array_map(
+                static fn ($row) => is_object($row) ? (array) $row : $row,
+                $data
+            ));
         }
 
         if ($data instanceof \Traversable) {

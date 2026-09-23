@@ -42,6 +42,8 @@ return [
 
     /** MODEL product_attribute **/
     'ATTRIBUTES - No 5 photos' => 'ATRIBUTOS - < 5 IMAGENS',
+    'ASM products missing in ASD' => 'PRODUTOS ASM EM FALTA NA ASD',
+    'ASD products missing in ASM' => 'PRODUTOS ASD EM FALTA NA ASM',
 
     /** MODEL stock_available **/
     'Negative stock' => 'STOCK NEGATIVO',

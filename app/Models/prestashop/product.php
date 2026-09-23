@@ -215,7 +215,8 @@ class product extends PrestashopModel
             ->join($productShopTable, $productTable . '.id_product', '=', $productShopTable . '.id_product')
             ->join($stockTable, function ($join) use ($productTable, $productShopTable, $stockTable) {
                 $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
-                    ->on($productShopTable . '.id_shop', '=', $stockTable . '.id_shop')
+                    ->where($stockTable . '.id_shop', 0)
+                    ->where($stockTable . '.id_shop_group', 1)
                     ->where($stockTable . '.id_product_attribute', 0);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
@@ -253,7 +254,8 @@ class product extends PrestashopModel
             ->join($stockTable, function ($join) use ($productAttributeTable, $productShopTable, $stockTable) {
                 $join->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
                     ->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
-                    ->on($productShopTable . '.id_shop', '=', $stockTable . '.id_shop');
+                    ->where($stockTable . '.id_shop', 0)
+                    ->where($stockTable . '.id_shop_group', 1);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
@@ -1057,7 +1059,12 @@ class product extends PrestashopModel
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name AS brand')
             )
-            ->join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+            ->join($stockTable, function ($join) use ($productTable, $stockTable) {
+                $join->on($productTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->where($stockTable . '.id_product_attribute', 0)
+                    ->where($stockTable . '.id_shop', 0)
+                    ->where($stockTable . '.id_shop_group', 1);
+            })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->where($productTable . '.ean13', '')
@@ -1078,7 +1085,9 @@ class product extends PrestashopModel
             ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->join($stockTable, function ($join) use ($productAttributeTable, $stockTable) {
                 $join->on($productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
-                    ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product');
+                    ->on($productAttributeTable . '.id_product', '=', $stockTable . '.id_product')
+                    ->where($stockTable . '.id_shop', 0)
+                    ->where($stockTable . '.id_shop_group', 1);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($advancedPackTable, $advancedPackTable . '.id_pack', '=', $productAttributeTable . '.id_product')
@@ -1086,6 +1095,14 @@ class product extends PrestashopModel
             ->whereNull($advancedPackTable . '.id_pack')
             ->where($productAttributeTable . '.ean13', '')
             ->where($stockTable . '.quantity', '>', 0)
+            ->whereNotExists(function ($query) use ($productTable, $productAttributeTable) {
+                $query->select(DB::raw(1))
+                    ->from($productAttributeTable)
+                    ->whereColumn(
+                        $productAttributeTable . '.id_product',
+                        $productTable . '.id_product'
+                    );
+            })
             ->groupBy(
                 $productAttributeTable . '.id_product',
                 $productAttributeTable . '.reference',
@@ -1155,7 +1172,12 @@ class product extends PrestashopModel
                   ->orWhere($customProductTable . '.dim_verify', 0);
             })
             ->where($stockTable . '.quantity', '>', 0)
-            ->where($productTable . '.active', 1)
+            ->where($stockTable . '.id_shop', 0)
+            ->where($stockTable . '.id_shop_group', 1)
+            ->where(function ($q) use ($productTable, $customProductTable) {
+                $q->where($productTable . '.active', 1)
+                ->orWhere($customProductTable . '.wmdeprecated', 1);
+            })
             ->where($productTable . '.reference', 'not like', 'shipping%')
             ->where($productTable . '.reference', 'not like', '%parts')
             ->groupBy(
@@ -2666,6 +2688,8 @@ public static function dashboard_end_of_life($type)
             ->whereNotNull($productTable . '.reference')
             ->whereRaw('TRIM(' . $productTable . '.reference) <> ?', [''])
             ->where($stockTable . '.id_product_attribute', 0)
+            ->where($stockTable . '.id_shop', 0)
+            ->where($stockTable . '.id_shop_group', 1)
             ->select(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -2697,6 +2721,8 @@ public static function dashboard_end_of_life($type)
             ->whereNotNull($productAttributeTable . '.reference')
             ->whereRaw('TRIM(' . $productAttributeTable . '.reference) <> ?', [''])
             ->where($stockTable . '.id_product_attribute', '>', 0)
+            ->where($stockTable . '.id_shop', 0)
+            ->where($stockTable . '.id_shop_group', 1)
             ->select(
                 $productTable . '.id_product',
                 $productAttributeTable . '.id_product_attribute',

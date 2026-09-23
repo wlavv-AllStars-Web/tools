@@ -220,6 +220,7 @@ class product extends PrestashopModel
                     ->where($stockTable . '.id_product_attribute', 0);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->where(function ($query) use ($productTable) {
                 $query->whereNull($productTable . '.location')
                     ->orWhere($productTable . '.location', '');
@@ -258,6 +259,7 @@ class product extends PrestashopModel
                     ->where($stockTable . '.id_shop_group', 1);
             })
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->leftJoin($customProductAttributeTable, $productAttributeTable . '.id_product_attribute', '=', $customProductAttributeTable . '.id_product_attribute')
             ->where(function ($query) use ($customProductAttributeTable) {
                 $query->whereNull($customProductAttributeTable . '.location')
@@ -2682,8 +2684,11 @@ public static function dashboard_end_of_life($type)
         $productTable = self::tableName('product');
         $stockTable = self::tableName('stock_available');
         $productAttributeTable = self::tableName('product_attribute');
+        $manufacturerTable = self::tableName('manufacturer');
 
         $productStockRows = self::join($stockTable, $productTable . '.id_product', '=', $stockTable . '.id_product')
+            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->where($productTable . '.active', 1)
             ->whereNotNull($productTable . '.reference')
             ->whereRaw('TRIM(' . $productTable . '.reference) <> ?', [''])
@@ -2718,6 +2723,8 @@ public static function dashboard_end_of_life($type)
 
         $attributeStockRows = product_attribute::join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
+            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->where($manufacturerTable . '.name', '<>', 'Technical Products')
             ->whereNotNull($productAttributeTable . '.reference')
             ->whereRaw('TRIM(' . $productAttributeTable . '.reference) <> ?', [''])
             ->where($stockTable . '.id_product_attribute', '>', 0)

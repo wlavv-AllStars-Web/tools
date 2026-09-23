@@ -58,7 +58,7 @@
 </div>
 @endif
 <script>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.js-create-simple-order').forEach(function(button){button.addEventListener('click',function(){var supplierId=button.dataset.supplierId,create=function(reference,date){reference=(reference||'').trim();date=(date||'').trim();if(!reference||!date)return;var form=document.createElement('form');form.method='POST';form.action='{{ route('erp.oms.order_notes.store') }}';[['_token','{{ csrf_token() }}'],['supplier_id',supplierId],['reference',reference],['order_date',date],['return_to','simple']].forEach(function(field){var input=document.createElement('input');input.type='hidden';input.name=field[0];input.value=field[1];form.appendChild(input)});document.body.appendChild(form);form.submit()},today=new Date().toISOString().slice(0,10);if(window.Swal){Swal.fire({title:'Create order note',html:'<input id="omsNewOrderReference" class="swal2-input" placeholder="Order reference"><input id="omsNewOrderDate" type="date" class="swal2-input" value="'+today+'">',showCancelButton:true,confirmButtonText:'Create',preConfirm:function(){var reference=document.getElementById('omsNewOrderReference').value,date=document.getElementById('omsNewOrderDate').value;if(!reference.trim()||!date){Swal.showValidationMessage('Enter a reference and date.');return false}return {reference:reference,date:date}}}).then(function(result){if(result.isConfirmed)create(result.value.reference,result.value.date)})}else{create(window.prompt('Order reference:'),window.prompt('Order date (YYYY-MM-DD):',today))}})})});</script>
-@if($orderNote)
+@if($isOrderDetail && $orderNote)
 @if($isOrderDetail)
     <a class="btn btn-outline-secondary btn-sm mb-3" href="{{ route('erp.oms.simple', ['supplier_id' => $selectedSupplierId, 'document_scope' => $documentScope]) }}"><i class="fa-solid fa-arrow-left me-1"></i> Back to suppliers</a>
 @endif
@@ -105,7 +105,7 @@
 </div>
 @endif
 
-@if($orderNote)@php($showNew=$simplifiedOmsRows->contains(fn($r)=>!$r['dim_verified'])) @php($showBackorders=$simplifiedOmsRows->contains(fn($r)=>$r['backorders']->isNotEmpty())) @php($showInvoices=$simplifiedOmsRows->contains(fn($r)=>(int)$r['invoiced']>0))
+@if($isOrderDetail && $orderNote)@php($showNew=$simplifiedOmsRows->contains(fn($r)=>!$r['dim_verified'])) @php($showBackorders=$simplifiedOmsRows->contains(fn($r)=>$r['backorders']->isNotEmpty())) @php($showInvoices=$simplifiedOmsRows->contains(fn($r)=>(int)$r['invoiced']>0))
 @php($orderNoteClosed = $orderNote->status === 'closed')
 <div class="accordion oms-order-note-accordion" id="omsOrderNoteAccordion">
     <div class="accordion-item">

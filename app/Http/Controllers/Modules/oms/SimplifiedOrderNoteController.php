@@ -87,7 +87,9 @@ class SimplifiedOrderNoteController extends Controller
         });
 
         $requestedOrderNoteId = (int) $request->integer('order_note_id');
-        $orderNote = $orderNotes->firstWhere('id', $requestedOrderNoteId) ?? $orderNotes->first();
+        $orderNote = $requestedOrderNoteId > 0
+            ? $orderNotes->firstWhere('id', $requestedOrderNoteId)
+            : null;
         $isOrderDetail = $requestedOrderNoteId > 0 && $orderNote !== null;
 
         if ($orderNote) {

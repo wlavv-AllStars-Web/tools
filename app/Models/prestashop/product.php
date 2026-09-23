@@ -190,6 +190,67 @@ class product extends PrestashopModel
         );
     }
 
+    public static function dashboard_asm_not_in_asd($type)
+    {
+        return self::dashboardProductsMissingFromStore($type, 'ASM', 'ASD');
+    }
+
+    public static function dashboard_asd_not_in_asm($type)
+    {
+        return self::dashboardProductsMissingFromStore($type, 'ASD', 'ASM');
+    }
+
+    protected static function dashboardProductsMissingFromStore($type, string $sourceStore, string $missingStore)
+    {
+        $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
+        $manufacturerTable = self::tableName('manufacturer');
+        $sourceShopId = PrestashopAdminLinkService::shopId($sourceStore);
+        $missingShopId = PrestashopAdminLinkService::shopId($missingStore);
+
+        if (!$sourceShopId || !$missingShopId) {
+            return self::productDashboardResponse(
+                sprintf('%s products missing in %s', $sourceStore, $missingStore),
+                $type,
+                strtolower($sourceStore . '_not_in_' . $missingStore),
+                ['id_product', 'reference', 'brand'],
+                [],
+                ['store' => $sourceStore]
+            );
+        }
+
+        $data = self::query()
+            ->join($productShopTable . ' as source_shop', function ($join) use ($productTable, $sourceShopId) {
+                $join->on('source_shop.id_product', '=', $productTable . '.id_product')
+                    ->where('source_shop.id_shop', $sourceShopId);
+            })
+            ->leftJoin($manufacturerTable, $manufacturerTable . '.id_manufacturer', '=', $productTable . '.id_manufacturer')
+            ->whereNotExists(function ($query) use ($productShopTable, $productTable, $missingShopId) {
+                $query->selectRaw('1')
+                    ->from($productShopTable . ' as missing_shop')
+                    ->whereColumn('missing_shop.id_product', $productTable . '.id_product')
+                    ->where('missing_shop.id_shop', $missingShopId);
+            })
+            ->select(
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                DB::raw('COALESCE(' . $manufacturerTable . '.name, \'\') AS brand')
+            )
+            ->orderBy($productTable . '.reference')
+            ->orderBy($productTable . '.id_product')
+            ->get()
+            ->all();
+
+        return self::productDashboardResponse(
+            sprintf('%s products missing in %s', $sourceStore, $missingStore),
+            $type,
+            strtolower($sourceStore . '_not_in_' . $missingStore),
+            ['id_product', 'reference', 'brand'],
+            $data,
+            ['store' => $sourceStore]
+        );
+    }
+
     public static function dashboardNoHousingRows(?string $store = null): array
     {
         $productTable = self::tableName('product');

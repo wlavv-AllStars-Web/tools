@@ -213,7 +213,7 @@ class product extends PrestashopModel
                 sprintf('%s products missing in %s', $sourceStore, $missingStore),
                 $type,
                 strtolower($sourceStore . '_not_in_' . $missingStore),
-                ['id_product', 'reference', 'brand'],
+                ['id_product', 'reference', 'brand', 'visibility'],
                 [],
                 ['store' => $sourceStore]
             );
@@ -234,6 +234,7 @@ class product extends PrestashopModel
             ->select(
                 $productTable . '.id_product',
                 $productTable . '.reference',
+                'source_shop.visibility',
                 DB::raw('COALESCE(' . $manufacturerTable . '.name, \'\') AS brand')
             )
             ->orderBy($productTable . '.reference')
@@ -245,7 +246,7 @@ class product extends PrestashopModel
             sprintf('%s products missing in %s', $sourceStore, $missingStore),
             $type,
             strtolower($sourceStore . '_not_in_' . $missingStore),
-            ['id_product', 'reference', 'brand'],
+            ['id_product', 'reference', 'brand', 'visibility'],
             $data,
             ['store' => $sourceStore]
         );

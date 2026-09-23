@@ -57,7 +57,7 @@ class TrustpilotController extends Controller
 
         return view('areas.web.trustpilot.index', [
             'breadcrumbs' => [
-                ['name' => 'web', 'url' => route('web.index')],
+                ['name' => 'sales', 'url' => route('sales.index')],
                 ['name' => 'Trustpilot', 'url' => route('web.tools.trustpilot.index'), 'no_translation' => true],
             ],
             'dashboard' => $this->trustpilot->dashboard(),

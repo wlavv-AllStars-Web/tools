@@ -186,12 +186,6 @@
                             <div style="line-height: 1.2;">Inventory</div>
                         </a>
                     </div>
-                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
-                        <a href="{{ route('logistics.tools.oms.logistic_containers.index') }}" title="Carrier Check">   
-                            <div><i class="fa-solid fa-dumpster" style="font-size: 40px;"></i></div>
-                            <div style="line-height: 1.2;">OMS - Containers</div>
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>

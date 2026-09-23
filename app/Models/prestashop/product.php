@@ -163,7 +163,7 @@ class product extends PrestashopModel
 
         $data = collect($data)
             ->map(function ($row) use ($store) {
-                $row = (array) $row;
+                $row = $row instanceof \Illuminate\Database\Eloquent\Model ? $row->getAttributes() : (array) $row;
                 $rowStore = $row['store'] ?? (
                     isset($row['id_shop'])
                         ? (config('allstars.auto_orders.shop_codes', [])[(int) $row['id_shop']] ?? $store)

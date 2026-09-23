@@ -288,7 +288,7 @@ class customers_backorders extends Model
 
             $order_info = orders::where('id_order', $order->id_order)->first();
             
-            if( !is_null($order_info) && in_array($order_info->current_state , [16, 7, 6, 5, 4] ) ){
+            if( !is_null($order_info) && in_array($order_info->current_state , [16, 7, 6, 5, 4, 3] ) ){
                 self::where('id', $order->id)
                     ->where(function ($query) {
                         $query->where('id_product', '!=', 0)
@@ -373,7 +373,7 @@ class customers_backorders extends Model
         }
 
         $prefix = env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));
-        $doneStates = [16, 7, 6, 5, 4];
+        $doneStates = [16, 7, 6, 5, 4, 3];
 
         $orders = DB::connection('mysql2')
             ->table($prefix . 'orders')

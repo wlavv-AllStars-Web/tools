@@ -24,28 +24,25 @@ class SimplifiedOrderNoteController extends Controller
         $supplierId = (int) $request->integer('supplier_id');
         $suppliers = suppliers::select(['id_supplier', 'name'])->orderBy('name')->get();
         $documentScope = in_array($request->get('document_scope'), ['open', 'closed'], true) ? $request->get('document_scope') : 'open';
-        // Reception quantity is authoritative: old documents can have a stale status.
+        // The OMS document status is the canonical open/closed classification.
         $receivedByNote = DB::table('oms_reception_lines as reception')
             ->join('oms_billed_order_lines as billed_line', 'billed_line.id', '=', 'reception.billed_order_line_id')
             ->join('oms_billed_orders as billed_order', 'billed_order.id', '=', 'billed_line.billed_order_id')
             ->selectRaw('billed_order.order_note_id, SUM(reception.qty_received) as qty_received')
             ->groupBy('billed_order.order_note_id');
 
-        // Keep every supplier visible in the navigator and calculate its current
-        // operational totals from the same reception data used by the detail view.
+        // Keep every supplier visible in the navigator. An order is closed only
+        // when the OMS workflow has explicitly marked it as such.
         $supplierOrderCounts = OrderNote::query()
-            ->leftJoin('oms_order_note_lines as line', 'line.order_note_id', '=', 'oms_order_notes.id')
-            ->leftJoinSub($receivedByNote, 'received', fn ($join) => $join->on('received.order_note_id', '=', 'oms_order_notes.id'))
-            ->groupBy('oms_order_notes.id', 'oms_order_notes.supplier_id')
-            ->selectRaw('oms_order_notes.supplier_id, COALESCE(SUM(line.qty_ordered), 0) as total_ordered, COALESCE(MAX(received.qty_received), 0) as total_received')
+            ->select(['supplier_id', 'status'])
             ->get()
             ->groupBy('supplier_id')
             ->map(function ($orders) {
-                $open = $orders->filter(fn ($order) => (int) $order->total_ordered === 0 || (int) $order->total_received < (int) $order->total_ordered)->count();
+                $closed = $orders->where('status', 'closed')->count();
 
                 return [
-                    'open' => $open,
-                    'closed' => $orders->count() - $open,
+                    'open' => $orders->count() - $closed,
+                    'closed' => $closed,
                 ];
             });
 
@@ -62,16 +59,19 @@ class SimplifiedOrderNoteController extends Controller
                 ->where('oms_order_notes.supplier_id', $supplierId)
                 ->groupBy('oms_order_notes.id', 'oms_order_notes.supplier_id', 'oms_order_notes.reference', 'oms_order_notes.status', 'oms_order_notes.internal_note', 'oms_order_notes.logistic_note', 'oms_order_notes.created_at')
                 ->selectRaw('oms_order_notes.id, oms_order_notes.supplier_id, oms_order_notes.reference, oms_order_notes.status, oms_order_notes.internal_note, oms_order_notes.logistic_note, oms_order_notes.created_at, COALESCE(SUM(line.qty_ordered), 0) as total_ordered, COALESCE(MAX(received.qty_received), 0) as total_received')
-                ->havingRaw(match ($documentScope) {
-                    'closed' => 'COALESCE(SUM(line.qty_ordered), 0) > 0 AND COALESCE(MAX(received.qty_received), 0) >= COALESCE(SUM(line.qty_ordered), 0)',
-                    default => 'COALESCE(SUM(line.qty_ordered), 0) = 0 OR COALESCE(MAX(received.qty_received), 0) < COALESCE(SUM(line.qty_ordered), 0)',
-                })
+                ->when(
+                    $documentScope === 'closed',
+                    fn ($query) => $query->where('oms_order_notes.status', 'closed'),
+                    fn ($query) => $query->where('oms_order_notes.status', '!=', 'closed')
+                )
                 ->latest('oms_order_notes.created_at')
                 ->get()
             : collect();
 
 
-        $orderNote = $orderNotes->firstWhere('id', (int) $request->integer('order_note_id')) ?? $orderNotes->first();
+        $requestedOrderNoteId = (int) $request->integer('order_note_id');
+        $orderNote = $orderNotes->firstWhere('id', $requestedOrderNoteId) ?? $orderNotes->first();
+        $isOrderDetail = $requestedOrderNoteId > 0 && $orderNote !== null;
 
         if ($orderNote) {
             $orderNote->load(['supplier', 'lines']);
@@ -98,6 +98,7 @@ class SimplifiedOrderNoteController extends Controller
             'orderNotes' => $orderNotes,
             'documentScope' => $documentScope,
             'orderNote' => $orderNote,
+            'isOrderDetail' => $isOrderDetail,
             'currencyMeta' => $currencyMeta,
             'draftInvoices' => $orderNote
                 ? $this->invoiceWorkflow->getDraftInvoicesForSupplier((int) $orderNote->supplier_id)

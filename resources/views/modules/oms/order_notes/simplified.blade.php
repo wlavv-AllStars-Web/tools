@@ -19,6 +19,7 @@
 @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger py-2">{{ $errors->first() }}</div>@endif
 
+@if(!$isOrderDetail)
 <div class="oms-navigator">
     <aside class="card">
         <div class="px-3 py-2 border-bottom"><span class="label">Suppliers</span></div>
@@ -35,7 +36,7 @@
     <section class="card">
         @if($selectedSupplierId)
             @php($selectedSupplier = $suppliers->firstWhere('id_supplier', $selectedSupplierId))
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2 border-bottom"><div><span class="label">Supplier</span><strong>{{ $selectedSupplier->name ?? 'Supplier' }}</strong></div>@if($documentScope === 'open')<button type="button" class="btn btn-primary btn-sm js-create-simple-order" data-supplier-id="{{ $selectedSupplierId }}"><i class="fa-solid fa-plus me-1"></i> New order</button>@endif</div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2 border-bottom"><strong>{{ $selectedSupplier->name ?? 'Supplier' }}</strong>@if($documentScope === 'open')<button type="button" class="btn btn-primary btn-sm js-create-simple-order" data-supplier-id="{{ $selectedSupplierId }}"><i class="fa-solid fa-plus me-1"></i> New order</button>@endif</div>
             <nav class="oms-order-tabs"><a class="oms-order-tab {{ $documentScope === 'open' ? 'active' : '' }}" href="{{ route('erp.oms.simple', ['supplier_id' => $selectedSupplierId, 'document_scope' => 'open']) }}">Open orders <span class="badge text-bg-light ms-1">{{ (int) ($selectedSupplier->open_orders_count ?? 0) }}</span></a><a class="oms-order-tab {{ $documentScope === 'closed' ? 'active' : '' }}" href="{{ route('erp.oms.simple', ['supplier_id' => $selectedSupplierId, 'document_scope' => 'closed']) }}">Closed orders <span class="badge text-bg-light ms-1">{{ (int) ($selectedSupplier->closed_orders_count ?? 0) }}</span></a></nav>
             <div class="oms-order-list"><div class="d-flex justify-content-between align-items-center mb-2"><strong>{{ $documentScope === 'open' ? 'Open orders' : 'Closed orders' }}</strong><span class="badge text-bg-secondary">{{ $orderNotes->count() }}</span></div>
                 @forelse($orderNotes as $note)<a class="oms-order-link" href="{{ route('erp.oms.simple', ['supplier_id' => $selectedSupplierId, 'document_scope' => $documentScope, 'order_note_id' => $note->id]) }}"><span><span class="oms-order-ref">{{ $note->reference }}</span><span class="oms-order-meta d-block">{{ optional($note->created_at)->format('Y-m-d') }}</span></span><span class="badge {{ $documentScope === 'open' ? 'text-bg-warning' : 'text-bg-success' }}">{{ ucfirst($documentScope) }}</span></a>@empty<div class="oms-order-empty">No {{ $documentScope }} orders for this supplier.</div>@endforelse
@@ -43,6 +44,7 @@
         @else<div class="oms-order-empty">Select a supplier to view its orders.</div>@endif
     </section>
 </div>
+@endif
 <script>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.js-create-simple-order').forEach(function(button){button.addEventListener('click',function(){var supplierId=button.dataset.supplierId,create=function(reference,date){reference=(reference||'').trim();date=(date||'').trim();if(!reference||!date)return;var form=document.createElement('form');form.method='POST';form.action='{{ route('erp.oms.order_notes.store') }}';[['_token','{{ csrf_token() }}'],['supplier_id',supplierId],['reference',reference],['order_date',date],['return_to','simple']].forEach(function(field){var input=document.createElement('input');input.type='hidden';input.name=field[0];input.value=field[1];form.appendChild(input)});document.body.appendChild(form);form.submit()},today=new Date().toISOString().slice(0,10);if(window.Swal){Swal.fire({title:'Create order note',html:'<input id="omsNewOrderReference" class="swal2-input" placeholder="Order reference"><input id="omsNewOrderDate" type="date" class="swal2-input" value="'+today+'">',showCancelButton:true,confirmButtonText:'Create',preConfirm:function(){var reference=document.getElementById('omsNewOrderReference').value,date=document.getElementById('omsNewOrderDate').value;if(!reference.trim()||!date){Swal.showValidationMessage('Enter a reference and date.');return false}return {reference:reference,date:date}}}).then(function(result){if(result.isConfirmed)create(result.value.reference,result.value.date)})}else{create(window.prompt('Order reference:'),window.prompt('Order date (YYYY-MM-DD):',today))}})})});</script>
 @if($orderNote)
 @php($hasOrderNoteComments = $orderNote->has_any_note)
@@ -101,7 +103,19 @@
 <form id="omsInvoiceForm" class="container-fluid py-3 oms-simple" method="POST" action="{{ route('erp.oms.invoices.store', $orderNote) }}">
 @csrf
 <div class="head invoice-head row g-3 align-items-end" style="margin-bottom:10px">
-    <div class="col d-flex align-items-end justify-content-end gap-2"><button id="toggleIncompleteLines" type="button" class="btn btn-outline-secondary btn-sm text-nowrap"><i class="fa-solid fa-filter me-1"></i>List incomplete</button><input id="orderLineFilter" class="form-control form-control-sm order-search" placeholder="Search products"></div>
+    <div class="col d-flex align-items-end justify-content-end gap-2">
+        @if(!$orderNoteClosed)
+            <div class="oms-counters">
+                <div class="oms-counter counter-lines"><i class="fa-solid fa-list"></i><small>Lines</small><b>{{ $summary['lines'] }}</b></div>
+                <div class="oms-counter counter-products"><i class="fa-solid fa-boxes-stacked"></i><small>Products</small><b>{{ $summary['products'] }}</b></div>
+                <div class="oms-counter counter-billed"><i class="fa-solid fa-file-invoice"></i><small>Billed</small><b>{{ $summary['invoiced'] }}</b></div>
+                <div class="oms-counter counter-received"><i class="fa-solid fa-truck"></i><small>Received</small><b>{{ $summary['received'] }}</b></div>
+                <div class="oms-counter counter-purchase"><i class="fa-solid fa-coins"></i><small>Purchase</small><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><span class="eur">&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</span></div>
+            </div>
+        @endif
+        <button id="toggleIncompleteLines" type="button" class="btn btn-outline-secondary btn-sm text-nowrap"><i class="fa-solid fa-filter me-1"></i>List incomplete</button>
+        <input id="orderLineFilter" class="form-control form-control-sm order-search" placeholder="Search products">
+    </div>
 </div>
 <div id="omsOrderCompletedAlert" class="alert alert-success d-none mb-3"><i class="fa-solid fa-circle-check me-1"></i>Encomenda concluÃƒÂ­da.</div>
 <div class="table-wrap"><table class="table align-middle mb-0"><thead><tr>@if($showNew)<th class="status-col"></th>@endif @if($showBackorders)<th class="status-col"></th>@endif <th class="product-image-col">Image</th><th></th><th>Product</th><th>Ordered</th><th>Invoiced</th><th>Received</th><th>Invoice qty</th><th>Purchase price ({{ $currencyIso }})</th><th class="discount-col">Discount</th><th>Sales price ({{ $currencyIso }})</th><th class="status-col">Barcode</th><th class="status-col">Stock</th><th class="status-col">Arrive</th><th></th></tr></thead><tbody>

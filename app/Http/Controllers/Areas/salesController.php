@@ -37,12 +37,7 @@ class salesController extends Controller
         dashboard::getCountersContentOfTabPanel('purchase', 'dashboard_quote_backoffice');
         dashboard::getCountersContentOfTabPanel('sales', 'dashboard_quote_frontoffice');
 
-        $deferredPanels = [
-            'dashboard_dropcart_3_days',
-            'dashboard_order_reviewed',
-            'dashboard_order_reviewed_2',
-            'no_instructions',
-        ];
+        $deferredPanels = [];
 
         $data = [
             'counters'      => dashboard::calculateAndGetCountersOfTab('sales', $deferredPanels),

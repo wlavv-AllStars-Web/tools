@@ -128,6 +128,7 @@
                 <div class="oms-counter counter-purchase"><i class="fa-solid fa-coins"></i><small>Purchase</small><b>{{ number_format($summary['purchase_supplier'], 2, ',', ' ') }} {{ $currencyIso }}</b><span class="eur">&euro; {{ number_format($summary['purchase_eur'], 2, ',', ' ') }}</span></div>
             </div>
         @endif
+        <button type="button" class="btn btn-outline-danger btn-sm text-nowrap js-remove-order" data-url="{{ route('erp.oms.order_notes.destroy', $orderNote) }}" title="Remove order note"><i class="fa-solid fa-trash me-1"></i> Remove order</button>
         <button id="toggleIncompleteLines" type="button" class="btn btn-outline-secondary btn-sm text-nowrap"><i class="fa-solid fa-filter me-1"></i>List incomplete</button>
         <input id="orderLineFilter" class="form-control form-control-sm order-search" placeholder="Search products">
     </div>

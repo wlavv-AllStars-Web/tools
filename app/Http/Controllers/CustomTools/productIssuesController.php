@@ -27,6 +27,11 @@ class productIssuesController extends Controller
     }
     
     public function store(Request $request) {
+        if (! $request->filled('date')) {
+            $request->merge(['date' => now()->toDateString()]);
+        }
+
+        $request->validate(['date' => ['required', 'date']]);
         productIssues::saveData($request->all());
         return redirect()->route('productIssues.index');
     }
@@ -46,6 +51,11 @@ class productIssuesController extends Controller
     }
 
     public function update(Request $request) {
+        if (! $request->filled('date')) {
+            $request->merge(['date' => now()->toDateString()]);
+        }
+
+        $request->validate(['date' => ['required', 'date']]);
         productIssues::updateData($request->all());
         return redirect()->route('productIssues.index');
     }

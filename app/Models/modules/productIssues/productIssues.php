@@ -98,7 +98,7 @@ public static function getProductIssues()
         $data->assembly = (isset($form_data['assembly'])) ? $form_data['assembly'] : 0;
         $data->compatibility = (isset($form_data['compatibility'])) ? $form_data['compatibility'] : 0;
         $data->defect = (isset($form_data['defect'])) ? $form_data['defect'] : 0;
-        $data->date = $form_data['date'];
+        $data->date = self::resolveDate($form_data['date'] ?? null);
         $data->store = $form_data['shop'];
         $data->status = $form_data['status'];
         $data->conclusion = $form_data['conclusion'];
@@ -117,7 +117,7 @@ public static function getProductIssues()
         $data->assembly = (isset($form_data['assembly'])) ? $form_data['assembly'] : 0;
         $data->compatibility = (isset($form_data['compatibility'])) ? $form_data['compatibility'] : 0;
         $data->defect = (isset($form_data['defect'])) ? $form_data['defect'] : 0;
-        $data->date = $form_data['date'];
+        $data->date = self::resolveDate($form_data['date'] ?? null);
         $data->store = $form_data['shop'];
         $data->status = $form_data['status'];
         $data->conclusion = $form_data['conclusion'];
@@ -125,6 +125,13 @@ public static function getProductIssues()
         $data->save();
         
         return 1;
+    }
+
+    private static function resolveDate($date)
+    {
+        $date = trim((string) $date);
+
+        return $date !== '' ? $date : now()->toDateString();
     }
 
     public static function getIssue($id){

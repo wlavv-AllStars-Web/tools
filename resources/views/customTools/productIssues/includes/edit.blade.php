@@ -44,7 +44,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="date" class="form-label">DATE</label>
-                        <input type="date" name="date" id="date" value="{{$issue->date}}" class="form-control">
+                        <input type="date" name="date" id="date" value="{{$issue->date}}" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label for="shop" class="form-label">SHOP</label>

@@ -185,12 +185,16 @@ class barcodeController extends Controller
             if($elementType == 'product'){
                 $item = product::where('ean13', $code)->orWhere('reference', $code)->first();
                 $housing = (isset($item->housing)) ? $item->housing : 'N/D';
-                $image_code = 'p_'.$item->id_product;
+                if ($item) {
+                    $product = $item;
+                    $image_code = 'p_'.$item->id_product;
+                }
             }
             if($elementType == 'attribute'){
                 $item = product_attribute::with('product')->where('ean13', $code)->orWhere('reference', $code)->first();
                 $housing = (isset($item->location)) ? $item->location : 'N/D';
                 if( isset( $item->id_product ) ){
+                    $product = $item->product;
                     $image_code = 'a_'.$item->id_product_attribute;
                 }
             }
@@ -214,7 +218,9 @@ class barcodeController extends Controller
             if ($product) {
                 $product->wmdeprecated = (int) custom_product::where('id_product', $product->id_product)->value('wmdeprecated');
             }
-                $item->cdeprecated = $product->wmdeprecated;
+            if ($item) {
+                $item->cdeprecated = (int) ($product->wmdeprecated ?? 0);
+            }
             $reference = (isset($item->reference)) ? $item->reference : 'N/D';
             $id_order = (isset($item->id_order)) ? $item->id_order : 'N/D';
 

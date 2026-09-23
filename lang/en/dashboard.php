@@ -134,6 +134,6 @@ return [
     'SHIPPING ETA ALERT' => 'SHIPPING ETA ALERT',
     'Shop 2 VAT = Shop 3 default' => 'ASM VAT = ASD default',
     'Shop 3 VAT = Shop 2 default' => 'ASD VAT = ASM default',
-];
     'ASM products missing in ASD' => 'ASM PRODUCTS MISSING IN ASD',
     'ASD products missing in ASM' => 'ASD PRODUCTS MISSING IN ASM',
+];

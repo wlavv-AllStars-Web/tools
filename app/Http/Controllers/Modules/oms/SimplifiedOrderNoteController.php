@@ -31,6 +31,30 @@ class SimplifiedOrderNoteController extends Controller
             ->selectRaw('billed_order.order_note_id, SUM(reception.qty_received) as qty_received')
             ->groupBy('billed_order.order_note_id');
 
+        // Keep every supplier visible in the navigator and calculate its current
+        // operational totals from the same reception data used by the detail view.
+        $supplierOrderCounts = OrderNote::query()
+            ->leftJoin('oms_order_note_lines as line', 'line.order_note_id', '=', 'oms_order_notes.id')
+            ->leftJoinSub($receivedByNote, 'received', fn ($join) => $join->on('received.order_note_id', '=', 'oms_order_notes.id'))
+            ->groupBy('oms_order_notes.id', 'oms_order_notes.supplier_id')
+            ->selectRaw('oms_order_notes.supplier_id, COALESCE(SUM(line.qty_ordered), 0) as total_ordered, COALESCE(MAX(received.qty_received), 0) as total_received')
+            ->get()
+            ->groupBy('supplier_id')
+            ->map(function ($orders) {
+                $open = $orders->filter(fn ($order) => (int) $order->total_ordered === 0 || (int) $order->total_received < (int) $order->total_ordered)->count();
+
+                return [
+                    'open' => $open,
+                    'closed' => $orders->count() - $open,
+                ];
+            });
+
+        $suppliers->each(function ($supplier) use ($supplierOrderCounts) {
+            $counts = $supplierOrderCounts->get((int) $supplier->id_supplier, ['open' => 0, 'closed' => 0]);
+            $supplier->open_orders_count = (int) $counts['open'];
+            $supplier->closed_orders_count = (int) $counts['closed'];
+        });
+
         $orderNotes = $supplierId
             ? OrderNote::query()
                 ->leftJoin('oms_order_note_lines as line', 'line.order_note_id', '=', 'oms_order_notes.id')
@@ -81,6 +105,7 @@ class SimplifiedOrderNoteController extends Controller
             'simplifiedOmsRows' => $rows,
             'invoicedInvoices' => $invoicedInvoices,
             'availableShipments' => $availableShipments,
+            'supplierOrderCounts' => $supplierOrderCounts,
             'summary' => [
                 'lines' => $rows->count(),
                 'products' => (int) $rows->sum('ordered'),

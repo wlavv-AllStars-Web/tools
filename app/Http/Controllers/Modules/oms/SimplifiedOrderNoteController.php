@@ -68,6 +68,23 @@ class SimplifiedOrderNoteController extends Controller
                 ->get()
             : collect();
 
+        // Use the same row calculation as the detail screen so every order in
+        // the navigator exposes matching operational and purchase totals.
+        $orderNotes->each(function (OrderNote $note) {
+            $note->load('lines');
+            $listCurrencyMeta = $this->invoiceWorkflow->resolveCurrencyForOrderNote($note, $note->lines);
+            $listRows = $this->rows($note, $listCurrencyMeta);
+
+            $note->list_summary = [
+                'lines' => $listRows->count(),
+                'products' => (int) $listRows->sum('ordered'),
+                'invoiced' => (int) $listRows->sum('invoiced'),
+                'received' => (int) $listRows->sum('received'),
+                'purchase_supplier' => (float) $listRows->sum(fn ($row) => $row['ordered'] * $row['purchase_supplier']),
+                'purchase_eur' => (float) $listRows->sum(fn ($row) => $row['ordered'] * $row['purchase_eur']),
+                'currency_iso' => (string) ($listCurrencyMeta['currency_iso'] ?? 'EUR'),
+            ];
+        });
 
         $requestedOrderNoteId = (int) $request->integer('order_note_id');
         $orderNote = $orderNotes->firstWhere('id', $requestedOrderNoteId) ?? $orderNotes->first();

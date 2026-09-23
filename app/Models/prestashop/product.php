@@ -1159,6 +1159,7 @@ class product extends PrestashopModel
         $stockTable = self::tableName('stock_available');
         $manufacturerTable = self::tableName('manufacturer');
         $customProductTable = self::tableName('custom_product');
+        $productAttributeTable = self::tableName('product_attribute');
 
         $bd_data = self::select(
                 $productTable . '.id_product',
@@ -1176,6 +1177,28 @@ class product extends PrestashopModel
             ->where($stockTable . '.quantity', '>', 0)
             ->where($stockTable . '.id_shop', 0)
             ->where($stockTable . '.id_shop_group', 1)
+            ->where(function ($query) use ($productTable, $productAttributeTable, $stockTable) {
+                $query->where(function ($baseProductQuery) use ($productTable, $productAttributeTable, $stockTable) {
+                    $baseProductQuery
+                        ->where($stockTable . '.id_product_attribute', 0)
+                        ->whereNotExists(function ($attributeQuery) use ($productTable, $productAttributeTable) {
+                            $attributeQuery->select(DB::raw(1))
+                                ->from($productAttributeTable)
+                                ->whereColumn(
+                                    $productAttributeTable . '.id_product',
+                                    $productTable . '.id_product'
+                                );
+                        });
+                })->orWhereExists(function ($attributeQuery) use ($productTable, $productAttributeTable, $stockTable) {
+                    $attributeQuery->select(DB::raw(1))
+                        ->from($productAttributeTable)
+                        ->whereColumn($productAttributeTable . '.id_product', $productTable . '.id_product')
+                        ->whereColumn(
+                            $productAttributeTable . '.id_product_attribute',
+                            $stockTable . '.id_product_attribute'
+                        );
+                });
+            })
             ->where(function ($q) use ($productTable, $customProductTable) {
                 $q->where($productTable . '.active', 1)
                 ->orWhere($customProductTable . '.wmdeprecated', 1);

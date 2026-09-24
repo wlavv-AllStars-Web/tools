@@ -776,7 +776,9 @@ class dashboard extends Model
             ->where('status', '!=', \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_VALID)
             ->with(['orders' => fn ($query) => $query->orderBy('id_order')])
             ->latest('updated_at')
-            ->get();
+            ->get()
+            ->filter(fn ($validation) => trim((string) $validation->country_iso) === '' || \App\Services\Vat\ViesVatService::supportsCountry($validation->country_iso))
+            ->values();
 
         $orderIds = $validations->flatMap(fn ($validation) => $validation->orders->pluck('id_order'))
             ->unique()

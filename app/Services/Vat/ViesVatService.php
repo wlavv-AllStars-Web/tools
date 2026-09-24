@@ -9,6 +9,16 @@ use Throwable;
 class ViesVatService
 {
     private const WSDL = 'https://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl';
+    private const SUPPORTED_COUNTRY_ISOS = [
+        'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR',
+        'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK',
+        'SI', 'ES', 'SE', 'XI',
+    ];
+
+    public static function supportsCountry(?string $countryIso): bool
+    {
+        return in_array(strtoupper(trim((string) $countryIso)), self::SUPPORTED_COUNTRY_ISOS, true);
+    }
 
     public function check(string $countryIso, string $vatNumber): array
     {

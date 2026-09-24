@@ -15,6 +15,18 @@ class ViesVatService
         $countryIso = strtoupper(trim($countryIso));
         $vatNumber = strtoupper(preg_replace('/[^A-Z0-9]/', '', $vatNumber) ?? '');
 
+        // VIES identifies Greece as EL, while billing addresses commonly use
+        // the ISO country code GR. Some imported VATs contain both prefixes.
+        if (str_starts_with($vatNumber, 'GREL') || str_starts_with($vatNumber, 'ELGR')) {
+            $vatNumber = 'EL' . substr($vatNumber, 4);
+            $countryIso = 'EL';
+        } elseif ($countryIso === 'GR') {
+            $countryIso = 'EL';
+
+            if (str_starts_with($vatNumber, 'GR')) {
+                $vatNumber = 'EL' . substr($vatNumber, 2);
+            }
+        }
         if (str_starts_with($vatNumber, $countryIso)) {
             $vatNumber = substr($vatNumber, 2);
         }

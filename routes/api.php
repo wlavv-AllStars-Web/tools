@@ -12,6 +12,7 @@ use App\Http\Controllers\CustomTools\checkVatController;
 use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\pickingController;
 use App\Http\Controllers\CustomTools\MoloniVatValidationController;
+use App\Http\Controllers\API\StockAuditMovementController;
 
 Route::group([
     'middleware' => ['api', 'cors'],
@@ -24,6 +25,8 @@ Route::group([
     /** Moloni VIES tracking: used by the invoice module and the PrestaShop order-detail alert. */
     Route::post('/moloni/vat-validations/orders', [MoloniVatValidationController::class, 'register'])->name('api.moloni.vat.register');
     Route::get('/moloni/vat-validations/orders/{idOrder}', [MoloniVatValidationController::class, 'orderStatus'])->whereNumber('idOrder')->name('api.moloni.vat.order_status');
+
+    Route::post('/stock-audit/movements', [StockAuditMovementController::class, 'store'])->name('api.stock_audit.movements.store');
 
     /** API to homepage **/
     Route::get('/homepage', [HomepageApiController::class, 'index' ]);  

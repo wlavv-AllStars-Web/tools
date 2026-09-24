@@ -48,7 +48,7 @@
                         <td>{{ $validation->valid_until?->format('d/m/Y H:i')??'—' }}</td>
                         <td>@forelse($validation->orders as $link)<span class="d-block">{{ $link->customer_name?:'—' }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
                         <td>@forelse($validation->orders as $link)<span class="d-block">{{ $link->company?:'—' }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
-                        <td>@forelse($validation->orders as $link)<span class="badge text-bg-{{ $link->store==='ASD'?'info':'secondary' }} d-block mb-1">{{ $link->store }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
+                        <td>@forelse($validation->orders as $link)<span class="badge text-bg-{{ $link->store==='ASD'?'info':'danger' }} d-block mb-1">{{ $link->store }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
                         <td>
                             @foreach($validation->orders as $link)
                                 @if($link->prestashop_url)<a class="d-block" target="_blank" href="{{ $link->prestashop_url }}">#{{ $link->id_order }} {{ $link->order_reference }}</a>@else<span class="d-block">#{{ $link->id_order }} {{ $link->order_reference }}</span>@endif

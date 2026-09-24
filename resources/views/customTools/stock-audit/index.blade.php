@@ -12,8 +12,22 @@
  <div class="col-md-2"><input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control"></div>
  <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
 </form></div></div>
-<div class="card"><div class="card-header">Movimentos</div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Data</th><th>Refer�ncia</th><th>Origem</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead><tbody>
-@forelse($movements as $movement)<tr><td>{{ $movement->occurred_at }}</td><td>{{ $movement->reference }}</td><td>{{ $movement->source }}</td><td>{{ $movement->quantity_before }} ? {{ $movement->quantity_after }}</td><td>{{ $movement->stock_arrive_before }} ? {{ $movement->stock_arrive_after }}</td></tr>
-@empty<tr><td colspan="6" class="text-center text-muted">Sem movimentos registados.</td></tr>@endforelse
-</tbody></table></div>@if(method_exists($movements,'links'))<div class="card-body">{{ $movements->links() }}</div>@endif</div>
+<div class="card"><div class="card-header">Movimentos</div><div class="table-responsive"><table class="table mb-0">
+<thead><tr><th>Data</th><th>Refer&ecirc;ncia</th><th>Origem</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead>
+<tbody>
+@forelse($movements as $movement)
+<tr>
+ <td>{{ $movement->occurred_at }}</td>
+ <td>{{ $movement->reference }}</td>
+ <td>{{ $movement->source }}</td>
+ <td>{{ $movement->user_name ?: 'Sistema' }}</td>
+ <td>@if($movement->quantity_before !== null){{ $movement->quantity_before }} &rarr; {{ $movement->quantity_after }}@else-@endif</td>
+ <td>@if($movement->stock_arrive_before !== null){{ $movement->stock_arrive_before }} &rarr; {{ $movement->stock_arrive_after }}@else-@endif</td>
+</tr>
+@empty
+<tr><td colspan="6" class="text-center text-muted">Sem movimentos registados.</td></tr>
+@endforelse
+</tbody></table></div>
+@if(method_exists($movements,'links'))<div class="card-body">{{ $movements->links() }}</div>@endif
+</div>
 @endsection

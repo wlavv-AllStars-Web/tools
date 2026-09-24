@@ -11,19 +11,30 @@
 @if(auth()->id() === 43)<form id="stock-audit-snapshot-form" method="POST" action="{{ route('web.tools.stock_audit.snapshot') }}">@csrf</form>@endif
 </div></div>
 <div class="card"><div class="card-header">Movimentos</div><div class="table-responsive"><table class="table mb-0">
-<thead><tr><th>Data</th><th>Refer&ecirc;ncia</th><th>Origem</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead>
+<thead><tr><th>Data</th><th>Refer&ecirc;ncia</th><th>Origem</th><th>Encomenda</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead>
 <tbody>
 @forelse($movements as $movement)
 <tr>
  <td>{{ $movement->occurred_at }}</td>
  <td>{{ $movement->reference }}</td>
  <td>{{ $movement->source }}</td>
+ <td>
+  @php($meta = is_string($movement->meta) ? (json_decode($movement->meta, true) ?: []) : (array) $movement->meta)
+  @if($movement->id_order)
+   #{{ $movement->id_order }}
+   @if(!empty($meta['order_state_before']['name']) || !empty($meta['order_state_after']['name']))
+    <small class="text-muted d-block">{{ $meta['order_state_before']['name'] ?? '-' }} &rarr; {{ $meta['order_state_after']['name'] ?? '-' }}</small>
+   @endif
+  @else
+   -
+  @endif
+ </td>
  <td>{{ $movement->user_name ?: 'Sistema' }}</td>
  <td>@if($movement->quantity_before !== null){{ $movement->quantity_before }} &rarr; {{ $movement->quantity_after }}@else-@endif</td>
  <td>@if($movement->stock_arrive_before !== null){{ $movement->stock_arrive_before }} &rarr; {{ $movement->stock_arrive_after }}@else-@endif</td>
 </tr>
 @empty
-<tr><td colspan="6" class="text-center text-muted">Sem movimentos registados.</td></tr>
+<tr><td colspan="7" class="text-center text-muted">Sem movimentos registados.</td></tr>
 @endforelse
 </tbody></table></div>
 @if(method_exists($movements,'links'))<div class="card-body">{{ $movements->links() }}</div>@endif

@@ -18,7 +18,11 @@ class StockAuditMovementController extends Controller
         $data = $request->validate([
             'id_product' => ['required', 'integer', 'min:1'],
             'id_product_attribute' => ['nullable', 'integer', 'min:0'],
+            'id_order' => ['nullable', 'integer', 'min:1'],
             'reference' => ['nullable', 'string', 'max:128'],
+            'source' => ['nullable', 'string', 'max:64'],
+            'operation' => ['nullable', 'string', 'max:64'],
+            'meta' => ['nullable', 'array'],
             'quantity_before' => ['nullable', 'integer'],
             'quantity_after' => ['required', 'integer'],
             'quantity_delta' => ['nullable', 'integer'],
@@ -60,9 +64,10 @@ class StockAuditMovementController extends Controller
         $stockAuditService->record([
             'id_product' => (int) $data['id_product'],
             'id_product_attribute' => (int) ($data['id_product_attribute'] ?? 0),
+            'id_order' => isset($data['id_order']) ? (int) $data['id_order'] : null,
             'reference' => $data['reference'] ?? null,
-            'source' => 'prestashop',
-            'operation' => 'prestashop_quantity_update',
+            'source' => $data['source'] ?? 'Prestashop',
+            'operation' => $data['operation'] ?? 'prestashop_quantity_update',
             'quantity_before' => $before,
             'quantity_after' => $after,
             'quantity_delta' => $delta,
@@ -71,10 +76,10 @@ class StockAuditMovementController extends Controller
             'stock_arrive_delta' => null,
             'user_id' => isset($data['user_id']) ? (int) $data['user_id'] : null,
             'user_name' => $data['user_name'] ?? 'PrestaShop',
-            'meta' => json_encode([
+            'meta' => json_encode(array_merge([
                 'id_shop' => isset($data['id_shop']) ? (int) $data['id_shop'] : null,
                 'hook' => 'actionUpdateQuantity',
-            ]),
+            ], $data['meta'] ?? [])),
             'occurred_at' => $data['occurred_at'] ?? now(),
         ]);
 

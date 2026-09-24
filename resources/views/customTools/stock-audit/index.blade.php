@@ -6,11 +6,10 @@
 </div></div>
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 <div class="card mb-3"><div class="card-body"><form class="row g-2">
- <div class="col-md-4"><input name="reference" value="{{ $filters['reference'] ?? '' }}" class="form-control" placeholder="Refer&ecirc;ncia"></div>
- <div class="col-md-2"><input type="date" name="date" value="{{ $filters['date'] ?? '' }}" class="form-control"></div>
- <div class="col-md-2"><input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control"></div>
- <div class="col-md-2"><input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control"></div>
- <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
+ <div class="col-md-5"><input name="reference" value="{{ $filters['reference'] ?? '' }}" class="form-control" placeholder="Refer&ecirc;ncia"></div>
+ <div class="col-md-2"><input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control" aria-label="Data inicial"></div>
+ <div class="col-md-2"><input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control" aria-label="Data final"></div>
+ <div class="col-md-3"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
 </form></div></div>
 <div class="card"><div class="card-header">Movimentos</div><div class="table-responsive"><table class="table mb-0">
 <thead><tr><th>Data</th><th>Refer&ecirc;ncia</th><th>Origem</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead>

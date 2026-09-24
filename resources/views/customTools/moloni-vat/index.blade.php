@@ -14,13 +14,13 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0">Moloni · VIES VAT tracking</h3>
-        <a class="btn btn-outline-secondary" href="{{ route('web.tools.moloni_vat.index') }}">Todos</a>
+        <h3 class="mb-0">VIES</h3>
+        <a class="btn btn-outline-secondary" href="{{ route('finance.tools.moloni_vat.index') }}">Todos</a>
     </div>
 
     @if(session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
 
-    <form method="GET" action="{{ route('web.tools.moloni_vat.index') }}" class="card card-body mb-3">
+    <form method="GET" action="{{ route('finance.tools.moloni_vat.index') }}" class="card card-body mb-3">
         <div class="row align-items-end">
             <div class="col-sm-4 col-md-3">
                 <label class="form-label" for="status">Estado</label>
@@ -56,7 +56,7 @@
                             @if($validation->orders_count>count($validation->orders))<small class="text-muted">+{{ $validation->orders_count-count($validation->orders) }} encomenda(s)</small>@endif
                         </td>
                         <td><small>{{ $validation->last_error?:'—' }}</small></td>
-                        <td>@if($validation->status!=='valid')<form method="POST" action="{{ route('web.tools.moloni_vat.retry',$validation) }}">@csrf<button class="btn btn-sm btn-outline-primary" type="submit">Tentar agora</button></form>@endif</td>
+                        <td>@if($validation->status!=='valid')<form method="POST" action="{{ route('finance.tools.moloni_vat.retry',$validation) }}">@csrf<button class="btn btn-sm btn-outline-primary" type="submit">Tentar agora</button></form>@endif</td>
                     </tr>
                 @empty
                     <tr><td colspan="10" class="text-center text-muted py-4">Sem registos.</td></tr>

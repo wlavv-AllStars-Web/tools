@@ -98,8 +98,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('web')->name('web.tools.')->group(function () {
-        Route::get('/moloni-vat', [MoloniVatValidationController::class, 'index'])->name('moloni_vat.index');
-        Route::post('/moloni-vat/{validation}/retry', [MoloniVatValidationController::class, 'retry'])->name('moloni_vat.retry');
 
         Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');
         Route::post('/auto-backorder/run', [AutoBackorderAuditController::class, 'runManually'])->name('auto_backorder.run');
@@ -309,6 +307,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('finance')->name('finance.tools.')->group(function () {
+        Route::get('/moloni-vat', [MoloniVatValidationController::class, 'index'])->name('moloni_vat.index');
+        Route::post('/moloni-vat/{validation}/retry', [MoloniVatValidationController::class, 'retry'])->name('moloni_vat.retry');
         Route::get('/intrastat', [\App\Http\Controllers\Areas\financeController::class, 'download_intrastat'])->name('intrastat.index');
         Route::post('/intrastat/importacao', [\App\Http\Controllers\Areas\financeController::class, 'intrastat_import'])->name('intrastat.import');
         Route::post('/intrastat/exportacao', [\App\Http\Controllers\Areas\financeController::class, 'intrastat_export'])->name('intrastat.export');

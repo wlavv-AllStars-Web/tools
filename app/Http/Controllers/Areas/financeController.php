@@ -63,6 +63,7 @@ class financeController extends Controller
         $accessList[] =         ['name' =>  trans('messages.INTRASTAT'), 'url' => route('finance.tools.intrastat.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-download"></i>'];
         $accessList[] =         ['name' =>  trans('messages.VERIFICATION'), 'url' => route('finance.tools.carrier_check.index'), 'icon' => '<i class="fa-solid fa-truck-fast" style="font-size: 40px;"></i>'];
         $accessList[] =         ['name' =>  trans('messages.Return'), 'url' => route('finance.tools.carrier_returns.index'), 'icon' => '<i class="fa-solid fa-truck-arrow-right" style="font-size: 40px;"></i>'];
+        $accessList[] =         ['name' => 'VIES', 'url' => route('finance.tools.moloni_vat.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-building-circle-check"></i>'];
         return $accessList;
     }
 

@@ -25,6 +25,10 @@ class MoloniVatValidationController extends Controller
             'validations'=>$validations,
             'selectedStatus'=>$status,
             'statuses'=>$this->statuses(),
+            'breadcrumbs'=>[
+                ['name'=>trans('finance'),'url'=>route('finance.index')],
+                ['name'=>'VIES','url'=>route('finance.tools.moloni_vat.index'),'no_translation'=>1],
+            ],
         ]);
     }
 

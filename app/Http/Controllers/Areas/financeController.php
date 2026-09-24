@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\Finance\CorrectedInventoryService;
 
 use App\Models\modules\dashboard\dashboard;
+use App\Models\modules\moloni_vat_validation\MoloniVatValidation;
 
 
 class financeController extends Controller
@@ -43,11 +44,13 @@ class financeController extends Controller
     }
 
     public function index(){
+        $vatAlerts = $this->nonValidMoloniVatAlerts();
         
         $data = [
             'counters'      => dashboard::calculateAndGetCountersOfTab('finance'),
             'panels'        => [],
             'accessList'    => $this->accessList(),
+            'vatAlerts'     => $vatAlerts,
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs,
             'rates'         => CurrencyVariation::orderBy('id', 'DESC')->first()
@@ -55,7 +58,40 @@ class financeController extends Controller
 
         return View::make('areas/finance/index')->with($data);
     }
-    
+
+    private function nonValidMoloniVatAlerts()
+    {
+        $validations = MoloniVatValidation::query()
+            ->where('status', '!=', MoloniVatValidation::STATUS_VALID)
+            ->with(['orders' => fn ($query) => $query->orderBy('id_order')])
+            ->latest('updated_at')
+            ->get();
+
+        $orderIds = $validations->flatMap(fn ($validation) => $validation->orders->pluck('id_order'))
+            ->unique()
+            ->values();
+
+        if ($orderIds->isNotEmpty()) {
+            $prefix = $this->prestashopMysql2Prefix();
+            $orders = DB::connection('mysql2')->table($prefix . 'orders as o')
+                ->leftJoin($prefix . 'address as a', 'a.id_address', '=', 'o.id_address_invoice')
+                ->whereIn('o.id_order', $orderIds)
+                ->select(['o.id_order', 'o.id_shop', 'a.company'])
+                ->get()
+                ->keyBy('id_order');
+
+            foreach ($validations as $validation) {
+                foreach ($validation->orders as $link) {
+                    $order = $orders->get((int) $link->id_order);
+                    $link->store = (int) ($order?->id_shop ?? 0) === 3 ? 'ASD' : 'ASM';
+                    $link->company = trim((string) ($order?->company ?? ''));
+                }
+            }
+        }
+
+        return $validations;
+    }
+
     private function accessList(){
         
         $accessList = array();

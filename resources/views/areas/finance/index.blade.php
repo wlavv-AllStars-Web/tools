@@ -103,5 +103,30 @@
         </div>
     </div>
     
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>VATs com estado diferente de valido</strong>
+            <span class="badge text-bg-danger">{{ $vatAlerts->count() }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Estado</th><th>Loja</th><th>Company</th><th>Orders ID's</th></tr></thead>
+                <tbody>
+                @forelse($vatAlerts as $validation)
+                    @php($statusColor=['invalid'=>'danger','missing_vat'=>'danger','manual_review'=>'danger','pending'=>'warning','processing'=>'warning','retry_scheduled'=>'warning'][$validation->status] ?? 'secondary')
+                    @php($statusLabel=['pending'=>'Pendente','processing'=>'Em validacao','retry_scheduled'=>'Nova tentativa agendada','invalid'=>'Invalido','missing_vat'=>'VAT/morada em falta','manual_review'=>'Revisao manual'][$validation->status] ?? $validation->status)
+                    <tr>
+                        <td><span class="badge text-bg-{{ $statusColor }}">{{ $statusLabel }}</span></td>
+                        <td>@forelse($validation->orders as $link)<span class="badge text-bg-{{ $link->store === 'ASD' ? 'info' : 'danger' }} d-block mb-1">{{ $link->store }}</span>@empty<span class="text-muted">-</span>@endforelse</td>
+                        <td>@forelse($validation->orders as $link)<span class="d-block">{{ $link->company ?: '-' }}</span>@empty<span class="text-muted">-</span>@endforelse</td>
+                        <td>@forelse($validation->orders as $link)<span class="d-block">#{{ $link->id_order }}</span>@empty<span class="text-muted">-</span>@endforelse</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="text-center text-muted py-4">Sem VATs por validar.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
     {!! $counters !!}
 @endsection

@@ -19,7 +19,6 @@
     <form method="GET" action="{{ route('finance.tools.moloni_vat.index') }}" class="card card-body mb-3">
         <div class="row align-items-end">
             <div class="col-sm-4 col-md-3">
-                <label class="form-label" for="status">Estado</label>
                 <select class="form-select" id="status" name="status">
                     <option value="">Todos</option>
                     @foreach($statuses as $key=>$label)<option value="{{ $key }}" @selected($selectedStatus===$key)>{{ $label }}</option>@endforeach

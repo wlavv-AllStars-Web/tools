@@ -135,7 +135,7 @@ return [
     'asd' => 'ASD',
     'web.tools.resources.asd.index' => 'Recursos ASD',
     'web.tools.resources.asd.edit' => 'Recursos ASD',
-    'web.tools.resources.asd.images' => 'Imágenes ASD',
+    'web.tools.resources.asd.images' => 'Imï¿½genes ASD',
 
     /** Human Resources **/
     'humanResources' => 'Human Resources',
@@ -312,4 +312,5 @@ return [
     'product_image_review_load_error' => 'No se pudieron cargar los productos. IntÃ©ntalo de nuevo.',
     'product_image_review_open_product' => 'Ver producto en ASM',
     'web.tools.auto_backorder.index' => 'Auto Backorder report',
+    'finance.tools.moloni_vat.index' => 'VIES validation',
 ];

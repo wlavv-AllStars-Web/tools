@@ -18,6 +18,7 @@ use App\Services\oms\StockArriveService;
 use App\Services\oms\BilledOrderReversalService;
 use App\Services\oms\SupplierTermsService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
+use App\Services\StockAudit\StockAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,7 @@ class OrderNoteController extends Controller
         protected SupplierInvoiceWorkflowService $supplierInvoiceWorkflow,
         protected OrderNoteLogisticsService $orderNoteLogisticsService,
         protected OrderNotePrintService $orderNotePrintService,
+        protected StockAuditService $stockAuditService,
     ) {
         $this->middleware('auth');
     }
@@ -238,7 +240,7 @@ class OrderNoteController extends Controller
                     // quantity remains in stock_arrive and must be removed.
                     $remainingArrive = max(0, $snapshot['ordered'] - $snapshot['billed']);
                     if ($remainingArrive > 0) {
-                        $this->stockArriveService->adjust($snapshot['product_id'], $snapshot['attribute_id'], -$remainingArrive);
+                        $this->adjustCustomStockArrive($snapshot['product_id'], $snapshot['attribute_id'], -$remainingArrive);
                     }
 
                     DB::table('oms_stock_history')->insert([
@@ -762,7 +764,7 @@ class OrderNoteController extends Controller
                 // ordered amount that remains in stock_arrive for this line.
                 $remainingArrive = max(0, $orderedQuantity - $billedQuantity);
                 if ($remainingArrive > 0) {
-                    $this->stockArriveService->adjust($productId, $attributeId, -$remainingArrive);
+                    $this->adjustCustomStockArrive($productId, $attributeId, -$remainingArrive);
                 }
 
                 DB::table('oms_stock_history')->insert([
@@ -1733,7 +1735,101 @@ class OrderNoteController extends Controller
 
     protected function adjustCustomStockArrive(int $productId, ?int $productAttributeId, int $delta): void
     {
+        if ($delta === 0) {
+            return;
+        }
+
+        $targets = $this->snapshotStockArriveAuditTargets($productId, (int) ($productAttributeId ?? 0));
         $this->stockArriveService->adjust($productId, (int) ($productAttributeId ?? 0), $delta);
+        $this->recordStockArriveAuditTargets($targets);
+    }
+
+    protected function snapshotStockArriveAuditTargets(int $productId, int $productAttributeId): Collection
+    {
+        $prefix = $this->psPrefix();
+        $db = DB::connection('mysql2');
+
+        if ($productAttributeId > 0) {
+            $reference = trim((string) $db->table($prefix . 'product_attribute')
+                ->where('id_product', $productId)
+                ->where('id_product_attribute', $productAttributeId)
+                ->value('reference'));
+
+            $targets = $reference === ''
+                ? collect([(object) ['id_product' => $productId, 'id_product_attribute' => $productAttributeId]])
+                : $db->table($prefix . 'product_attribute')
+                    ->where('reference', $reference)
+                    ->get(['id_product', 'id_product_attribute']);
+        } else {
+            $reference = trim((string) $db->table($prefix . 'product')
+                ->where('id_product', $productId)
+                ->value('reference'));
+
+            $targets = $reference === ''
+                ? collect([(object) ['id_product' => $productId, 'id_product_attribute' => 0]])
+                : $db->table($prefix . 'product')
+                    ->where('reference', $reference)
+                    ->get(['id_product'])
+                    ->map(fn ($row) => (object) ['id_product' => (int) $row->id_product, 'id_product_attribute' => 0]);
+        }
+
+        return $targets
+            ->map(function (object $target) use ($db, $prefix): object {
+                $targetProductId = (int) $target->id_product;
+                $targetAttributeId = (int) ($target->id_product_attribute ?? 0);
+                $reference = $targetAttributeId > 0
+                    ? (string) $db->table($prefix . 'product_attribute')->where('id_product_attribute', $targetAttributeId)->value('reference')
+                    : (string) $db->table($prefix . 'product')->where('id_product', $targetProductId)->value('reference');
+                $stockArriveBefore = $targetAttributeId > 0
+                    ? (int) $db->table($prefix . 'custom_product_attribute')->where('id_product_attribute', $targetAttributeId)->value('stock_arrive')
+                    : (int) $db->table($prefix . 'custom_product')->where('id_product', $targetProductId)->value('stock_arrive');
+
+                return (object) [
+                    'id_product' => $targetProductId,
+                    'id_product_attribute' => $targetAttributeId,
+                    'reference' => $reference,
+                    'stock_arrive_before' => $stockArriveBefore,
+                ];
+            })
+            ->unique(fn ($target) => $target->id_product . ':' . $target->id_product_attribute)
+            ->values();
+    }
+
+    protected function recordStockArriveAuditTargets(Collection $targets): void
+    {
+        try {
+            $db = DB::connection('mysql2');
+            $prefix = $this->psPrefix();
+            $user = auth()->user();
+
+            foreach ($targets as $target) {
+                $stockArriveAfter = (int) ($target->id_product_attribute > 0
+                    ? $db->table($prefix . 'custom_product_attribute')->where('id_product_attribute', $target->id_product_attribute)->value('stock_arrive')
+                    : $db->table($prefix . 'custom_product')->where('id_product', $target->id_product)->value('stock_arrive'));
+
+                if ((int) $target->stock_arrive_before === $stockArriveAfter) {
+                    continue;
+                }
+
+                $this->stockAuditService->record([
+                    'id_product' => (int) $target->id_product,
+                    'id_product_attribute' => (int) $target->id_product_attribute,
+                    'reference' => (string) $target->reference,
+                    'source' => 'oms',
+                    'operation' => 'oms_order_stock_arrive',
+                    'quantity_before' => null,
+                    'quantity_after' => null,
+                    'quantity_delta' => null,
+                    'stock_arrive_before' => (int) $target->stock_arrive_before,
+                    'stock_arrive_after' => $stockArriveAfter,
+                    'stock_arrive_delta' => $stockArriveAfter - (int) $target->stock_arrive_before,
+                    'user_id' => $user?->id,
+                    'user_name' => $user?->name,
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     protected function isPrestashopPack(int $productId): bool

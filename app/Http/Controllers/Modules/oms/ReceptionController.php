@@ -13,10 +13,13 @@ use App\Services\oms\ExportService;
 use App\Services\oms\ReceptionHistoryService;
 use App\Services\oms\StockArriveService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
+use App\Services\StockAudit\StockAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
+use Throwable;
 
 class ReceptionController extends Controller
 {
@@ -24,7 +27,8 @@ class ReceptionController extends Controller
         protected ReceptionHistoryService $receptionHistoryService,
         protected ExportService $exportService,
         protected StockArriveService $stockArriveService,
-        protected SupplierInvoiceWorkflowService $supplierInvoiceWorkflowService
+        protected SupplierInvoiceWorkflowService $supplierInvoiceWorkflowService,
+        protected StockAuditService $stockAuditService
     ) {
         $this->middleware('auth');
     }
@@ -235,6 +239,7 @@ class ReceptionController extends Controller
                 $productId = (int) $line->product_id;
                 $productAttributeId = (int) ($line->product_attribute_id ?? 0);
 
+                $auditTargets = $this->snapshotStockAuditTargets($productId, $productAttributeId);
                 $stockBefore = $this->getPrestashopQuantity($productId, $productAttributeId);
                 $arriveBefore = $this->getPrestashopStockArrive($productId, $productAttributeId);
 
@@ -269,6 +274,8 @@ class ReceptionController extends Controller
                     'user_email_snapshot' => $userSnapshot['user_email_snapshot'],
                     'created_at' => now(),
                 ]);
+
+                $this->recordStockAuditTargets($auditTargets, 'oms_simple_stock_entry');
             }
 
             if ($billedOrder->orderNote) {
@@ -341,10 +348,11 @@ class ReceptionController extends Controller
                 }
             }
             DB::table('oms_billed_order_lines')->where('id', $line->id)->update(['qty_received' => $target, 'updated_at' => now()]);
-            $productId=(int)$line->product_id; $attributeId=(int)($line->product_attribute_id ?? 0); $before=$this->getPrestashopQuantity($productId,$attributeId); $arriveBefore=$this->getPrestashopStockArrive($productId,$attributeId);
+            $productId=(int)$line->product_id; $attributeId=(int)($line->product_attribute_id ?? 0); $auditTargets=$this->snapshotStockAuditTargets($productId,$attributeId); $before=$this->getPrestashopQuantity($productId,$attributeId); $arriveBefore=$this->getPrestashopStockArrive($productId,$attributeId);
             $this->incrementPrestashopStock($productId,$attributeId,$delta); $this->stockArriveService->adjust($productId,$attributeId,-$delta);
             $after=$this->getPrestashopQuantity($productId,$attributeId); $arriveAfter=$this->getPrestashopStockArrive($productId,$attributeId); $ref=$this->getProductReferenceSnapshot($productId,$attributeId); $user=$this->getUserSnapshot();
             DB::table('oms_stock_history')->insert(['source_type'=>'reception_correction','source_id'=>$line->id,'order_note_id'=>$billedOrder->order_note_id,'billed_order_id'=>$billedOrder->id,'supplier_invoice_id'=>$billedOrder->supplier_invoice_id,'reception_id'=>$receptionId,'product_id'=>$productId,'product_attribute_id'=>$attributeId,'product_reference_snapshot'=>$ref['product_reference_snapshot'],'attribute_reference_snapshot'=>$ref['attribute_reference_snapshot'],'display_reference_snapshot'=>$ref['display_reference_snapshot'],'ps_quantity_before'=>$before,'ps_quantity_delta'=>$delta,'ps_quantity_after'=>$after,'ps_quantity_arrive_before'=>$arriveBefore,'ps_quantity_arrive_delta'=>-$delta,'ps_quantity_arrive_after'=>$arriveAfter,'user_id'=>$user['user_id'],'user_name_snapshot'=>$user['user_name_snapshot'],'user_email_snapshot'=>$user['user_email_snapshot'],'created_at'=>now()]);
+            $this->recordStockAuditTargets($auditTargets, 'oms_simple_stock_correction');
             $this->supplierInvoiceWorkflowService->refreshOrderNoteStatus($billedOrder->orderNote->fresh(['lines','billedOrders']));
             if ($billedOrder->invoice) {
                 $this->supplierInvoiceWorkflowService->closeInvoiceIfFullyReceived($billedOrder->invoice);
@@ -445,6 +453,58 @@ class ReceptionController extends Controller
             ->value('stock_arrive');
     }
 
+    protected function snapshotStockAuditTargets(int $productId, int $productAttributeId): Collection
+    {
+        return $this->stockTargetsForReference($productId, $productAttributeId)
+            ->map(function (object $target): object {
+                $targetProductId = (int) $target->id_product;
+                $targetAttributeId = (int) $target->id_product_attribute;
+                $reference = $this->getProductReferenceSnapshot($targetProductId, $targetAttributeId);
+
+                return (object) [
+                    'id_product' => $targetProductId,
+                    'id_product_attribute' => $targetAttributeId,
+                    'reference' => (string) ($reference['display_reference_snapshot'] ?? ''),
+                    'quantity_before' => $this->getPrestashopQuantity($targetProductId, $targetAttributeId),
+                    'stock_arrive_before' => $this->getPrestashopStockArrive($targetProductId, $targetAttributeId),
+                ];
+            })
+            ->values();
+    }
+
+    protected function recordStockAuditTargets(Collection $targets, string $operation): void
+    {
+        try {
+            $user = Auth::user();
+
+            foreach ($targets as $target) {
+                $quantityAfter = $this->getPrestashopQuantity((int) $target->id_product, (int) $target->id_product_attribute);
+                $stockArriveAfter = $this->getPrestashopStockArrive((int) $target->id_product, (int) $target->id_product_attribute);
+
+                if ((int) $target->quantity_before === $quantityAfter && (int) $target->stock_arrive_before === $stockArriveAfter) {
+                    continue;
+                }
+
+                $this->stockAuditService->record([
+                    'id_product' => (int) $target->id_product,
+                    'id_product_attribute' => (int) $target->id_product_attribute,
+                    'reference' => (string) $target->reference,
+                    'source' => 'oms',
+                    'operation' => $operation,
+                    'quantity_before' => (int) $target->quantity_before,
+                    'quantity_after' => $quantityAfter,
+                    'quantity_delta' => $quantityAfter - (int) $target->quantity_before,
+                    'stock_arrive_before' => (int) $target->stock_arrive_before,
+                    'stock_arrive_after' => $stockArriveAfter,
+                    'stock_arrive_delta' => $stockArriveAfter - (int) $target->stock_arrive_before,
+                    'user_id' => $user?->id,
+                    'user_name' => $user?->name,
+                ]);
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
     protected function incrementPrestashopStock(int $productId, int $productAttributeId, int $qty): void
     {
         $prefix = $this->psPrefix();

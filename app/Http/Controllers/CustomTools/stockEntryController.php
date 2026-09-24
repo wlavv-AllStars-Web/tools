@@ -17,6 +17,7 @@ use App\Models\prestashop\orders_details;
 use App\Models\modules\oms\OrderNote;
 use App\Services\oms\OmsProcurementBridge;
 use App\Services\oms\SupplierInvoiceWorkflowService;
+use App\Services\StockAudit\StockAuditService;
 
 class stockEntryController extends Controller
 {
@@ -274,6 +275,15 @@ class stockEntryController extends Controller
                             (int) $stockLog['arrive_delta'],
                             (int) $stockLog['arrive_after']
                         );
+
+                        $this->recordStockAuditMovement(
+                            $stockLog['target'],
+                            'oms_stock_entry',
+                            (int) $stockLog['stock_before'],
+                            (int) $stockLog['stock_after'],
+                            (int) $stockLog['arrive_before'],
+                            (int) $stockLog['arrive_after']
+                        );
                     }
 
                     DB::connection('mysql2')->commit();
@@ -457,6 +467,15 @@ class stockEntryController extends Controller
                     (int) $stockLog['arrive_delta'],
                     (int) $stockLog['arrive_after']
                 );
+
+                $this->recordStockAuditMovement(
+                    $stockLog['target'],
+                    'oms_stock_entry_removal',
+                    (int) $stockLog['stock_before'],
+                    (int) $stockLog['stock_after'],
+                    (int) $stockLog['arrive_before'],
+                    (int) $stockLog['arrive_after']
+                );
             }
 
             DB::table('oms_reception_lines')->where('id', (int) $reception->reception_line_id)->delete();
@@ -488,6 +507,38 @@ class stockEntryController extends Controller
         return redirect()->route('stockEntry.listToRemove');
     }
 
+    private function recordStockAuditMovement(
+        object $target,
+        string $operation,
+        int $quantityBefore,
+        int $quantityAfter,
+        int $stockArriveBefore,
+        int $stockArriveAfter
+    ): void {
+        try {
+            $productId = (int) $target->id_product;
+            $attributeId = (int) $target->id_product_attribute;
+            $user = Auth::user();
+
+            app(StockAuditService::class)->record([
+                'id_product' => $productId,
+                'id_product_attribute' => $attributeId,
+                'reference' => $this->displayReference($productId, $attributeId),
+                'source' => 'oms',
+                'operation' => $operation,
+                'quantity_before' => $quantityBefore,
+                'quantity_after' => $quantityAfter,
+                'quantity_delta' => $quantityAfter - $quantityBefore,
+                'stock_arrive_before' => $stockArriveBefore,
+                'stock_arrive_after' => $stockArriveAfter,
+                'stock_arrive_delta' => $stockArriveAfter - $stockArriveBefore,
+                'user_id' => $user?->id,
+                'user_name' => $user?->name,
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+    }
     private function latestReceptionIdForLine(int $lineId, int $quantity): ?int
     {
         $receptionId = DB::table('oms_reception_lines')

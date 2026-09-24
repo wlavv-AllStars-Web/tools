@@ -156,6 +156,7 @@ class AppServiceProvider extends ServiceProvider
             'web.tools.seo.' => ['web', 'web.index', 'SEO'],
             'web.tools.raw_text.' => ['web', 'web.index', 'Raw text'],
             'web.tools.auto_backorder.' => ['web', 'web.index', 'Auto backorder'],
+            'web.tools.stock_audit.' => ['web', 'web.index', 'Stock audit'],
             'web.tools.trustpilot.' => ['web', 'web.index', 'Trustpilot'],
             'web.tools.changes.' => ['web', 'web.index', 'Changes'],
             'web.tools.db_migration.' => ['web', 'web.index', 'Migration tool'],

@@ -190,6 +190,7 @@ return [
     'web.tools.raw_text.index' => 'Raw text',
     'web.tools.changes.index' => 'Alteracoes',
     'web.tools.db_migration.index' => 'Ferramenta de migracao',
+    'web.tools.stock_audit.index' => 'Auditoria de stock',
     'admin.tools.asg_tasks.index' => 'Tasks',
     'admin.tools.oms.dashboard' => 'OMS',
     'admin.tools.compats.index' => 'Compats',

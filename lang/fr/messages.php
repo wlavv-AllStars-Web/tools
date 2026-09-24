@@ -176,6 +176,7 @@ return [
     'web.tools.raw_text.index' => 'Raw text',
     'web.tools.changes.index' => 'Changes',
     'web.tools.db_migration.index' => 'Outil de migration',
+    'web.tools.stock_audit.index' => 'Audit du stock',
     'admin.tools.asg_tasks.index' => 'Tasks',
     'admin.tools.oms.dashboard' => 'OMS',
     'admin.tools.compats.index' => 'Compats',

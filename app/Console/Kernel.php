@@ -26,6 +26,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('newsletter:send-pending --limit=10')->everyFiveMinutes()->withoutOverlapping();
         $schedule->command('web:export-products')->dailyAt('01:00')->withoutOverlapping();
         $schedule->command('auto-backorder:audit')->dailyAt(config('auto_backorder.schedule_time', '01:30'))->withoutOverlapping();
+        $schedule->command('stock-audit:snapshot')->cron('0 */6 * * *')->withoutOverlapping();
     }
 
     protected function commands(): void

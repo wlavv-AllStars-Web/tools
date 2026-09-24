@@ -68,6 +68,7 @@ class webController extends Controller{
         $accessList[]                           = ['name' =>  trans('messages.basePrice'),        'url' => route('basePrice.index'),                  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-eur"></i>'];
         **/
         
+        $accessList[] = ['name' => 'Stock audit', 'url' => route('web.tools.stock_audit.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-stacked"></i>'];
         return $accessList;
     }
 }

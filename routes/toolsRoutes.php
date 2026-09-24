@@ -64,6 +64,7 @@ use App\Http\Controllers\CustomTools\ProductStoreVisibilityController;
 use App\Http\Controllers\CustomTools\AsdAlertController;
 use App\Http\Controllers\CustomTools\ToolsMigrationController;
 use App\Http\Controllers\CustomTools\MoloniVatValidationController;
+use App\Http\Controllers\CustomTools\StockAuditController;
 
 use App\Http\Controllers\CustomTools\CurrencyVariationController;
 use App\Http\Controllers\Modules\oms\DashboardController as OmsDashboardController;
@@ -98,6 +99,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('web')->name('web.tools.')->group(function () {
+
+        Route::get('/stock-audit', [StockAuditController::class, 'index'])->name('stock_audit.index');
+        Route::post('/stock-audit/snapshot', [StockAuditController::class, 'snapshot'])->name('stock_audit.snapshot');
 
         Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');
         Route::post('/auto-backorder/run', [AutoBackorderAuditController::class, 'runManually'])->name('auto_backorder.run');

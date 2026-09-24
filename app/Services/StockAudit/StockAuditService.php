@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Storage;
 
 class StockAuditService
 {
+    private array $combinationProducts = [];
+    private array $technicalProducts = [];
+
     public function createSnapshot(): array
     {
         $prefix = (string) env('DB2_DB_prefix', 'ps_');
@@ -41,9 +44,58 @@ class StockAuditService
 
     public function record(array $data): void
     {
+        $productId = (int) ($data['id_product'] ?? 0);
+        $attributeId = (int) ($data['id_product_attribute'] ?? 0);
+
+        if ($productId > 0 && $this->isTechnicalProductsProduct($productId)) {
+            return;
+        }
+
+        if ($attributeId === 0 && $productId > 0 && $this->productHasCombinations($productId)) {
+            return;
+        }
+
         DB::table('stock_audit_movements')->insert(array_merge([
             'id_product_attribute'=>0, 'source'=>'unknown', 'operation'=>'update',
             'occurred_at'=>now(), 'created_at'=>now(), 'updated_at'=>now(),
         ], $data));
+    }
+
+    private function productHasCombinations(int $productId): bool
+    {
+        if (array_key_exists($productId, $this->combinationProducts)) {
+            return $this->combinationProducts[$productId];
+        }
+
+        try {
+            $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+
+            return $this->combinationProducts[$productId] = DB::connection('mysql2')
+                ->table($prefix . 'product_attribute')
+                ->where('id_product', $productId)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function isTechnicalProductsProduct(int $productId): bool
+    {
+        if (array_key_exists($productId, $this->technicalProducts)) {
+            return $this->technicalProducts[$productId];
+        }
+
+        try {
+            $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+
+            return $this->technicalProducts[$productId] = DB::connection('mysql2')
+                ->table($prefix . 'product as product')
+                ->join($prefix . 'manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
+                ->where('product.id_product', $productId)
+                ->whereRaw('LOWER(TRIM(manufacturer.name)) = ?', ['technical products'])
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

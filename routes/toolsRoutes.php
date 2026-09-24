@@ -101,6 +101,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('web')->name('web.tools.')->group(function () {
 
         Route::get('/stock-audit', [StockAuditController::class, 'index'])->name('stock_audit.index');
+        Route::get('/stock-audit/history', [StockAuditController::class, 'history'])->name('stock_audit.history');
         Route::post('/stock-audit/snapshot', [StockAuditController::class, 'snapshot'])->name('stock_audit.snapshot');
 
         Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');

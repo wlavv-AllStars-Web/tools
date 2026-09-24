@@ -16,14 +16,24 @@
 @forelse($movements as $movement)
 <tr>
  <td>{{ $movement->occurred_at }}</td>
- <td>{{ $movement->reference }}</td>
+ <td>@if($movement->reference)<a href="{{ route('web.tools.stock_audit.history', ['reference' => $movement->reference]) }}">{{ $movement->reference }}</a>@else-@endif</td>
  <td>{{ $movement->source }}</td>
  <td>
   @php($meta = is_string($movement->meta) ? (json_decode($movement->meta, true) ?: []) : (array) $movement->meta)
+  @php
+   $beforeState = (array) ($meta['order_state_before'] ?? []);
+   $afterState = (array) ($meta['order_state_after'] ?? []);
+   $beforeId = (int) ($beforeState['id'] ?? 0);
+   $afterId = (int) ($afterState['id'] ?? 0);
+   $beforeColor = $stateColors[$beforeId] ?? '#6c757d';
+   $afterColor = $stateColors[$afterId] ?? '#6c757d';
+  @endphp
   @if($movement->id_order)
    #{{ $movement->id_order }}
-   @if(!empty($meta['order_state_before']['name']) || !empty($meta['order_state_after']['name']))
-    <small class="text-muted d-block">{{ $meta['order_state_before']['name'] ?? '-' }} &rarr; {{ $meta['order_state_after']['name'] ?? '-' }}</small>
+   @if($beforeId > 0 && $afterId > 0)
+    <small class="d-block mt-1"><span class="badge" style="background-color: {{ $beforeColor }}; color: #fff">{{ $beforeState['name'] ?? ('Estado #' . $beforeId) }}</span> &rarr; <span class="badge" style="background-color: {{ $afterColor }}; color: #fff">{{ $afterState['name'] ?? ('Estado #' . $afterId) }}</span></small>
+   @else
+    <small class="text-muted d-block">-</small>
    @endif
   @else
    -

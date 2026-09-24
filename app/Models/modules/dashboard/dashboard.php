@@ -770,6 +770,74 @@ class dashboard extends Model
 
 
     
+    public static function moloniVatNotValid($tab = null, $panel = null): array
+    {
+        $validations = \App\Models\modules\moloni_vat_validation\MoloniVatValidation::query()
+            ->where('status', '!=', \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_VALID)
+            ->with(['orders' => fn ($query) => $query->orderBy('id_order')])
+            ->latest('updated_at')
+            ->get();
+
+        $orderIds = $validations->flatMap(fn ($validation) => $validation->orders->pluck('id_order'))
+            ->unique()
+            ->values();
+
+        $orders = collect();
+
+        if ($orderIds->isNotEmpty()) {
+            $prefix = self::prefix();
+            $orders = DB::connection('mysql2')->table($prefix . 'orders as o')
+                ->leftJoin($prefix . 'address as a', 'a.id_address', '=', 'o.id_address_invoice')
+                ->leftJoin($prefix . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
+                ->whereIn('o.id_order', $orderIds)
+                ->select(['o.id_order', 'o.id_shop', 'a.company', 'c.firstname', 'c.lastname'])
+                ->get()
+                ->keyBy('id_order');
+        }
+
+        $statusLabels = [
+            'pending' => 'Pendente',
+            'processing' => 'Em validacao',
+            'retry_scheduled' => 'Nova tentativa agendada',
+            'invalid' => 'Invalido',
+            'missing_vat' => 'VAT/morada em falta',
+            'manual_review' => 'Revisao manual',
+        ];
+
+        $rows = $validations->flatMap(function ($validation) use ($orders, $statusLabels) {
+            return $validation->orders->map(function ($link) use ($validation, $orders, $statusLabels) {
+                $order = $orders->get((int) $link->id_order);
+
+                $company = trim((string) ($order?->company ?? ''));
+                $customerName = trim((string) ($order?->firstname ?? '') . ' ' . (string) ($order?->lastname ?? ''));
+
+                return [
+                    'status' => $statusLabels[$validation->status] ?? $validation->status,
+                    'store' => (int) ($order?->id_shop ?? 0) === 3 ? 'ASD' : 'ASM',
+                    'vat' => $validation->normalized_vat_number,
+                    'company' => $company ?: ($customerName ?: '-'),
+                    'id_order' => $link->id_order,
+                ];
+            });
+        })->values()->all();
+
+        return self::dashboardPanel(
+            'MOLONI VATS NOT VALID',
+            'counter',
+            'moloni_vat_not_valid',
+            ['status', 'store', 'vat', 'company', 'id_order'],
+            $rows,
+            [
+                'column_labels' => [
+                    'status' => 'Estado',
+                    'store' => 'Loja',
+                    'vat' => 'VAT',
+                    'company' => 'Company',
+                    'id_order' => "Orders ID's",
+                ],
+            ]
+        );
+    }
     private static function prefix(): string
     {
         return env('DB2_DB_prefix', env('DB2_prefix', 'ps_'));

@@ -32,7 +32,7 @@
                             <td>
                                 @if($column == 'clean')
                                 @else
-                                    {{ __('tags.' . $column) }}
+                                    {{ $details->column_labels[$column] ?? __('tags.' . $column) }}
                                 @endif
                             </td>
                         @endif

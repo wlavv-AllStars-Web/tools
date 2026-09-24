@@ -13,10 +13,6 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0">VIES</h3>
-        <a class="btn btn-outline-secondary" href="{{ route('finance.tools.moloni_vat.index') }}">Todos</a>
-    </div>
 
     @if(session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
 
@@ -51,7 +47,7 @@
                         <td>@forelse($validation->orders as $link)<span class="badge text-bg-{{ $link->store==='ASD'?'info':'danger' }} d-block mb-1">{{ $link->store }}</span>@empty<span class="text-muted">—</span>@endforelse</td>
                         <td>
                             @foreach($validation->orders as $link)
-                                @if($link->prestashop_url)<a class="d-block" target="_blank" href="{{ $link->prestashop_url }}">#{{ $link->id_order }} {{ $link->order_reference }}</a>@else<span class="d-block">#{{ $link->id_order }} {{ $link->order_reference }}</span>@endif
+                                @if($link->prestashop_url)<a class="d-block" target="_blank" href="{{ $link->prestashop_url }}">#{{ $link->id_order }}</a>@else<span class="d-block">#{{ $link->id_order }}</span>@endif
                             @endforeach
                             @if($validation->orders_count>count($validation->orders))<small class="text-muted">+{{ $validation->orders_count-count($validation->orders) }} encomenda(s)</small>@endif
                         </td>

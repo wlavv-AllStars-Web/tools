@@ -20,14 +20,12 @@
  <td>{{ $movement->source }}</td>
  <td>
   @php($meta = is_string($movement->meta) ? (json_decode($movement->meta, true) ?: []) : (array) $movement->meta)
-  @php
-   $beforeState = (array) ($meta['order_state_before'] ?? []);
-   $afterState = (array) ($meta['order_state_after'] ?? []);
-   $beforeId = (int) ($beforeState['id'] ?? 0);
-   $afterId = (int) ($afterState['id'] ?? 0);
-   $beforeColor = $stateColors[$beforeId] ?? '#6c757d';
-   $afterColor = $stateColors[$afterId] ?? '#6c757d';
-  @endphp
+  @php($beforeState = (array) ($meta['order_state_before'] ?? []))
+  @php($afterState = (array) ($meta['order_state_after'] ?? []))
+  @php($beforeId = (int) ($beforeState['id'] ?? 0))
+  @php($afterId = (int) ($afterState['id'] ?? 0))
+  @php($beforeColor = $stateColors[$beforeId] ?? '#6c757d')
+  @php($afterColor = $stateColors[$afterId] ?? '#6c757d')
   @if($movement->id_order)
    #{{ $movement->id_order }}
    @if($beforeId > 0 && $afterId > 0)

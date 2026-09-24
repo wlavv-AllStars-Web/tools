@@ -531,6 +531,7 @@ return [
     'web.tools.changes.index' => 'Changes',
     'web.tools.db_migration.index' => 'Migration tool',
     'web.tools.stock_audit.index' => 'Stock audit',
+    'web.tools.stock_audit.history' => 'Stock history',
     'admin.tools.asg_tasks.index' => 'Tasks',
     'admin.tools.oms.dashboard' => 'OMS',
     'admin.tools.compats.index' => 'Compats',

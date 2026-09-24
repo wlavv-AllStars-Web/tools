@@ -196,6 +196,7 @@ return [
     'web.tools.changes.index' => 'Changes',
     'web.tools.db_migration.index' => 'Herramienta de migracion',
     'web.tools.stock_audit.index' => 'Auditoria de stock',
+    'web.tools.stock_audit.history' => 'Historial de stock',
     'admin.tools.asg_tasks.index' => 'Tasks',
     'admin.tools.oms.dashboard' => 'OMS',
     'admin.tools.compats.index' => 'Compats',

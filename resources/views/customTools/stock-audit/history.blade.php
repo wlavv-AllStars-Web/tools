@@ -12,29 +12,73 @@
 @if($movements->isEmpty())
 <div class="alert alert-info mb-0">Sem movimentos registados para esta refer&ecirc;ncia nos &uacute;ltimos {{ $days }} dias.</div>
 @else
-<div class="card mb-3"><div class="card-header">Quantity</div><div class="card-body"><div style="height: 320px"><canvas id="quantity-chart"></canvas></div></div></div>
-<div class="card"><div class="card-header">Stock arrive</div><div class="card-body"><div style="height: 320px"><canvas id="stock-arrive-chart"></canvas></div></div></div>
+<div class="card mb-3"><div class="card-header">Quantity e stock arrive</div><div class="card-body"><div style="height: 380px"><canvas id="stock-chart"></canvas></div></div></div>
+<div class="card"><div class="card-header">Movimentos</div><div class="table-responsive"><table class="table mb-0">
+<thead><tr><th>Data</th><th>Refer&ecirc;ncia</th><th>Origem</th><th>Encomenda</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead>
+<tbody>
+@forelse($movements as $movement)
+<tr>
+ <td>{{ $movement->occurred_at }}</td>
+ <td>{{ $movement->reference ?: '-' }}</td>
+ <td>{{ $movement->source }}</td>
+ <td>
+  @php($meta = is_string($movement->meta) ? (json_decode($movement->meta, true) ?: []) : (array) $movement->meta)
+  @php($beforeState = (array) ($meta['order_state_before'] ?? []))
+  @php($afterState = (array) ($meta['order_state_after'] ?? []))
+  @php($beforeId = (int) ($beforeState['id'] ?? 0))
+  @php($afterId = (int) ($afterState['id'] ?? 0))
+  @php($beforeColor = $stateColors[$beforeId] ?? '#6c757d')
+  @php($afterColor = $stateColors[$afterId] ?? '#6c757d')
+  @if($movement->id_order)
+   #{{ $movement->id_order }}
+   @if($beforeId > 0 && $afterId > 0)
+    <small class="d-block mt-1"><span class="badge" style="background-color: {{ $beforeColor }}; color: #fff">{{ $beforeState['name'] ?? ('Estado #' . $beforeId) }}</span> &rarr; <span class="badge" style="background-color: {{ $afterColor }}; color: #fff">{{ $afterState['name'] ?? ('Estado #' . $afterId) }}</span></small>
+   @else
+    <small class="text-muted d-block">-</small>
+   @endif
+  @else
+   -
+  @endif
+ </td>
+ <td>{{ $movement->user_name ?: 'Sistema' }}</td>
+ <td>@if($movement->quantity_before !== null){{ $movement->quantity_before }} &rarr; {{ $movement->quantity_after }}@else-@endif</td>
+ <td>@if($movement->stock_arrive_before !== null){{ $movement->stock_arrive_before }} &rarr; {{ $movement->stock_arrive_after }}@else-@endif</td>
+</tr>
+@empty
+<tr><td colspan="7" class="text-center text-muted">Sem movimentos registados.</td></tr>
+@endforelse
+</tbody></table></div>
+@if(method_exists($movements,'links'))<div class="card-body">{{ $movements->links() }}</div>@endif
+</div>
 @endif
 @if(!$movements->isEmpty())
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-const stockAuditCharts = @json($chart);
-const createStockAuditChart = (canvasId, datasetLabel, points, color) => {
- const canvas = document.getElementById(canvasId);
- if (!canvas) return;
- if (!points.length) { canvas.parentElement.innerHTML = '<p class="text-muted mb-0">Sem movimentos deste tipo no per&iacute;odo selecionado.</p>'; return; }
- new Chart(canvas, {
-  type: 'line',
-  data: { labels: points.map(point => point.label), datasets: [{ label: datasetLabel, data: points.map(point => point.value), borderColor: color, backgroundColor: color, pointBackgroundColor: points.map((point, index) => point.baseline ? '#6c757d' : (index && point.value < points[index - 1].value ? '#dc3545' : '#198754')), pointRadius: 5, pointHoverRadius: 7, borderWidth: 3, stepped: 'before', tension: 0 }] },
-  options: {
-   responsive: true, maintainAspectRatio: false, interaction: { mode: 'nearest', intersect: true },
-   plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => items[0].label, label: item => datasetLabel + ': ' + item.formattedValue, afterLabel: item => { const point = points[item.dataIndex]; if (point.baseline) return 'Estado antes do primeiro movimento no per&iacute;odo'; const details = ['User: ' + point.user, 'Origem: ' + point.source]; if (point.change !== null) details.push('Variacao: ' + (point.change > 0 ? '+' : '') + point.change); if (point.order_id) details.push('Encomenda: #' + point.order_id); if (point.operation) details.push('Operacao: ' + point.operation); return details; } } } },
-   scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }, y: { ticks: { precision: 0 }, grace: '5%' } }
-  }
- });
-};
-createStockAuditChart('quantity-chart', 'Quantity', stockAuditCharts.quantity, '#0d6efd');
-createStockAuditChart('stock-arrive-chart', 'Stock arrive', stockAuditCharts.stockArrive, '#198754');
+const stockAuditChart = @json($chart);
+const pointColors = (values) => values.map((value, index) => {
+ if (value === null) return 'transparent';
+ const previous = values.slice(0, index).reverse().find(item => item !== null);
+ return previous === undefined ? '#6c757d' : (value < previous ? '#dc3545' : '#198754');
+});
+new Chart(document.getElementById('stock-chart'), {
+ type: 'line',
+ data: {
+  labels: stockAuditChart.labels,
+  datasets: [
+   { label: 'Quantity', data: stockAuditChart.quantity, borderColor: '#0d6efd', backgroundColor: '#0d6efd', pointBackgroundColor: pointColors(stockAuditChart.quantity), pointRadius: 5, pointHoverRadius: 7, borderWidth: 3, tension: 0, spanGaps: true },
+   { label: 'Stock arrive', data: stockAuditChart.stockArrive, borderColor: '#198754', backgroundColor: '#198754', pointBackgroundColor: pointColors(stockAuditChart.stockArrive), pointRadius: 5, pointHoverRadius: 7, borderWidth: 3, tension: 0, spanGaps: true }
+  ]
+ },
+ options: {
+  responsive: true, maintainAspectRatio: false, interaction: { mode: 'nearest', intersect: true },
+  plugins: { tooltip: { callbacks: {
+   title: items => stockAuditChart.labels[items[0].dataIndex],
+   label: item => item.dataset.label + ': ' + item.formattedValue,
+   afterLabel: item => { const detail = stockAuditChart.details[item.dataIndex]; const change = item.dataset.label === 'Quantity' ? detail.quantity_change : detail.stock_arrive_change; const lines = ['User: ' + detail.user, 'Origem: ' + detail.source]; if (change !== null) lines.push('Variacao: ' + (change > 0 ? '+' : '') + change); if (detail.order_id) lines.push('Encomenda: #' + detail.order_id); if (detail.operation) lines.push('Operacao: ' + detail.operation); return lines; }
+  } } },
+  scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }, y: { ticks: { precision: 0 }, grace: '5%' } }
+ }
+});
 </script>
 @endif
 @endsection

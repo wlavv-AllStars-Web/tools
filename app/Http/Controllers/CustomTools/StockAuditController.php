@@ -29,7 +29,7 @@ class StockAuditController extends Controller
                 ->when(!empty($filters['from']), fn ($query) => $query->whereDate('occurred_at', '>=', $filters['from']))
                 ->when(!empty($filters['to']), fn ($query) => $query->whereDate('occurred_at', '<=', $filters['to']))
                 ->latest('occurred_at')
-                ->paginate(100)
+                ->paginate(50)
                 ->withQueryString();
             $snapshots = DB::table('stock_audit_snapshots')->latest('captured_at')->limit(20)->get();
             $stateColors = $this->orderStateColors($movements);
@@ -58,13 +58,16 @@ class StockAuditController extends Controller
         ]);
         $reference = trim($filters['reference']);
         $days = (int) ($filters['days'] ?? 60);
+        $chartMovements = collect();
         $movements = collect();
+        $stateColors = [];
 
         if (Schema::hasTable('stock_audit_movements')) {
-            $movements = DB::table('stock_audit_movements')
+            $baseQuery = DB::table('stock_audit_movements')
                 ->select([
                     'id',
                     'id_order',
+                    'reference',
                     'source',
                     'operation',
                     'quantity_before',
@@ -72,60 +75,57 @@ class StockAuditController extends Controller
                     'stock_arrive_before',
                     'stock_arrive_after',
                     'user_name',
+                    'meta',
                     'occurred_at',
                 ])
                 ->where('reference', $reference)
-                ->where('occurred_at', '>=', now()->subDays($days)->startOfDay())
+                ->where('occurred_at', '>=', now()->subDays($days)->startOfDay());
+
+            $chartMovements = (clone $baseQuery)
                 ->orderBy('occurred_at')
                 ->orderBy('id')
                 ->get();
+
+            $movements = (clone $baseQuery)
+                ->latest('occurred_at')
+                ->paginate(50)
+                ->withQueryString();
+
+            $stateColors = $this->orderStateColors($movements);
         }
 
-        $chart = [
-            'quantity' => $this->chartPoints($movements, 'quantity_before', 'quantity_after'),
-            'stockArrive' => $this->chartPoints($movements, 'stock_arrive_before', 'stock_arrive_after'),
-        ];
+        $chart = $this->chartData($chartMovements);
         $breadcrumbs = [
             ['name' => trans('web'), 'url' => route('web.index')],
             ['name' => 'Stock audit', 'url' => route('web.tools.stock_audit.index'), 'no_translation' => 1],
             ['name' => $reference, 'url' => route('web.tools.stock_audit.history', ['reference' => $reference, 'days' => $days]), 'no_translation' => 1],
         ];
 
-        return view('customTools.stock-audit.history', compact('reference', 'days', 'movements', 'chart', 'breadcrumbs'));
+        return view('customTools.stock-audit.history', compact('reference', 'days', 'movements', 'chart', 'stateColors', 'breadcrumbs'));
     }
 
-    private function chartPoints($movements, string $before, string $after): array
+    private function chartData(iterable $movements): array
     {
-        $points = [];
-        $hasBaseline = false;
+        $labels = [];
+        $quantity = [];
+        $stockArrive = [];
+        $details = [];
 
         foreach ($movements as $movement) {
-            if ($movement->{$after} === null) {
-                continue;
-            }
-
-            if (!$hasBaseline && $movement->{$before} !== null) {
-                $points[] = [
-                    'label' => (string) $movement->occurred_at,
-                    'value' => (int) $movement->{$before},
-                    'baseline' => true,
-                ];
-                $hasBaseline = true;
-            }
-
-            $points[] = [
-                'label' => (string) $movement->occurred_at,
-                'value' => (int) $movement->{$after},
+            $labels[] = (string) $movement->occurred_at;
+            $quantity[] = $movement->quantity_after === null ? null : (int) $movement->quantity_after;
+            $stockArrive[] = $movement->stock_arrive_after === null ? null : (int) $movement->stock_arrive_after;
+            $details[] = [
                 'user' => $movement->user_name ?: 'Sistema',
                 'source' => $movement->source,
                 'operation' => $movement->operation,
                 'order_id' => $movement->id_order ? (int) $movement->id_order : null,
-                'change' => $movement->{$before} !== null ? (int) $movement->{$after} - (int) $movement->{$before} : null,
-                'baseline' => false,
+                'quantity_change' => $movement->quantity_before === null ? null : (int) $movement->quantity_after - (int) $movement->quantity_before,
+                'stock_arrive_change' => $movement->stock_arrive_before === null ? null : (int) $movement->stock_arrive_after - (int) $movement->stock_arrive_before,
             ];
         }
 
-        return $points;
+        return compact('labels', 'quantity', 'stockArrive', 'details');
     }
 
     private function orderStateColors(iterable $movements): array

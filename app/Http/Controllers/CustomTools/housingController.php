@@ -5,6 +5,7 @@ namespace App\Http\Controllers\CustomTools;
 use App\Http\Controllers\Controller;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_attribute;
+use App\Services\StockAudit\StockAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -383,6 +384,8 @@ class housingController extends Controller
             'search_term' => $validated['search_term'] ?? null,
         ]);
 
+        $this->recordStockAuditMovement($resolved, 'housing', 'manual_quantity', $oldStock, $newStock, null, null);
+
         return response()->json(['ok' => true, 'message' => 'Stock updated successfully.']);
     }
 
@@ -428,9 +431,28 @@ class housingController extends Controller
             'stored_at' => $resolved['type'] === 'attribute' && $fieldName === 'quantity_arrive' ? 'attribute_level' : 'product_level',
         ]);
 
+        $this->recordStockAuditMovement($resolved, 'housing', 'manual_stock_arrive', null, null, (int) $oldValue, (int) $newValue);
+
         return response()->json(['ok' => true, 'message' => 'Stock arrive updated successfully.']);
     }
 
+    private function recordStockAuditMovement(array $resolved, string $source, string $operation, ?int $quantityBefore, ?int $quantityAfter, ?int $stockArriveBefore, ?int $stockArriveAfter): void
+    {
+        try {
+            $target = $resolved['type'] === 'attribute' ? $resolved['attribute'] : $resolved['product'];
+            app(StockAuditService::class)->record([
+                'id_product' => (int) $resolved['product']->id_product,
+                'id_product_attribute' => (int) ($resolved['attribute']->id_product_attribute ?? 0),
+                'reference' => trim((string) ($target->reference ?? $resolved['product']->reference ?? '')),
+                'source' => $source, 'operation' => $operation,
+                'quantity_before' => $quantityBefore, 'quantity_after' => $quantityAfter,
+                'quantity_delta' => $quantityBefore === null || $quantityAfter === null ? null : $quantityAfter - $quantityBefore,
+                'stock_arrive_before' => $stockArriveBefore, 'stock_arrive_after' => $stockArriveAfter,
+                'stock_arrive_delta' => $stockArriveBefore === null || $stockArriveAfter === null ? null : $stockArriveAfter - $stockArriveBefore,
+                'user_id' => optional(auth()->user())->id, 'user_name' => optional(auth()->user())->name,
+            ]);
+        } catch (\Throwable $exception) { report($exception); }
+    }
     private function findProducts(string $search): array
     {
         $search = trim($search);

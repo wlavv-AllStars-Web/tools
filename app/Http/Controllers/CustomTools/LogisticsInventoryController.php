@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
+use App\Services\StockAudit\StockAuditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -912,6 +913,7 @@ class LogisticsInventoryController extends Controller
     private function applyVerifiedInventoryStock(object $schedule, $counts, int $validatedBy, Carbon $validatedAt): void
     {
         $stockTable = $this->psTable('stock_available');
+        $userName = (string) (DB::table('users')->where('id', $validatedBy)->value('name') ?: 'Inventory');
 
         foreach ($counts->groupBy(fn ($count) => $this->normalizedReference($count->reference) ?: 'stock:' . $count->id_stock_available) as $groupKey => $referenceCounts) {
             $sourceCount = $referenceCounts->first();
@@ -959,6 +961,28 @@ class LogisticsInventoryController extends Controller
                     'created_at' => $validatedAt,
                     'updated_at' => $validatedAt,
                 ]);
+
+                try {
+                    app(StockAuditService::class)->record([
+                        'id_product' => (int) $stock->id_product,
+                        'id_product_attribute' => (int) $stock->id_product_attribute,
+                        'reference' => $stock->reference ?: $sourceCount->reference,
+                        'source' => 'inventory',
+                        'operation' => 'inventory_verification',
+                        'quantity_before' => $previousQuantity,
+                        'quantity_after' => $newQuantity,
+                        'quantity_delta' => $newQuantity - $previousQuantity,
+                        'stock_arrive_before' => null,
+                        'stock_arrive_after' => null,
+                        'stock_arrive_delta' => null,
+                        'user_id' => $validatedBy,
+                        'user_name' => $userName,
+                        'meta' => json_encode(['schedule_id' => (int) $schedule->id, 'count_id' => (int) $sourceCount->id]),
+                        'occurred_at' => $validatedAt,
+                    ]);
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
             }
         }
     }

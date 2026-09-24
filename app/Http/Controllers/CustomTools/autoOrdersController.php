@@ -17,6 +17,7 @@ use App\Models\modules\auto_orders\AutoOrdersCandidate;
 use App\Models\modules\auto_orders\AutoOrdersPurchaseList;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\OrderNoteLine;
+use App\Services\StockAudit\StockAuditService;
 
 class autoOrdersController extends Controller
 {
@@ -334,7 +335,8 @@ class autoOrdersController extends Controller
             return response()->json([ 'success' => false, 'message' => 'No products to order.' ], 422);
         }
 
-        $orderNote = DB::transaction(function () use ($request, $products) {
+        $auditUser = $request->user();
+        $orderNote = DB::transaction(function () use ($request, $products, $auditUser) {
             $reference = trim((string) $request->order_reference);
 
             $orderNote = OrderNote::create([
@@ -381,7 +383,18 @@ class autoOrdersController extends Controller
                 }
 
                 $this->ensurePrestashopCustomProductRows((int) $productInfo->product_id, $productAttributeId);
+                $stockArriveBefore = $this->prestashopStockArrive((int) $productInfo->product_id, $productAttributeId);
                 $this->adjustCustomStockArrive((int) $productInfo->product_id, $productAttributeId, $qtyOrdered);
+                $stockArriveAfter = $this->prestashopStockArrive((int) $productInfo->product_id, $productAttributeId);
+                $this->recordStockAuditStockArrive(
+                    (int) $productInfo->product_id,
+                    $productAttributeId,
+                    (string) $product->reference,
+                    $stockArriveBefore,
+                    $stockArriveAfter,
+                    $auditUser,
+                    (int) $orderNote->id
+                );
             }
 
             AutoOrdersPurchaseList::where('id_supplier', $request->id_supplier)->delete();
@@ -469,6 +482,44 @@ class autoOrdersController extends Controller
         }
     }
     
+    protected function prestashopStockArrive(int $productId, ?int $productAttributeId): int
+    {
+        $prefix = env('DB2_prefix') ?: env('DB2_DB_prefix', 'ps_');
+        $productAttributeId = (int) ($productAttributeId ?? 0);
+
+        return (int) DB::connection('mysql2')
+            ->table($prefix . ($productAttributeId > 0 ? 'custom_product_attribute' : 'custom_product'))
+            ->where($productAttributeId > 0 ? 'id_product_attribute' : 'id_product', $productAttributeId ?: $productId)
+            ->value('stock_arrive');
+    }
+
+    protected function recordStockAuditStockArrive(int $productId, ?int $productAttributeId, string $reference, int $before, int $after, $user, int $orderNoteId): void
+    {
+        if ($before === $after) {
+            return;
+        }
+
+        try {
+            app(StockAuditService::class)->record([
+                'id_product' => $productId,
+                'id_product_attribute' => (int) ($productAttributeId ?? 0),
+                'reference' => $reference,
+                'source' => 'auto_orders',
+                'operation' => 'auto_order_stock_arrive',
+                'quantity_before' => null,
+                'quantity_after' => null,
+                'quantity_delta' => null,
+                'stock_arrive_before' => $before,
+                'stock_arrive_after' => $after,
+                'stock_arrive_delta' => $after - $before,
+                'user_id' => $user?->id,
+                'user_name' => $user?->name ?: 'Auto orders',
+                'meta' => json_encode(['order_note_id' => $orderNoteId]),
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+    }
     public function loadProducts(Request $request){
         
         $products = product::select('id_product', 'reference')->where('id_supplier', $request->id_supplier)->where('id_manufacturer', '<>', AutoOrdersCandidate::TECHNICAL_PRODUCTS_MANUFACTURER_ID)->groupBy('reference')->get();

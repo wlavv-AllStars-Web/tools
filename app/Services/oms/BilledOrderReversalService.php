@@ -5,6 +5,7 @@ namespace App\Services\oms;
 use App\Models\modules\oms\BilledOrder;
 use App\Models\modules\oms\BilledOrderLine;
 use App\Models\modules\oms\SupplierInvoice;
+use App\Services\StockAudit\StockAuditService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class BilledOrderReversalService
     public function __construct(
         protected StockArriveService $stockArriveService,
         protected SupplierInvoiceWorkflowService $workflowService,
+        protected StockAuditService $stockAuditService,
     ) {
     }
 
@@ -115,6 +117,7 @@ class BilledOrderReversalService
 
                     $stockBefore = $this->primaryStock($productId, $attributeId, $prefix);
                     $arriveBefore = $this->primaryArrive($productId, $attributeId, $prefix);
+                    $auditTargets = $this->snapshotStockAuditTargets($productId, $attributeId, $prefix);
 
                     if ($receivedToReverse > 0) {
                         $this->removeReceptionQuantities((int) $line->id, $receivedToReverse);
@@ -163,6 +166,8 @@ class BilledOrderReversalService
                         'user_email_snapshot' => $user?->email,
                         'created_at' => now(),
                     ]);
+
+                    $this->recordStockAuditTargets($auditTargets, 'oms_invoice_reversal', $user);
 
                     $affectedOrderNotes->push((int) $billedOrder->order_note_id);
                     $summary['lines']++;
@@ -288,6 +293,52 @@ class BilledOrderReversalService
         return (int) DB::connection('mysql2')->table($prefix.'stock_available')->where('id_product', $productId)->where('id_product_attribute', $attributeId)->value('quantity');
     }
 
+    private function snapshotStockAuditTargets(int $productId, int $attributeId, string $prefix): Collection
+    {
+        return $this->stockTargets($productId, $attributeId, $prefix)->map(function ($target) use ($prefix) {
+            $target->quantity_before = (int) $target->quantity;
+            $target->stock_arrive_before = $this->primaryArrive((int) $target->id_product, (int) $target->id_product_attribute, $prefix);
+
+            return $target;
+        });
+    }
+
+    private function recordStockAuditTargets(Collection $targets, string $operation, $user): void
+    {
+        $prefix = $this->psPrefix();
+
+        foreach ($targets as $target) {
+            $productId = (int) $target->id_product;
+            $attributeId = (int) $target->id_product_attribute;
+            $quantityAfter = $this->primaryStock($productId, $attributeId, $prefix);
+            $stockArriveAfter = $this->primaryArrive($productId, $attributeId, $prefix);
+
+            if ((int) $target->quantity_before === $quantityAfter && (int) $target->stock_arrive_before === $stockArriveAfter) {
+                continue;
+            }
+
+            try {
+                $this->stockAuditService->record([
+                    'id_product' => $productId,
+                    'id_product_attribute' => $attributeId,
+                    'reference' => $this->referenceSnapshot($productId, $attributeId, $prefix)['display'],
+                    'source' => 'oms',
+                    'operation' => $operation,
+                    'quantity_before' => (int) $target->quantity_before,
+                    'quantity_after' => $quantityAfter,
+                    'quantity_delta' => $quantityAfter - (int) $target->quantity_before,
+                    'stock_arrive_before' => (int) $target->stock_arrive_before,
+                    'stock_arrive_after' => $stockArriveAfter,
+                    'stock_arrive_delta' => $stockArriveAfter - (int) $target->stock_arrive_before,
+                    'user_id' => $user?->id,
+                    'user_name' => $user?->name ?: 'OMS',
+                    'meta' => json_encode(['action' => 'invoice_reversal']),
+                ]);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
+    }
     private function primaryArrive(int $productId, int $attributeId, string $prefix): int
     {
         $table = $attributeId > 0 ? $prefix.'custom_product_attribute' : $prefix.'custom_product';

@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('layouts.app')
 @section('content')
 <div class="card mb-3"><div class="card-body d-flex justify-content-between align-items-center">
  <div><h4 class="mb-1">Stock audit</h4><small class="text-muted">Snapshots de quantity e stock_arrive, de 6 em 6 horas.</small></div>

@@ -8,6 +8,7 @@ class StockAuditService
 {
     private array $combinationProducts = [];
     private array $technicalProducts = [];
+    private array $packComponents = [];
 
     public function createSnapshot(): array
     {
@@ -45,6 +46,66 @@ class StockAuditService
     public function record(array $data): void
     {
         $productId = (int) ($data['id_product'] ?? 0);
+        $components = $productId > 0 ? $this->componentsOfPack($productId) : [];
+
+        if ($components !== []) {
+            $this->recordPackComponents($data, $components);
+
+            return;
+        }
+
+        $this->recordOne($data);
+    }
+
+    private function recordPackComponents(array $data, array $components): void
+    {
+        $packBefore = (int) ($data['quantity_before'] ?? 0);
+        $packAfter = (int) ($data['quantity_after'] ?? 0);
+        $packDelta = isset($data['quantity_delta'])
+            ? (int) $data['quantity_delta']
+            : $packAfter - $packBefore;
+
+        if ($packDelta === 0) {
+            return;
+        }
+
+        $packReference = trim((string) ($data['reference'] ?? ''));
+        $packProductId = (int) $data['id_product'];
+        $meta = $this->metaArray($data['meta'] ?? []);
+
+        foreach ($components as $component) {
+            $componentDelta = $packDelta * (int) $component->quantity_in_pack;
+            $componentAfter = (int) $component->stock_quantity;
+            $componentReference = trim((string) $component->reference);
+            $reference = $componentReference !== '' && $packReference !== ''
+                ? $componentReference . ' ( ' . $packReference . ' )'
+                : ($componentReference ?: $packReference);
+
+            $componentMeta = $meta;
+            $componentMeta['pack'] = [
+                'id_product' => $packProductId,
+                'reference' => $packReference,
+                'quantity_in_pack' => (int) $component->quantity_in_pack,
+            ];
+
+            $componentData = array_merge($data, [
+                'id_product' => (int) $component->id_product,
+                'id_product_attribute' => (int) $component->id_product_attribute,
+                'reference' => $reference !== '' ? $reference : null,
+                'operation' => substr((string) ($data['operation'] ?? 'update') . '_pack_component', 0, 64),
+                'quantity_before' => $componentAfter - $componentDelta,
+                'quantity_after' => $componentAfter,
+                'quantity_delta' => $componentDelta,
+                'meta' => json_encode($componentMeta),
+            ]);
+
+            $this->recordOne($componentData);
+        }
+    }
+
+    private function recordOne(array $data): void
+    {
+        $productId = (int) ($data['id_product'] ?? 0);
         $attributeId = (int) ($data['id_product_attribute'] ?? 0);
 
         if ($productId > 0 && $this->isTechnicalProductsProduct($productId)) {
@@ -61,6 +122,35 @@ class StockAuditService
         ], $data));
     }
 
+    private function componentsOfPack(int $packProductId): array
+    {
+        if (array_key_exists($packProductId, $this->packComponents)) {
+            return $this->packComponents[$packProductId];
+        }
+
+        try {
+            $prefix = $this->prestashopPrefix();
+            $components = DB::connection('mysql2')
+                ->table($prefix . 'pack as pack')
+                ->join($prefix . 'product as product', 'product.id_product', '=', 'pack.id_product_item')
+                ->leftJoin($prefix . 'product_attribute as attribute', 'attribute.id_product_attribute', '=', 'pack.id_product_attribute_item')
+                ->leftJoin($prefix . 'stock_available as stock', function ($join) {
+                    $join->on('stock.id_product', '=', 'pack.id_product_item')
+                        ->on('stock.id_product_attribute', '=', 'pack.id_product_attribute_item')
+                        ->where('stock.id_shop', '=', 0);
+                })
+                ->where('pack.id_product_pack', $packProductId)
+                ->groupBy('pack.id_product_item', 'pack.id_product_attribute_item', 'product.reference', 'attribute.reference')
+                ->selectRaw('pack.id_product_item as id_product, pack.id_product_attribute_item as id_product_attribute, SUM(pack.quantity) as quantity_in_pack, COALESCE(NULLIF(attribute.reference, \"\"), product.reference) as reference, COALESCE(MAX(stock.quantity), 0) as stock_quantity')
+                ->get()
+                ->all();
+
+            return $this->packComponents[$packProductId] = $components;
+        } catch (\Throwable) {
+            return $this->packComponents[$packProductId] = [];
+        }
+    }
+
     private function productHasCombinations(int $productId): bool
     {
         if (array_key_exists($productId, $this->combinationProducts)) {
@@ -68,10 +158,8 @@ class StockAuditService
         }
 
         try {
-            $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
-
             return $this->combinationProducts[$productId] = DB::connection('mysql2')
-                ->table($prefix . 'product_attribute')
+                ->table($this->prestashopPrefix() . 'product_attribute')
                 ->where('id_product', $productId)
                 ->exists();
         } catch (\Throwable) {
@@ -86,7 +174,7 @@ class StockAuditService
         }
 
         try {
-            $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+            $prefix = $this->prestashopPrefix();
 
             return $this->technicalProducts[$productId] = DB::connection('mysql2')
                 ->table($prefix . 'product as product')
@@ -97,5 +185,19 @@ class StockAuditService
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    private function metaArray($meta): array
+    {
+        if (is_array($meta)) {
+            return $meta;
+        }
+
+        return is_string($meta) ? (json_decode($meta, true) ?: []) : [];
+    }
+
+    private function prestashopPrefix(): string
+    {
+        return (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
     }
 }

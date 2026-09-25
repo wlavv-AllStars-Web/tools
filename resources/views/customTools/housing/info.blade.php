@@ -167,7 +167,7 @@
                                 <div class="fw-semibold">{{ $product->stock }}</div>
                             </div>
                             <div class="col-4">
-                                <div class="text-muted small">Stock arrive</div>
+                                <div class="text-muted small">OMS Ordered</div>
                                 <div class="fw-semibold">{{ $product->quantity_arrive }}</div>
                             </div>
 
@@ -342,7 +342,7 @@
                                 <button type="button" class="housing-edit-panel__header" onclick="toggleHousingPanel('panel-stock-arrive')">
                                     <span class="housing-edit-panel__title">
                                         <i class="fa-solid fa-truck-ramp-box"></i>
-                                        Stock arrive
+                                        OMS Ordered
                                     </span>
                                     <span class="d-flex align-items-center gap-2">
                                         <span class="housing-edit-panel__meta">{{ $product->quantity_arrive }}</span>

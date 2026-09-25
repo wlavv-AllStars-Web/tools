@@ -79,6 +79,7 @@ return [
             'purchase_price_sync' => env('ALLSTARS_PURCHASE_PRICE_SYNC_TOKEN'),
             'asd_alerts' => env('ALLSTARS_ASD_ALERTS_API_TOKEN', env('ASD_ALERT_KEY')),
             'stock_audit' => env('ALLSTARS_STOCK_AUDIT_API_TOKEN'),
+            'oms_balances' => env('ALLSTARS_OMS_BALANCES_API_TOKEN'),
         ],
     ],
 

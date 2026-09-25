@@ -13,6 +13,7 @@ use App\Http\Controllers\CustomTools\HomepageASDAdminController;
 use App\Http\Controllers\CustomTools\pickingController;
 use App\Http\Controllers\CustomTools\MoloniVatValidationController;
 use App\Http\Controllers\API\StockAuditMovementController;
+use App\Http\Controllers\API\OmsProductBalanceController;
 
 Route::group([
     'middleware' => ['api', 'cors'],
@@ -26,6 +27,9 @@ Route::group([
     Route::post('/moloni/vat-validations/orders', [MoloniVatValidationController::class, 'register'])->name('api.moloni.vat.register');
     Route::get('/moloni/vat-validations/orders/{idOrder}', [MoloniVatValidationController::class, 'orderStatus'])->whereNumber('idOrder')->name('api.moloni.vat.order_status');
 
+    Route::get('/oms/product-balances/{productId}', [OmsProductBalanceController::class, 'show'])
+        ->whereNumber('productId')
+        ->name('api.oms.product_balances.show');
     Route::post('/stock-audit/movements', [StockAuditMovementController::class, 'store'])->name('api.stock_audit.movements.store');
 
     /** API to homepage **/

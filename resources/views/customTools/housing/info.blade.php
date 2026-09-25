@@ -352,12 +352,12 @@
                                 <div class="housing-edit-panel__body d-none">
                                     <div class="row g-3">
                                         <div class="col-12 col-md-8">
-                                            <label class="form-label">Stock arrive</label>
+                                            <label class="form-label">OMS Ordered</label>
                                             <input type="number" step="1" class="form-control" id="edit_stock_arrive" value="{{ $product->quantity_arrive }}" style="text-align: center;">
                                         </div>
                                         <div class="col-12 col-md-4 d-grid align-items-end">
                                             <button class="btn btn-outline-danger mt-md-4" type="button" onclick="updateStockArrive()">
-                                                <i class="fa-solid fa-truck-ramp-box"></i> Update stock arrive
+                                                <i class="fa-solid fa-truck-ramp-box"></i> Update OMS Ordered
                                             </button>
                                         </div>
                                     </div>

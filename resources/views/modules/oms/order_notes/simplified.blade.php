@@ -24,13 +24,13 @@
     <aside class="card">
         <div class="px-3 py-2 border-bottom">
             <div class="d-flex justify-content-between align-items-center gap-2"><span class="label">Suppliers</span><button type="button" class="btn btn-primary btn-sm js-open-supplier-order-modal"><i class="fa-solid fa-plus me-1"></i> New order</button></div>
-            <ul class="nav nav-tabs mt-2" role="tablist">
-                <li class="nav-item"><button type="button" class="nav-link active js-supplier-tab" data-target="openSuppliersPanel">Open <span class="badge text-bg-light ms-1">{{ $openSuppliers->count() }}</span></button></li>
-                <li class="nav-item"><button type="button" class="nav-link js-supplier-tab" data-target="allSuppliersPanel">All <span class="badge text-bg-light ms-1">{{ $suppliers->count() }}</span></button></li>
+            <ul class="nav nav-tabs mt-2 d-flex" role="tablist">
+                <li class="nav-item w-50"><button type="button" class="nav-link active js-supplier-tab w-100 text-start" data-target="openSuppliersPanel">Open <span class="badge text-bg-light ms-1">{{ $openSuppliers->count() }}</span></button></li>
+                <li class="nav-item w-50"><button type="button" class="nav-link js-supplier-tab w-100 text-end" data-target="allSuppliersPanel">All <span class="badge text-bg-light ms-1">{{ $suppliers->count() }}</span></button></li>
             </ul>
         </div>
         <div id="openSuppliersPanel" class="js-supplier-panel">
-            <div class="px-3 py-2 border-bottom"><input type="search" class="form-control form-control-sm js-supplier-search" data-target="openSuppliersList" placeholder="Search suppliers"></div>
+            <div class="border-bottom"><input type="search" class="form-control form-control-sm js-supplier-search" data-target="openSuppliersList" placeholder="Search suppliers"></div>
             <div id="openSuppliersList" class="oms-supplier-list">
             @forelse($openSuppliers as $supplier)
                 <a class="oms-supplier-link {{ (int) $selectedSupplierId === (int) $supplier->id_supplier ? 'active' : '' }}" href="{{ route('erp.oms.simple', ['supplier_id' => $supplier->id_supplier, 'document_scope' => 'open']) }}">

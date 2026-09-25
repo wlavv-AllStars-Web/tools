@@ -277,13 +277,16 @@ class SimplifiedOrderNoteController extends Controller
             ->selectRaw('a.id_product_attribute, a.reference, a.ean13 as barcode, ' . ($hasAttributeTechnicalImage ? 'ca.technical_image_id' : 'NULL') . ' as technical_image_id, ca.location as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(ca.stock_arrive, 0) as stock_arrive, a.wholesale_price as purchase_eur, a.price as sales_eur, COALESCE(ca.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(ca.price_base_currency, 0) as sales_supplier')
             ->get()->keyBy('id_product_attribute');
         $backorders = $this->backorders($productIds, $prefix);
+        $openReferenceBalances = $this->openReferenceBalances($productIds);
 
-        return $lines->map(function ($line) use ($products, $attributes, $invoiced, $received, $lineInvoices, $backorders, $currencyMeta, $prefix) {
+        return $lines->map(function ($line) use ($products, $attributes, $invoiced, $received, $lineInvoices, $backorders, $openReferenceBalances, $currencyMeta, $prefix) {
             $product = $products->get($line->product_id);
             $attribute = $line->product_attribute_id ? $attributes->get($line->product_attribute_id) : null;
             $isAttribute = (bool) $attribute;
             $billed = (int) ($invoiced[$line->id] ?? 0);
             $key = (int) $line->product_id.'|'.(int) ($line->product_attribute_id ?? 0);
+            $openBalance = $openReferenceBalances[$key] ?? ['ordered' => 0, 'invoiced' => 0, 'received' => 0];
+
             // Historic OMS lines can point to a product that has since been removed from PrestaShop.
             $productSalesEur = (float) ($product?->sales_eur ?? 0);
             $attributeSalesEur = (float) ($attribute?->sales_eur ?? 0);
@@ -320,6 +323,8 @@ class SimplifiedOrderNoteController extends Controller
                 'barcode' => trim((string) ($attribute?->barcode ?: ($product?->barcode ?? ''))),
                 'stock_qty' => (int) ($attribute->stock_qty ?? $product->stock_qty ?? 0),
                 'stock_arrive' => (int) ($attribute->stock_arrive ?? $product->stock_arrive ?? 0),
+                'arrive_qty' => max(0, (int) $openBalance['invoiced'] - (int) $openBalance['received']),
+                'ordered_open_qty' => max(0, (int) $openBalance['ordered'] - (int) $openBalance['received']),
                 'image_url' => $this->productImageUrl((int) ($attribute?->technical_image_id ?: ($product?->technical_image_id ?: ($product?->cover_image_id ?? 0)))),
                 'dim_verified' => (int) ($product->dim_verify ?? 0) === 1,
                 'weight' => (float) ($product->weight ?? 0), 'width' => (float) ($product->width ?? 0), 'height' => (float) ($product->height ?? 0), 'depth' => (float) ($product->depth ?? 0),
@@ -346,6 +351,60 @@ class SimplifiedOrderNoteController extends Controller
      * Returns combinations of the same parent and packs using this exact component.
      * The stock fields remain scoped to the product/attribute shown in each row.
      */
+    /** @return array<string, array{ordered: int, invoiced: int, received: int}> */
+    private function openReferenceBalances($productIds): array
+    {
+        if ($productIds->isEmpty()) {
+            return [];
+        }
+
+        $keyByReference = static fn ($row): string => (int) $row->product_id.'|'.(int) $row->product_attribute_id;
+
+        $ordered = DB::table('oms_order_note_lines as line')
+            ->join('oms_order_notes as note', 'note.id', '=', 'line.order_note_id')
+            ->where('note.status', '!=', 'closed')
+            ->whereIn('line.product_id', $productIds)
+            ->selectRaw('line.product_id, COALESCE(line.product_attribute_id, 0) as product_attribute_id, SUM(line.qty_ordered) as quantity')
+            ->groupBy('line.product_id', 'line.product_attribute_id')
+            ->get()
+            ->keyBy($keyByReference);
+
+        $invoiced = DB::table('oms_billed_order_lines as billed')
+            ->join('oms_order_note_lines as line', 'line.id', '=', 'billed.order_note_line_id')
+            ->join('oms_order_notes as note', 'note.id', '=', 'line.order_note_id')
+            ->where('note.status', '!=', 'closed')
+            ->whereIn('line.product_id', $productIds)
+            ->selectRaw('line.product_id, COALESCE(line.product_attribute_id, 0) as product_attribute_id, SUM(billed.qty_billed) as quantity')
+            ->groupBy('line.product_id', 'line.product_attribute_id')
+            ->get()
+            ->keyBy($keyByReference);
+
+        $received = DB::table('oms_reception_lines as reception')
+            ->join('oms_billed_order_lines as billed', 'billed.id', '=', 'reception.billed_order_line_id')
+            ->join('oms_order_note_lines as line', 'line.id', '=', 'billed.order_note_line_id')
+            ->join('oms_order_notes as note', 'note.id', '=', 'line.order_note_id')
+            ->where('note.status', '!=', 'closed')
+            ->whereIn('line.product_id', $productIds)
+            ->selectRaw('line.product_id, COALESCE(line.product_attribute_id, 0) as product_attribute_id, SUM(reception.qty_received) as quantity')
+            ->groupBy('line.product_id', 'line.product_attribute_id')
+            ->get()
+            ->keyBy($keyByReference);
+
+        return $ordered
+            ->merge($invoiced)
+            ->merge($received)
+            ->keys()
+            ->unique()
+            ->mapWithKeys(function (string $key) use ($ordered, $invoiced, $received): array {
+                return [$key => [
+                    'ordered' => (int) ($ordered->get($key)->quantity ?? 0),
+                    'invoiced' => (int) ($invoiced->get($key)->quantity ?? 0),
+                    'received' => (int) ($received->get($key)->quantity ?? 0),
+                ]];
+            })
+            ->all();
+    }
+
     private function relatedProducts(int $productId, int $attributeId, string $prefix)
     {
         $connection = DB::connection('mysql2');

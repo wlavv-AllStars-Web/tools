@@ -52,6 +52,12 @@ class SimplifiedOrderNoteController extends Controller
             $supplier->closed_orders_count = (int) $counts['closed'];
         });
 
+        // The default navigator shows only suppliers with OMS work in progress.
+        // The full directory is still provided in the secondary tab and dialog.
+        $openSuppliers = $suppliers
+            ->filter(fn ($supplier) => (int) $supplier->open_orders_count > 0)
+            ->values();
+
         $orderNotes = $supplierId
             ? OrderNote::query()
                 ->leftJoin('oms_order_note_lines as line', 'line.order_note_id', '=', 'oms_order_notes.id')
@@ -112,6 +118,7 @@ class SimplifiedOrderNoteController extends Controller
             : collect();
 
         return view('modules.oms.order_notes.simplified', [
+            'openSuppliers' => $openSuppliers,
             'suppliers' => $suppliers,
             'selectedSupplierId' => $supplierId,
             'orderNotes' => $orderNotes,

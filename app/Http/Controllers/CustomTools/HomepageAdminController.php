@@ -174,6 +174,10 @@ class HomepageAdminController extends Controller
             'info' => $info !== '' ? $info : '0',
         ];
 
+        $isMobileSlot = (int) DB::table('homepage_asm_temp')
+            ->where('id', $request->integer('slot_id'))
+            ->value('icon_type') === 5;
+
         foreach (['en', 'es', 'fr'] as $lang) {
             if (!$request->hasFile("image_{$lang}")) {
                 continue;
@@ -183,8 +187,17 @@ class HomepageAdminController extends Controller
             $extension = strtolower($file->getClientOriginalExtension() ?: 'webp');
             $safeName = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
             $name = now()->format('YmdHis') . '_' . $request->input('slot_id') . '_' . $lang . '_' . $safeName . '.' . $extension;
+            $directory = public_path('uploads/homepage/uploads');
 
-            $file->move(public_path('uploads/homepage/uploads'), $name);
+            if ($isMobileSlot) {
+                try {
+                    $this->createMobileImageVariants($file->getRealPath(), $directory, $name);
+                } catch (\RuntimeException $exception) {
+                    return response()->json(['ok' => false, 'errors' => ["image_{$lang}" => [$exception->getMessage()]]], 422);
+                }
+            }
+
+            $file->move($directory, $name);
             $data["image_{$lang}"] = $this->normalizeHomepageUploadPath('/homepage/uploads/' . $name);
         }
 
@@ -195,6 +208,58 @@ class HomepageAdminController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * Creates the responsive WebP sources expected by the ASM mobile homepage.
+     */
+    private function createMobileImageVariants(string $sourcePath, string $directory, string $originalName): void
+    {
+        $imageInfo = @getimagesize($sourcePath);
+        $mime = $imageInfo['mime'] ?? null;
+
+        if ($mime === 'image/gif') {
+            throw new \RuntimeException('Animated GIF uploads are not supported for mobile homepage slots.');
+        }
+
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true) || !function_exists('imagewebp')) {
+            throw new \RuntimeException('The uploaded image cannot be converted to the required WebP formats.');
+        }
+
+        $source = @imagecreatefromstring((string) file_get_contents($sourcePath));
+        if ($source === false) {
+            throw new \RuntimeException('The uploaded image could not be read.');
+        }
+
+        $baseName = str_ends_with(strtolower($originalName), '.webp') ? pathinfo($originalName, PATHINFO_FILENAME) : $originalName;
+        $sourceWidth = imagesx($source);
+        $sourceHeight = imagesy($source);
+
+        try {
+            foreach ([240, 300, 375] as $width) {
+                $this->writeResponsiveWebp($source, $sourceWidth, $sourceHeight, $width, $directory . DIRECTORY_SEPARATOR . $baseName . '_' . $width . 'px.webp');
+            }
+            $this->writeResponsiveWebp($source, $sourceWidth, $sourceHeight, 400, $directory . DIRECTORY_SEPARATOR . $baseName . '_optimized.webp');
+        } finally {
+            imagedestroy($source);
+        }
+    }
+
+    private function writeResponsiveWebp($source, int $sourceWidth, int $sourceHeight, int $width, string $path): void
+    {
+        $height = max(1, (int) round($sourceHeight * ($width / $sourceWidth)));
+        $resized = imagecreatetruecolor($width, $height);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        imagefill($resized, 0, 0, imagecolorallocatealpha($resized, 0, 0, 0, 127));
+        imagecopyresampled($resized, $source, 0, 0, 0, 0, $width, $height, $sourceWidth, $sourceHeight);
+
+        try {
+            if (!imagewebp($resized, $path, 82)) {
+                throw new \RuntimeException('The responsive WebP image could not be created.');
+            }
+        } finally {
+            imagedestroy($resized);
+        }
+    }
     private function buildViewPayload(string $mode, string $lang = 'en'): array
     {
         $groups = [

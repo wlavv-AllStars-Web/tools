@@ -400,6 +400,8 @@ class financeController extends Controller
         $data = CorrectedInventoryService::build($this->prestashopMysql2Prefix());
         
         $rates['USD'] = $rates['USD'] ?? 1.0;
+        // Inventory-only override: leave PrestaShop's USD rate unchanged.
+        $rates['USD'] = 1.0;
         $rates['GBP'] = $rates['GBP'] ?? 1.0;
         $rates['JPY'] = $rates['JPY'] ?? ($rates['YEN'] ?? 1.0);
         $rates['YEN'] = $rates['YEN'] ?? $rates['JPY'];

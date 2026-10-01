@@ -79,7 +79,14 @@ class MoloniVatValidationService
                 ]);
 
                 $mustQueue = !$validation->exists
-                    || ($validation->status === MoloniVatValidation::STATUS_VALID && !$validation->isFreshlyValid());
+                    || (
+                        in_array($validation->status, [
+                            MoloniVatValidation::STATUS_VALID,
+                            MoloniVatValidation::STATUS_MANUAL_VALID,
+                            MoloniVatValidation::STATUS_MANUAL_INVALID,
+                        ], true)
+                        && (!$validation->valid_until || !$validation->valid_until->isFuture())
+                    );
 
                 $validation->country_iso = $country;
                 $validation->vat_number = $vat;
@@ -170,6 +177,20 @@ class MoloniVatValidationService
             'attempts' => 0,
             'next_attempt_at' => now(),
             'last_error' => null,
+        ]);
+    }
+
+    public function markManual(MoloniVatValidation $validation, bool $isValid): void
+    {
+        $validation->update([
+            'status' => $isValid ? MoloniVatValidation::STATUS_MANUAL_VALID : MoloniVatValidation::STATUS_MANUAL_INVALID,
+            'next_attempt_at' => null,
+            'validated_at' => now(),
+            'valid_until' => now()->addDays((int) config('moloni_vat.valid_days', 7)),
+            'last_error' => $isValid ? null : 'VAT marked as invalid manually.',
+            'manual_notes' => $isValid
+                ? 'VAT marked as valid manually on ' . now()->format('Y-m-d H:i:s') . '.'
+                : 'VAT marked as invalid manually on ' . now()->format('Y-m-d H:i:s') . '.',
         ]);
     }
 

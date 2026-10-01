@@ -34,7 +34,7 @@
                 <thead><tr><th>Estado</th><th>VAT</th><th>Última tentativa</th><th>Válido até</th><th>Cliente</th><th>Empresa</th><th>Loja</th><th>Encomendas</th><th>Detalhe</th><th></th></tr></thead>
                 <tbody>
                 @forelse($validations as $validation)
-                    @php($color=['valid'=>'success','invalid'=>'danger','missing_vat'=>'danger','manual_review'=>'danger','pending'=>'warning','processing'=>'warning','retry_scheduled'=>'warning'][$validation->status]??'secondary')
+                    @php($color=['valid'=>'success','manual_valid'=>'success','invalid'=>'danger','manual_invalid'=>'danger','missing_vat'=>'danger','manual_review'=>'danger','pending'=>'warning','processing'=>'warning','retry_scheduled'=>'warning'][$validation->status]??'secondary')
                     <tr>
                         <td><span class="badge text-bg-{{ $color }}">{{ $statuses[$validation->status]??$validation->status }}</span></td>
                         @php($vatForDisplay=\App\Models\modules\moloni_vat_validation\MoloniVatValidation::normalizeVatNumber($validation->vat_number,$validation->country_iso))
@@ -51,7 +51,15 @@
                             @if($validation->orders_count>count($validation->orders))<small class="text-muted">+{{ $validation->orders_count-count($validation->orders) }} encomenda(s)</small>@endif
                         </td>
                         <td><small>{{ $validation->last_error?:'—' }}</small></td>
-                        <td>@if($validation->status!=='valid')<form method="POST" action="{{ route('finance.tools.moloni_vat.retry',$validation) }}">@csrf<button class="btn btn-sm btn-outline-primary" type="submit">Tentar agora</button></form>@endif</td>
+                        <td>
+                            @if(!in_array($validation->status,['valid','manual_valid'],true))
+                                <div class="d-flex flex-wrap gap-1">
+                                    <form method="POST" action="{{ route('finance.tools.moloni_vat.retry',$validation) }}">@csrf<button class="btn btn-sm btn-outline-primary" type="submit">Tentar agora</button></form>
+                                    <form method="POST" action="{{ route('finance.tools.moloni_vat.manual',$validation) }}">@csrf<input type="hidden" name="decision" value="valid"><button class="btn btn-sm btn-outline-success" type="submit" onclick="return confirm('Marcar este VAT como validado manualmente?')">Validar manualmente</button></form>
+                                    <form method="POST" action="{{ route('finance.tools.moloni_vat.manual',$validation) }}">@csrf<input type="hidden" name="decision" value="invalid"><button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('Marcar este VAT como invalido manualmente?')">Marcar invalido</button></form>
+                                </div>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="10" class="text-center text-muted py-4">Sem registos.</td></tr>

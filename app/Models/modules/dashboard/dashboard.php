@@ -773,7 +773,10 @@ class dashboard extends Model
     public static function moloniVatNotValid($tab = null, $panel = null): array
     {
         $validations = \App\Models\modules\moloni_vat_validation\MoloniVatValidation::query()
-            ->where('status', '!=', \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_VALID)
+            ->whereNotIn('status', [
+                \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_VALID,
+                \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_MANUAL_VALID,
+            ])
             ->with(['orders' => fn ($query) => $query->orderBy('id_order')])
             ->latest('updated_at')
             ->get()

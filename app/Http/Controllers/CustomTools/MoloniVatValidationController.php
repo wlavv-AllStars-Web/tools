@@ -38,6 +38,16 @@ class MoloniVatValidationController extends Controller
         return back()->with('status','VAT colocado novamente em fila para validação VIES.');
     }
 
+    public function markManual(MoloniVatValidation $validation, Request $request, MoloniVatValidationService $service): RedirectResponse
+    {
+        $data = $request->validate(['decision' => ['required', 'in:valid,invalid']]);
+        $isValid = $data['decision'] === 'valid';
+        $service->markManual($validation, $isValid);
+
+        return back()->with('status', $isValid
+            ? 'VAT marcado como validado manualmente.'
+            : 'VAT marcado como invalido manualmente.');
+    }
     public function register(Request $request, MoloniVatValidationService $service): JsonResponse
     {
         if(!$this->hasValidToken($request))return response()->json(['success'=>false,'message'=>'Invalid token'],403);
@@ -102,7 +112,9 @@ class MoloniVatValidationController extends Controller
             MoloniVatValidation::STATUS_PROCESSING=>'Em validação',
             MoloniVatValidation::STATUS_RETRY_SCHEDULED=>'Nova tentativa agendada',
             MoloniVatValidation::STATUS_VALID=>'Válido',
+            MoloniVatValidation::STATUS_MANUAL_VALID=>'Validado manualmente',
             MoloniVatValidation::STATUS_INVALID=>'Inválido',
+            MoloniVatValidation::STATUS_MANUAL_INVALID=>'Inválido manualmente',
             MoloniVatValidation::STATUS_MISSING_VAT=>'VAT/morada em falta',
             MoloniVatValidation::STATUS_MANUAL_REVIEW=>'Revisão manual',
         ];

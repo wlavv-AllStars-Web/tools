@@ -34,11 +34,13 @@ class AuditShippedOrdersForBackorder extends Command
                 'od.id_order_detail',
                 'od.product_reference',
                 'od.product_name',
-                DB::raw('GREATEST(od.product_quantity - COALESCE(od.product_quantity_refunded, 0), 0) as pending_quantity'),
+                DB::raw('GREATEST(od.product_quantity - COALESCE(od.product_quantity_refunded, 0) - COALESCE(cod.qtd_sent, 0), 0) as pending_quantity'),
                 DB::raw('COALESCE(cod.control, 0) as control'),
             ])
             ->where('o.current_state', config('auto_backorder.shipped_state'))
-            ->whereRaw('od.product_quantity > COALESCE(od.product_quantity_refunded, 0)')
+            // A line is outstanding only when its shipped and refunded quantities
+            // together do not cover the quantity originally ordered.
+            ->whereRaw('od.product_quantity > COALESCE(od.product_quantity_refunded, 0) + COALESCE(cod.qtd_sent, 0)')
             ->where(function ($query) {
                 $query->whereNull('cod.control')->orWhere('cod.control', 0);
             })
@@ -181,7 +183,7 @@ class AuditShippedOrdersForBackorder extends Command
             ->leftJoin('ps_custom_order_detail as cod', 'cod.id_order_detail', '=', 'od.id_order_detail')
             ->select('od.product_reference')
             ->where('od.id_order', $idOrder)
-            ->whereRaw('od.product_quantity > COALESCE(od.product_quantity_refunded, 0)')
+            ->whereRaw('od.product_quantity > COALESCE(od.product_quantity_refunded, 0) + COALESCE(cod.qtd_sent, 0)')
             ->where(function ($query) {
                 $query->whereNull('cod.control')->orWhere('cod.control', 0);
             })

@@ -745,8 +745,14 @@ class orders extends PrestashopModel
     
                 foreach ($item->order_detail as $detail) {
                     $is_pack = 0;
-    
-                    if ($detail->product_quantity <= 0) {
+
+                    $orderedQuantity = (int) $detail->product_quantity;
+                    $refundedQuantity = (int) ($detail->product_quantity_refunded ?? 0);
+                    $outstandingQuantity = max(0, $orderedQuantity - $refundedQuantity);
+
+                    // PrestaShop keeps refunded lines in order_detail. They must not
+                    // generate a backorder merely because the original quantity remains.
+                    if ($outstandingQuantity <= 0) {
                         continue;
                     }
 
@@ -769,11 +775,12 @@ class orders extends PrestashopModel
                         'reference' => $detail->product_reference,
                         'supplier' => isset($detail->product->supplier) ? $detail->product->supplier->name : '',
                         'brand' => isset($detail->product->manufacturer) ? $detail->product->manufacturer->name : 'N/D',
-                        'product_quantity' => $detail->product_quantity,
+                        'product_quantity' => $outstandingQuantity,
+                        'product_quantity_refunded' => $refundedQuantity,
                         'qtd_sent' => $qtdSent,
                         'control' => $control,
                         'type' => $detail->type,
-                        'sold' => $detail->product_quantity - $qtdSent,
+                        'sold' => max(0, $outstandingQuantity - $qtdSent),
                         'date_payed' => $paymentHistory->date_add ?? null,
                         'store' => self::shopCode($id_shop),
                         'stock' => $lineStock ?? 0,
@@ -787,14 +794,14 @@ class orders extends PrestashopModel
                                 $row_extra_data_product['id_product'] = $product_pack->id_product_item;
                                 $row_extra_data_product['id_product_attribute'] = $product_pack->id_product_attribute_item;
     
-                                $row_extra_data_product['sold'] = ($product_pack->quantity * $detail->product_quantity) - $qtdSent;
+                                $row_extra_data_product['sold'] = max(0, ($product_pack->quantity * $outstandingQuantity) - $qtdSent);
                                 $row_extra_data_product['stock'] = self::stockQuantityFor(
                                     (int) $product_pack->id_product_item,
                                     (int) $product_pack->id_product_attribute_item,
                                     (int) $item->id_shop
                                 ) ?? 0;
     
-                                if (($row_extra_data_product['stock'] < 1) && ($row_extra_data_product['sold'] != 0)) {
+                                if (($row_extra_data_product['stock'] < 1) && ($row_extra_data_product['sold'] > 0)) {
                                     $extra_data_product[] = $row_extra_data_product;
                                 }
     
@@ -804,7 +811,7 @@ class orders extends PrestashopModel
                     }
     
                     if ($is_pack == 0 && isset($row_extra_data_product['stock'])) {
-                        if (($id_current_state == 15) && ($row_extra_data_product['stock'] < 1)) {
+                        if (($id_current_state == 15) && ($row_extra_data_product['stock'] < 1) && ($row_extra_data_product['sold'] > 0)) {
                             $extra_data_product[] = $row_extra_data_product;
                         }
                     }

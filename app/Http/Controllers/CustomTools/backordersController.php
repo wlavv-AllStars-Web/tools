@@ -36,8 +36,6 @@ class backordersController extends Controller
         $asd_backorders = orders::getAllOrdersOf(15, 3);
         
         $asd_backorders = $asd_backorders ?? [];
-        $activeAsmBackorders = [];
-        $activeAsdBackorders = [];
         
         foreach($asm_backorders AS $backorder){
 
@@ -60,7 +58,6 @@ class backordersController extends Controller
                     ];
                     
                 customers_backorders::insertBackorder($data);
-                $activeAsmBackorders[] = $data;
             }
         }
         
@@ -85,14 +82,8 @@ class backordersController extends Controller
                     ];
                     
                 customers_backorders::insertBackorder($data);
-                $activeAsdBackorders[] = $data;
             }
         }
-
-        // Remove rows that no longer represent an outstanding line. This includes
-        // fully refunded order lines, which PrestaShop retains in order_detail.
-        customers_backorders::syncCurrentBackorders($activeAsmBackorders, $asm_backorders, 'ASM');
-        customers_backorders::syncCurrentBackorders($activeAsdBackorders, $asd_backorders, 'ASD');
 
         $backorders = customers_backorders::getAll();
         

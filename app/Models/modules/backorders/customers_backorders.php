@@ -45,63 +45,9 @@ class customers_backorders extends Model
             $backorder->created_at = date('Y-m-d');
             
             $backorder->save();
-        } else {
-            // A partial refund can reduce the outstanding quantity after this
-            // row was first created. Keep the persisted backorder in sync.
-            $exists->update([
-                'sold' => $data['sold'],
-                'done' => 0,
-            ]);
+            
         }
         return 1;
-    }
-
-    /**
-     * Mark saved rows as complete when they are no longer produced by the
-     * current backorder calculation (for example, after a refund).
-     */
-    public static function syncCurrentBackorders(array $activeBackorders, iterable $orders, string $store): void
-    {
-        $store = self::normalizeStore($store);
-        $orderIds = collect($orders)
-            ->pluck('id_order')
-            ->filter()
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
-
-        if ($orderIds->isEmpty()) {
-            return;
-        }
-
-        $activeKeys = collect($activeBackorders)
-            ->map(fn ($row) => self::backorderKey(
-                (int) $row['id_order'],
-                (int) $row['id_product'],
-                (int) $row['id_product_attribute']
-            ))
-            ->flip();
-
-        self::where('done', 0)
-            ->where('store', $store)
-            ->where('type', 'backorder')
-            ->whereIn('id_order', $orderIds->all())
-            ->where(function ($query) {
-                $query->where('id_product', '!=', 0)
-                    ->orWhere('id_product_attribute', '!=', 0);
-            })
-            ->get()
-            ->each(function ($backorder) use ($activeKeys) {
-                $key = self::backorderKey(
-                    (int) $backorder->id_order,
-                    (int) $backorder->id_product,
-                    (int) $backorder->id_product_attribute
-                );
-
-                if (!$activeKeys->has($key)) {
-                    $backorder->update(['done' => 1]);
-                }
-            });
     }
     
     public static function getAll(){
@@ -455,10 +401,6 @@ class customers_backorders extends Model
             default => (string) $store,
         };
     }
-
-    private static function backorderKey(int $idOrder, int $idProduct, int $idProductAttribute): string
-    {
-        return $idOrder . ':' . $idProduct . ':' . $idProductAttribute;
-    }
     
 }
+

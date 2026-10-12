@@ -73,7 +73,7 @@ class marketingController extends Controller{
     {
         $asdShopId = (int) config('allstars.stores.ASD.id_shop', 3);
 
-        return AsdImage::query()
+        $missingImagesByBrand = AsdImage::query()
             ->from('ps_custom_asd_images as ai')
             ->join('ps_product as p', 'p.id_product', '=', 'ai.id_product')
             ->join('ps_manufacturer as m', 'm.id_manufacturer', '=', 'ai.id_manufacturer')
@@ -97,9 +97,22 @@ class marketingController extends Controller{
                 $query->whereRaw('COALESCE(cpa.wmdeprecated, cp.wmdeprecated, 0) <> 1')
                     ->orWhereRaw('COALESCE(sa.quantity, 0) > 0');
             })
-            ->select('m.id_manufacturer', 'm.name')
+            ->select('ai.id_manufacturer')
             ->selectRaw('COUNT(*) as missing_images_count')
-            ->groupBy('m.id_manufacturer', 'm.name')
+            ->groupBy('ai.id_manufacturer');
+
+        return AsdImage::query()
+            ->from('ps_manufacturer as m')
+            ->join('ps_manufacturer_shop as ms', function ($join) use ($asdShopId) {
+                $join->on('ms.id_manufacturer', '=', 'm.id_manufacturer')
+                    ->where('ms.id_shop', $asdShopId);
+            })
+            ->leftJoinSub($missingImagesByBrand, 'missing_images', function ($join) {
+                $join->on('missing_images.id_manufacturer', '=', 'm.id_manufacturer');
+            })
+            ->where('m.active', 1)
+            ->select('m.id_manufacturer', 'm.name')
+            ->selectRaw('COALESCE(missing_images.missing_images_count, 0) as missing_images_count')
             ->orderByDesc('missing_images_count')
             ->orderBy('m.name')
             ->get();

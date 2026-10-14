@@ -141,6 +141,12 @@
                             If the button does not open, copy and paste this link into your browser:<br>
                             <a href="{{ $paymentUrl }}" style="color:{{ $brandColor }}; word-break:break-all;">{{ $paymentUrl }}</a>
                         </p>
+
+                        @if($requestItem->worldline_expires_at)
+                            <p style="font-size:12px; color:#777; margin-top:18px; margin-bottom:0;">
+                                This single-use payment link expires on {{ $requestItem->worldline_expires_at->format('Y-m-d H:i') }} UTC.
+                            </p>
+                        @endif
                     </div>
 
                     <table cellpadding="0" cellspacing="0" style="margin-top:20px; border-top:4px solid {{ $brandColor }}; padding-top:15px; width:100%;">

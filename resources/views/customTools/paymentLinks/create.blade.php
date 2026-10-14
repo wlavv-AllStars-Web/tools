@@ -19,6 +19,11 @@
                     @csrf
 
                     <div class="row">
+                        <div class="col-lg-12">
+                            <div class="alert alert-info" style="margin-bottom: 15px;">
+                                The payment link is single-use and expires 7 days after Finance approval.
+                            </div>
+                        </div>
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label for="store_code">Store *</label>

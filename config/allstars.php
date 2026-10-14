@@ -167,7 +167,11 @@ return [
     ],
 
     'payment_links' => [
-        'gateway_url' => env('ALLSTARS_PAYMENT_LINK_GATEWAY_URL', 'https://secure.ogone.com/ncol/PROD/orderstandard.asp'),
+        'worldline_api_base_url' => env(
+            'ALLSTARS_WORLDLINE_API_BASE_URL',
+            'https://payment.direct.worldline-solutions.com'
+        ),
+        'expiration_hours' => 168,
         'stores' => [
             'ASM' => [
                 'name' => 'All Stars Motorsport',
@@ -178,8 +182,9 @@ return [
                     'instagram' => 'https://instagram.com/allstarsmotorsport',
                     'youtube' => 'https://www.youtube.com/user/allstarsmotorsport',
                 ],
-                'pspid' => env('ALLSTARS_PAYMENT_LINK_ASM_PSPID', env('ALLSTARS_PAYMENT_LINK_PSPID', 'Allstarsmotorsport')),
-                'sha_in' => env('ALLSTARS_PAYMENT_LINK_ASM_SHA_IN', env('ALLSTARS_PAYMENT_LINK_SHA_IN', '2f47f9cb-f665-4b76-ba0d-80c0aacee604')),
+                'merchant_id' => env('ALLSTARS_WORLDLINE_ASM_MERCHANT_ID', 'Allstarsmotorsport'),
+                'api_key' => env('ALLSTARS_WORLDLINE_ASM_API_KEY'),
+                'api_secret' => env('ALLSTARS_WORLDLINE_ASM_API_SECRET'),
             ],
             'ASD' => [
                 'name' => 'All Stars Distribution',
@@ -195,8 +200,9 @@ return [
                     'flickr' => 'asd_flickr_mail.png',
                     'instagram' => 'asd_insta_mail.png',
                 ],
-                'pspid' => env('ALLSTARS_PAYMENT_LINK_ASD_PSPID', 'Allstarsdistribution'),
-                'sha_in' => env('ALLSTARS_PAYMENT_LINK_ASD_SHA_IN', env('ALLSTARS_PAYMENT_LINK_SHA_IN', '2f47f9cb-f665-4b76-ba0d-80c0aacee604')),
+                'merchant_id' => env('ALLSTARS_WORLDLINE_ASD_MERCHANT_ID', 'Allstarsdistribution'),
+                'api_key' => env('ALLSTARS_WORLDLINE_ASD_API_KEY'),
+                'api_secret' => env('ALLSTARS_WORLDLINE_ASD_API_SECRET'),
             ],
         ],
     ],

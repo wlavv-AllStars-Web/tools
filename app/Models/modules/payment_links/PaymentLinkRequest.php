@@ -28,6 +28,13 @@ class PaymentLinkRequest extends Model
         'approved_at',
         'email_sent_by',
         'email_sent_at',
+        'expiration_hours',
+        'worldline_payment_link_id',
+        'worldline_payment_url',
+        'worldline_idempotency_key',
+        'worldline_expires_at',
+        'worldline_created_at',
+        'worldline_error',
     ];
 
     protected $casts = [
@@ -35,6 +42,8 @@ class PaymentLinkRequest extends Model
         'requested_at' => 'datetime',
         'approved_at' => 'datetime',
         'email_sent_at' => 'datetime',
+        'worldline_expires_at' => 'datetime',
+        'worldline_created_at' => 'datetime',
     ];
 
     public function requester(): BelongsTo
@@ -79,39 +88,9 @@ class PaymentLinkRequest extends Model
 
     public function paymentUrl(): ?string
     {
-        if (!$this->isApproved()) {
-            return null;
-        }
-
-        $storeConfig = self::storeConfig($this->store_code);
-
-        $query = http_build_query([
-            'PSPID' => $storeConfig['pspid'],
-            'ORDERID' => $this->order_id,
-            'COM' => $this->description,
-            'AMOUNT' => $this->amountInCents(),
-            'EMAIL' => $this->customer_email,
-            'SHASIGN' => $this->sha_sign,
-            'CURRENCY' => $this->currency,
-        ], '', '&', PHP_QUERY_RFC3986);
-
-        return rtrim((string) config('allstars.payment_links.gateway_url'), '?') . '?' . $query;
-    }
-
-    public static function generateShaSign(string $storeCode, string $orderId, string $description, int $amountInCents, string $email): string
-    {
-        $storeConfig = self::storeConfig($storeCode);
-        $shaIn = $storeConfig['sha_in'];
-        $pspid = $storeConfig['pspid'];
-
-        $plain = 'AMOUNT=' . $amountInCents . $shaIn
-            . 'COM=' . $description . $shaIn
-            . 'CURRENCY=EUR' . $shaIn
-            . 'EMAIL=' . $email . $shaIn
-            . 'ORDERID=' . $orderId . $shaIn
-            . 'PSPID=' . $pspid . $shaIn;
-
-        return sha1($plain);
+        return $this->isApproved() && !empty($this->worldline_payment_url)
+            ? (string) $this->worldline_payment_url
+            : null;
     }
 
     public static function storeOptions(): array
@@ -119,13 +98,4 @@ class PaymentLinkRequest extends Model
         return array_keys((array) config('allstars.payment_links.stores', []));
     }
 
-    private static function storeConfig(string $storeCode): array
-    {
-        $config = (array) config('allstars.payment_links.stores.' . strtoupper($storeCode), []);
-
-        return [
-            'pspid' => (string) ($config['pspid'] ?? ''),
-            'sha_in' => (string) ($config['sha_in'] ?? ''),
-        ];
-    }
 }

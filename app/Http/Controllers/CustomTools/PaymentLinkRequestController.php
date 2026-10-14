@@ -5,6 +5,7 @@ namespace App\Http\Controllers\CustomTools;
 use App\Http\Controllers\Controller;
 use App\Models\modules\payment_links\PaymentLinkRequest;
 use App\Services\Mail\StoreMailer;
+use App\Services\Payments\WorldlinePaymentLinkService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -76,7 +77,6 @@ class PaymentLinkRequestController extends Controller
 
         $storeCode = $this->normalizeStoreCode($data['store_code']);
         $amount = round((float) $data['amount'], 2);
-        $amountInCents = (int) round($amount * 100);
         $email = strtolower(trim($data['customer_email']));
 
         PaymentLinkRequest::create([
@@ -87,13 +87,8 @@ class PaymentLinkRequestController extends Controller
             'currency' => 'EUR',
             'customer_email' => $email,
             'request_hash' => Str::random(64),
-            'sha_sign' => PaymentLinkRequest::generateShaSign(
-                $storeCode,
-                trim($data['order_id']),
-                trim($data['description']),
-                $amountInCents,
-                $email
-            ),
+            'sha_sign' => null,
+            'expiration_hours' => (int) config('allstars.payment_links.expiration_hours', 168),
             'status' => PaymentLinkRequest::STATUS_PENDING,
             'requested_by' => auth()->id(),
             'requested_at' => now(),
@@ -147,13 +142,38 @@ class PaymentLinkRequestController extends Controller
         ]);
     }
 
-    public function approve(PaymentLinkRequest $paymentLinkRequest): RedirectResponse
+    public function approve(
+        PaymentLinkRequest $paymentLinkRequest,
+        WorldlinePaymentLinkService $worldlinePaymentLinkService
+    ): RedirectResponse
     {
         if (!$paymentLinkRequest->isApproved()) {
+            $paymentLinkRequest->update([
+                'worldline_idempotency_key' => $paymentLinkRequest->worldline_idempotency_key ?: (string) Str::uuid(),
+                'worldline_error' => null,
+            ]);
+
+            try {
+                $worldlineLink = $worldlinePaymentLinkService->create($paymentLinkRequest->fresh());
+            } catch (\Throwable $exception) {
+                report($exception);
+
+                $paymentLinkRequest->update([
+                    'worldline_error' => mb_substr($exception->getMessage(), 0, 65535),
+                ]);
+
+                return back()->with('error', 'The Worldline payment link could not be created. Please review the request and try again.');
+            }
+
             $paymentLinkRequest->update([
                 'status' => PaymentLinkRequest::STATUS_APPROVED,
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
+                'worldline_payment_link_id' => $worldlineLink['payment_link_id'],
+                'worldline_payment_url' => $worldlineLink['payment_url'],
+                'worldline_expires_at' => $worldlineLink['expires_at'],
+                'worldline_created_at' => now(),
+                'worldline_error' => null,
             ]);
         }
 

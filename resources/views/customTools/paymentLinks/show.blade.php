@@ -27,6 +27,15 @@
                         <tr><th>Amount</th><td>{{ number_format((float) $requestItem->amount, 2, '.', ' ') }} EUR</td></tr>
                         <tr><th>Currency</th><td>{{ $requestItem->currency }}</td></tr>
                         <tr><th>Customer email</th><td>{{ $requestItem->customer_email }}</td></tr>
+                        @if($requestItem->worldline_payment_link_id)
+                            <tr><th>Worldline link ID</th><td>{{ $requestItem->worldline_payment_link_id }}</td></tr>
+                        @endif
+                        @if($requestItem->worldline_expires_at)
+                            <tr><th>Link expiry</th><td>{{ $requestItem->worldline_expires_at->format('Y-m-d H:i') }} UTC</td></tr>
+                        @endif
+                        @if($requestItem->worldline_error)
+                            <tr><th>Worldline error</th><td class="text-danger">{{ $requestItem->worldline_error }}</td></tr>
+                        @endif
                         <tr><th>Requested by</th><td>{{ optional($requestItem->requester)->name ?? '#' . $requestItem->requested_by }}</td></tr>
                         <tr><th>Requested at</th><td>{{ optional($requestItem->requested_at)->format('Y-m-d H:i') }}</td></tr>
                     </tbody>

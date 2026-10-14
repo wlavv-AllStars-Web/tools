@@ -137,4 +137,5 @@ return [
     'ASM products missing in ASD' => 'ASM PRODUCTS MISSING IN ASD',
     'ASD products missing in ASM' => 'ASD PRODUCTS MISSING IN ASM',
     'MOLONI VATS NOT VALID' => 'VAT FOR VERIFICATION',
+    'PAYMENT LINKS PENDING' => 'PAYMENT LINKS PENDING',
 ];

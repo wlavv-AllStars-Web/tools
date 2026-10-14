@@ -52,4 +52,5 @@ return [
     'Shop 2 VAT = Shop 3 default' => 'IVA ASM = predefinido ASD',
     'Shop 3 VAT = Shop 2 default' => 'IVA ASD = predefinido ASM',
     'MOLONI VATS NOT VALID' => 'VAT FOR VERIFICATION',
+    'PAYMENT LINKS PENDING' => 'LINKS DE PAGAMENTO PENDENTES',
 ];

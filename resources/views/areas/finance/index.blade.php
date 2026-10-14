@@ -103,42 +103,5 @@
         </div>
     </div>
 
-    <div class="card" style="margin-top: 20px;">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <strong>Payment link requests awaiting approval ({{ $pendingPaymentLinkRequests->count() }})</strong>
-            <a class="btn btn-primary btn-sm" href="{{ route('finance.tools.payment_links.index') }}">View all</a>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-sm mb-0">
-                <thead>
-                    <tr>
-                        <th>Requested</th>
-                        <th>Store</th>
-                        <th>Order</th>
-                        <th>Customer</th>
-                        <th class="text-right">Amount</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($pendingPaymentLinkRequests as $requestItem)
-                        <tr>
-                            <td>{{ optional($requestItem->requested_at)->format('Y-m-d H:i') }}</td>
-                            <td><strong style="color: {{ $requestItem->storeColor() }};">{{ $requestItem->storeName() }}</strong></td>
-                            <td>{{ $requestItem->order_id }}</td>
-                            <td>{{ $requestItem->customer_email }}</td>
-                            <td class="text-right">{{ number_format((float) $requestItem->amount, 2, '.', ' ') }} {{ $requestItem->currency }}</td>
-                            <td class="text-right"><a class="btn btn-primary btn-sm" href="{{ route('finance.tools.payment_links.show', $requestItem) }}">Open</a></td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center text-muted">There are no payment-link requests awaiting approval.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
     {!! $counters !!}
 @endsection

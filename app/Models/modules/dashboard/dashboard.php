@@ -17,6 +17,7 @@ use App\Models\prestashop\AsdImage;
 use App\Models\prestashop\orders;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_shop;
+use App\Models\modules\payment_links\PaymentLinkRequest;
 
 use App\Models\Concerns\BuildsDashboardPanels;
 
@@ -380,6 +381,51 @@ class dashboard extends Model
             'update_tag' => ($dataCount != $panel->counter) ? 1 : 0,
             'html' => view('areas/dashboard/includes/counters_content')->with($data)->render()
         ];
+    }
+
+    /**
+     * Finance dashboard: payment-link requests that still require approval.
+     *
+     * This is deliberately one shared Finance panel. Each row carries its
+     * store code, so Finance can approve all pending requests from one place.
+     */
+    public static function paymentLinksPending($tab = null, $panel = null): array
+    {
+        $requests = PaymentLinkRequest::query()
+            ->where('status', PaymentLinkRequest::STATUS_PENDING)
+            ->with('requester:id,name')
+            ->orderByDesc('requested_at')
+            ->get();
+
+        $rows = $requests->map(function (PaymentLinkRequest $request) {
+            return [
+                'id' => $request->id,
+                'store' => $request->store_code,
+                'order_id' => $request->order_id,
+                'amount' => number_format((float) $request->amount, 2, '.', '') . ' ' . $request->currency,
+                'requested_by' => $request->requester?->name ?: '-',
+                'requested_at' => optional($request->requested_at)->format('Y-m-d H:i') ?: '-',
+                'url' => route('finance.tools.payment_links.show', $request),
+            ];
+        })->all();
+
+        return self::dashboardPanel(
+            'PAYMENT LINKS PENDING',
+            'counter',
+            'payment_links_pending',
+            ['id', 'store', 'order_id', 'amount', 'requested_by', 'requested_at'],
+            $rows,
+            [
+                'column_labels' => [
+                    'id' => 'Request',
+                    'store' => 'Store',
+                    'order_id' => 'Order ID',
+                    'amount' => 'Amount',
+                    'requested_by' => 'Requested by',
+                    'requested_at' => 'Requested at',
+                ],
+            ]
+        );
     }
 
     public static function externalOrderInvoiceExVat( $tab, $panel ){ 

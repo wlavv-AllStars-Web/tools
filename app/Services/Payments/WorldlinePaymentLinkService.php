@@ -84,7 +84,7 @@ class WorldlinePaymentLinkService
         $paymentUrl = is_array($body) ? ($body['redirectionUrl'] ?? null) : null;
 
         if (!$response->successful() || !is_string($paymentUrl) || $paymentUrl === '') {
-            throw new RuntimeException($this->responseError($response->status(), $body));
+            throw new RuntimeException($this->responseError($response->status(), $body, $baseUrl));
         }
 
         $paymentLinkId = is_array($body) ? (string) ($body['paymentLinkId'] ?? '') : '';
@@ -103,18 +103,52 @@ class WorldlinePaymentLinkService
         ];
     }
 
-    private function responseError(int $status, mixed $body): string
+    private function responseError(int $status, mixed $body, string $baseUrl): string
     {
+        $details = [];
+
         if (is_array($body)) {
             $message = data_get($body, 'errors.0.message')
                 ?? data_get($body, 'error.message')
                 ?? data_get($body, 'message');
 
+            $code = data_get($body, 'errors.0.code')
+                ?? data_get($body, 'error.code')
+                ?? data_get($body, 'code');
+
+            $errorId = data_get($body, 'errors.0.errorId')
+                ?? data_get($body, 'error.errorId')
+                ?? data_get($body, 'errorId');
+
             if (is_string($message) && $message !== '') {
-                return 'Worldline API error: ' . $message;
+                $details[] = $message;
+            }
+
+            if (is_scalar($code) && (string) $code !== '') {
+                $details[] = 'code ' . (string) $code;
+            }
+
+            if (is_scalar($errorId) && (string) $errorId !== '') {
+                $details[] = 'error ID ' . (string) $errorId;
             }
         }
 
-        return 'Worldline API returned HTTP status ' . $status . '.';
+        $environment = str_contains((string) parse_url($baseUrl, PHP_URL_HOST), 'preprod.')
+            ? 'test/preprod'
+            : 'live';
+
+        $error = 'Worldline API returned HTTP status ' . $status . ' (' . $environment . ').';
+
+        if ($details !== []) {
+            $error .= ' ' . implode('; ', $details) . '.';
+        }
+
+        if ($status === 404) {
+            $error .= ' Verify that the configured merchant ID is the PSPID for this environment and that the API key/secret belong to the same PSPID.';
+        } elseif ($status === 401 || $status === 403) {
+            $error .= ' Verify the API key/secret and that they are enabled for this PSPID.';
+        }
+
+        return $error;
     }
 }

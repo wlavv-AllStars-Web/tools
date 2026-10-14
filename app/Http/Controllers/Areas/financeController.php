@@ -11,6 +11,7 @@ use App\Models\prestashop\pack;
 use App\Models\prestashop\CurrencyVariation;
 use App\Models\prestashop\product;
 use App\Models\modules\issues\issues;
+use App\Models\modules\payment_links\PaymentLinkRequest;
 use Illuminate\Support\Facades\DB;
 use App\Services\Finance\CorrectedInventoryService;
 
@@ -43,14 +44,20 @@ class financeController extends Controller
     }
 
     public function index(){
-        
+        $pendingPaymentLinkRequests = PaymentLinkRequest::query()
+            ->with('requester')
+            ->where('status', PaymentLinkRequest::STATUS_PENDING)
+            ->latest('requested_at')
+            ->get();
+
         $data = [
             'counters'      => dashboard::calculateAndGetCountersOfTab('finance'),
             'panels'        => [],
             'accessList'    => $this->accessList(),
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs,
-            'rates'         => CurrencyVariation::orderBy('id', 'DESC')->first()
+            'rates'         => CurrencyVariation::orderBy('id', 'DESC')->first(),
+            'pendingPaymentLinkRequests' => $pendingPaymentLinkRequests,
         ];
 
         return View::make('areas/finance/index')->with($data);
@@ -64,6 +71,7 @@ class financeController extends Controller
         $accessList[] =         ['name' =>  trans('messages.VERIFICATION'), 'url' => route('finance.tools.carrier_check.index'), 'icon' => '<i class="fa-solid fa-truck-fast" style="font-size: 40px;"></i>'];
         $accessList[] =         ['name' =>  trans('messages.Return'), 'url' => route('finance.tools.carrier_returns.index'), 'icon' => '<i class="fa-solid fa-truck-arrow-right" style="font-size: 40px;"></i>'];
         $accessList[] =         ['name' => 'VIES', 'url' => route('finance.tools.moloni_vat.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-building-circle-check"></i>'];
+        $accessList[] =         ['name' => 'Payment links', 'url' => route('finance.tools.payment_links.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-check-dollar"></i>'];
         return $accessList;
     }
 

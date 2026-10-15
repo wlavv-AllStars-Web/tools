@@ -18,6 +18,7 @@ use App\Services\oms\StockArriveService;
 use App\Services\oms\BilledOrderReversalService;
 use App\Services\oms\SupplierTermsService;
 use App\Services\oms\SupplierInvoiceWorkflowService;
+use App\Services\oms\OmsSalesCurrencyService;
 use App\Services\StockAudit\StockAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -615,6 +616,7 @@ class OrderNoteController extends Controller
         }
         abort_unless($isAllowed, 422, 'This product is not related to the current order-note line.');
 
+        $usesEuroSalePrice = $this->usesEuroSalePriceForProduct($productId);
         $currencyMeta = $this->supplierInvoiceWorkflow->resolveCurrencyForOrderNote($orderNote, $orderNote->lines);
         $purchaseRate = (float) ($currencyMeta['purchase_conversion_rate'] ?? 1);
         $saleRate = (float) ($currencyMeta['sale_conversion_rate'] ?? 1);
@@ -629,7 +631,9 @@ class OrderNoteController extends Controller
 
         if ($saleSupplier !== null) {
             $purchaseSupplier = round($saleSupplier * (1 - ($discount / 100)), 6);
-            $saleEur ??= $isEur || $saleRate <= 0 ? $saleSupplier : round($saleSupplier / $saleRate, 6);
+            $saleEur ??= $usesEuroSalePrice || $isEur || $saleRate <= 0
+                ? $saleSupplier
+                : round($saleSupplier / $saleRate, 6);
             $purchaseEur = $isEur || $purchaseRate <= 0
                 ? $purchaseSupplier
                 : round($purchaseSupplier / $purchaseRate, 6);
@@ -657,13 +661,17 @@ class OrderNoteController extends Controller
                         // Same final price for equal references; impact is specific to each parent product.
                         $parent = $db->table($prefix.'product as p')
                             ->leftJoin($prefix.'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+                            ->leftJoin($prefix.'manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'p.id_manufacturer')
                             ->where('p.id_product', $targetProductId)
-                            ->first(['p.price as sale_eur', 'cp.price_base_currency as sale_supplier']);
+                            ->first(['p.price as sale_eur', 'cp.price_base_currency as sale_supplier', 'manufacturer.name as manufacturer_name']);
                         abort_unless($parent, 422, 'Parent product not found.');
                         $parentSaleEur = (float) $parent->sale_eur;
-                        $parentSaleSupplier = $parent->sale_supplier === null
+                        $targetUsesEuroSalePrice = OmsSalesCurrencyService::usesEuroSalePrice($parent->manufacturer_name ?? null);
+                        $parentSaleSupplier = $targetUsesEuroSalePrice
+                            ? $parentSaleEur
+                            : ($parent->sale_supplier === null
                             ? ($isEur || $saleRate <= 0 ? $parentSaleEur : round($parentSaleEur * $saleRate, 6))
-                            : (float) $parent->sale_supplier;
+                            : (float) $parent->sale_supplier);
                         $cataloguePrices['price'] = round($saleEur - $parentSaleEur, 6);
                         $baseCurrencyPrices['price_base_currency'] = round($saleSupplier - $parentSaleSupplier, 6);
                         $baseCurrencyPrices['price_display_base_currency'] = $baseCurrencyPrices['price_base_currency'];
@@ -696,6 +704,18 @@ class OrderNoteController extends Controller
             'sale_supplier_price' => $saleSupplier,
             'sale_eur_price' => $saleEur,
         ]]);
+    }
+
+    private function usesEuroSalePriceForProduct(int $productId): bool
+    {
+        $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+        $manufacturerName = DB::connection('mysql2')
+            ->table($prefix.'product as product')
+            ->leftJoin($prefix.'manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
+            ->where('product.id_product', $productId)
+            ->value('manufacturer.name');
+
+        return OmsSalesCurrencyService::usesEuroSalePrice($manufacturerName);
     }
 
     /** Match the same sellable reference only: attributes with attributes, products with products. */

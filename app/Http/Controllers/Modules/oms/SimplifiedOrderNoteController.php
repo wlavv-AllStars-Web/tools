@@ -8,6 +8,7 @@ use App\Models\modules\oms\OrderNote;
 use App\Models\modules\shipping\shipping;
 use App\Models\prestashop\suppliers;
 use App\Services\oms\SupplierInvoiceWorkflowService;
+use App\Services\oms\OmsSalesCurrencyService;
 use App\Services\Prestashop\PrestashopAdminLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -314,6 +315,15 @@ class SimplifiedOrderNoteController extends Controller
             }
 
             $salesSupplier = $parentSalesSupplier + $attributeSalesSupplierImpact;
+            $usesEuroSalePrice = OmsSalesCurrencyService::usesEuroSalePrice($product->manufacturer_name ?? null);
+
+            // MMX and Racingline purchase in the supplier currency, but their
+            // catalogue selling price is maintained in EUR. Do not convert it
+            // using the supplier's SALE rate.
+            if ($usesEuroSalePrice) {
+                $salesSupplier = $salesEur;
+                $saleConversionRate = 1.0;
+            }
 
             return [
                 'line_id' => (int) $line->id,
@@ -341,6 +351,9 @@ class SimplifiedOrderNoteController extends Controller
                 'discount_percentage' => (float) ($product->discount_percentage ?? 0),
                 'sales_supplier' => round($salesSupplier, 6),
                 'sales_eur' => $salesEur,
+                'sale_currency_iso' => $usesEuroSalePrice ? 'EUR' : (string) ($currencyMeta['currency_iso'] ?? 'EUR'),
+                'sale_currency_symbol' => $usesEuroSalePrice ? '€' : (string) ($currencyMeta['currency_symbol'] ?? '€'),
+                'sale_conversion_rate' => $saleConversionRate,
                 'currency_iso' => (string) ($currencyMeta['currency_iso'] ?? 'EUR'),
             ];
         });
@@ -414,6 +427,7 @@ class SimplifiedOrderNoteController extends Controller
         if ($attributeId > 0) {
             $siblings = $connection->table($prefix.'product_attribute as attribute')
                 ->join($prefix.'product as product', 'product.id_product', '=', 'attribute.id_product')
+                ->leftJoin($prefix.'manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
                 ->leftJoin($prefix.'custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
                 ->leftJoin($prefix.'custom_product_attribute as custom_attribute', function ($join) {
                     $join->on('custom_attribute.id_product', '=', 'attribute.id_product')
@@ -430,13 +444,14 @@ class SimplifiedOrderNoteController extends Controller
                         ->where('attribute_lang.id_lang', '=', 1);
                 })
                 ->where('attribute.id_product', $productId)
-                ->groupBy('attribute.id_product_attribute', 'attribute.reference', 'attribute.ean13', 'attribute.wholesale_price', 'attribute.price', 'custom_attribute.location', 'custom_attribute.stock_arrive', 'custom_attribute.wholesale_price_base_currency', 'custom_attribute.price_base_currency', 'stock.quantity', 'product.reference', 'product.ean13', 'product.location', 'product.wholesale_price', 'product.price', 'custom_product.stock_arrive', 'custom_product.wholesale_price_base_currency', 'custom_product.price_base_currency')
-                ->selectRaw("'Combination' as relationship, attribute.id_product_attribute as relationship_id, attribute.id_product as product_id, attribute.id_product_attribute as product_attribute_id, COALESCE(NULLIF(attribute.reference, ''), NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, {$attributeNames}, COALESCE(NULLIF(attribute.ean13, ''), product.ean13, '') as barcode, COALESCE(NULLIF(custom_attribute.location, ''), product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_attribute.stock_arrive, custom_product.stock_arrive, 0) as stock_arrive, attribute.wholesale_price as purchase_eur, (product.price + attribute.price) as sales_eur, COALESCE(custom_attribute.wholesale_price_base_currency, custom_product.wholesale_price_base_currency, 0) as purchase_supplier, (COALESCE(custom_product.price_base_currency, 0) + COALESCE(custom_attribute.price_base_currency, 0)) as sales_supplier")
+                ->groupBy('attribute.id_product_attribute', 'attribute.reference', 'attribute.ean13', 'attribute.wholesale_price', 'attribute.price', 'custom_attribute.location', 'custom_attribute.stock_arrive', 'custom_attribute.wholesale_price_base_currency', 'custom_attribute.price_base_currency', 'stock.quantity', 'product.reference', 'product.ean13', 'product.location', 'product.wholesale_price', 'product.price', 'product.id_manufacturer', 'manufacturer.name', 'custom_product.stock_arrive', 'custom_product.wholesale_price_base_currency', 'custom_product.price_base_currency')
+                ->selectRaw("'Combination' as relationship, attribute.id_product_attribute as relationship_id, attribute.id_product as product_id, attribute.id_product_attribute as product_attribute_id, manufacturer.name as manufacturer_name, COALESCE(NULLIF(attribute.reference, ''), NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, {$attributeNames}, COALESCE(NULLIF(attribute.ean13, ''), product.ean13, '') as barcode, COALESCE(NULLIF(custom_attribute.location, ''), product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_attribute.stock_arrive, custom_product.stock_arrive, 0) as stock_arrive, attribute.wholesale_price as purchase_eur, (product.price + attribute.price) as sales_eur, COALESCE(custom_attribute.wholesale_price_base_currency, custom_product.wholesale_price_base_currency, 0) as purchase_supplier, (COALESCE(custom_product.price_base_currency, 0) + COALESCE(custom_attribute.price_base_currency, 0)) as sales_supplier")
                 ->get();
         }
 
         $packs = $connection->table($prefix.'pack as pack')
             ->join($prefix.'product as product', 'product.id_product', '=', 'pack.id_product_pack')
+            ->leftJoin($prefix.'manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
             ->leftJoin($prefix.'custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
             ->leftJoin($prefix.'stock_available as stock', function ($join) {
                 $join->on('stock.id_product', '=', 'product.id_product')
@@ -450,12 +465,25 @@ class SimplifiedOrderNoteController extends Controller
                         ->orWhere('pack.id_product_attribute_item', '=', $attributeId);
                 });
             })
-            ->groupBy('product.id_product', 'product.reference', 'product.ean13', 'product.location', 'product.wholesale_price', 'product.price', 'custom_product.stock_arrive', 'custom_product.wholesale_price_base_currency', 'custom_product.price_base_currency', 'stock.quantity')
-            ->selectRaw("'Pack' as relationship, product.id_product as relationship_id, product.id_product as product_id, 0 as product_attribute_id, COALESCE(NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, '' as attributes, COALESCE(product.ean13, '') as barcode, COALESCE(product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_product.stock_arrive, 0) as stock_arrive, product.wholesale_price as purchase_eur, product.price as sales_eur, COALESCE(custom_product.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(custom_product.price_base_currency, 0) as sales_supplier")
+            ->groupBy('product.id_product', 'product.reference', 'product.ean13', 'product.location', 'product.wholesale_price', 'product.price', 'product.id_manufacturer', 'manufacturer.name', 'custom_product.stock_arrive', 'custom_product.wholesale_price_base_currency', 'custom_product.price_base_currency', 'stock.quantity')
+            ->selectRaw("'Pack' as relationship, product.id_product as relationship_id, product.id_product as product_id, 0 as product_attribute_id, manufacturer.name as manufacturer_name, COALESCE(NULLIF(product.reference, ''), CAST(product.id_product AS CHAR)) as reference, '' as attributes, COALESCE(product.ean13, '') as barcode, COALESCE(product.location, '') as housing, COALESCE(stock.quantity, 0) as stock_qty, COALESCE(custom_product.stock_arrive, 0) as stock_arrive, product.wholesale_price as purchase_eur, product.price as sales_eur, COALESCE(custom_product.wholesale_price_base_currency, 0) as purchase_supplier, COALESCE(custom_product.price_base_currency, 0) as sales_supplier")
             ->get();
 
         return $siblings->concat($packs)
             ->unique(fn ($row) => $row->relationship.':'.$row->relationship_id)
+            ->map(function ($row) {
+                $usesEuroSalePrice = OmsSalesCurrencyService::usesEuroSalePrice($row->manufacturer_name ?? null);
+
+                $row->sale_currency_iso = $usesEuroSalePrice ? 'EUR' : null;
+                $row->sale_currency_symbol = $usesEuroSalePrice ? '€' : null;
+                $row->sale_conversion_rate = $usesEuroSalePrice ? 1.0 : null;
+
+                if ($usesEuroSalePrice) {
+                    $row->sales_supplier = (float) $row->sales_eur;
+                }
+
+                return $row;
+            })
             ->values();
     }
     private function productImageUrl(int $imageId): ?string

@@ -50,6 +50,12 @@
                         <div class="sideMenuText"> SALES </div>
                     </a>
                 </li>
+                <li class="nav-item text-center @if(request()->routeIs('erp.oms.*', 'admin.tools.oms.*')) active-link @endif" style="display: inline-block;height: 90px;">
+                    <a class="nav-link uppercase" href="{{ route('erp.oms.simple') }}">
+                        <div><i class="fa-solid fa-warehouse" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> ERP </div>
+                    </a>
+                </li>
                 <li class="nav-item text-center @if(Route::is('documentsManager.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('documentsManager.index') }}">
                         <div><i class="fa-solid fa-folder" style="font-size: 30px;"></i></div>

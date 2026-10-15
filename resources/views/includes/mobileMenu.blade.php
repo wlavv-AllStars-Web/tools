@@ -40,6 +40,12 @@
                 <div class="sideMenuText"> {{ __('menu.sales') }}</div>
             </a>
         </div>
+        <div class="text-center mobileMenuItem @if(request()->routeIs('erp.oms.*', 'admin.tools.oms.*')) active-link @endif">
+            <a class="nav-link uppercase" href="{{ route('erp.oms.simple') }}">
+                <div><i class="fa-solid fa-warehouse" style="font-size: 30px;"></i></div>
+                <div class="sideMenuText"> ERP </div>
+            </a>
+        </div>
         <div class="text-center mobileMenuItem"> 
             <a class="nav-link uppercase" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <div><i class="fa fa-xl fa-sign-out" style="font-size: 30px;"></i></div>

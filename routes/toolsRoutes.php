@@ -65,6 +65,7 @@ use App\Http\Controllers\CustomTools\AsdAlertController;
 use App\Http\Controllers\CustomTools\ToolsMigrationController;
 use App\Http\Controllers\CustomTools\MoloniVatValidationController;
 use App\Http\Controllers\CustomTools\StockAuditController;
+use App\Http\Controllers\CustomTools\CustomerCartAccessController;
 
 use App\Http\Controllers\CustomTools\CurrencyVariationController;
 use App\Http\Controllers\Modules\oms\DashboardController as OmsDashboardController;
@@ -99,6 +100,10 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('web')->name('web.tools.')->group(function () {
+
+        Route::get('/customer-cart-access', [CustomerCartAccessController::class, 'index'])->name('customer_cart_access.index');
+        Route::post('/customer-cart-access', [CustomerCartAccessController::class, 'lookup'])->name('customer_cart_access.lookup');
+        Route::post('/customer-cart-access/create', [CustomerCartAccessController::class, 'create'])->name('customer_cart_access.create');
 
         Route::get('/stock-audit', [StockAuditController::class, 'index'])->name('stock_audit.index');
         Route::get('/stock-audit/history', [StockAuditController::class, 'history'])->name('stock_audit.history');

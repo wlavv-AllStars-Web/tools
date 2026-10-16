@@ -637,6 +637,18 @@ class SupplierInvoiceWorkflowService
             ->where('id_product', $productId)
             ->value('price_base_currency');
 
+        if ($this->isSamePriceEnabled($productId)) {
+            $this->synchronizeSamePriceCombinations(
+                $productId,
+                $purchaseSupplierCurrency,
+                $purchaseEur,
+                $saleSupplierCurrency,
+                $saleEur
+            );
+
+            return;
+        }
+
         if ($isDefaultAttribute) {
             /*
              * The default combination defines the base product sale price and must
@@ -803,6 +815,101 @@ class SupplierInvoiceWorkflowService
             ->table($prefix.'custom_product_attribute')
             ->where('id_product_attribute', $productAttributeId)
             ->update($attributePriceUpdate);
+    }
+
+    /**
+     * Applies the price calculated from one combination to every combination
+     * when the product is marked as Same Price in ps_custom_product.
+     */
+    protected function synchronizeSamePriceCombinations(
+        int $productId,
+        float $purchaseSupplierCurrency,
+        float $purchaseEur,
+        float $saleSupplierCurrency,
+        float $saleEur
+    ): void {
+        $prefix = $this->psPrefix();
+        $connection = DB::connection('mysql2');
+
+        $attributeIds = $connection
+            ->table($prefix.'product_attribute')
+            ->where('id_product', $productId)
+            ->pluck('id_product_attribute')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        if (empty($attributeIds)) {
+            return;
+        }
+
+        /* The common final price is the product base price plus a zero impact. */
+        product::query()
+            ->where('id_product', $productId)
+            ->update([
+                'wholesale_price' => $purchaseEur,
+                'price' => $saleEur,
+            ]);
+
+        product_shop::query()
+            ->where('id_product', $productId)
+            ->update([
+                'wholesale_price' => $purchaseEur,
+                'price' => $saleEur,
+            ]);
+
+        $connection
+            ->table($prefix.'custom_product')
+            ->where('id_product', $productId)
+            ->update([
+                'wholesale_price_base_currency' => $purchaseSupplierCurrency,
+                'price_base_currency' => $saleSupplierCurrency,
+                'price_display_base_currency' => $saleSupplierCurrency,
+            ]);
+
+        foreach ($attributeIds as $attributeId) {
+            $this->ensureCustomProductAttributeRow($productId, $attributeId);
+        }
+
+        $connection
+            ->table($prefix.'product_attribute')
+            ->where('id_product', $productId)
+            ->whereIn('id_product_attribute', $attributeIds)
+            ->update([
+                'wholesale_price' => $purchaseEur,
+                'price' => 0,
+            ]);
+
+        $connection
+            ->table($prefix.'product_attribute_shop')
+            ->where('id_product', $productId)
+            ->whereIn('id_product_attribute', $attributeIds)
+            ->update([
+                'wholesale_price' => $purchaseEur,
+                'price' => 0,
+            ]);
+
+        $customAttributeUpdate = [
+            'wholesale_price_base_currency' => $purchaseSupplierCurrency,
+            'price_base_currency' => $saleSupplierCurrency,
+            'price_display_base_currency' => $saleSupplierCurrency,
+        ];
+
+        if ($this->customAttributeHasProductId()) {
+            $customAttributeUpdate['id_product'] = $productId;
+        }
+
+        $connection
+            ->table($prefix.'custom_product_attribute')
+            ->whereIn('id_product_attribute', $attributeIds)
+            ->update($customAttributeUpdate);
+    }
+
+    protected function isSamePriceEnabled(int $productId): bool
+    {
+        return (int) DB::connection('mysql2')
+            ->table($this->psPrefix().'custom_product')
+            ->where('id_product', $productId)
+            ->value('same_price') === 1;
     }
 
     protected function ensureCustomProductRow(int $productId): void

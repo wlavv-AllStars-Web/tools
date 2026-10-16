@@ -54,6 +54,8 @@
                         <dt class="col-sm-4">Loja</dt><dd class="col-sm-8">{{ $result['store'] }}</dd>
                         <dt class="col-sm-4">Carrinho</dt><dd class="col-sm-8">#{{ $result['cart_id'] }} — {{ $result['reused'] ? 'existente reutilizado' : 'novo carrinho vazio' }}</dd>
                     </dl>
+                    <label for="customer-cart-access-url" class="form-label fw-bold">Link de acesso</label>
+                    <input id="customer-cart-access-url" type="text" class="form-control mb-3" value="{{ $result['url'] }}" readonly>
                     <a class="btn btn-success" href="{{ $result['url'] }}" target="_blank" rel="noopener">Abrir conta do cliente</a>
                 </div>
             </section>

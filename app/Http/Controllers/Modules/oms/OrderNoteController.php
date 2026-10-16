@@ -642,9 +642,26 @@ class OrderNoteController extends Controller
         $purchaseEur ??= $purchaseSupplier === null ? null : ($isEur || $purchaseRate <= 0 ? $purchaseSupplier : round($purchaseSupplier / $purchaseRate, 6));
         abort_if($purchaseSupplier === null && $saleSupplier === null, 422, 'A purchase or sale price is required.');
 
-        $targets = $this->priceTargetsForReference($productId, $attributeId);
+        $samePriceEnabled = $attributeId > 0 && $this->isSamePriceEnabled($productId);
+        $targets = $samePriceEnabled
+            ? collect()
+            : $this->priceTargetsForReference($productId, $attributeId);
 
-        $db->transaction(function () use ($db, $prefix, $targets, $purchaseSupplier, $purchaseEur, $saleSupplier, $saleEur, $saleRate, $isEur) {
+        $db->transaction(function () use ($db, $prefix, $productId, $samePriceEnabled, $targets, $purchaseSupplier, $purchaseEur, $saleSupplier, $saleEur, $saleRate, $isEur) {
+            if ($samePriceEnabled) {
+                $this->synchronizeSamePriceCombinations(
+                    $db,
+                    $prefix,
+                    $productId,
+                    $purchaseSupplier,
+                    $purchaseEur,
+                    $saleSupplier,
+                    $saleEur
+                );
+
+                return;
+            }
+
             foreach ($targets as $target) {
                 $targetProductId = (int) $target->id_product;
                 $targetAttributeId = (int) $target->id_product_attribute;
@@ -704,6 +721,105 @@ class OrderNoteController extends Controller
             'sale_supplier_price' => $saleSupplier,
             'sale_eur_price' => $saleEur,
         ]]);
+    }
+
+    /**
+     * Synchronizes only the combinations owned by one parent product.
+     * It deliberately does not use the reference-based price propagation.
+     */
+    protected function synchronizeSamePriceCombinations(
+        $db,
+        string $prefix,
+        int $productId,
+        ?float $purchaseSupplier,
+        ?float $purchaseEur,
+        ?float $saleSupplier,
+        ?float $saleEur
+    ): void {
+        $attributeIds = $db->table($prefix.'product_attribute')
+            ->where('id_product', $productId)
+            ->pluck('id_product_attribute')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        if (empty($attributeIds)) {
+            return;
+        }
+
+        if ($purchaseSupplier !== null && $purchaseEur !== null) {
+            $db->table($prefix.'product_attribute')
+                ->where('id_product', $productId)
+                ->whereIn('id_product_attribute', $attributeIds)
+                ->update(['wholesale_price' => $purchaseEur]);
+
+            $db->table($prefix.'product_attribute_shop')
+                ->where('id_product', $productId)
+                ->whereIn('id_product_attribute', $attributeIds)
+                ->update(['wholesale_price' => $purchaseEur]);
+        }
+
+        if ($saleSupplier !== null && $saleEur !== null) {
+            /* A zero combination impact makes every final price equal to the base. */
+            $db->table($prefix.'product')
+                ->where('id_product', $productId)
+                ->update(['price' => $saleEur]);
+
+            $db->table($prefix.'product_shop')
+                ->where('id_product', $productId)
+                ->update(['price' => $saleEur]);
+
+            $db->table($prefix.'custom_product')
+                ->updateOrInsert(
+                    ['id_product' => $productId],
+                    [
+                        'price_base_currency' => $saleSupplier,
+                        'price_display_base_currency' => $saleSupplier,
+                    ]
+                );
+
+            $db->table($prefix.'product_attribute')
+                ->where('id_product', $productId)
+                ->whereIn('id_product_attribute', $attributeIds)
+                ->update(['price' => 0]);
+
+            $db->table($prefix.'product_attribute_shop')
+                ->where('id_product', $productId)
+                ->whereIn('id_product_attribute', $attributeIds)
+                ->update(['price' => 0]);
+        }
+
+        foreach ($attributeIds as $attributeId) {
+            $customPrices = [];
+
+            if ($purchaseSupplier !== null) {
+                $customPrices['wholesale_price_base_currency'] = $purchaseSupplier;
+            }
+
+            if ($saleSupplier !== null) {
+                $customPrices['price_base_currency'] = $saleSupplier;
+                $customPrices['price_display_base_currency'] = $saleSupplier;
+            }
+
+            if ($customPrices) {
+                $db->table($prefix.'custom_product_attribute')->updateOrInsert(
+                    [
+                        'id_product' => $productId,
+                        'id_product_attribute' => $attributeId,
+                    ],
+                    $customPrices
+                );
+            }
+        }
+    }
+
+    protected function isSamePriceEnabled(int $productId): bool
+    {
+        $prefix = (string) (env('DB2_prefix') ?: env('DB2_DB_prefix') ?: 'ps_');
+
+        return (int) DB::connection('mysql2')
+            ->table($prefix.'custom_product')
+            ->where('id_product', $productId)
+            ->value('same_price') === 1;
     }
 
     private function usesEuroSalePriceForProduct(int $productId): bool

@@ -636,6 +636,7 @@ return [
     'product_image_review_load_error' => 'Products could not be loaded. Please try again.',
     'product_image_review_open_product' => 'View product in ASM',
     'web.tools.auto_backorder.index' => 'Auto Backorder report',
+    'web.tools.customer_cart_access.lookup' => 'Customer cart access',
     'trustpilot' => 'Trustpilot',
     'erp' => ['oms' => [
         'simple' => 'Simplified management',

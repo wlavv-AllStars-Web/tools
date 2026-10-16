@@ -293,5 +293,6 @@ return [
     'product_image_review_load_error' => 'Não foi possível carregar os produtos. Tenta novamente.',
     'product_image_review_open_product' => 'Ver produto em ASM',
     'web.tools.auto_backorder.index' => 'Auto Backorder report',
+    'web.tools.customer_cart_access.lookup' => 'Acesso ao carrinho do cliente',
     'finance.tools.moloni_vat.index' => 'VIES validation',
 ];

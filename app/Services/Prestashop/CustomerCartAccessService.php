@@ -183,17 +183,27 @@ class CustomerCartAccessService
 
         $prefix = $this->prefix();
         $shopId = $this->shopId($store);
+        $db = DB::connection('mysql2');
         $languageId = $this->shopConfigurationValue(
-            DB::connection('mysql2'),
+            $db,
             $prefix,
             'PS_LANG_DEFAULT',
             $shopId,
             1
         );
-        $languageIso = (string) (DB::connection('mysql2')->table($prefix.'lang')
+        $languageIso = (string) ($db->table($prefix.'lang')
             ->where('id_lang', $languageId)
             ->value('iso_code') ?: 'en');
-        $baseUrl = rtrim((string) config('allstars.stores.'.$store.'.base_url'), '/');
+        $shopUrl = $db->table($prefix.'shop_url')
+            ->where('id_shop', $shopId)
+            ->where('active', 1)
+            ->orderByDesc('main')
+            ->first(['domain_ssl', 'domain', 'physical_uri', 'virtual_uri']);
+        $domain = trim((string) ($shopUrl->domain_ssl ?? $shopUrl->domain ?? ''));
+        $path = trim((string) (($shopUrl->physical_uri ?? '').($shopUrl->virtual_uri ?? '')), '/');
+        $baseUrl = $domain !== ''
+            ? 'https://'.$domain.($path !== '' ? '/'.$path : '')
+            : rtrim((string) config('allstars.stores.'.$store.'.base_url'), '/');
 
         if ($baseUrl === '') {
             throw new \RuntimeException('The storefront URL is not configured for '.$store.'.');

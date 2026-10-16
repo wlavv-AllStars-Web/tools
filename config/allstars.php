@@ -18,8 +18,8 @@ $hostFromUrl = static function (string $url): string {
     return (string) parse_url($url, PHP_URL_HOST);
 };
 
-$asmBaseUrl = $normalizeBaseUrl(env('ASM_PRODUCTION'), 'https://asm.allstars-group.com');
-$asdBaseUrl = $normalizeBaseUrl(env('ASD_PRODUCTION'), 'https://asd.allstars-group.com');
+$asmBaseUrl = $normalizeBaseUrl(env('ASM_PRODUCTION'), 'https://www.all-stars-motorsport.com');
+$asdBaseUrl = $normalizeBaseUrl(env('ASD_PRODUCTION'), 'https://www.all-stars-distribution.com');
 $webtoolsBaseUrl = $normalizeBaseUrl(env('WEBTOOLS_PRODUCTION'), env('APP_URL', 'http://localhost'));
 $resourcesBaseUrl = $normalizeBaseUrl(env('RESOURCES_PRODUCTION'), 'https://resources.allstars-group.com');
 $asdResourcesBaseUrl = $normalizeBaseUrl(env('ASD_RESOURCES_PRODUCTION'), $resourcesBaseUrl);

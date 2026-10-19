@@ -213,6 +213,7 @@ return [
     'Arrive' => 'Arrive',
     'Sold' => 'Sold',
     '( 12 months )' => '( 12 months )',
+    '( 6 months )' => '( 6 months )',
     'Order' => 'Order',
     'NOT TO ORDER' => 'NOT TO ORDER',
     'ADD' => 'ADD',

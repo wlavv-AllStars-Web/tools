@@ -37,7 +37,7 @@
 
                     $should = max(
                         0,
-                        (int) $product['sold']
+                        (int) ceil((int) $product['sold'] / 2)
                         - $incoming
                         - (int) $product['qtd_in_stock']
                     );

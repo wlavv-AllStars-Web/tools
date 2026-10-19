@@ -68,6 +68,12 @@ class WorldlinePaymentLinkService
             ],
         ];
 
+        // Keep the exact request body for support diagnostics. Authentication
+        // headers and the HMAC signature are deliberately never persisted.
+        $request->update([
+            'worldline_request_payload' => $payload,
+        ]);
+
         $response = Http::acceptJson()
             ->contentType('application/json')
             ->withHeaders([

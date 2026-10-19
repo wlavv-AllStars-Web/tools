@@ -1,6 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $canViewWorldlineRequestPayload = in_array(
+            strtolower((string) auth()->user()?->email),
+            [
+                'brunofernandes@all-stars-motorsport.com',
+                'brunofernandes@all-stars-distribution.com',
+            ],
+            true
+        );
+    @endphp
+
     <div class="navbar navbar-light customPanel">
         <div class="panel panel-default" style="width: 100%;">
             <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
@@ -32,6 +43,14 @@
                         @endif
                         @if($requestItem->worldline_expires_at)
                             <tr><th>Link expiry</th><td>{{ $requestItem->worldline_expires_at->format('Y-m-d H:i') }} UTC</td></tr>
+                        @endif
+                        @if($canViewWorldlineRequestPayload && $requestItem->worldline_request_payload)
+                            <tr>
+                                <th>Worldline request payload</th>
+                                <td>
+                                    <pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ json_encode($requestItem->worldline_request_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                </td>
+                            </tr>
                         @endif
                         @if($requestItem->worldline_error)
                             <tr><th>Worldline error</th><td class="text-danger">{{ $requestItem->worldline_error }}</td></tr>

@@ -32,6 +32,7 @@ class PaymentLinkRequest extends Model
         'worldline_payment_link_id',
         'worldline_payment_url',
         'worldline_idempotency_key',
+        'worldline_request_payload',
         'worldline_expires_at',
         'worldline_created_at',
         'worldline_error',
@@ -44,6 +45,7 @@ class PaymentLinkRequest extends Model
         'email_sent_at' => 'datetime',
         'worldline_expires_at' => 'datetime',
         'worldline_created_at' => 'datetime',
+        'worldline_request_payload' => 'array',
     ];
 
     public function requester(): BelongsTo

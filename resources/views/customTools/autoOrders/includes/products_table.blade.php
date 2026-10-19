@@ -11,7 +11,9 @@
         <td class="table_cell" style="width: 110px; overflow: hidden"></td>
     </tr>
     @foreach($products AS $product)
-        @if($product["end_of_life"] == 1) 
+        @if($product['is_recent_product'])
+        <tr id="tr_setAsOrdered_{{$product['id']}}" class="alert-success">
+        @elseif($product["end_of_life"] == 1)
         <tr id="tr_setAsOrdered_{{$product['id']}}" style="height: 27px; background-color: #ffbbbb;">
         @else
         <tr id="tr_setAsOrdered_{{$product['id']}}">

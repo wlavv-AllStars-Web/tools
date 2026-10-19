@@ -259,6 +259,7 @@ class autoOrdersController extends Controller
         $prefix = env('DB2_DB_prefix', 'ps_');
         
         $data = [];
+        $recentCandidateIds = [];
 
         foreach($products AS $product){
             
@@ -290,6 +291,7 @@ class autoOrdersController extends Controller
                 })
                 ->select(
                     'p.id_product',
+                    'p.date_add as product_date_add',
                     DB::raw('COALESCE(pa.id_product_attribute, 0) as id_product_attribute'),
                     DB::raw('COALESCE(p.id_supplier, 0) as id_supplier'),
                     DB::raw('COALESCE(s.name, "Unknown") as supplier'),
@@ -316,11 +318,18 @@ class autoOrdersController extends Controller
                     'not_to_order'   => $productData->not_to_order,
                     'notes'          => $productData->notes
                 ]);
+
+                $recentCandidateIds[(int) $product->id] = !empty($productData->product_date_add)
+                    && $productData->product_date_add >= now()->subMonths(6)->toDateTimeString();
             }
 
         }
 
         $products = AutoOrdersCandidate::where('manufacturer', $request->manufacturer)->where('ordered', 0)->withoutTechnicalProducts()->get();
+
+        foreach ($products as $product) {
+            $product->is_recent_product = $recentCandidateIds[(int) $product->id] ?? false;
+        }
         
         $viewRendered = view('customTools/autoOrders/includes/products_table', compact('products'))->render();
 

@@ -113,7 +113,7 @@
                                         <td class="table_cell td_orders_reference">{{ __("messages.Reference")}}</td>
                                         <td class="table_cell td_orders_others">{{ __("messages.Stock")}}</td>
                                         <td class="table_cell td_orders_others">{{ __("messages.Arrive")}}</td>
-                                        <td class="table_cell td_orders_others">{{ __("messages.Sold")}}</td>
+                                        <td class="table_cell td_orders_others">{{ __("messages.Sold")}}<br>{{ __("messages.( 12 months )")}}</td>
                                         <td class="table_cell td_orders_quantity">{{ __("messages.Quantity")}}</td>
                                     </tr>
                                     @foreach($supplier['rows'] AS $product)

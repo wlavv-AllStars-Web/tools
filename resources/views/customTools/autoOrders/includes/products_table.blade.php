@@ -6,7 +6,7 @@
         <td class="table_cell" style="width: 100px; overflow: hidden">{{ __("messages.Quantity")}}</td>
         <td class="table_cell" style="width: 80px;  overflow: hidden">{{ __("messages.Stock")}}</td>
         <td class="table_cell" style="width: 80px;  overflow: hidden">{{ __("messages.Arrive")}}</td>
-        <td class="table_cell" style="width: 100px; overflow: hidden">{{ __("messages.Sold")}}<br>{{ __("messages.( 6 months )")}}</td>
+        <td class="table_cell" style="width: 100px; overflow: hidden">{{ __("messages.Sold")}}<br>{{ __("messages.( 12 months )")}}</td>
         <td class="table_cell" style="width: 110px; overflow: hidden">{{ __("messages.Order")}}</td>
         <td class="table_cell" style="width: 110px; overflow: hidden"></td>
     </tr>
@@ -37,7 +37,7 @@
 
                     $should = max(
                         0,
-                        (int) $product['sold']
+                        (int) ceil((int) $product['sold'] / 2)
                         - $incoming
                         - (int) $product['qtd_in_stock']
                     );

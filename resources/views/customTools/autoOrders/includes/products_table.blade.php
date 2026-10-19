@@ -6,7 +6,7 @@
         <td class="table_cell" style="width: 100px; overflow: hidden">{{ __("messages.Quantity")}}</td>
         <td class="table_cell" style="width: 80px;  overflow: hidden">{{ __("messages.Stock")}}</td>
         <td class="table_cell" style="width: 80px;  overflow: hidden">{{ __("messages.Arrive")}}</td>
-        <td class="table_cell" style="width: 100px; overflow: hidden">{{ __("messages.Sold")}}<br>{{ __("messages.( 12 months )")}}</td>
+        <td class="table_cell" style="width: 100px; overflow: hidden">{{ __("messages.Sold")}}<br>{{ __("messages.( 6 months )")}}</td>
         <td class="table_cell" style="width: 110px; overflow: hidden">{{ __("messages.Order")}}</td>
         <td class="table_cell" style="width: 110px; overflow: hidden"></td>
     </tr>
@@ -29,9 +29,18 @@
             <td class="table_cell" style="width: 100px; overflow: hidden">{{$product['sold']}}</td>
             <td class="table_cell" style="width: 100px; overflow: hidden">
                 @php
-                    $should = $product['sold'] - $product['stock_arrive'] - $product['qtd_in_stock'];
+                    $incoming = (int) $product['stock_arrivepa'] > 0
+                        ? (int) $product['stock_arrivepa']
+                        : (int) $product['stock_arrive'];
+
+                    $should = max(
+                        0,
+                        (int) $product['sold']
+                        - $incoming
+                        - (int) $product['qtd_in_stock']
+                    );
                 @endphp
-                <input id="stock_to_order_{{$product['id_manufacturer']}}_{{ $loop->index }}" style="width: 100px; text-align: center;" type="number" autocomplete="off" name="quantity[]" value="@if($should < 0){{$product['quantity']}}@else{{$should}}@endif">
+                <input id="stock_to_order_{{$product['id_manufacturer']}}_{{ $loop->index }}" style="width: 100px; text-align: center;" type="number" autocomplete="off" name="quantity[]" value="{{$should}}">
             </td>
             <td class="table_cell" style="width: 110px; overflow: hidden">
                 @if( $product["not_to_order"] == 0 )

@@ -33,7 +33,7 @@ class orders_details extends PrestashopModel
     {
         return DB::connection('mysql2')
             ->table(self::tableName('custom_sold'))
-            ->where('month', '>=', now()->startOfMonth()->subMonths(11)->toDateString());
+            ->where('month', '>=', now()->startOfMonth()->subMonths(5)->toDateString());
     }
 
     protected static function soldDynamicQuery()
@@ -44,8 +44,12 @@ class orders_details extends PrestashopModel
         return DB::connection('mysql2')
             ->table($orderDetailTable)
             ->join($ordersTable, $ordersTable . '.id_order', '=', $orderDetailTable . '.id_order')
-            ->where($ordersTable . '.date_add', '>', date('Y-m-d', strtotime('-1 year')))
-            ->whereIn($ordersTable . '.current_state', [2, 3, 4, 5, 15, 16, 28]);
+            ->where($ordersTable . '.date_add', '>=', now()->subMonths(6)->toDateTimeString())
+            ->where($ordersTable . '.valid', 1)
+            ->whereIn(
+                $ordersTable . '.current_state',
+                config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28])
+            );
     }
 
     public static function getSoldOf($product_reference, $attr_reference = '')

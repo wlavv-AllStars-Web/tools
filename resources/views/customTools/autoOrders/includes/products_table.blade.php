@@ -12,7 +12,7 @@
     </tr>
     @foreach($products AS $product)
         @if($product['is_recent_product'])
-        <tr id="tr_setAsOrdered_{{$product['id']}}" class="alert-success">
+        <tr id="tr_setAsOrdered_{{$product['id']}}" class="alert-success" style="background-color: #d1e7dd;">
         @elseif($product["end_of_life"] == 1)
         <tr id="tr_setAsOrdered_{{$product['id']}}" style="height: 27px; background-color: #ffbbbb;">
         @else

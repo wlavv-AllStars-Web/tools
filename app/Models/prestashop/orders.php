@@ -514,6 +514,7 @@ class orders extends PrestashopModel
     {
         $ordersTable = self::tableName('orders');
         $orderHistoryTable = self::tableName('order_history');
+        $customOrdersTable = self::tableName('custom_orders');
 
         if ($id_shop == 2) {
             $yesterday = order_payment::getASMTotals(0);
@@ -529,8 +530,14 @@ class orders extends PrestashopModel
         $data = [];
 
         $data['awaiting'] = self::query()
-            ->where('id_shop', $id_shop)
-            ->where('current_state', 14)
+            ->where($ordersTable . '.id_shop', $id_shop)
+            ->where($ordersTable . '.current_state', 14)
+            ->whereNotExists(function ($query) use ($customOrdersTable, $ordersTable) {
+                $query->selectRaw('1')
+                    ->from($customOrdersTable . ' as custom_order')
+                    ->whereColumn('custom_order.id_order', $ordersTable . '.id_order')
+                    ->where('custom_order.deleted', 1);
+            })
             ->count();
 
         $data['packing'] = self::query()

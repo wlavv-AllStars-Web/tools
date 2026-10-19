@@ -45,11 +45,14 @@ class AutoOrdersPurchaseList extends Model
                         $qtd_arrive = 0;
                         $notes = '';
                         $sold = null;
+                        $isRecentProduct = false;
                     }else{
                         $stock = $productInfo->quantity;
                         $qtd_arrive = $productInfo->stock_arrive;
                         $notes = $productInfo->notes;
                         $sold = orders_details::getSoldByRefOf( $product['reference'] );
+                        $isRecentProduct = !empty($productInfo->product_date_add)
+                            && $productInfo->product_date_add >= now()->subMonths(6)->toDateTimeString();
                     }
                     if(isset($data_stream[$product['reference']])) $sold += $data_stream[$product['reference']];
                     
@@ -61,7 +64,8 @@ class AutoOrdersPurchaseList extends Model
                         'stock' => $stock,
                         'arrive' => $qtd_arrive,
                         'sold' => (is_null( $sold )) ? 0 : $sold,
-                        'notes'=> $notes
+                        'notes'=> $notes,
+                        'is_recent_product' => $isRecentProduct
                         
                     ];
                     
@@ -105,6 +109,7 @@ class AutoOrdersPurchaseList extends Model
             })
             ->select(
                 DB::raw('p.id_product as id_product'),
+                DB::raw('p.date_add as product_date_add'),
                 DB::raw('COALESCE(pa.id_product_attribute, 0) as id_product_attribute'),
                 DB::raw('COALESCE(sa.quantity, 0) as quantity'),
                 DB::raw('COALESCE(cpa.stock_arrive, cp.stock_arrive, 0) as stock_arrive'),

@@ -320,7 +320,7 @@ class autoOrdersController extends Controller
                 ]);
 
                 $recentCandidateIds[(int) $product->id] = !empty($productData->product_date_add)
-                    && $productData->product_date_add >= now()->subMonths(12)->toDateTimeString();
+                    && $productData->product_date_add >= now()->subMonths(6)->toDateTimeString();
             }
 
         }

@@ -117,7 +117,7 @@
                                         <td class="table_cell td_orders_quantity">{{ __("messages.Quantity")}}</td>
                                     </tr>
                                     @foreach($supplier['rows'] AS $product)
-                                        <tr>
+                                        <tr @if($product['is_recent_product']) class="alert-success" style="background-color: #d1e7dd;" @endif>
                                             <td class="table_cell td_orders_reference">
                                                 <span @if($product['warranty'] == 1) style="color: coral;font-weight: bold;" @endif title="{{$product['name']}}">
                                                     {{$product['reference']}} 

@@ -230,11 +230,11 @@ class statsController extends Controller
             : 0;
             
         $data = [
-            'awaiting' =>   ($asm->awaiting    + $asd->awaiting    + $er->awaiting     + $em->awaiting),
+            'awaiting' =>   $asd->awaiting,
             'packing' =>    ($asm->packing     + $asd->packing     + $er->packing      + $em->packing),
             'shipping_area' => ($asm->shipping_area + $asd->shipping_area + $er->shipping_area + $em->shipping_area),
             'shipped' =>    ($asm->shipped     + $asd->shipped     + $er->shipped      + $em->shipped),
-            'warranty' =>   ($asm->warranty    + $asd->warranty    + $er->warranty     + $em->warranty),
+            'warranty' =>   ($asm->warranty    + $asd->warranty),
             'backorders' => ($asm->backorders  + $asd->backorders  + $er->backorders   + $em->backorders),
             'partial' =>    ($asm->partial     + $asd->partial     + $er->partial      + $em->partial),
             'pending' =>    ($asm->pending     + $asd->pending     + $er->pending      + $em->pending),

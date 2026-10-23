@@ -29,6 +29,13 @@ class orders_details extends PrestashopModel
         return $this->hasMany(product_attribute::class, 'id_product_attribute', 'product_attribute_id');
     }
 
+    protected static function soldSnapshotQuery()
+    {
+        return DB::connection('mysql2')
+            ->table(self::tableName('custom_sold'))
+            ->where('month', '>=', now()->startOfMonth()->subMonths(11)->toDateString());
+    }
+
     protected static function soldDynamicQuery()
     {
         $orderDetailTable = self::tableName('order_detail');
@@ -53,28 +60,52 @@ class orders_details extends PrestashopModel
             ->where($orderDetailTable . '.product_reference', $reference)
             ->sum($orderDetailTable . '.product_quantity');
 
-        return $dynamicSold;
+        if (strlen((string) $attr_reference) > 0) {
+            $snapshotSold = self::soldSnapshotQuery()
+                ->where('attribute_reference', $attr_reference)
+                ->sum('quantity_sold');
+        } else {
+            $snapshotSold = self::soldSnapshotQuery()
+                ->where('reference', $product_reference)
+                ->where('id_product_attribute', 0)
+                ->sum('quantity_sold');
+        }
+
+        return $snapshotSold + $dynamicSold;
     }
 
     public static function getSoldByIDOf($id_product, $id_product_attribute = 0)
     {
         $orderDetailTable = self::tableName('order_detail');
+        $snapshotSold = self::soldSnapshotQuery()
+            ->where('id_product', $id_product)
+            ->where('id_product_attribute', $id_product_attribute)
+            ->sum('quantity_sold');
         $dynamicSold = self::soldDynamicQuery()
             ->where($orderDetailTable . '.product_id', $id_product)
             ->where($orderDetailTable . '.product_attribute_id', $id_product_attribute)
             ->sum($orderDetailTable . '.product_quantity');
 
-        return $dynamicSold;
+        return $snapshotSold + $dynamicSold;
     }
 
     public static function getSoldByRefOf($reference)
     {
         $orderDetailTable = self::tableName('order_detail');
+        $snapshotSold = self::soldSnapshotQuery()
+            ->where(function ($query) use ($reference) {
+                $query->where('attribute_reference', $reference)
+                    ->orWhere(function ($query) use ($reference) {
+                        $query->where('reference', $reference)
+                            ->where('id_product_attribute', 0);
+                    });
+            })
+            ->sum('quantity_sold');
         $dynamicSold = self::soldDynamicQuery()
             ->where($orderDetailTable . '.product_reference', $reference)
             ->sum($orderDetailTable . '.product_quantity');
 
-        return $dynamicSold;
+        return $snapshotSold + $dynamicSold;
     }
 
     public static function getProductsOfOrder($id_order)

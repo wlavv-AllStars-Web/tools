@@ -128,7 +128,7 @@ class SimplifiedOrderNoteController extends Controller
             'isOrderDetail' => $isOrderDetail,
             'currencyMeta' => $currencyMeta,
             'draftInvoices' => $orderNote
-                ? $this->invoiceWorkflow->getDraftInvoicesForSupplier((int) $orderNote->supplier_id)
+                ? $this->invoiceWorkflow->getDraftInvoicesWithPendingReceptionForSupplier((int) $orderNote->supplier_id)
                 : collect(),
             'simplifiedOmsRows' => $rows,
             'invoicedInvoices' => $invoicedInvoices,

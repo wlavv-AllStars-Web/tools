@@ -30,6 +30,33 @@ class SupplierInvoiceWorkflowService
             ->get();
     }
 
+    /**
+     * Draft invoices which still contain at least one billed line awaiting reception.
+     *
+     * Reception quantities are derived from oms_reception_lines, which is the source
+     * of truth for physical stock reception.
+     */
+    public function getDraftInvoicesWithPendingReceptionForSupplier(int $supplierId): Collection
+    {
+        return SupplierInvoice::query()
+            ->withCount('billedOrders')
+            ->where('supplier_id', $supplierId)
+            ->where('status', 'draft')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('oms_billed_orders as billed_order')
+                    ->join('oms_billed_order_lines as billed_line', 'billed_line.billed_order_id', '=', 'billed_order.id')
+                    ->whereColumn('billed_order.supplier_invoice_id', 'oms_supplier_invoices.id')
+                    ->whereRaw('billed_line.qty_billed > (
+                        SELECT COALESCE(SUM(reception_line.qty_received), 0)
+                        FROM oms_reception_lines as reception_line
+                        WHERE reception_line.billed_order_line_id = billed_line.id
+                    )');
+            })
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
     public function getInvoiceableLines(OrderNote $orderNote): Collection
     {
         $orderNote->loadMissing('lines');

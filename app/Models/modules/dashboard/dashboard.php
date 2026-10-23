@@ -972,8 +972,7 @@ class dashboard extends Model
     {
         $prefix = self::prefix();
 
-        return DB::connection('mysql2')
-            ->table($prefix . 'orders as o')
+        return self::asdOrdersBase()
             ->join($prefix . 'order_detail as od', 'od.id_order', '=', 'o.id_order')
             ->whereNotIn('o.id_order', $exceptions)
             ->select([

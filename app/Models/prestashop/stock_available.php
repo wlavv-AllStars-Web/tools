@@ -49,6 +49,8 @@ class stock_available extends PrestashopModel
                 $productTable . '.reference',
                 $stockTable . '.quantity'
             )
+            ->where($stockTable . '.id_shop', 0)
+            ->where($stockTable . '.id_shop_group', 1)
             ->where($stockTable . '.quantity', '<', 0)
             ->orderBy($productTable . '.reference')
             ->groupBy(
@@ -82,6 +84,8 @@ class stock_available extends PrestashopModel
                 DB::raw('MIN(' . $stockTable . '.id_product) AS id_product')
             )
             ->join($productTable, $stockTable . '.id_product', '=', $productTable . '.id_product')
+            ->where($stockTable . '.id_shop', 0)
+            ->where($stockTable . '.id_shop_group', 1)
             ->where($stockTable . '.id_product_attribute', 0)
             ->where($stockTable . '.quantity', '<', 0)
             ->where($productTable . '.reference', 'NOT LIKE', '%-Z')
@@ -103,6 +107,8 @@ class stock_available extends PrestashopModel
                 $productAttributeTable . '.reference'
             )
             ->join($productAttributeTable, $stockTable . '.id_product_attribute', '=', $productAttributeTable . '.id_product_attribute')
+            ->where($stockTable . '.id_shop', 0)
+            ->where($stockTable . '.id_shop_group', 1)
             ->where($stockTable . '.quantity', '<', 0)
             ->where($stockTable . '.id_product_attribute', '<>', 0)
             ->groupBy($productAttributeTable . '.reference')

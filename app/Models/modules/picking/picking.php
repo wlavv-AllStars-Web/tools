@@ -211,9 +211,9 @@ class picking extends Model
 
                 foreach($order->order_detail AS $detail){
 
-                    $qtdSent = self::qtdSent($detail, $customDetails);
+                    $quantity = self::quantityToPick($detail, $customDetails);
 
-                    if($detail->product_quantity > $qtdSent){
+                    if($quantity > 0){
                         if (self::isTechnicalProductRow($detail)) {
                             continue;
                         }
@@ -290,8 +290,6 @@ class picking extends Model
                                         (int) $pack_item->id_product_attribute_item
                                     );
                                     
-                                    $quantity = $detail->product_quantity - $qtdSent;
-                                    
                                     $picking['product_quantity'] = ( $quantity * $pack_item->quantity);
                                     $picking['quantity_picked'] = 0;                      
                                     $picking['row_done'] = 0;                      
@@ -309,7 +307,6 @@ class picking extends Model
                                     );
                                 }
 
-                                $quantity = $detail->product_quantity - $qtdSent;
                                 self::insertData($detail, $quantity, $status, $carrierName);
                             }
                         }
@@ -420,7 +417,7 @@ class picking extends Model
         $customDetails = self::customOrderDetails($order);
 
         foreach ($order->order_detail as $detail) {
-            $quantity = max(0, (int) $detail->product_quantity - self::qtdSent($detail, $customDetails));
+            $quantity = self::quantityToPick($detail, $customDetails);
 
             if ($quantity <= 0 || self::isTechnicalProductRow($detail)) {
                 continue;
@@ -482,7 +479,7 @@ class picking extends Model
         $customDetails = self::customOrderDetails($order);
 
         foreach ($order->order_detail as $detail) {
-            $quantity = max(0, (int) $detail->product_quantity - self::qtdSent($detail, $customDetails));
+            $quantity = self::quantityToPick($detail, $customDetails);
 
             if ($quantity <= 0) {
                 continue;
@@ -571,6 +568,20 @@ class picking extends Model
         return (int) ($customDetail->qtd_sent ?? $detail->qtd_sent ?? 0);
     }
 
+    /**
+     * Units still to be picked after partial refunds and already sent units.
+     * product_quantity_refunded is maintained by PrestaShop credit slips.
+     */
+    private static function quantityToPick($detail, $customDetails): int
+    {
+        return max(
+            0,
+            (int) $detail->product_quantity
+            - (int) ($detail->product_quantity_refunded ?? 0)
+            - self::qtdSent($detail, $customDetails)
+        );
+    }
+
     private static function moveOrderState(int $idOrder, int $idOrderState): void
     {
         if ($idOrder <= 0 || !in_array($idOrderState, [3, 15], true)) {
@@ -621,6 +632,16 @@ class picking extends Model
         
         if( $existingRow ){
             $existingRow->housing = $housing;
+
+            // Keep pending rows aligned with refunds made after the row was
+            // initially created. A completed pick is never reopened.
+            if (!(int) $existingRow->row_done) {
+                $existingRow->quantity = $quantity;
+
+                if ((int) $existingRow->quantity_picked >= $quantity) {
+                    $existingRow->row_done = 1;
+                }
+            }
 
             if (self::hasPickingIsNewColumn()) {
                 $existingRow->is_new = $needsMarketingPhotos;

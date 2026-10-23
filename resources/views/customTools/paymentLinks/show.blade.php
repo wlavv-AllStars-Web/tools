@@ -41,6 +41,14 @@
                         @if($requestItem->worldline_payment_link_id)
                             <tr><th>Worldline link ID</th><td>{{ $requestItem->worldline_payment_link_id }}</td></tr>
                         @endif
+                        @if($requestItem->paymentUrl())
+                            <tr>
+                                <th>Payment link</th>
+                                <td>
+                                    <a href="{{ $requestItem->paymentUrl() }}" target="_blank" rel="noopener noreferrer">{{ $requestItem->paymentUrl() }}</a>
+                                </td>
+                            </tr>
+                        @endif
                         @if($requestItem->worldline_expires_at)
                             <tr><th>Link expiry</th><td>{{ $requestItem->worldline_expires_at->format('Y-m-d H:i') }} UTC</td></tr>
                         @endif

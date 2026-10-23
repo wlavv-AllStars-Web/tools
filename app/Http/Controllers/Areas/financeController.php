@@ -667,7 +667,7 @@ class financeController extends Controller
             return true;
         }
 
-        $excludedReferences = ['Portes', 'ccFee'];
+        $excludedReferences = ['Portes', 'ccFee', 'EXPRESS-UPS'];
         if (in_array($reference, $excludedReferences, true)) {
             return true;
         }

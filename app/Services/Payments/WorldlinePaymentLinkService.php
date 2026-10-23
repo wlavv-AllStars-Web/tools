@@ -35,7 +35,7 @@ class WorldlinePaymentLinkService
         $now = CarbonImmutable::now('UTC');
         $expiresAt = $now->addHours((int) ($request->expiration_hours ?: config('allstars.payment_links.expiration_hours', 168)));
         $date = $now->format('D, d M Y H:i:s \\G\\M\\T');
-        $path = '/' . rawurlencode($merchantId) . '/paymentlinks';
+        $path = '/v2/' . rawurlencode($merchantId) . '/paymentlinks';
         $idempotencyKey = (string) $request->worldline_idempotency_key;
 
         $signatureSource = implode("\n", [

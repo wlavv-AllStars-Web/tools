@@ -822,6 +822,7 @@ class dashboard extends Model
             ->whereNotIn('status', [
                 \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_VALID,
                 \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_MANUAL_VALID,
+                \App\Models\modules\moloni_vat_validation\MoloniVatValidation::STATUS_MANUAL_INVALID,
             ])
             ->with(['orders' => fn ($query) => $query->orderBy('id_order')])
             ->latest('updated_at')

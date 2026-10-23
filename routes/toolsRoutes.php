@@ -765,7 +765,7 @@ Route::prefix('customTools/asg-events')
 
 
 
-Route::post( 'customTools/stats/daily_stats',       [statsController::class, 'daily_stats'])->name('stats.daily_stats');
+Route::post( 'customTools/stats/daily_stats',       [statsController::class, 'daily_stats'])->middleware(['auth'])->name('stats.daily_stats');
 Route::get(  'customTools/stats/kpi',               [statsController::class, 'kpi'])->name('stats.kpi');
 Route::get(  'customTools/stats/adminKpi',          [statsController::class, 'adminKpi'])->name('stats.adminKpi');
 

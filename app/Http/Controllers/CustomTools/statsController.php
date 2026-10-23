@@ -35,6 +35,8 @@ class statsController extends Controller
 
     public function daily_stats()
     {
+        abort_unless(in_array((int) auth()->id(), [2, 9, 43], true), 403);
+
         $byMonth = order_payment::objectiveByMonth();
 
         $asdActual = order_payment::getASDActual();
@@ -157,9 +159,9 @@ class statsController extends Controller
 
     public function adminKpi()
     {
-        abort_unless(in_array((int) auth()->id(), [2, 94, 43], true), 403);
+        abort_unless(in_array((int) auth()->id(), [2, 9, 94, 43], true), 403);
 
-        $canViewKpiDetails = in_array((int) auth()->id(), [2, 43], true);
+        $canViewKpiDetails = in_array((int) auth()->id(), [2, 9, 43], true);
 
         return $this->renderKpi('areas/dashboard/dashboard-admin', ['canViewKpiDetails' => $canViewKpiDetails]);
     }

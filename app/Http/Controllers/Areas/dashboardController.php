@@ -24,7 +24,7 @@ class dashboardController extends Controller{
     public function __construct(){ $this->middleware('auth'); }
 
     public function index(){
-        $canUseDailyDashboard = in_array((int) auth()->id(), [2, 43], true);
+        $canUseDailyDashboard = in_array((int) auth()->id(), [2, 9, 43], true);
 
         $data = [
             'breadcrumbs' => [ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')],

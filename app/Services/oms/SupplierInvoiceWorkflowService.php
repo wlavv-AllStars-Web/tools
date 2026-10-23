@@ -554,21 +554,21 @@ class SupplierInvoiceWorkflowService
             return;
         }
 
+        $allCompleted = $orderNote->lines->every(function (OrderNoteLine $line) {
+            $qtyOrdered = (int) $line->qty_ordered;
+            $qtyBilled = (int) ($line->qty_billed_total ?? 0);
+            $qtyReceived = (int) ($line->qty_received_total ?? 0);
+
+            return $qtyOrdered === $qtyBilled && $qtyBilled === $qtyReceived;
+        });
+
         $allBilled = $orderNote->lines->every(function (OrderNoteLine $line) {
-            return (int) ($line->qty_billed_total ?? 0) >= (int) $line->qty_ordered;
+            return (int) ($line->qty_billed_total ?? 0) === (int) $line->qty_ordered;
         });
 
-        $allReceived = $orderNote->lines->every(function (OrderNoteLine $line) {
-            return (int) ($line->qty_received_total ?? 0) >= (int) $line->qty_ordered;
-        });
-
-        if (! $allBilled) {
-            $orderNote->status = 'order_note';
-        } elseif ($allReceived) {
-            $orderNote->status = 'closed';
-        } else {
-            $orderNote->status = 'billed';
-        }
+        $orderNote->status = $allCompleted
+            ? 'closed'
+            : ($allBilled ? 'billed' : 'order_note');
 
         $orderNote->save();
     }

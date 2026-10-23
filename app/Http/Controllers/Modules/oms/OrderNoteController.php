@@ -1800,13 +1800,18 @@ class OrderNoteController extends Controller
     {
         $orderNote->load('lines');
 
-        $totalOrdered = (int) $orderNote->lines->sum('qty_ordered');
-        $totalBilled = (int) $orderNote->lines->sum(fn (OrderNoteLine $line) => (int) $line->qty_billed_total);
-        $totalReceived = (int) $orderNote->lines->sum(fn (OrderNoteLine $line) => (int) $line->qty_received_total);
+        $allCompleted = $orderNote->lines->isNotEmpty()
+            && $orderNote->lines->every(function (OrderNoteLine $line) {
+                $qtyOrdered = (int) $line->qty_ordered;
+                $qtyBilled = (int) $line->qty_billed_total;
+                $qtyReceived = (int) $line->qty_received_total;
 
-        $status = $totalOrdered > 0 && $totalReceived >= $totalOrdered
-            ? 'closed'
-            : ($totalOrdered > 0 && $totalBilled >= $totalOrdered ? 'billed' : 'order_note');
+                return $qtyOrdered === $qtyBilled && $qtyBilled === $qtyReceived;
+            });
+        $allBilled = $orderNote->lines->isNotEmpty()
+            && $orderNote->lines->every(fn (OrderNoteLine $line) => (int) $line->qty_billed_total === (int) $line->qty_ordered);
+
+        $status = $allCompleted ? 'closed' : ($allBilled ? 'billed' : 'order_note');
 
         if ($orderNote->status !== $status) {
             $orderNote->update(['status' => $status]);

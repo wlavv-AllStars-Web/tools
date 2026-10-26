@@ -810,11 +810,33 @@ class housingController extends Controller
         $orderTable = $prefix . 'orders';
         $detailTable = $prefix . 'order_detail';
         $stateLangTable = $prefix . 'order_state_lang';
+        $customOrderDetailTable = $prefix . 'custom_order_detail';
 
         foreach ([$orderTable, $detailTable, $stateLangTable] as $table) {
             if (!Schema::connection('mysql2')->hasTable($table)) {
                 return collect();
             }
+        }
+
+        $hasCustomOrderDetails = Schema::connection('mysql2')->hasTable($customOrderDetailTable);
+        $groupByColumns = [
+            'o.id_order',
+            'o.reference',
+            'o.current_state',
+            'osl.name',
+            'od.product_id',
+            'od.product_attribute_id',
+            'od.product_reference',
+            'od.product_ean13',
+            'od.product_name',
+            'od.product_quantity',
+            'od.product_quantity_in_stock',
+            'od.product_quantity_refunded',
+            'od.product_quantity_return',
+        ];
+
+        if ($hasCustomOrderDetails) {
+            $groupByColumns[] = 'cod.qtd_sent';
         }
 
         $tracked = $this->trackedOrderStates();
@@ -833,6 +855,14 @@ class housingController extends Controller
                 $join->on('osl.id_order_state', '=', 'o.current_state')
                     ->where('osl.id_lang', 1);
             })
+            ->when($hasCustomOrderDetails, function ($builder) use ($customOrderDetailTable) {
+                $builder->leftJoin(
+                    $customOrderDetailTable . ' as cod',
+                    'cod.id_order_detail',
+                    '=',
+                    'od.id_order_detail'
+                );
+            })
             ->select([
                 'o.id_order',
                 'o.reference as order_reference',
@@ -847,6 +877,11 @@ class housingController extends Controller
                 'od.product_quantity_in_stock',
                 'od.product_quantity_refunded',
                 'od.product_quantity_return',
+                DB::raw(
+                    'GREATEST(od.product_quantity - COALESCE(od.product_quantity_refunded, 0) - '
+                    . ($hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0')
+                    . ', 0) as pending_quantity'
+                ),
             ])
             ->where('od.product_id', (int) $product->id_product)
             ->where(function ($builder) use ($product) {
@@ -872,21 +907,17 @@ class housingController extends Controller
                     }
                 }
             })
-            ->groupBy([
-                'o.id_order',
-                'o.reference',
-                'o.current_state',
-                'osl.name',
-                'od.product_id',
-                'od.product_attribute_id',
-                'od.product_reference',
-                'od.product_ean13',
-                'od.product_name',
-                'od.product_quantity',
-                'od.product_quantity_in_stock',
-                'od.product_quantity_refunded',
-                'od.product_quantity_return',
-            ])
+            // State 15 applies to the complete order. Do not show this product
+            // as a backorder when its own order-detail line is already sent.
+            ->where(function ($builder) use ($hasCustomOrderDetails) {
+                $sentQuantity = $hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0';
+
+                $builder->where('o.current_state', '!=', 15)
+                    ->orWhereRaw(
+                        'od.product_quantity > COALESCE(od.product_quantity_refunded, 0) + ' . $sentQuantity
+                    );
+            })
+            ->groupBy($groupByColumns)
             ->orderByDesc('o.id_order')
             ->limit(50)
             ->get();

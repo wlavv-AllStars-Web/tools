@@ -811,8 +811,9 @@ class housingController extends Controller
         $detailTable = $prefix . 'order_detail';
         $stateLangTable = $prefix . 'order_state_lang';
         $customOrderDetailTable = $prefix . 'custom_order_detail';
+        $stockAvailableTable = $prefix . 'stock_available';
 
-        foreach ([$orderTable, $detailTable, $stateLangTable] as $table) {
+        foreach ([$orderTable, $detailTable, $stateLangTable, $stockAvailableTable] as $table) {
             if (!Schema::connection('mysql2')->hasTable($table)) {
                 return collect();
             }
@@ -833,6 +834,7 @@ class housingController extends Controller
             'od.product_quantity_in_stock',
             'od.product_quantity_refunded',
             'od.product_quantity_return',
+            'sa.quantity',
         ];
 
         if ($hasCustomOrderDetails) {
@@ -863,6 +865,11 @@ class housingController extends Controller
                     'od.id_order_detail'
                 );
             })
+            ->join($stockAvailableTable . ' as sa', function ($join) {
+                $join->on('sa.id_product', '=', 'od.product_id')
+                    ->on('sa.id_product_attribute', '=', 'od.product_attribute_id')
+                    ->where('sa.id_shop', 0);
+            })
             ->select([
                 'o.id_order',
                 'o.reference as order_reference',
@@ -877,6 +884,7 @@ class housingController extends Controller
                 'od.product_quantity_in_stock',
                 'od.product_quantity_refunded',
                 'od.product_quantity_return',
+                'sa.quantity as stock_quantity',
                 DB::raw(
                     'GREATEST(od.product_quantity - COALESCE(od.product_quantity_refunded, 0) - '
                     . ($hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0')
@@ -907,15 +915,20 @@ class housingController extends Controller
                     }
                 }
             })
-            // State 15 applies to the complete order. Do not show this product
-            // as a backorder when its own order-detail line is already sent.
+            // State 15 applies to the complete order. A product is only in
+            // backorder when its line is pending and its stock has a deficit;
+            // stock zero can already be reserved for this very order.
             ->where(function ($builder) use ($hasCustomOrderDetails) {
                 $sentQuantity = $hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0';
 
                 $builder->where('o.current_state', '!=', 15)
-                    ->orWhereRaw(
-                        'od.product_quantity > COALESCE(od.product_quantity_refunded, 0) + ' . $sentQuantity
-                    );
+                    ->orWhere(function ($backorderQuery) use ($sentQuantity) {
+                        $backorderQuery
+                            ->whereRaw(
+                                'od.product_quantity > COALESCE(od.product_quantity_refunded, 0) + ' . $sentQuantity
+                            )
+                            ->where('sa.quantity', '<', 0);
+                    });
             })
             ->groupBy($groupByColumns)
             ->orderByDesc('o.id_order')

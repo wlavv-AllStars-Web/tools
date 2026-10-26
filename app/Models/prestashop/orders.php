@@ -271,6 +271,7 @@ class orders extends PrestashopModel
         $ordersTable = self::tableName('orders');
         $orderDetailTable = self::tableName('order_detail');
         $customOrderDetailTable = self::tableName('custom_order_detail');
+        $stockAvailableTable = self::tableName('stock_available');
 
         /*
          * `current_state` belongs to the whole order. An order can therefore
@@ -287,8 +288,16 @@ class orders extends PrestashopModel
                 '=',
                 $orderDetailTable . '.id_order_detail'
             )
+            ->join($stockAvailableTable, function ($join) use ($orderDetailTable, $stockAvailableTable) {
+                $join->on($stockAvailableTable . '.id_product', '=', $orderDetailTable . '.product_id')
+                    ->on($stockAvailableTable . '.id_product_attribute', '=', $orderDetailTable . '.product_attribute_id')
+                    ->where($stockAvailableTable . '.id_shop', 0);
+            })
             ->where($ordersTable . '.current_state', 15)
             ->where($orderDetailTable . '.product_reference', $product_reference)
+            // Stock at zero is reserved for outstanding demand; only a deficit
+            // is a backorder for the product being scanned.
+            ->where($stockAvailableTable . '.quantity', '<', 0)
             ->whereRaw(
                 $orderDetailTable . '.product_quantity > '
                 . 'COALESCE(' . $orderDetailTable . '.product_quantity_refunded, 0) '

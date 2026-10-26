@@ -268,7 +268,36 @@ class orders extends PrestashopModel
 
     public static function getBackorders($product_reference)
     {
-        return self::getOrdersByStateAndReference(15, $product_reference);
+        $ordersTable = self::tableName('orders');
+        $orderDetailTable = self::tableName('order_detail');
+        $customOrderDetailTable = self::tableName('custom_order_detail');
+
+        /*
+         * `current_state` belongs to the whole order. An order can therefore
+         * remain in Backorder because of another line after this product was
+         * already sent. Only return a backorder when this exact order-detail
+         * line still has quantity to fulfil.
+         */
+        return DB::connection('mysql2')
+            ->table($ordersTable)
+            ->join($orderDetailTable, $ordersTable . '.id_order', '=', $orderDetailTable . '.id_order')
+            ->leftJoin(
+                $customOrderDetailTable,
+                $customOrderDetailTable . '.id_order_detail',
+                '=',
+                $orderDetailTable . '.id_order_detail'
+            )
+            ->where($ordersTable . '.current_state', 15)
+            ->where($orderDetailTable . '.product_reference', $product_reference)
+            ->whereRaw(
+                $orderDetailTable . '.product_quantity > '
+                . 'COALESCE(' . $orderDetailTable . '.product_quantity_refunded, 0) '
+                . '+ COALESCE(' . $customOrderDetailTable . '.qtd_sent, 0)'
+            )
+            ->select($ordersTable . '.*')
+            ->distinct()
+            ->get()
+            ->toArray();
     }
 
     /*

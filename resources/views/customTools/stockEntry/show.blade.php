@@ -32,7 +32,6 @@
                 <div style="width: 100%;margin-top: 10px;">
                     <a class="btn btn-grey" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample" style="width: 100%;font-weight: bolder; font-size: 18px;background-color: #ddd;border: 1px solid #bbb;color: #666">
                     <span style="float: left;">{{ __("messages.INFO")}}</span>
-                    <span id="span_partial"     style="font-size: 14px; float: right;background-color: #956f55;    color: #fff; border-radius: 50px;padding: 2px 10px 2px 10px;margin: 0 5px;">0</span>
                     <span id="span_backorder"   style="font-size: 14px; float: right;background-color: #f78e1f;    color: #fff; border-radius: 50px;padding: 2px 10px 2px 10px;margin: 0 5px;">0</span>
                     <span id="span_preparation" style="font-size: 14px; float: right;background-color: dodgerblue; color: #fff; border-radius: 50px;padding: 2px 10px 2px 10px;margin: 0 5px;">0</span>
                     <span id="span_new"         style="font-size: 14px; float: right;background-color: pink;       color: pink; border-radius: 50px;padding: 2px 10px 2px 10px;margin: 0 5px;border: 1px solid #FF7CA8">0</span>
@@ -51,10 +50,6 @@
                                 <tr>
                                     <td style="width: 100px;text-align: right;">{{ __("messages.BACKORDER:")}}</td>
                                     <td style="text-align: left;" id="container_backorders"></td>
-                                </tr>
-                                <tr>
-                                    <td style="width: 100px;text-align: right;">{{ __("messages.PARTIAL:")}}</td>
-                                    <td style="text-align: left;" id="container_partials"></td>
                                 </tr>
                                 <tr>
                                     <td style="width: 100px;text-align: right;">{{ __("messages.PREPARATIONS:")}}</td>

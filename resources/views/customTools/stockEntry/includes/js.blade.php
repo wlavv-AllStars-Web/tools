@@ -10,7 +10,6 @@
         ajaxCall('getProductByEAN');
     });      
 
-    let html_partials = '';
     let html_backorders = '';
     let html_preparations = '';
 
@@ -40,7 +39,6 @@
                     if(data.selectedOrder == 1){
                                                 
                         const object = data.product;
-                        const partials = data.partials;
                         const backorders = data.backorders;
                         const preparations = data.preparations;
 
@@ -57,11 +55,9 @@
                             document.getElementById("tag_product_reference").innerHTML = object.sku;
                             document.getElementById("tag_order_reference").innerHTML = data.order_reference;
                             
-                            let counter_partials = 0;
                             let counter_backorders = 0;
                             let counter_preparations = 0;
                             
-                            if ( partials !== null )     counter_partials     = partials.length;
                             if ( backorders !== null )   counter_backorders   = backorders.length;
                             if ( preparations !== null ) counter_preparations = preparations.length;
                             
@@ -79,21 +75,11 @@
                             document.getElementById("tag_measures").innerHTML = measures;
                             document.getElementById("tag_location").innerHTML = location;
                             
-                            document.getElementById("span_partial").innerHTML = counter_partials;
                             document.getElementById("span_backorder").innerHTML = counter_backorders;
                             document.getElementById("span_preparation").innerHTML = counter_preparations;
                             
-                            html_partials = '';
                             html_backorders = '';
                             html_preparations = '';
-                            
-                            if(counter_partials > 0 ) {
-                                partials.forEach(createPartialsLink);
-                                $("#tr_partials").css('display', 'table-row');
-                                document.getElementById('container_partials').innerHTML = html_partials;
-                            }else{
-                                document.getElementById('container_partials').innerHTML = emptyTag;
-                            }
                             
                             if(counter_backorders > 0 ) {
                                 backorders.forEach(createBackordersLink);
@@ -181,8 +167,6 @@
         
     }
 
-    function createPartialsLink(item){ html_partials += '<a href="#" style="background-color: #956f55; color: #fff; padding: 5px; border-radius: 5px; text-decoration: none;margin: 5px;">' + item['id_order'] + '</a>'; }
-    
     function createBackordersLink(item){ html_backorders += '<a href="#" style="background-color: #f78e1f; color: #fff; padding: 5px; border-radius: 5px; text-decoration: none;margin: 5px;">' + item['id_order'] + '</a>'; }
     
     function createPreparationsLink(item){ html_preparations += '<a href="#" style="background-color: dodgerblue; color: #fff; padding: 5px; border-radius: 5px; text-decoration: none;margin: 5px;">' + item['id_order'] + '</a>'; }

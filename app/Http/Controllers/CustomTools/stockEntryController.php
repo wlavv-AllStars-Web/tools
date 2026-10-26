@@ -79,7 +79,6 @@ class stockEntryController extends Controller
             
             if($data_found == 1){
 
-                $partial      = orders::getParcials($product->sku);
                 $preparations = orders::getPreparations($product->sku);
                 $backorders   = orders::getBackorders($product->sku);
 
@@ -87,7 +86,6 @@ class stockEntryController extends Controller
                     'status' => 'success', 
                     'order_reference' => $product->order_reference, 
                     'product' => $product, 
-                    'partials' => $partial, 
                     'preparations' => $preparations, 
                     'backorders' => $backorders, 
                     'message' => $message,

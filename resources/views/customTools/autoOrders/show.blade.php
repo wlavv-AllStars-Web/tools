@@ -120,6 +120,9 @@
                                         <tr @if($product['is_recent_product']) class="alert-success" style="background-color: #d1e7dd;" @endif>
                                             <td class="table_cell td_orders_reference">
                                                 <span @if($product['warranty'] == 1) style="color: coral;font-weight: bold;" @endif title="{{$product['name']}}">
+                                                    @if($product['is_automatic'])
+                                                        <span class="auto-order-automatic-icon" title="Added automatically from the replenishment calculation" aria-label="Added automatically">&#9889;</span>
+                                                    @endif
                                                     {{$product['reference']}} 
                                                     @if($product['notes'] !='') <div style="background-color: red; width: 14px; height: 14px; border-radius: 50px;float: right;margin-left: 5px;display: flex;margin-top: 3px;" title="{{$product['notes']}}"> <i class="fa-solid fa-question" style="color: #FFF; font-size: 9px;padding: 3px 4px;"></i> </div> @endif
                                                     @if($product['warranty'] == 1) <br>( WARRANTY ) @endif
@@ -128,7 +131,13 @@
                                             <td class="table_cell td_orders_others">   <span>{{$product['stock']+0}}</span></td>
                                             <td class="table_cell td_orders_others">   <span>{{$product['arrive']+0}}</span></td>
                                             <td class="table_cell td_orders_others">   <span>{{$product['sold']+0}}</span></td>
-                                            <td class="table_cell td_orders_quantity"><input onblur="updateOrder($(this), {{$supplier['id_supplier']}})" reference="{{$product['reference']}}" style="width: 100px;" type="number" autocomplete="off" name="quantity['{{$key}}'][]" value="{{$product['quantity']}}"></td>
+                                            <td class="table_cell td_orders_quantity @if($product['is_above_automatic_expected']) auto-order-quantity-above-expected @endif"
+                                                @if($product['is_above_automatic_expected']) title="Current quantity is above the automatic calculation (expected: {{$product['automatic_expected_quantity']}})" @endif>
+                                                <input onblur="updateOrder($(this), {{$supplier['id_supplier']}})" reference="{{$product['reference']}}" style="width: 100px;" type="number" autocomplete="off" name="quantity['{{$key}}'][]" value="{{$product['quantity']}}">
+                                                @if($product['is_above_automatic_expected'])
+                                                    <small class="auto-order-expected-note">Expected: {{$product['automatic_expected_quantity']}}</small>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                     <tr id="orderNewRow_{{$supplier['id_supplier']}}">

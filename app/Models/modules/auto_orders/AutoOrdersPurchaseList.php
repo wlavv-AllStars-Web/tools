@@ -65,7 +65,13 @@ class AutoOrdersPurchaseList extends Model
                         'arrive' => $qtd_arrive,
                         'sold' => (is_null( $sold )) ? 0 : $sold,
                         'notes'=> $notes,
-                        'is_recent_product' => $isRecentProduct
+                        'is_recent_product' => $isRecentProduct,
+                        'is_automatic' => (bool) $product->is_automatic,
+                        'automatic_expected_quantity' => is_null($product->automatic_expected_quantity)
+                            ? null
+                            : (int) $product->automatic_expected_quantity,
+                        'is_above_automatic_expected' => !is_null($product->automatic_expected_quantity)
+                            && (int) $product->quantity > (int) $product->automatic_expected_quantity,
                         
                     ];
                     

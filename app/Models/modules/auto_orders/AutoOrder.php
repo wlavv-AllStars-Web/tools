@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
+use App\Services\AutoOrders\AutoOrderReplenishmentService;
 
 use App\Models\modules\auto_orders\AutoOrdersCandidate;
 
@@ -19,16 +20,14 @@ class AutoOrder extends Model
 
     public STATIC function checkAutoOrders(){
 
-        $local = new AutoOrdersCandidate();
-
         $paidOrderLines = self::paidOrderLinesForAutoOrders();
 
         if (count($paidOrderLines) > 0) {
-            $local->insert($paidOrderLines, null);
+            app(AutoOrderReplenishmentService::class)->process($paidOrderLines);
             self::markOrderLinesAsImported($paidOrderLines);
         }
 
-        return $local->getAllBrands();
+        return AutoOrdersCandidate::getAllBrands();
     }
 
     protected static function paidOrderLinesForAutoOrders(): array

@@ -1,0 +1,23 @@
+diff --git a/app/Models/modules/auto_orders/AutoOrder.php b/app/Models/modules/auto_orders/AutoOrder.php
+--- a/app/Models/modules/auto_orders/AutoOrder.php
++++ b/app/Models/modules/auto_orders/AutoOrder.php
+@@ -31,9 +31,20 @@ class AutoOrder extends Model
+         return $local->getAllBrands();
+     }
+
+-    protected static function paidOrderLinesForAutoOrders(): array
++    /**
++     * Temporary read-only comparator used while optimizing the import flow.
++     * It deliberately does not insert candidates or mark source lines imported.
++     */
++    public static function previewAutoOrders(): array
++    {
++        return self::paidOrderLinesForAutoOrders(false);
++    }
++
++    protected static function paidOrderLinesForAutoOrders(bool $ensureImportedOrderDetailsTable = true): array
+     {
+-        self::ensureImportedOrderDetailsTable();
++        if ($ensureImportedOrderDetailsTable) {
++            self::ensureImportedOrderDetailsTable();
++        }

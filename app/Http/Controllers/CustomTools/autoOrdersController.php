@@ -31,6 +31,10 @@ class autoOrdersController extends Controller
     }
 
     public function show(string $id){ 
+
+        // New sales are calculated before displaying the supplier draft.
+        // Existing candidate rows remain legacy/manual until they are cleared.
+        AutoOrder::checkAutoOrders();
         
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.index'), 'no_translation' => 1];
         $this->actions[]     = [ ];
@@ -50,10 +54,16 @@ class autoOrdersController extends Controller
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.index'), 'no_translation' => 1];
         $this->actions[]     = [ 'name' => 'To order', 'icon' => '<i class="fa fa-box"></i>', 'url' => route('autoOrders.show', 0), 'class' => "btn-success"];
 
+        $legacyCandidates = AutoOrder::checkAutoOrders();
+
+        if (empty($legacyCandidates)) {
+            return redirect()->route('autoOrders.show', 0);
+        }
+
         $data = [
             'actions'     => $this->actions,
             'breadcrumbs' => $this->breadcrumbs,
-            'auto_orders' => AutoOrder::checkAutoOrders()
+            'auto_orders' => $legacyCandidates
         ];
 
         return View::make('customTools/autoOrders/index')->with($data);

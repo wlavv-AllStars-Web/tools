@@ -23,3 +23,24 @@ div.ajax_search_response ul li:hover { background-color: #999; color: #FFF; }
 
 .spacer-20{ width: 100%; height: 20px; display: block; }
 </style>
+<style>
+    .auto-order-automatic-icon {
+        display: inline-block;
+        margin-right: 5px;
+        color: #0879df;
+        font-size: 15px;
+        line-height: 1;
+    }
+
+    .auto-order-quantity-above-expected {
+        background: #fff0d8 !important;
+    }
+
+    .auto-order-expected-note {
+        display: block;
+        margin-top: 3px;
+        color: #a55200;
+        font-size: 10px;
+        line-height: 1.1;
+    }
+</style>

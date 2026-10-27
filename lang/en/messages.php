@@ -444,7 +444,7 @@ return [
     "logs.show" => "Logs details",
     "logs.index" => "Logs",
     "logs details" => "logs details",
-    "Calculation logs" => "LOGS",
+    "autoOrders.calculationLogs" => "LOGS",
     
     
     "tasks" => "Tasks",

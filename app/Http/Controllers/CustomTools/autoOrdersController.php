@@ -39,7 +39,7 @@ class autoOrdersController extends Controller
         
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.index'), 'no_translation' => 1];
         $this->actions[]     = [
-            'name' => __('messages.Calculation logs'),
+            'name' => 'Calculation logs',
             'icon' => '<i class="fa fa-history"></i>',
             'url' => route('autoOrders.calculationLogs'),
             'class' => 'btn-info',

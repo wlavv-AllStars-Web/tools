@@ -72,7 +72,7 @@
                             <td>{{ $log->quantity_before }}</td>
                             <td>{{ $log->quantity_calculated }}</td>
                             <td>{{ $log->quantity_after }}</td>
-                            <td><span class="badge badge-secondary">{{ str_replace('_', ' ', $log->action) }}</span></td>
+                            <td><span style="color: dodgerblue; font-weight: 700;">{{ str_replace('_', ' ', $log->action) }}</span></td>
                             <td>{{ $log->reason ? str_replace('_', ' ', $log->reason) : '-' }}</td>
                         </tr>
                     @empty

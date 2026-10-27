@@ -15,6 +15,7 @@ use App\Models\prestashop\product_attribute;
 use App\Models\modules\auto_orders\AutoOrder;
 use App\Models\modules\auto_orders\AutoOrdersCandidate;
 use App\Models\modules\auto_orders\AutoOrdersPurchaseList;
+use App\Models\modules\auto_orders\AutoOrdersCalculationLog;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\OrderNoteLine;
 use App\Services\StockAudit\StockAuditService;
@@ -37,7 +38,12 @@ class autoOrdersController extends Controller
         AutoOrder::checkAutoOrders();
         
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.index'), 'no_translation' => 1];
-        $this->actions[]     = [ ];
+        $this->actions[]     = [
+            'name' => 'Calculation logs',
+            'icon' => '<i class="fa fa-history"></i>',
+            'url' => route('autoOrders.calculationLogs'),
+            'class' => 'btn-info',
+        ];
 
         $data = [
             'actions'    => $this->actions,
@@ -47,6 +53,53 @@ class autoOrdersController extends Controller
         ];
 
         return View::make('customTools/autoOrders/show')->with($data);
+    }
+
+    public function calculationLogs(Request $request)
+    {
+        $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.show', 0), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => 'Calculation logs', 'url' => route('autoOrders.calculationLogs'), 'no_translation' => 1];
+
+        $logs = AutoOrdersCalculationLog::query()
+            ->when($request->filled('reference'), function ($query) use ($request) {
+                $query->where('reference', 'like', '%' . trim((string) $request->reference) . '%');
+            })
+            ->when($request->filled('supplier'), function ($query) use ($request) {
+                $query->where('id_supplier', (int) $request->supplier);
+            })
+            ->when($request->filled('action'), function ($query) use ($request) {
+                $query->where('action', $request->action);
+            })
+            ->when($request->filled('date_from'), function ($query) use ($request) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            })
+            ->when($request->filled('date_to'), function ($query) use ($request) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            })
+            ->orderByDesc('id')
+            ->paginate(50)
+            ->withQueryString();
+
+        $suppliers = AutoOrdersCalculationLog::query()
+            ->whereNotNull('id_supplier')
+            ->select('id_supplier', 'supplier')
+            ->distinct()
+            ->orderBy('supplier')
+            ->get();
+
+        $actions = AutoOrdersCalculationLog::query()
+            ->select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action');
+
+        return view('customTools.autoOrders.calculation_logs', [
+            'actions' => [],
+            'breadcrumbs' => $this->breadcrumbs,
+            'logs' => $logs,
+            'suppliers' => $suppliers,
+            'logActions' => $actions,
+        ]);
     }
 
     public function index() { 

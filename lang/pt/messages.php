@@ -295,4 +295,5 @@ return [
     'web.tools.auto_backorder.index' => 'Auto Backorder report',
     'web.tools.customer_cart_access.lookup' => 'Acesso ao carrinho do cliente',
     'finance.tools.moloni_vat.index' => 'VIES validation',
+    'Calculation logs' => 'LOGS',
 ];

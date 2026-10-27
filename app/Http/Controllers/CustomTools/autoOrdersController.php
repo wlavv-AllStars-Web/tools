@@ -39,7 +39,7 @@ class autoOrdersController extends Controller
         
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.index'), 'no_translation' => 1];
         $this->actions[]     = [
-            'name' => 'Calculation logs',
+            'name' => __('messages.Calculation logs'),
             'icon' => '<i class="fa fa-history"></i>',
             'url' => route('autoOrders.calculationLogs'),
             'class' => 'btn-info',
@@ -58,7 +58,7 @@ class autoOrdersController extends Controller
     public function calculationLogs(Request $request)
     {
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.show', 0), 'no_translation' => 1];
-        $this->breadcrumbs[] = ['name' => 'Calculation logs', 'url' => route('autoOrders.calculationLogs'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => __('messages.Calculation logs'), 'url' => route('autoOrders.calculationLogs'), 'no_translation' => 1];
 
         $logs = AutoOrdersCalculationLog::query()
             ->when($request->filled('reference'), function ($query) use ($request) {

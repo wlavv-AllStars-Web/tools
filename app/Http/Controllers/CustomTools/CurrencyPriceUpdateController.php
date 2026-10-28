@@ -65,11 +65,14 @@ class CurrencyPriceUpdateController extends Controller
         return view('customTools.currencyPriceUpdates.preview', $preview + [
             'breadcrumbs' => $this->breadcrumbs('Currency price updates'),
             'actions' => [],
+            'applyEnabled' => $this->priceUpdatesAreEnabled(),
         ]);
     }
 
     public function apply(Request $request)
     {
+        abort_unless($this->priceUpdatesAreEnabled(), 403, 'Currency price updates are currently in preview-only mode.');
+
         $data = $this->validatedRate($request, true);
 
         try {
@@ -200,6 +203,11 @@ class CurrencyPriceUpdateController extends Controller
         return redirect()
             ->route('purchase.tools.currency_price_updates.logs.show', $batch)
             ->with('success', 'The recorded EUR prices were restored. Global currency rates were not changed.');
+    }
+
+    private function priceUpdatesAreEnabled(): bool
+    {
+        return (bool) config('currency_price_updates.apply_enabled', false);
     }
 
     private function validatedRate(Request $request, bool $requireCurrentRate = false): array

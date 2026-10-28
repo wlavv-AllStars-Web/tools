@@ -61,6 +61,11 @@
             @endforeach
         </div>
 
+        @if(! $applyEnabled)
+            <div class="alert alert-warning" style="margin-top: 20px;">
+                <strong>Preview-only mode:</strong> price updates are disabled. You can review the calculation, but no EUR prices can be changed yet.
+            </div>
+        @else
         <form method="post" action="{{ route('purchase.tools.currency_price_updates.apply') }}" style="margin-top: 20px;" onsubmit="return confirm('Apply all displayed EUR price changes using these temporary purchase and sale rates? The global currency rates will not be changed. A full log will be created and can be reverted.');">
             @csrf
             <input type="hidden" name="currency_id" value="{{ $currency->id_currency }}">
@@ -71,6 +76,7 @@
             <button type="submit" class="btn btn-success">Confirm and update prices</button>
             <a href="{{ route('purchase.tools.currency_price_updates.index') }}" class="btn btn-secondary">Cancel</a>
         </form>
+        @endif
     @endif
 </div>
 @endsection

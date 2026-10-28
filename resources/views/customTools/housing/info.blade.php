@@ -383,7 +383,6 @@
                                         <tr>
                                             <th>Order</th>
                                             <th>Status</th>
-                                            <th>Product</th>
                                             <th>Reference</th>
                                             <th>EAN13</th>
                                             <th class="text-end">Qty</th>
@@ -399,7 +398,6 @@
                                                 <td>
                                                     <span class="badge" style="background: {{ $row->state_color }}; color: #fff;">{{ $row->state_label }}</span>
                                                 </td>
-                                                <td>{{ $row->product_name ?: '—' }}</td>
                                                 <td>{{ $row->product_reference ?: '—' }}</td>
                                                 <td>{{ $row->product_ean13 ?: '—' }}</td>
                                                 <td class="text-end">

@@ -402,15 +402,15 @@
                                                 <td>{{ $row->product_reference ?: '—' }}</td>
                                                 <td>{{ $row->product_ean13 ?: '—' }}</td>
                                                 <td class="text-end">
-                                                    {{ (int) $row->stock_quantity }}
+                                                    <span class="badge {{ (int) $row->stock_quantity < 0 ? 'text-bg-danger' : 'text-bg-success' }}">
+                                                        {{ (int) $row->stock_quantity }}
+                                                    </span>
                                                 </td>
                                                 <td class="text-end">
-                                                    <span class="badge {{ (int) $row->stock_quantity < 0 ? 'text-bg-danger' : 'text-bg-success' }}">
-                                                        {{ (int) $row->product_quantity }}
-                                                        @if((int) $row->qty_sent > 0)
-                                                            ({{ (int) $row->qty_sent }} sent)
-                                                        @endif
-                                                    </span>
+                                                    {{ (int) $row->product_quantity }}
+                                                    @if((int) $row->qty_sent > 0)
+                                                        <span class="text-muted">({{ (int) $row->qty_sent }} sent)</span>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach

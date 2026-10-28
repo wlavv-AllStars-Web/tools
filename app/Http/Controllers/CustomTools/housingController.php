@@ -915,21 +915,6 @@ class housingController extends Controller
                     }
                 }
             })
-            // State 15 applies to the complete order. A product is only in
-            // backorder when its line is pending and its stock has a deficit;
-            // stock zero can already be reserved for this very order.
-            ->where(function ($builder) use ($hasCustomOrderDetails) {
-                $sentQuantity = $hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0';
-
-                $builder->where('o.current_state', '!=', 15)
-                    ->orWhere(function ($backorderQuery) use ($sentQuantity) {
-                        $backorderQuery
-                            ->whereRaw(
-                                'od.product_quantity > COALESCE(od.product_quantity_refunded, 0) + ' . $sentQuantity
-                            )
-                            ->where('sa.quantity', '<', 0);
-                    });
-            })
             ->groupBy($groupByColumns)
             ->orderByDesc('o.id_order')
             ->limit(50)

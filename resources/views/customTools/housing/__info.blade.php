@@ -293,7 +293,8 @@
                                             <th>Status</th>
                                             <th>Reference</th>
                                             <th>EAN13</th>
-                                            <th class="text-end">Qty</th>
+                                            <th class="text-end">Stock</th>
+                                            <th class="text-end">Ordered</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -309,8 +310,13 @@
                                                 <td>{{ $row->product_reference ?: '—' }}</td>
                                                 <td>{{ $row->product_ean13 ?: '—' }}</td>
                                                 <td class="text-end">
-                                                    <div>{{ (int) $row->product_quantity }}</div>
-                                                    <div class="text-muted small">In stock: {{ (int) $row->product_quantity_in_stock }}</div>
+                                                    {{ (int) $row->stock_quantity }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{ (int) $row->product_quantity }}
+                                                    @if((int) $row->qty_sent > 0)
+                                                        <span class="text-muted">({{ (int) $row->qty_sent }} sent)</span>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach

@@ -886,6 +886,9 @@ class housingController extends Controller
                 'od.product_quantity_return',
                 'sa.quantity as stock_quantity',
                 DB::raw(
+                    ($hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0') . ' as qty_sent'
+                ),
+                DB::raw(
                     'GREATEST(od.product_quantity - COALESCE(od.product_quantity_refunded, 0) - '
                     . ($hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0')
                     . ', 0) as pending_quantity'

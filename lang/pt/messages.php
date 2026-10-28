@@ -296,4 +296,7 @@ return [
     'web.tools.customer_cart_access.lookup' => 'Acesso ao carrinho do cliente',
     'finance.tools.moloni_vat.index' => 'VIES validation',
     'autoOrders.calculationLogs' => 'LOGS',
+    'currencyPriceUpdates' => 'Atualização de preços por moeda',
+    'currencyPriceUpdates.index' => 'Atualização de preços por moeda',
+    'currencyPriceUpdates.logs' => 'LOGS',
 ];

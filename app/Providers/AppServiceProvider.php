@@ -140,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
             'housing.' => ['logistics', 'logistics.index', 'Housing'],
             'stockEntry.' => ['logistics', 'logistics.index', 'Stock entry'],
             'autoOrders.' => ['purchase', 'purchase.index', 'Auto orders'],
+            'purchase.tools.currency_price_updates.' => ['purchase', 'purchase.index', 'Currency price updates'],
             'suppliersBackorders.' => ['purchase', 'purchase.index', "Supplier's backorders"],
             'asg_cars.' => ['marketing', 'marketing.index', 'Car gallery'],
             'asg_events.' => ['marketing', 'marketing.index', 'Event gallery'],

@@ -38,6 +38,9 @@ class purchaseController extends Controller
         $accessList[]                           = ['name' =>  trans('messages.Auto Orders'),         	'url' => route('purchase.tools.auto_orders.index'),              'icon' => '<i style="font-size: 40px;" class="fa fa-xl fa-solid fa-boxes-packing"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.backorders_suppliers'),   'url' => route('purchase.tools.suppliersBackorders.index'),       'icon' => '<i style="font-size: 40px;" class="fa fa-xl fa-solid fa-arrow-down-short-wide"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.priceMap'),               'url' => route('purchase.tools.price_map.index'),                 'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-money-check-dollar"></i>'];
+        if ((int) auth()->id() === 43) {
+            $accessList[]                       = ['name' =>  trans('messages.currencyPriceUpdates'),  'url' => route('purchase.tools.currency_price_updates.index'),     'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-money-bill-transfer"></i>'];
+        }
         $accessList[]                           = ['name' =>  trans('messages.suppliers_map'),          'url' => route('purchase.tools.suppliers.map.index'),             'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-puzzle-piece"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.quote'),                  'url' => route('purchase.tools.quotes.index', ['list' => 1]),     'icon' => '<i style="font-size: 40px;" class="fa-solid fa-bell-concierge"></i>'];
         return $accessList;

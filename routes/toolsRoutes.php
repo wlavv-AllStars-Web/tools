@@ -68,6 +68,7 @@ use App\Http\Controllers\CustomTools\StockAuditController;
 use App\Http\Controllers\CustomTools\CustomerCartAccessController;
 
 use App\Http\Controllers\CustomTools\CurrencyVariationController;
+use App\Http\Controllers\CustomTools\CurrencyPriceUpdateController;
 use App\Http\Controllers\Modules\oms\DashboardController as OmsDashboardController;
 use App\Http\Controllers\Modules\oms\OrderNoteController;
 use App\Http\Controllers\Modules\oms\BilledOrderController;
@@ -563,6 +564,17 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('purchase')->name('purchase.tools.')->group(function () {
+        Route::prefix('/currency-price-updates')->name('currency_price_updates.')->group(function () {
+            Route::get('/', [CurrencyPriceUpdateController::class, 'index'])->name('index');
+            Route::get('/confirm', [CurrencyPriceUpdateController::class, 'confirm'])->name('confirm');
+            Route::post('/preview', [CurrencyPriceUpdateController::class, 'preview'])->name('preview');
+            Route::post('/apply', [CurrencyPriceUpdateController::class, 'apply'])->name('apply');
+            Route::get('/logs', [CurrencyPriceUpdateController::class, 'logs'])->name('logs');
+            Route::get('/logs/{batch}', [CurrencyPriceUpdateController::class, 'showLog'])->name('logs.show');
+            Route::get('/logs/{batch}/csv', [CurrencyPriceUpdateController::class, 'exportCsv'])->name('logs.csv');
+            Route::post('/logs/{batch}/rollback', [CurrencyPriceUpdateController::class, 'rollback'])->name('logs.rollback');
+        });
+
         Route::resource('/auto-orders', autoOrdersController::class)->except(['update', 'destroy'])->names('auto_orders');
         Route::resource('/suppliersBackorders', suppliersBackordersController::class)->names('suppliersBackorders');
         Route::post('/suppliersBackorders/getSuppliersBackorders', [suppliersBackordersController::class, 'getSuppliersBackorders'])->name('suppliersBackorders.get');

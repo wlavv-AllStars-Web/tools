@@ -812,6 +812,7 @@ class housingController extends Controller
         $stateLangTable = $prefix . 'order_state_lang';
         $customOrderDetailTable = $prefix . 'custom_order_detail';
         $stockAvailableTable = $prefix . 'stock_available';
+        $packTable = $prefix . 'pack';
 
         foreach ([$orderTable, $detailTable, $stateLangTable, $stockAvailableTable] as $table) {
             if (!Schema::connection('mysql2')->hasTable($table)) {
@@ -922,6 +923,112 @@ class housingController extends Controller
             ->orderByDesc('o.id_order')
             ->limit(50)
             ->get();
+
+        $packRows = collect();
+
+        if (Schema::connection('mysql2')->hasTable($packTable)) {
+            $packGroupByColumns = [
+                'o.id_order',
+                'o.reference',
+                'o.current_state',
+                'osl.name',
+                'pack.id_product_item',
+                'pack.id_product_attribute_item',
+                'pack.quantity',
+                'od.product_reference',
+                'od.product_ean13',
+                'od.product_name',
+                'od.product_quantity',
+                'od.product_quantity_in_stock',
+                'od.product_quantity_refunded',
+                'od.product_quantity_return',
+                'sa.quantity',
+            ];
+
+            if ($hasCustomOrderDetails) {
+                $packGroupByColumns[] = 'cod.qtd_sent';
+            }
+
+            $packQuantitySql = 'GREATEST(pack.quantity, 1)';
+            $sentQuantitySql = $hasCustomOrderDetails ? 'COALESCE(cod.qtd_sent, 0)' : '0';
+
+            $packRows = DB::connection('mysql2')
+                ->table($detailTable . ' as od')
+                ->join($orderTable . ' as o', 'o.id_order', '=', 'od.id_order')
+                ->join($packTable . ' as pack', 'pack.id_product_pack', '=', 'od.product_id')
+                ->leftJoin($stateLangTable . ' as osl', function ($join) {
+                    $join->on('osl.id_order_state', '=', 'o.current_state')
+                        ->where('osl.id_lang', 1);
+                })
+                ->when($hasCustomOrderDetails, function ($builder) use ($customOrderDetailTable) {
+                    $builder->leftJoin(
+                        $customOrderDetailTable . ' as cod',
+                        'cod.id_order_detail',
+                        '=',
+                        'od.id_order_detail'
+                    );
+                })
+                ->join($stockAvailableTable . ' as sa', function ($join) {
+                    $join->on('sa.id_product', '=', 'pack.id_product_item')
+                        ->on('sa.id_product_attribute', '=', 'pack.id_product_attribute_item')
+                        ->where('sa.id_shop', 0);
+                })
+                ->select([
+                    'o.id_order',
+                    'o.reference as order_reference',
+                    'o.current_state as state_id',
+                    'osl.name as state_name',
+                    'pack.id_product_item as product_id',
+                    'pack.id_product_attribute_item as product_attribute_id',
+                    'od.product_reference',
+                    'od.product_ean13',
+                    'od.product_name',
+                    DB::raw('od.product_quantity * ' . $packQuantitySql . ' as product_quantity'),
+                    DB::raw('od.product_quantity_in_stock * ' . $packQuantitySql . ' as product_quantity_in_stock'),
+                    DB::raw('od.product_quantity_refunded * ' . $packQuantitySql . ' as product_quantity_refunded'),
+                    DB::raw('od.product_quantity_return * ' . $packQuantitySql . ' as product_quantity_return'),
+                    'sa.quantity as stock_quantity',
+                    DB::raw($sentQuantitySql . ' * ' . $packQuantitySql . ' as qty_sent'),
+                    DB::raw(
+                        'GREATEST((od.product_quantity - COALESCE(od.product_quantity_refunded, 0) - '
+                        . $sentQuantitySql . ') * ' . $packQuantitySql . ', 0) as pending_quantity'
+                    ),
+                ])
+                ->where('pack.id_product_item', (int) $product->id_product)
+                ->where(function ($builder) use ($product) {
+                    if ((int) ($product->id_product_attribute ?? 0) > 0) {
+                        $builder->where('pack.id_product_attribute_item', (int) $product->id_product_attribute);
+                    } else {
+                        $builder->where(function ($q) {
+                            $q->whereNull('pack.id_product_attribute_item')
+                                ->orWhere('pack.id_product_attribute_item', 0);
+                        });
+                    }
+                })
+                ->where(function ($builder) use ($stateIds, $warrantyAliases) {
+                    if (!empty($stateIds)) {
+                        $builder->whereIn('o.current_state', $stateIds);
+                    }
+
+                    foreach ($warrantyAliases as $index => $alias) {
+                        if ($index === 0 && empty($stateIds)) {
+                            $builder->whereRaw('LOWER(osl.name) like ?', ['%' . $alias . '%']);
+                        } else {
+                            $builder->orWhereRaw('LOWER(osl.name) like ?', ['%' . $alias . '%']);
+                        }
+                    }
+                })
+                ->groupBy($packGroupByColumns)
+                ->orderByDesc('o.id_order')
+                ->limit(50)
+                ->get();
+        }
+
+        $query = $query
+            ->concat($packRows)
+            ->sortByDesc('id_order')
+            ->take(50)
+            ->values();
 
         return $query->map(function ($row) {
             $stateKey = $this->matchTrackedStateKey($row->state_id, $row->state_name);

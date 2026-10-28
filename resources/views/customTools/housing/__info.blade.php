@@ -313,10 +313,12 @@
                                                     {{ (int) $row->stock_quantity }}
                                                 </td>
                                                 <td class="text-end">
-                                                    {{ (int) $row->product_quantity }}
-                                                    @if((int) $row->qty_sent > 0)
-                                                        <span class="text-muted">({{ (int) $row->qty_sent }} sent)</span>
-                                                    @endif
+                                                    <span class="badge {{ (int) $row->stock_quantity < 0 ? 'text-bg-danger' : 'text-bg-success' }}">
+                                                        {{ (int) $row->product_quantity }}
+                                                        @if((int) $row->qty_sent > 0)
+                                                            ({{ (int) $row->qty_sent }} sent)
+                                                        @endif
+                                                    </span>
                                                 </td>
                                             </tr>
                                         @endforeach

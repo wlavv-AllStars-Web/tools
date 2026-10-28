@@ -18,6 +18,7 @@ use App\Models\modules\auto_orders\AutoOrdersPurchaseList;
 use App\Models\modules\auto_orders\AutoOrdersCalculationLog;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\OrderNoteLine;
+use App\Services\AutoOrders\AutoOrderReplenishmentService;
 use App\Services\StockAudit\StockAuditService;
 
 class autoOrdersController extends Controller
@@ -36,6 +37,7 @@ class autoOrdersController extends Controller
         // New sales are calculated before displaying the supplier draft.
         // Existing candidate rows remain legacy/manual until they are cleared.
         AutoOrder::checkAutoOrders();
+        app(AutoOrderReplenishmentService::class)->refreshAutomaticDrafts();
         
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.index'), 'no_translation' => 1];
         $this->actions[]     = [

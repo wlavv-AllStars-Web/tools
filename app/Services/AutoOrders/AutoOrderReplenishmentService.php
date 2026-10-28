@@ -24,6 +24,41 @@ class AutoOrderReplenishmentService
         }
     }
 
+    /**
+     * Refresh the recommendation shown beside every automatic draft line.
+     *
+     * The draft is deliberately never reduced here: a purchaser may have chosen a
+     * higher amount manually. It is only raised when the current recommendation
+     * exceeds the quantity already present in the draft.
+     */
+    public function refreshAutomaticDrafts(): void
+    {
+        AutoOrdersPurchaseList::query()
+            ->where('is_automatic', true)
+            ->orderBy('id')
+            ->eachById(function (AutoOrdersPurchaseList $draft): void {
+                $product = AutoOrdersPurchaseList::getPrestashopProductInfo((string) $draft->reference);
+
+                if ($product === null) {
+                    return;
+                }
+
+                $salesLast12Months = (int) orders_details::getSoldByRefOf((string) $draft->reference);
+                $physicalStock = (int) $product->quantity;
+                $stockArrive = (int) $product->stock_arrive;
+                $targetStock = (int) ceil($salesLast12Months / 2);
+                $quantityCalculated = max(0, $targetStock - $physicalStock - $stockArrive);
+
+                if ((int) $draft->quantity < $quantityCalculated) {
+                    $draft->quantity = $quantityCalculated;
+                }
+
+                $draft->automatic_expected_quantity = $quantityCalculated;
+                $draft->automatic_calculated_at = now();
+                $draft->save();
+            });
+    }
+
     private function processSale(array $sale): void
     {
         $product = $this->currentProductData($sale);

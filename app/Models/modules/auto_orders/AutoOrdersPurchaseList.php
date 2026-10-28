@@ -90,7 +90,7 @@ class AutoOrdersPurchaseList extends Model
 
     }
 
-    protected static function getPrestashopProductInfo(string $reference): ?object
+    public static function getPrestashopProductInfo(string $reference): ?object
     {
         $prefix = env('DB2_DB_prefix', 'ps_');
 

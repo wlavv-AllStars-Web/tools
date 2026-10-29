@@ -68,7 +68,7 @@ class CurrencyPriceUpdateController extends Controller
         }
 
         return view('customTools.currencyPriceUpdates.preview', $preview + [
-            'breadcrumbs' => $this->breadcrumbs('Currency price updates'),
+            'breadcrumbs' => $this->breadcrumbs(trans('messages.purchase.tools.currency_price_updates.preview')),
             'actions' => [],
             'applyEnabled' => $this->priceUpdatesAreEnabled(),
         ]);

@@ -320,6 +320,7 @@ return [
     'currencyPriceUpdates' => 'Actualización de precios por moneda',
     'currencyPriceUpdates.index' => 'Actualización de precios por moneda',
     'currencyPriceUpdates.logs' => 'LOGS',
-    'purchase.tools.currency_price_updates.index' => 'UPDATE',
+    'purchase.tools.currency_price_updates.index' => 'Actualización de precios',
     'purchase.tools.currency_price_updates.confirm' => 'CONFIRMAR',
+    'purchase.tools.currency_price_updates.preview' => 'VISTA PREVIA',
 ];

@@ -242,6 +242,7 @@ class CurrencyPriceUpdateService
                 'm.name as manufacturer',
                 DB::raw('COALESCE(cp.wholesale_price_base_currency, 0) as purchase_base'),
                 DB::raw('COALESCE(cp.price_base_currency, 0) as sale_base'),
+                DB::raw("EXISTS (SELECT 1 FROM {$prefix}pack AS pk WHERE pk.id_product_pack = p.id_product) as is_pack"),
             ]);
     }
 
@@ -283,6 +284,7 @@ class CurrencyPriceUpdateService
             'product_attribute_id' => 0,
             'reference' => (string) $row->reference,
             'line_type' => 'product',
+            'is_pack' => (bool) $row->is_pack,
             'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $saleBase > 0 ? $saleBase : null,
             'old_purchase_eur' => $oldPurchase,
@@ -315,6 +317,7 @@ class CurrencyPriceUpdateService
             'product_attribute_id' => (int) $row->id_product_attribute,
             'reference' => (string) ($row->reference ?: $row->product_reference),
             'line_type' => 'attribute',
+            'is_pack' => (bool) ($parent['is_pack'] ?? false),
             'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $parentSaleBase > 0 ? $parentSaleBase + $saleImpactBase : null,
             'old_purchase_eur' => (float) $row->wholesale_price,

@@ -299,6 +299,7 @@ return [
     'currencyPriceUpdates' => 'Atualização de preços por moeda',
     'currencyPriceUpdates.index' => 'Atualização de preços por moeda',
     'currencyPriceUpdates.logs' => 'LOGS',
-    'purchase.tools.currency_price_updates.index' => 'UPDATE',
+    'purchase.tools.currency_price_updates.index' => 'Atualização de preços',
     'purchase.tools.currency_price_updates.confirm' => 'CONFIRMAR',
+    'purchase.tools.currency_price_updates.preview' => 'PRÉ-VISUALIZAR',
 ];

@@ -60,7 +60,7 @@
                     <input id="new_sale_rate" name="new_sale_rate" type="number" class="form-control" step="0.00000001" min="0.00000001" value="{{ old('new_sale_rate', $currency->iso_code === 'EUR' ? '1.00000000' : number_format((float) $currency->sale_conversion_rate, 8, '.', '')) }}" @if($currency->iso_code === 'EUR') readonly @endif required>
                     @error('new_sale_rate')<small class="text-danger">{{ $message }}</small>@enderror
                 </div>
-                <div class="col-md-12 form-group" style="margin-top: 20px;">
+                <div class="col-md-12 form-group text-center" style="margin-top: 20px;">
                     @error('brand_updates')<small class="text-danger d-block mb-2">{{ $message }}</small>@enderror
                     <button type="submit" class="btn btn-primary">Preview EUR price changes</button>
                 </div>

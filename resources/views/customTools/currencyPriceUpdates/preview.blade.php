@@ -4,7 +4,7 @@
 @php($iso = $currency->iso_code)
 <div class="container-fluid">
     <div class="navbar navbar-light customPanel" style="display: block; margin-bottom: 15px;">
-        <h4>Price preview — {{ $iso }}</h4>
+        <h4>{{ trans('messages.purchase.tools.currency_price_updates.preview') }} — {{ $iso }}</h4>
         <p class="mb-1">Step 3 of 3 — review all affected brands and references before applying the update.</p>
         <div class="row" style="margin-top: 10px;">
             <div class="col-md-3"><strong>Purchase rate:</strong> {{ number_format((float) $currency->purchase_conversion_rate, 8, '.', '') }} → {{ number_format((float) $newPurchaseRate, 8, '.', '') }}</div>
@@ -35,22 +35,54 @@
                         <table class="table table-sm table-hover" style="white-space: nowrap;">
                             <thead><tr>
                                 <th>Reference</th><th>Type</th><th>Purchase {{ $iso }}</th><th>Sale {{ $iso }}</th>
-                                <th>Current purchase €</th><th>New purchase €</th><th>Current sale €</th><th>New sale €</th><th>EUR change</th><th>Status</th>
+                                <th>Current purchase €</th><th>New purchase €</th><th>Current sale €</th><th>New sale €</th><th>Change (€)</th><th>Status</th>
                             </tr></thead>
                             <tbody>
                             @foreach($linesByBrand[$brand->manufacturer_id] as $line)
                                 @php($purchaseDelta = $line['new_purchase_eur'] - $line['old_purchase_eur'])
                                 @php($saleDelta = $line['new_sale_eur'] - $line['old_sale_eur'])
-                                <tr @if($line['invalid_for_update']) style="background: #fee2e2;" @endif>
-                                    <td>{{ $line['reference'] }}</td>
-                                    <td>{{ $line['line_type'] === 'attribute' ? 'Combination' : 'Product' }}</td>
-                                    <td>{{ $line['purchase_base_currency'] === null ? '—' : number_format($line['purchase_base_currency'], 6, '.', '') }}</td>
-                                    <td>{{ $line['sale_base_currency'] === null ? '—' : number_format($line['sale_base_currency'], 6, '.', '') }}</td>
-                                    <td>{{ number_format($line['old_purchase_eur'], 6, '.', '') }}</td>
-                                    <td>{{ number_format($line['new_purchase_eur'], 6, '.', '') }}</td>
-                                    <td>{{ number_format($line['old_sale_eur'], 6, '.', '') }}</td>
-                                    <td>{{ number_format($line['new_sale_eur'], 6, '.', '') }}</td>
-                                    <td style="color: {{ ($purchaseDelta + $saleDelta) > 0 ? '#d97706' : (($purchaseDelta + $saleDelta) < 0 ? '#15803d' : '#555') }}; font-weight: 700;">P {{ $purchaseDelta >= 0 ? '+' : '' }}{{ number_format($purchaseDelta, 6, '.', '') }} / S {{ $saleDelta >= 0 ? '+' : '' }}{{ number_format($saleDelta, 6, '.', '') }}</td>
+                                <tr>
+                                    <td @if($line['purchase_base_currency'] === null || $line['sale_base_currency'] === null) style="background: #fee2e2;" @endif>
+                                        {{ $line['reference'] }}
+                                        @if($line['purchase_base_currency'] === null)
+                                            <span class="badge badge-danger" title="Missing purchase base price"><i class="fa fa-exclamation-triangle"></i> P</span>
+                                        @endif
+                                        @if($line['sale_base_currency'] === null)
+                                            <span class="badge badge-danger" title="Missing sale base price"><i class="fa fa-exclamation-triangle"></i> S</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($line['is_pack'])
+                                            <span class="badge badge-info">Pack</span>
+                                        @elseif($line['line_type'] === 'attribute')
+                                            <span class="badge badge-secondary">A</span>
+                                        @else
+                                            <span class="badge badge-primary">P</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $line['purchase_base_currency'] === null ? '—' : number_format($line['purchase_base_currency'], 2, '.', '') }}</td>
+                                    <td>{{ $line['sale_base_currency'] === null ? '—' : number_format($line['sale_base_currency'], 2, '.', '') }}</td>
+                                    <td>{{ number_format($line['old_purchase_eur'], 2, '.', '') }}</td>
+                                    <td>{{ number_format($line['new_purchase_eur'], 2, '.', '') }}</td>
+                                    <td>{{ number_format($line['old_sale_eur'], 2, '.', '') }}</td>
+                                    <td>{{ number_format($line['new_sale_eur'], 2, '.', '') }}</td>
+                                    <td style="font-weight: 700;">
+                                        @if($line['purchase_updated'])
+                                            <div style="color: {{ $purchaseDelta > 0 ? '#dc3545' : ($purchaseDelta < 0 ? '#198754' : '#6c757d') }};">
+                                                <i class="fa fa-arrow-{{ $purchaseDelta > 0 ? 'up' : ($purchaseDelta < 0 ? 'down' : 'right') }}"></i>
+                                                P {{ $purchaseDelta >= 0 ? '+' : '' }}{{ number_format($purchaseDelta, 2, '.', '') }}
+                                            </div>
+                                        @endif
+                                        @if($line['sale_updated'])
+                                            <div style="color: {{ $saleDelta > 0 ? '#dc3545' : ($saleDelta < 0 ? '#198754' : '#6c757d') }};">
+                                                <i class="fa fa-arrow-{{ $saleDelta > 0 ? 'up' : ($saleDelta < 0 ? 'down' : 'right') }}"></i>
+                                                S {{ $saleDelta >= 0 ? '+' : '' }}{{ number_format($saleDelta, 2, '.', '') }}
+                                            </div>
+                                        @endif
+                                        @if(! $line['purchase_updated'] && ! $line['sale_updated'])
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
                                     <td>{{ $line['reason'] ? str_replace('_', ' ', $line['reason']) : 'Will update' }}</td>
                                 </tr>
                             @endforeach

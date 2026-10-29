@@ -23,12 +23,16 @@
     @if($summary['lines'] === 0)
         <div class="alert alert-warning">No products or combinations were found for this currency.</div>
     @else
-        <ul class="nav nav-tabs" role="tablist">
+        <ul class="nav nav-tabs currency-price-update-tabs" role="tablist" style="display: flex; width: 100%; flex-wrap: nowrap;">
             @foreach($brands as $brand)
-                <li class="nav-item"><a class="nav-link @if($loop->first) active @endif" data-toggle="tab" href="#brand-{{ $brand->manufacturer_id }}" role="tab">{{ $brand->manufacturer }} <span class="badge badge-secondary">{{ $linesByBrand[$brand->manufacturer_id]->count() }}</span></a></li>
+                <li class="nav-item" style="flex: 1 1 0; min-width: 0;">
+                    <a class="nav-link @if($loop->first) active @endif" data-toggle="tab" data-bs-toggle="tab" data-target="#brand-{{ $brand->manufacturer_id }}" href="#brand-{{ $brand->manufacturer_id }}" role="tab" style="display: block; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ $brand->manufacturer }} <span class="badge" style="background: #e2e8f0; color: #334155;">{{ $linesByBrand[$brand->manufacturer_id]->count() }}</span>
+                    </a>
+                </li>
             @endforeach
         </ul>
-        <div class="tab-content" style="border: 1px solid #dee2e6; border-top: 0; padding: 15px; background: #fff;">
+        <div class="tab-content currency-price-update-content" style="border: 1px solid #dee2e6; border-top: 0; padding: 15px; background: #fff;">
             @foreach($brands as $brand)
                 <div class="tab-pane fade @if($loop->first) show active @endif" id="brand-{{ $brand->manufacturer_id }}" role="tabpanel">
                     <div class="table-responsive">
@@ -43,21 +47,21 @@
                                 @php($saleDelta = $line['new_sale_eur'] - $line['old_sale_eur'])
                                 <tr>
                                     <td @if($line['purchase_base_currency'] === null || $line['sale_base_currency'] === null) style="background: #fee2e2;" @endif>
-                                        {{ $line['reference'] }}
                                         @if($line['purchase_base_currency'] === null)
-                                            <span class="badge badge-danger" title="Missing purchase base price"><i class="fa fa-exclamation-triangle"></i> P</span>
+                                            <span class="badge" style="background: #fecaca; border: 1px solid #f87171; color: #991b1b;" title="Missing purchase base price"><i class="fa fa-exclamation-triangle"></i> P</span>
                                         @endif
                                         @if($line['sale_base_currency'] === null)
-                                            <span class="badge badge-danger" title="Missing sale base price"><i class="fa fa-exclamation-triangle"></i> S</span>
+                                            <span class="badge" style="background: #fecaca; border: 1px solid #f87171; color: #991b1b;" title="Missing sale base price"><i class="fa fa-exclamation-triangle"></i> S</span>
                                         @endif
+                                        {{ $line['reference'] }}
                                     </td>
                                     <td>
                                         @if($line['is_pack'])
-                                            <span class="badge badge-info">Pack</span>
+                                            <span class="badge" style="background: #bae6fd; color: #0c4a6e;">Pack</span>
                                         @elseif($line['line_type'] === 'attribute')
-                                            <span class="badge badge-secondary">A</span>
+                                            <span class="badge" style="background: #e2e8f0; color: #334155;">A</span>
                                         @else
-                                            <span class="badge badge-primary">P</span>
+                                            <span class="badge" style="background: #bfdbfe; color: #1e3a8a;">P</span>
                                         @endif
                                     </td>
                                     <td>{{ $line['purchase_base_currency'] === null ? '—' : number_format($line['purchase_base_currency'], 2, '.', '') }}</td>
@@ -93,6 +97,18 @@
             @endforeach
         </div>
 
+        <form method="post" action="{{ route('purchase.tools.currency_price_updates.preview.csv') }}" style="margin-top: 20px;">
+            @csrf
+            <input type="hidden" name="currency_id" value="{{ $currency->id_currency }}">
+            <input type="hidden" name="new_purchase_rate" value="{{ $newPurchaseRate }}">
+            <input type="hidden" name="new_sale_rate" value="{{ $newSaleRate }}">
+            @foreach($brands as $brand)
+                @if($brand->update_purchase)<input type="hidden" name="brand_updates[{{ $brand->manufacturer_id }}][purchase]" value="1">@endif
+                @if($brand->update_sale)<input type="hidden" name="brand_updates[{{ $brand->manufacturer_id }}][sale]" value="1">@endif
+            @endforeach
+            <button type="submit" class="btn btn-info"><i class="fa fa-download"></i> Download preview CSV</button>
+        </form>
+
         @if(! $applyEnabled)
             <div class="alert alert-warning" style="margin-top: 20px;">
                 <strong>Preview-only mode:</strong> price updates are disabled. You can review the calculation, but no EUR prices can be changed yet.
@@ -115,4 +131,26 @@
         @endif
     @endif
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.currency-price-update-tabs [data-target]').forEach(function (tab) {
+        tab.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            var target = document.querySelector(tab.dataset.target);
+            if (!target) return;
+
+            document.querySelectorAll('.currency-price-update-tabs .nav-link').forEach(function (item) {
+                item.classList.remove('active');
+            });
+            document.querySelectorAll('.currency-price-update-content > .tab-pane').forEach(function (pane) {
+                pane.classList.remove('show', 'active');
+            });
+
+            tab.classList.add('active');
+            target.classList.add('show', 'active');
+        });
+    });
+});
+</script>
 @endsection

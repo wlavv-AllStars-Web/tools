@@ -99,6 +99,64 @@ class CurrencyPriceUpdateController extends Controller
             ->with('success', 'EUR prices updated using the selected purchase and sale rates. The operation can be reverted from this log.');
     }
 
+    public function exportPreviewCsv(Request $request)
+    {
+        $data = $this->validatedRate($request);
+
+        try {
+            $preview = $this->currencyPriceUpdates->preview(
+                $data['currency_id'],
+                $data['new_purchase_rate'],
+                $data['new_sale_rate'],
+                $data['brand_updates']
+            );
+        } catch (RuntimeException $exception) {
+            return back()->withInput()->withErrors(['new_purchase_rate' => $exception->getMessage()]);
+        }
+
+        $filename = sprintf(
+            'currency-price-update-preview-%s-%s.csv',
+            strtolower($preview['currency']->iso_code),
+            now()->format('Y-m-d-His')
+        );
+
+        return response()->streamDownload(function () use ($preview) {
+            $output = fopen('php://output', 'wb');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, [
+                'Currency', 'Purchase rate', 'Sale rate', 'Brand', 'Reference', 'Type',
+                'Purchase base currency', 'Sale base currency',
+                'Current purchase EUR', 'New purchase EUR', 'Purchase difference EUR',
+                'Current sale EUR', 'New sale EUR', 'Sale difference EUR', 'Result',
+            ], ';');
+
+            foreach ($preview['brands'] as $brand) {
+                foreach ($preview['linesByBrand'][(int) $brand->manufacturer_id] as $line) {
+                    $type = $line['is_pack'] ? 'Pack' : ($line['line_type'] === 'attribute' ? 'Attribute' : 'Product');
+                    fputcsv($output, [
+                        $preview['currency']->iso_code,
+                        $preview['newPurchaseRate'],
+                        $preview['newSaleRate'],
+                        $brand->manufacturer,
+                        $line['reference'],
+                        $type,
+                        $line['purchase_base_currency'],
+                        $line['sale_base_currency'],
+                        $line['old_purchase_eur'],
+                        $line['new_purchase_eur'],
+                        $line['new_purchase_eur'] - $line['old_purchase_eur'],
+                        $line['old_sale_eur'],
+                        $line['new_sale_eur'],
+                        $line['new_sale_eur'] - $line['old_sale_eur'],
+                        $line['reason'] ?: 'will_update',
+                    ], ';');
+                }
+            }
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function logs(Request $request)
     {
         $batches = CurrencyPriceUpdateBatch::query()

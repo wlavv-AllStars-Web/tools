@@ -568,6 +568,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/', [CurrencyPriceUpdateController::class, 'index'])->name('index');
             Route::get('/confirm', [CurrencyPriceUpdateController::class, 'confirm'])->name('confirm');
             Route::post('/preview', [CurrencyPriceUpdateController::class, 'preview'])->name('preview');
+            Route::post('/preview/csv', [CurrencyPriceUpdateController::class, 'exportPreviewCsv'])->name('preview.csv');
             Route::post('/apply', [CurrencyPriceUpdateController::class, 'apply'])->name('apply');
             Route::get('/logs', [CurrencyPriceUpdateController::class, 'logs'])->name('logs');
             Route::get('/logs/{batch}', [CurrencyPriceUpdateController::class, 'showLog'])->name('logs.show');

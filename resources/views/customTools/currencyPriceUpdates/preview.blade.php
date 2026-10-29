@@ -47,6 +47,12 @@
         background: rgba(255, 255, 255, .28) !important;
         color: #fff !important;
     }
+
+    .currency-price-update-table th:not(:first-child),
+    .currency-price-update-table td:not(:first-child) {
+        text-align: center !important;
+        vertical-align: middle;
+    }
 </style>
 <div class="container-fluid">
     <div class="navbar navbar-light customPanel currency-price-update-summary" style="display: block; margin-bottom: 15px;">
@@ -105,7 +111,7 @@
             @foreach($brands as $brand)
                 <div class="tab-pane fade @if($loop->first) show active @endif" id="brand-{{ $brand->manufacturer_id }}" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover" style="white-space: nowrap;">
+                        <table class="table table-sm table-hover currency-price-update-table" style="white-space: nowrap;">
                             <thead><tr>
                                 <th>Reference</th><th class="text-center">Type</th><th class="text-center">Purchase<br>{{ $iso }}</th><th class="text-center">Sale<br>{{ $iso }}</th>
                                 <th class="text-center">Current<br>purchase €</th><th class="text-center">New<br>purchase €</th><th class="text-center">Current<br>sale €</th><th class="text-center">New<br>sale €</th><th class="text-center">Change<br>(€)</th><th>Status</th>

@@ -2,16 +2,85 @@
 
 @section('content')
 @php($iso = $currency->iso_code)
+<style>
+    .currency-price-update-summary .card {
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+    }
+
+    .currency-price-update-summary strong {
+        color: #0f172a;
+        font-size: 1.05rem;
+    }
+
+    .currency-price-update-tabs {
+        gap: 5px;
+        border-bottom: 0;
+    }
+
+    .currency-price-update-tabs .nav-link {
+        min-height: 52px;
+        padding: .8rem .6rem;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 5px 5px 0 0 !important;
+        background: #f8fafc !important;
+        color: #1d4ed8 !important;
+        font-weight: 700;
+    }
+
+    .currency-price-update-tabs .nav-link:hover {
+        background: #e0f2fe !important;
+    }
+
+    .currency-price-update-tabs .nav-link.active {
+        border-color: #0879df !important;
+        background: #0879df !important;
+        color: #fff !important;
+    }
+
+    .currency-price-update-tabs .badge {
+        background: #e2e8f0 !important;
+        color: #334155 !important;
+    }
+
+    .currency-price-update-tabs .nav-link.active .badge {
+        background: rgba(255, 255, 255, .28) !important;
+        color: #fff !important;
+    }
+</style>
 <div class="container-fluid">
-    <div class="navbar navbar-light customPanel" style="display: block; margin-bottom: 15px;">
-        <h4>{{ trans('messages.purchase.tools.currency_price_updates.preview') }} — {{ $iso }}</h4>
-        <p class="mb-1">Step 3 of 3 — review all affected brands and references before applying the update.</p>
-        <div class="row" style="margin-top: 10px;">
-            <div class="col-md-3"><strong>Purchase rate:</strong> {{ number_format((float) $currency->purchase_conversion_rate, 8, '.', '') }} → {{ number_format((float) $newPurchaseRate, 8, '.', '') }}</div>
-            <div class="col-md-3"><strong>Sale rate:</strong> {{ number_format((float) $currency->sale_conversion_rate, 8, '.', '') }} → {{ number_format((float) $newSaleRate, 8, '.', '') }}</div>
-            <div class="col-md-2"><strong>Brands:</strong> {{ $summary['brands'] }}</div>
-            <div class="col-md-2"><strong>Purchase updates:</strong> {{ $summary['purchase_updates'] }}</div>
-            <div class="col-md-2"><strong>Sale updates:</strong> {{ $summary['sale_updates'] }}</div>
+    <div class="navbar navbar-light customPanel currency-price-update-summary" style="display: block; margin-bottom: 15px;">
+        <div class="row">
+            <div class="col-lg col-md-4 mb-2">
+                <div class="card h-100"><div class="card-body" style="padding: 12px 15px;">
+                    <small class="text-muted d-block">Purchase price</small>
+                    <strong>{{ number_format((float) $currency->purchase_conversion_rate, 2, '.', '') }} → {{ number_format((float) $newPurchaseRate, 2, '.', '') }}</strong>
+                </div></div>
+            </div>
+            <div class="col-lg col-md-4 mb-2">
+                <div class="card h-100"><div class="card-body" style="padding: 12px 15px;">
+                    <small class="text-muted d-block">Sale price</small>
+                    <strong>{{ number_format((float) $currency->sale_conversion_rate, 2, '.', '') }} → {{ number_format((float) $newSaleRate, 2, '.', '') }}</strong>
+                </div></div>
+            </div>
+            <div class="col-lg col-md-4 mb-2">
+                <div class="card h-100"><div class="card-body" style="padding: 12px 15px;">
+                    <small class="text-muted d-block">Brands</small>
+                    <strong>{{ $summary['brands'] }}</strong>
+                </div></div>
+            </div>
+            <div class="col-lg col-md-4 mb-2">
+                <div class="card h-100"><div class="card-body" style="padding: 12px 15px;">
+                    <small class="text-muted d-block">Purchase updates</small>
+                    <strong>{{ $summary['purchase_updates'] }}</strong>
+                </div></div>
+            </div>
+            <div class="col-lg col-md-4 mb-2">
+                <div class="card h-100"><div class="card-body" style="padding: 12px 15px;">
+                    <small class="text-muted d-block">Sale updates</small>
+                    <strong>{{ $summary['sale_updates'] }}</strong>
+                </div></div>
+            </div>
         </div>
         @if($summary['invalid_lines'] > 0)
             <div class="alert alert-danger" style="margin: 15px 0 0;">

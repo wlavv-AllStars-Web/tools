@@ -107,8 +107,8 @@
                     <div class="table-responsive">
                         <table class="table table-sm table-hover" style="white-space: nowrap;">
                             <thead><tr>
-                                <th>Reference</th><th>Type</th><th>Purchase {{ $iso }}</th><th>Sale {{ $iso }}</th>
-                                <th>Current purchase €</th><th>New purchase €</th><th>Current sale €</th><th>New sale €</th><th>Change (€)</th><th>Status</th>
+                                <th>Reference</th><th class="text-center">Type</th><th class="text-center">Purchase<br>{{ $iso }}</th><th class="text-center">Sale<br>{{ $iso }}</th>
+                                <th class="text-center">Current<br>purchase €</th><th class="text-center">New<br>purchase €</th><th class="text-center">Current<br>sale €</th><th class="text-center">New<br>sale €</th><th class="text-center">Change<br>(€)</th><th>Status</th>
                             </tr></thead>
                             <tbody>
                             @foreach($linesByBrand[$brand->manufacturer_id] as $line)
@@ -139,18 +139,18 @@
                                     <td>{{ number_format($line['new_purchase_eur'], 2, '.', '') }}</td>
                                     <td>{{ number_format($line['old_sale_eur'], 2, '.', '') }}</td>
                                     <td>{{ number_format($line['new_sale_eur'], 2, '.', '') }}</td>
-                                    <td style="font-weight: 700;">
+                                    <td class="text-center" style="font-weight: 700;">
                                         @if($line['purchase_updated'])
-                                            <div style="color: {{ $purchaseDelta > 0 ? '#dc3545' : ($purchaseDelta < 0 ? '#198754' : '#6c757d') }};">
+                                            <span style="color: {{ $purchaseDelta > 0 ? '#dc3545' : ($purchaseDelta < 0 ? '#198754' : '#6c757d') }}; white-space: nowrap;">
                                                 <i class="fa fa-arrow-{{ $purchaseDelta > 0 ? 'up' : ($purchaseDelta < 0 ? 'down' : 'right') }}"></i>
                                                 P {{ $purchaseDelta >= 0 ? '+' : '' }}{{ number_format($purchaseDelta, 2, '.', '') }}
-                                            </div>
+                                            </span>
                                         @endif
                                         @if($line['sale_updated'])
-                                            <div style="color: {{ $saleDelta > 0 ? '#dc3545' : ($saleDelta < 0 ? '#198754' : '#6c757d') }};">
+                                            <span style="color: {{ $saleDelta > 0 ? '#dc3545' : ($saleDelta < 0 ? '#198754' : '#6c757d') }}; white-space: nowrap; margin-left: 8px;">
                                                 <i class="fa fa-arrow-{{ $saleDelta > 0 ? 'up' : ($saleDelta < 0 ? 'down' : 'right') }}"></i>
                                                 S {{ $saleDelta >= 0 ? '+' : '' }}{{ number_format($saleDelta, 2, '.', '') }}
-                                            </div>
+                                            </span>
                                         @endif
                                         @if(! $line['purchase_updated'] && ! $line['sale_updated'])
                                             <span class="text-muted">—</span>

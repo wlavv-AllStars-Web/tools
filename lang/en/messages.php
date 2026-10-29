@@ -448,6 +448,7 @@ return [
     "currencyPriceUpdates" => "Currency price updates",
     "currencyPriceUpdates.index" => "Currency price updates",
     "currencyPriceUpdates.logs" => "Logs",
+    "purchase.tools.currency_price_updates.index" => "UPDATE",
     
     
     "tasks" => "Tasks",

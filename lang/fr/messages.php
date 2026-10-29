@@ -301,4 +301,5 @@ return [
     'currencyPriceUpdates' => 'Mise à jour des prix par devise',
     'currencyPriceUpdates.index' => 'Mise à jour des prix par devise',
     'currencyPriceUpdates.logs' => 'LOGS',
+    'purchase.tools.currency_price_updates.index' => 'UPDATE',
 ];

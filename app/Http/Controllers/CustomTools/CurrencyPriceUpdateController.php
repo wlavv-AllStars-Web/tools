@@ -108,7 +108,7 @@ class CurrencyPriceUpdateController extends Controller
             'currencies' => $this->currencyPriceUpdates->currencies(),
             'breadcrumbs' => $this->breadcrumbs('Currency price update logs'),
             'actions' => [[
-                'name' => 'currencyPriceUpdates.index',
+                'name' => 'purchase.tools.currency_price_updates.index',
                 'icon' => '<i class="fa fa-repeat"></i>',
                 'url' => route('purchase.tools.currency_price_updates.index'),
                 'class' => 'btn-primary',

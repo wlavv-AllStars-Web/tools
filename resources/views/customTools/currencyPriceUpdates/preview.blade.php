@@ -19,13 +19,26 @@
     }
 
     .currency-price-update-tabs .nav-link {
-        min-height: 52px;
-        padding: .8rem .6rem;
+        min-height: 66px;
+        padding: .55rem .6rem;
         border: 1px solid #cbd5e1 !important;
         border-radius: 5px 5px 0 0 !important;
         background: #f8fafc !important;
         color: #1d4ed8 !important;
         font-weight: 700;
+    }
+
+    .currency-price-update-tab-title,
+    .currency-price-update-tab-alerts {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .currency-price-update-tab-alerts {
+        min-height: 20px;
+        margin-top: 3px;
     }
 
     .currency-price-update-tabs .nav-link:hover {
@@ -114,10 +127,12 @@
                     @php($brandLines = $linesByBrand[$brand->manufacturer_id])
                     @php($missingPurchaseCount = $brandLines->where('missing_purchase_base_currency', true)->count())
                     @php($missingSaleCount = $brandLines->where('missing_sale_base_currency', true)->count())
-                    <a class="nav-link @if($loop->first) active @endif" data-toggle="tab" data-bs-toggle="tab" data-target="#brand-{{ $brand->manufacturer_id }}" href="#brand-{{ $brand->manufacturer_id }}" role="tab" style="display: block; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap;">
-                        {{ $brand->manufacturer }} <span class="badge" style="background: #e2e8f0; color: #334155;">{{ $brandLines->count() }}</span>
-                        @if($missingPurchaseCount > 0)<span class="badge currency-price-update-tab-warning" title="{{ $missingPurchaseCount }} reference(s) without a purchase base price">P {{ $missingPurchaseCount }}</span>@endif
-                        @if($missingSaleCount > 0)<span class="badge currency-price-update-tab-warning" title="{{ $missingSaleCount }} reference(s) without a sale base price">S {{ $missingSaleCount }}</span>@endif
+                    <a class="nav-link @if($loop->first) active @endif" data-toggle="tab" data-bs-toggle="tab" data-target="#brand-{{ $brand->manufacturer_id }}" href="#brand-{{ $brand->manufacturer_id }}" role="tab" style="display: block; text-align: center;">
+                        <span class="currency-price-update-tab-title">{{ $brand->manufacturer }} <span class="badge" style="background: #e2e8f0; color: #334155;">{{ $brand->products_count }}</span></span>
+                        <span class="currency-price-update-tab-alerts">
+                            @if($missingPurchaseCount > 0)<span class="badge currency-price-update-tab-warning" title="{{ $missingPurchaseCount }} product or attribute reference(s) without a purchase base price">P {{ $missingPurchaseCount }}</span>@endif
+                            @if($missingSaleCount > 0)<span class="badge currency-price-update-tab-warning" title="{{ $missingSaleCount }} product or attribute reference(s) without a sale base price">S {{ $missingSaleCount }}</span>@endif
+                        </span>
                     </a>
                 </li>
             @endforeach

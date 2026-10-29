@@ -300,4 +300,5 @@ return [
     'currencyPriceUpdates.index' => 'Atualização de preços por moeda',
     'currencyPriceUpdates.logs' => 'LOGS',
     'purchase.tools.currency_price_updates.index' => 'UPDATE',
+    'purchase.tools.currency_price_updates.confirm' => 'CONFIRMAR',
 ];

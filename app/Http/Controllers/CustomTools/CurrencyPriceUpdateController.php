@@ -24,7 +24,7 @@ class CurrencyPriceUpdateController extends Controller
     {
         return view('customTools.currencyPriceUpdates.index', [
             'currencies' => $this->currencyPriceUpdates->currencies(),
-            'breadcrumbs' => $this->breadcrumbs('Currency price updates'),
+            'breadcrumbs' => $this->breadcrumbs(trans('messages.purchase.tools.currency_price_updates.index')),
             'actions' => [[
                 'name' => 'currencyPriceUpdates.logs',
                 'icon' => '<i class="fa fa-history"></i>',
@@ -47,7 +47,7 @@ class CurrencyPriceUpdateController extends Controller
         return view('customTools.currencyPriceUpdates.confirm', [
             'currency' => $currency,
             'brands' => $this->currencyPriceUpdates->brandsForCurrency((int) $currency->id_currency),
-            'breadcrumbs' => $this->breadcrumbs('Currency price updates'),
+            'breadcrumbs' => $this->breadcrumbs(trans('messages.purchase.tools.currency_price_updates.confirm')),
             'actions' => [],
         ]);
     }

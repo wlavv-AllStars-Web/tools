@@ -67,12 +67,16 @@ class CurrencyPriceUpdateService
      * Builds the exact preview used both by the confirmation screen and by apply().
      * Base-currency data is intentionally read-only: only EUR price columns are changed.
      */
-    public function preview(int $currencyId, float $newPurchaseRate, float $newSaleRate): array
+    public function preview(int $currencyId, float $newPurchaseRate, float $newSaleRate, array $brandUpdates): array
     {
         $currency = $this->currency($currencyId);
         $newPurchaseRate = $this->normaliseRate((string) $currency->iso_code, $newPurchaseRate);
         $newSaleRate = $this->normaliseRate((string) $currency->iso_code, $newSaleRate);
-        $brands = $this->brandsForCurrency($currencyId);
+        $brands = $this->selectedBrandsForUpdate($this->brandsForCurrency($currencyId), $brandUpdates);
+        if ($brands->isEmpty()) {
+            throw new RuntimeException('Select at least one valid brand and at least one price type to update.');
+        }
+
         $brandIds = $brands->pluck('manufacturer_id')->map(fn ($id) => (int) $id)->all();
 
         if ($brandIds === []) {
@@ -84,14 +88,17 @@ class CurrencyPriceUpdateService
         $linesByBrand = collect();
 
         foreach ($productRows as $row) {
-            $line = $this->productLine($row, $newPurchaseRate, $newSaleRate);
+            $brand = $brands->firstWhere('manufacturer_id', (int) $row->id_manufacturer);
+            $line = $this->productLine($row, $newPurchaseRate, $newSaleRate, (bool) $brand->update_purchase, (bool) $brand->update_sale);
             $productPreviewById[(int) $line['product_id']] = $line;
-            $linesByBrand->put((int) $line['manufacturer_id'], collect([$line]));
+            $manufacturerId = (int) $line['manufacturer_id'];
+            $linesByBrand->put($manufacturerId, $linesByBrand->get($manufacturerId, collect())->push($line));
         }
 
         foreach ($this->attributeRows($brandIds) as $row) {
             $parent = $productPreviewById[(int) $row->id_product] ?? null;
-            $line = $this->attributeLine($row, $parent, $newPurchaseRate, $newSaleRate);
+            $brand = $brands->firstWhere('manufacturer_id', (int) $row->id_manufacturer);
+            $line = $this->attributeLine($row, $parent, $newPurchaseRate, $newSaleRate, (bool) $brand->update_purchase, (bool) $brand->update_sale);
             $manufacturerId = (int) $line['manufacturer_id'];
             $linesByBrand->put($manufacturerId, $linesByBrand->get($manufacturerId, collect())->push($line));
         }
@@ -115,9 +122,9 @@ class CurrencyPriceUpdateService
         ];
     }
 
-    public function apply(int $currencyId, float $expectedOldPurchaseRate, float $expectedOldSaleRate, float $newPurchaseRate, float $newSaleRate, ?object $user): CurrencyPriceUpdateBatch
+    public function apply(int $currencyId, float $expectedOldPurchaseRate, float $expectedOldSaleRate, float $newPurchaseRate, float $newSaleRate, array $brandUpdates, ?object $user): CurrencyPriceUpdateBatch
     {
-        $preview = $this->preview($currencyId, $newPurchaseRate, $newSaleRate);
+        $preview = $this->preview($currencyId, $newPurchaseRate, $newSaleRate, $brandUpdates);
         $currency = $preview['currency'];
         $currentPurchaseRate = (float) $currency->purchase_conversion_rate;
         $currentSaleRate = (float) $currency->sale_conversion_rate;
@@ -205,6 +212,22 @@ class CurrencyPriceUpdateService
         ]);
     }
 
+    private function selectedBrandsForUpdate(Collection $brands, array $brandUpdates): Collection
+    {
+        return $brands->filter(function (object $brand) use ($brandUpdates) {
+            $selection = $brandUpdates[(string) $brand->manufacturer_id] ?? $brandUpdates[(int) $brand->manufacturer_id] ?? [];
+
+            return filter_var($selection['purchase'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                || filter_var($selection['sale'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        })->map(function (object $brand) use ($brandUpdates) {
+            $selection = $brandUpdates[(string) $brand->manufacturer_id] ?? $brandUpdates[(int) $brand->manufacturer_id] ?? [];
+            $brand->update_purchase = filter_var($selection['purchase'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $brand->update_sale = filter_var($selection['sale'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            return $brand;
+        })->values();
+    }
+
     private function productRows(array $brandIds): Collection
     {
         $prefix = $this->prefix();
@@ -243,15 +266,15 @@ class CurrencyPriceUpdateService
             ]);
     }
 
-    private function productLine(object $row, float $newPurchaseRate, float $newSaleRate): array
+    private function productLine(object $row, float $newPurchaseRate, float $newSaleRate, bool $updatePurchase, bool $updateSale): array
     {
         $purchaseBase = (float) $row->purchase_base;
         $saleBase = (float) $row->sale_base;
         $oldPurchase = (float) $row->wholesale_price;
         $oldSale = (float) $row->price;
         $validForUpdate = $purchaseBase > 0 && $saleBase > 0;
-        $purchaseUpdated = $validForUpdate;
-        $saleUpdated = $validForUpdate;
+        $purchaseUpdated = $validForUpdate && $updatePurchase;
+        $saleUpdated = $validForUpdate && $updateSale;
 
         return [
             'manufacturer_id' => (int) $row->id_manufacturer,
@@ -260,8 +283,8 @@ class CurrencyPriceUpdateService
             'product_attribute_id' => 0,
             'reference' => (string) $row->reference,
             'line_type' => 'product',
-            'purchase_base_currency' => $purchaseUpdated ? $purchaseBase : null,
-            'sale_base_currency' => $saleUpdated ? $saleBase : null,
+            'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
+            'sale_base_currency' => $saleBase > 0 ? $saleBase : null,
             'old_purchase_eur' => $oldPurchase,
             'new_purchase_eur' => $purchaseUpdated ? $this->toEur($purchaseBase, $newPurchaseRate) : $oldPurchase,
             'old_sale_eur' => $oldSale,
@@ -273,7 +296,7 @@ class CurrencyPriceUpdateService
         ];
     }
 
-    private function attributeLine(object $row, ?array $parent, float $newPurchaseRate, float $newSaleRate): array
+    private function attributeLine(object $row, ?array $parent, float $newPurchaseRate, float $newSaleRate, bool $updatePurchase, bool $updateSale): array
     {
         $purchaseBase = (float) $row->purchase_base;
         $saleImpactBase = (float) $row->sale_base_impact;
@@ -282,8 +305,8 @@ class CurrencyPriceUpdateService
         $parentNewSale = (float) ($parent['new_sale_eur'] ?? $parentOldSale);
         $oldImpact = (float) $row->price;
         $validForUpdate = $purchaseBase > 0 && $parentSaleBase > 0 && $saleImpactBase > 0;
-        $purchaseUpdated = $validForUpdate;
-        $saleUpdated = $validForUpdate;
+        $purchaseUpdated = $validForUpdate && $updatePurchase;
+        $saleUpdated = $validForUpdate && $updateSale;
 
         return [
             'manufacturer_id' => (int) $row->id_manufacturer,
@@ -292,7 +315,7 @@ class CurrencyPriceUpdateService
             'product_attribute_id' => (int) $row->id_product_attribute,
             'reference' => (string) ($row->reference ?: $row->product_reference),
             'line_type' => 'attribute',
-            'purchase_base_currency' => $purchaseUpdated ? $purchaseBase : null,
+            'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $parentSaleBase > 0 ? $parentSaleBase + $saleImpactBase : null,
             'old_purchase_eur' => (float) $row->wholesale_price,
             'new_purchase_eur' => $purchaseUpdated ? $this->toEur($purchaseBase, $newPurchaseRate) : (float) $row->wholesale_price,

@@ -57,7 +57,12 @@ class CurrencyPriceUpdateController extends Controller
         $data = $this->validatedRate($request);
 
         try {
-            $preview = $this->currencyPriceUpdates->preview($data['currency_id'], $data['new_purchase_rate'], $data['new_sale_rate']);
+            $preview = $this->currencyPriceUpdates->preview(
+                $data['currency_id'],
+                $data['new_purchase_rate'],
+                $data['new_sale_rate'],
+                $data['brand_updates']
+            );
         } catch (RuntimeException $exception) {
             return back()->withInput()->withErrors(['new_purchase_rate' => $exception->getMessage()]);
         }
@@ -82,6 +87,7 @@ class CurrencyPriceUpdateController extends Controller
                 $data['current_sale_rate'],
                 $data['new_purchase_rate'],
                 $data['new_sale_rate'],
+                $data['brand_updates'],
                 $request->user()
             );
         } catch (RuntimeException $exception) {
@@ -216,6 +222,9 @@ class CurrencyPriceUpdateController extends Controller
             'currency_id' => ['required', 'integer'],
             'new_purchase_rate' => ['required', 'numeric', 'gt:0', 'max:1000000'],
             'new_sale_rate' => ['required', 'numeric', 'gt:0', 'max:1000000'],
+            'brand_updates' => ['required', 'array', 'min:1'],
+            'brand_updates.*.purchase' => ['nullable', 'boolean'],
+            'brand_updates.*.sale' => ['nullable', 'boolean'],
         ];
 
         if ($requireCurrentRate) {
@@ -229,6 +238,7 @@ class CurrencyPriceUpdateController extends Controller
             'currency_id' => (int) $data['currency_id'],
             'new_purchase_rate' => (float) $data['new_purchase_rate'],
             'new_sale_rate' => (float) $data['new_sale_rate'],
+            'brand_updates' => $data['brand_updates'],
             'current_purchase_rate' => isset($data['current_purchase_rate']) ? (float) $data['current_purchase_rate'] : null,
             'current_sale_rate' => isset($data['current_sale_rate']) ? (float) $data['current_sale_rate'] : null,
         ];

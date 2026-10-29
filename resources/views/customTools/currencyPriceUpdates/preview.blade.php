@@ -73,6 +73,10 @@
             <input type="hidden" name="current_sale_rate" value="{{ $currency->sale_conversion_rate }}">
             <input type="hidden" name="new_purchase_rate" value="{{ $newPurchaseRate }}">
             <input type="hidden" name="new_sale_rate" value="{{ $newSaleRate }}">
+            @foreach($brands as $brand)
+                @if($brand->update_purchase)<input type="hidden" name="brand_updates[{{ $brand->manufacturer_id }}][purchase]" value="1">@endif
+                @if($brand->update_sale)<input type="hidden" name="brand_updates[{{ $brand->manufacturer_id }}][sale]" value="1">@endif
+            @endforeach
             <button type="submit" class="btn btn-success">Confirm and update prices</button>
             <a href="{{ route('purchase.tools.currency_price_updates.index') }}" class="btn btn-secondary">Cancel</a>
         </form>

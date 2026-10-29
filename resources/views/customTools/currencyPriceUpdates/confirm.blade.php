@@ -12,6 +12,16 @@
                     <div class="card"><div class="card-body" style="padding: 12px;">
                         <strong>{{ $brand->manufacturer }}</strong><br>
                         <small class="text-muted">{{ $brand->products_count }} products</small>
+                        <div class="mt-2">
+                            <label class="mr-2 mb-0">
+                                <input form="currency-price-preview" type="checkbox" name="brand_updates[{{ $brand->manufacturer_id }}][purchase]" value="1" checked>
+                                Purchase
+                            </label>
+                            <label class="mb-0">
+                                <input form="currency-price-preview" type="checkbox" name="brand_updates[{{ $brand->manufacturer_id }}][sale]" value="1" checked>
+                                Sale
+                            </label>
+                        </div>
                     </div></div>
                 </div>
             @empty
@@ -20,7 +30,7 @@
         </div>
 
         @if($brands->isNotEmpty())
-            <form method="post" action="{{ route('purchase.tools.currency_price_updates.preview') }}" class="row" style="align-items: end;">
+            <form id="currency-price-preview" method="post" action="{{ route('purchase.tools.currency_price_updates.preview') }}" class="row" style="align-items: end;">
                 @csrf
                 <input type="hidden" name="currency_id" value="{{ $currency->id_currency }}">
                 <div class="col-md-3 form-group">
@@ -42,6 +52,7 @@
                     @error('new_sale_rate')<small class="text-danger">{{ $message }}</small>@enderror
                 </div>
                 <div class="col-md-12 form-group">
+                    @error('brand_updates')<small class="text-danger d-block mb-2">{{ $message }}</small>@enderror
                     <button type="submit" class="btn btn-primary">Preview EUR price changes</button>
                 </div>
             </form>

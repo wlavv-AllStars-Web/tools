@@ -42,22 +42,22 @@
             <form id="currency-price-preview" method="post" action="{{ route('purchase.tools.currency_price_updates.preview') }}" class="row" style="align-items: end;">
                 @csrf
                 <input type="hidden" name="currency_id" value="{{ $currency->id_currency }}">
-                <div class="col-md-3 form-group">
+                <div class="col-md-3 form-group text-center">
                     <label>Current purchase rate</label>
-                    <div class="font-weight-bold" style="padding: .375rem 0; color: #475569;">{{ number_format((float) $currency->purchase_conversion_rate, 2, '.', '') }}</div>
+                    <div class="font-weight-bold text-center" style="padding: .375rem 0; color: #475569;">{{ number_format((float) $currency->purchase_conversion_rate, 2, '.', '') }}</div>
                 </div>
-                <div class="col-md-3 form-group">
+                <div class="col-md-3 form-group text-center">
                     <label for="new_purchase_rate">New purchase rate</label>
-                    <input id="new_purchase_rate" name="new_purchase_rate" type="number" class="form-control" step="0.00000001" min="0.00000001" value="{{ old('new_purchase_rate', number_format($currency->iso_code === 'EUR' ? 1 : (float) $currency->purchase_conversion_rate, 2, '.', '')) }}" @if($currency->iso_code === 'EUR') readonly @endif required>
+                    <input id="new_purchase_rate" name="new_purchase_rate" type="number" class="form-control text-center" step="0.00000001" min="0.00000001" value="{{ old('new_purchase_rate', number_format($currency->iso_code === 'EUR' ? 1 : (float) $currency->purchase_conversion_rate, 2, '.', '')) }}" @if($currency->iso_code === 'EUR') readonly @endif required>
                     @error('new_purchase_rate')<small class="text-danger">{{ $message }}</small>@enderror
                 </div>
-                <div class="col-md-3 form-group">
+                <div class="col-md-3 form-group text-center">
                     <label>Current sale rate ({{ $currency->sale_currency_iso }})</label>
-                    <div class="font-weight-bold" style="padding: .375rem 0; color: #475569;">{{ number_format((float) $currency->sale_conversion_rate, 2, '.', '') }}</div>
+                    <div class="font-weight-bold text-center" style="padding: .375rem 0; color: #475569;">{{ number_format((float) $currency->sale_conversion_rate, 2, '.', '') }}</div>
                 </div>
-                <div class="col-md-3 form-group">
+                <div class="col-md-3 form-group text-center">
                     <label for="new_sale_rate">New sale rate</label>
-                    <input id="new_sale_rate" name="new_sale_rate" type="number" class="form-control" step="0.00000001" min="0.00000001" value="{{ old('new_sale_rate', number_format($currency->iso_code === 'EUR' ? 1 : (float) $currency->sale_conversion_rate, 2, '.', '')) }}" @if($currency->iso_code === 'EUR') readonly @endif required>
+                    <input id="new_sale_rate" name="new_sale_rate" type="number" class="form-control text-center" step="0.00000001" min="0.00000001" value="{{ old('new_sale_rate', number_format($currency->iso_code === 'EUR' ? 1 : (float) $currency->sale_conversion_rate, 2, '.', '')) }}" @if($currency->iso_code === 'EUR') readonly @endif required>
                     @error('new_sale_rate')<small class="text-danger">{{ $message }}</small>@enderror
                 </div>
                 <div class="col-md-12 form-group text-center" style="margin-top: 20px;">

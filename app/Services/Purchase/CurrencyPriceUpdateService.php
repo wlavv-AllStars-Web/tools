@@ -261,6 +261,7 @@ class CurrencyPriceUpdateService
                 'p.id_product', 'p.id_manufacturer', 'p.reference as product_reference', 'p.price as product_price',
                 'pa.id_product_attribute', 'pa.reference', 'pa.wholesale_price', 'pa.price',
                 'm.name as manufacturer',
+                DB::raw('COALESCE(cp.wholesale_price_base_currency, 0) as product_purchase_base'),
                 DB::raw('COALESCE(cp.price_base_currency, 0) as product_sale_base'),
                 DB::raw('COALESCE(cpa.wholesale_price_base_currency, 0) as purchase_base'),
                 DB::raw('COALESCE(cpa.price_base_currency, 0) as sale_base_impact'),
@@ -287,6 +288,8 @@ class CurrencyPriceUpdateService
             'is_pack' => (bool) $row->is_pack,
             'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $saleBase > 0 ? $saleBase : null,
+            'missing_purchase_base_currency' => $purchaseBase <= 0,
+            'missing_sale_base_currency' => $saleBase <= 0,
             'old_purchase_eur' => $oldPurchase,
             'new_purchase_eur' => $purchaseUpdated ? $this->toEur($purchaseBase, $newPurchaseRate) : $oldPurchase,
             'old_sale_eur' => $oldSale,
@@ -300,13 +303,17 @@ class CurrencyPriceUpdateService
 
     private function attributeLine(object $row, ?array $parent, float $newPurchaseRate, float $newSaleRate, bool $updatePurchase, bool $updateSale): array
     {
-        $purchaseBase = (float) $row->purchase_base;
+        $attributePurchaseBase = (float) $row->purchase_base;
+        $parentPurchaseBase = (float) $row->product_purchase_base;
+        $purchaseBase = $attributePurchaseBase > 0 ? $attributePurchaseBase : $parentPurchaseBase;
         $saleImpactBase = (float) $row->sale_base_impact;
         $parentSaleBase = (float) $row->product_sale_base;
         $parentOldSale = (float) $row->product_price;
         $parentNewSale = (float) ($parent['new_sale_eur'] ?? $parentOldSale);
         $oldImpact = (float) $row->price;
-        $validForUpdate = $purchaseBase > 0 && $parentSaleBase > 0 && $saleImpactBase > 0;
+        // A combination can intentionally have no own purchase price or sale impact.
+        // In that case it inherits the product purchase price and/or the product sale price.
+        $validForUpdate = $purchaseBase > 0 && $parentSaleBase > 0;
         $purchaseUpdated = $validForUpdate && $updatePurchase;
         $saleUpdated = $validForUpdate && $updateSale;
 
@@ -320,6 +327,8 @@ class CurrencyPriceUpdateService
             'is_pack' => (bool) ($parent['is_pack'] ?? false),
             'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $parentSaleBase > 0 ? $parentSaleBase + $saleImpactBase : null,
+            'missing_purchase_base_currency' => $purchaseBase <= 0,
+            'missing_sale_base_currency' => $parentSaleBase <= 0,
             'old_purchase_eur' => (float) $row->wholesale_price,
             'new_purchase_eur' => $purchaseUpdated ? $this->toEur($purchaseBase, $newPurchaseRate) : (float) $row->wholesale_price,
             'old_sale_eur' => $parentOldSale + $oldImpact,

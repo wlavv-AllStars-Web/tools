@@ -115,11 +115,11 @@
                                 @php($purchaseDelta = $line['new_purchase_eur'] - $line['old_purchase_eur'])
                                 @php($saleDelta = $line['new_sale_eur'] - $line['old_sale_eur'])
                                 <tr>
-                                    <td @if($line['purchase_base_currency'] === null || $line['sale_base_currency'] === null) style="background: #fee2e2;" @endif>
-                                        @if($line['purchase_base_currency'] === null)
+                                    <td @if($line['missing_purchase_base_currency'] || $line['missing_sale_base_currency']) style="background: #fee2e2;" @endif>
+                                        @if($line['missing_purchase_base_currency'])
                                             <span class="badge" style="background: #fecaca; border: 1px solid #f87171; color: #991b1b;" title="Missing purchase base price"><i class="fa fa-exclamation-triangle"></i> P</span>
                                         @endif
-                                        @if($line['sale_base_currency'] === null)
+                                        @if($line['missing_sale_base_currency'])
                                             <span class="badge" style="background: #fecaca; border: 1px solid #f87171; color: #991b1b;" title="Missing sale base price"><i class="fa fa-exclamation-triangle"></i> S</span>
                                         @endif
                                         {{ $line['reference'] }}

@@ -69,9 +69,9 @@ class AutoOrder extends Model
             })
             ->whereIn('o.current_state', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]))
             ->where('o.valid', 1)
-            ->when(config('allstars.auto_orders.import_from'), function ($query, $date) {
-                $query->where('o.date_add', '>=', $date);
-            })
+            // Orders normally reach an eligible paid state within a week.
+            // Keep a fixed 15-day safety window without rescanning migration history.
+            ->where('o.date_add', '>=', now()->subDays(15))
             ->where('od.product_quantity', '>', 0)
             ->where('p.id_manufacturer', '>', 0)
             ->where('p.id_manufacturer', '<>', 202)

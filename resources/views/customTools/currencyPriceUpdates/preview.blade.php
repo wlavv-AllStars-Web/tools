@@ -143,7 +143,7 @@
                     <div class="table-responsive">
                         <table class="table table-sm table-hover currency-price-update-table" style="white-space: nowrap;">
                             <thead><tr>
-                                <th>Reference</th><th class="text-center">Type</th><th class="text-center">Purchase<br>{{ $iso }}</th><th class="text-center">Sale<br>{{ $iso }}</th>
+                                <th>Reference</th><th class="text-center">EOF</th><th class="text-center">ACTIVE</th><th class="text-center">STOCK</th><th class="text-center">Type</th><th class="text-center">Purchase<br>{{ $iso }}</th><th class="text-center">Sale<br>{{ $iso }}</th>
                                 <th class="text-center">Current<br>purchase €</th><th class="text-center">New<br>purchase €</th><th class="text-center">Current<br>sale €</th><th class="text-center">New<br>sale €</th><th class="text-center">Change<br>(€)</th><th>Status</th>
                             </tr></thead>
                             <tbody>
@@ -160,6 +160,21 @@
                                         @endif
                                         {{ $line['reference'] }}
                                     </td>
+                                    <td>
+                                        @if($line['is_eof'])
+                                            <span class="badge" style="background: #fecaca; color: #991b1b;">YES</span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($line['is_active'])
+                                            <span class="badge" style="background: #dcfce7; color: #166534;">YES</span>
+                                        @else
+                                            <span class="badge" style="background: #e2e8f0; color: #475569;">NO</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ number_format($line['stock_quantity'], 0, '.', '') }}</td>
                                     <td>
                                         @if($line['is_pack'])
                                             <span class="badge" style="background: #bae6fd; color: #0c4a6e;">Pack</span>

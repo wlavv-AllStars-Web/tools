@@ -235,13 +235,20 @@ class CurrencyPriceUpdateService
         return DB::connection('mysql2')->table($prefix . 'product as p')
             ->join($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
+            ->leftJoin($prefix . 'stock_available as sa', function ($join) {
+                $join->on('sa.id_product', '=', 'p.id_product')
+                    ->where('sa.id_product_attribute', '=', 0)
+                    ->where('sa.id_shop', '=', 0);
+            })
             ->whereIn('p.id_manufacturer', $brandIds)
             ->orderBy('m.name')->orderBy('p.reference')
             ->get([
-                'p.id_product', 'p.id_manufacturer', 'p.reference', 'p.wholesale_price', 'p.price',
+                'p.id_product', 'p.id_manufacturer', 'p.reference', 'p.wholesale_price', 'p.price', 'p.active',
                 'm.name as manufacturer',
                 DB::raw('COALESCE(cp.wholesale_price_base_currency, 0) as purchase_base'),
                 DB::raw('COALESCE(cp.price_base_currency, 0) as sale_base'),
+                DB::raw('COALESCE(cp.wmdeprecated, 0) as is_eof'),
+                DB::raw('COALESCE(sa.quantity, 0) as stock_quantity'),
                 DB::raw("EXISTS (SELECT 1 FROM {$prefix}pack AS pk WHERE pk.id_product_pack = p.id_product) as is_pack"),
             ]);
     }
@@ -255,14 +262,20 @@ class CurrencyPriceUpdateService
             ->join($prefix . 'manufacturer as m', 'm.id_manufacturer', '=', 'p.id_manufacturer')
             ->leftJoin($prefix . 'custom_product as cp', 'cp.id_product', '=', 'p.id_product')
             ->leftJoin($prefix . 'custom_product_attribute as cpa', 'cpa.id_product_attribute', '=', 'pa.id_product_attribute')
+            ->leftJoin($prefix . 'stock_available as sa', function ($join) {
+                $join->on('sa.id_product_attribute', '=', 'pa.id_product_attribute')
+                    ->where('sa.id_shop', '=', 0);
+            })
             ->whereIn('p.id_manufacturer', $brandIds)
             ->orderBy('m.name')->orderBy('p.reference')->orderBy('pa.reference')
             ->get([
-                'p.id_product', 'p.id_manufacturer', 'p.reference as product_reference', 'p.price as product_price',
+                'p.id_product', 'p.id_manufacturer', 'p.reference as product_reference', 'p.price as product_price', 'p.active',
                 'pa.id_product_attribute', 'pa.reference', 'pa.wholesale_price', 'pa.price',
                 'm.name as manufacturer',
                 DB::raw('COALESCE(cp.wholesale_price_base_currency, 0) as product_purchase_base'),
                 DB::raw('COALESCE(cp.price_base_currency, 0) as product_sale_base'),
+                DB::raw('COALESCE(cp.wmdeprecated, 0) as is_eof'),
+                DB::raw('COALESCE(sa.quantity, 0) as stock_quantity'),
                 DB::raw('COALESCE(cpa.wholesale_price_base_currency, 0) as purchase_base'),
                 DB::raw('COALESCE(cpa.price_base_currency, 0) as sale_base_impact'),
             ]);
@@ -286,6 +299,9 @@ class CurrencyPriceUpdateService
             'reference' => (string) $row->reference,
             'line_type' => 'product',
             'is_pack' => (bool) $row->is_pack,
+            'is_eof' => (bool) $row->is_eof,
+            'is_active' => (bool) $row->active,
+            'stock_quantity' => (int) $row->stock_quantity,
             'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $saleBase > 0 ? $saleBase : null,
             'missing_purchase_base_currency' => $purchaseBase <= 0,
@@ -325,6 +341,9 @@ class CurrencyPriceUpdateService
             'reference' => (string) ($row->reference ?: $row->product_reference),
             'line_type' => 'attribute',
             'is_pack' => (bool) ($parent['is_pack'] ?? false),
+            'is_eof' => (bool) $row->is_eof,
+            'is_active' => (bool) $row->active,
+            'stock_quantity' => (int) $row->stock_quantity,
             'purchase_base_currency' => $purchaseBase > 0 ? $purchaseBase : null,
             'sale_base_currency' => $parentSaleBase > 0 ? $parentSaleBase + $saleImpactBase : null,
             'missing_purchase_base_currency' => $purchaseBase <= 0,

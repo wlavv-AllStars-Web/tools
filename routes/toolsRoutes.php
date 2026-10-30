@@ -483,10 +483,10 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('marketing')->name('marketing.tools.')->group(function () {
-// Disabled TV route: Route::get('/tv', [tvController::class, 'index'])->name('tv.index');
-// Disabled TV route: Route::post('/tv/save', [tvController::class, 'store'])->name('tv.store');
-// Disabled TV route: Route::post('/tv/toggle-active/{id}', [tvController::class, 'toggleActive'])->name('tv.toggle_active');
-// Disabled TV route: Route::post('/tv/update-text', [tvController::class, 'changeText'])->name('tv.change_text');
+        Route::get('/tv', [tvController::class, 'index'])->name('tv.index');
+        Route::post('/tv/save', [tvController::class, 'store'])->name('tv.store');
+        Route::post('/tv/toggle-active/{id}', [tvController::class, 'toggleActive'])->name('tv.toggle_active');
+        Route::post('/tv/update-text', [tvController::class, 'changeText'])->name('tv.change_text');
 
         Route::get('/homepage/asm', [HomepageAdminController::class, 'index'])->name('homepage.asm.index');
         Route::get('/homepage/asd', [HomepageASDAdminController::class, 'index'])->name('homepage.asd.index');

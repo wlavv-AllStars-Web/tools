@@ -59,10 +59,13 @@ class autoOrdersController extends Controller
 
     public function calculationLogs(Request $request)
     {
+        $hiddenLogSuppliers = ['Keeup', 'JJC Entreprise', 'PIXARTPRINTING'];
+
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.show', 0), 'no_translation' => 1];
         $this->breadcrumbs[] = ['name' => __('messages.autoOrders.calculationLogs'), 'url' => route('autoOrders.calculationLogs'), 'no_translation' => 1];
 
         $logs = AutoOrdersCalculationLog::query()
+            ->whereNotIn('supplier', $hiddenLogSuppliers)
             ->when($request->filled('reference'), function ($query) use ($request) {
                 $query->where('reference', 'like', '%' . trim((string) $request->reference) . '%');
             })
@@ -84,6 +87,7 @@ class autoOrdersController extends Controller
 
         $suppliers = AutoOrdersCalculationLog::query()
             ->whereNotNull('id_supplier')
+            ->whereNotIn('supplier', $hiddenLogSuppliers)
             ->select('id_supplier', 'supplier')
             ->distinct()
             ->orderBy('supplier')

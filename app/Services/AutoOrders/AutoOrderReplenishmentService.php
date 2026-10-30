@@ -33,30 +33,36 @@ class AutoOrderReplenishmentService
      */
     public function refreshAutomaticDrafts(): void
     {
-        AutoOrdersPurchaseList::query()
+        $drafts = AutoOrdersPurchaseList::query()
             ->where('is_automatic', true)
             ->orderBy('id')
-            ->eachById(function (AutoOrdersPurchaseList $draft): void {
-                $product = AutoOrdersPurchaseList::getPrestashopProductInfo((string) $draft->reference);
+            ->get();
 
-                if ($product === null) {
-                    return;
-                }
+        $soldByReference = orders_details::getSoldByReferences(
+            $drafts->pluck('reference')->all()
+        );
 
-                $salesLast12Months = (int) orders_details::getSoldByRefOf((string) $draft->reference);
-                $physicalStock = (int) $product->quantity;
-                $stockArrive = (int) $product->stock_arrive;
-                $targetStock = (int) ceil($salesLast12Months / 2);
-                $quantityCalculated = max(0, $targetStock - $physicalStock - $stockArrive);
+        $drafts->each(function (AutoOrdersPurchaseList $draft) use ($soldByReference): void {
+            $product = AutoOrdersPurchaseList::getPrestashopProductInfo((string) $draft->reference);
 
-                if ((int) $draft->quantity < $quantityCalculated) {
-                    $draft->quantity = $quantityCalculated;
-                }
+            if ($product === null) {
+                return;
+            }
 
-                $draft->automatic_expected_quantity = $quantityCalculated;
-                $draft->automatic_calculated_at = now();
-                $draft->save();
-            });
+            $salesLast12Months = (int) ($soldByReference[(string) $draft->reference] ?? 0);
+            $physicalStock = (int) $product->quantity;
+            $stockArrive = (int) $product->stock_arrive;
+            $targetStock = (int) ceil($salesLast12Months / 2);
+            $quantityCalculated = max(0, $targetStock - $physicalStock - $stockArrive);
+
+            if ((int) $draft->quantity < $quantityCalculated) {
+                $draft->quantity = $quantityCalculated;
+            }
+
+            $draft->automatic_expected_quantity = $quantityCalculated;
+            $draft->automatic_calculated_at = now();
+            $draft->save();
+        });
     }
 
     private function processSale(array $sale): void

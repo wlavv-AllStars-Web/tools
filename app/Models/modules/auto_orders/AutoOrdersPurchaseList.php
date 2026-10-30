@@ -35,6 +35,9 @@ class AutoOrdersPurchaseList extends Model
                     'only_counters' => true
                 ];
             }else{
+                $soldByReference = orders_details::getSoldByReferences(
+                    $products_data->pluck('reference')->all()
+                );
                 
                 foreach($products_data AS $product){
     
@@ -50,7 +53,7 @@ class AutoOrdersPurchaseList extends Model
                         $stock = $productInfo->quantity;
                         $qtd_arrive = $productInfo->stock_arrive;
                         $notes = $productInfo->notes;
-                        $sold = orders_details::getSoldByRefOf( $product['reference'] );
+                        $sold = (int) ($soldByReference[(string) $product['reference']] ?? 0);
                         $isRecentProduct = !empty($productInfo->product_date_add)
                             && $productInfo->product_date_add >= now()->subMonths(6)->toDateTimeString();
                     }

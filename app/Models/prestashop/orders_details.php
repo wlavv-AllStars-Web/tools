@@ -108,6 +108,76 @@ class orders_details extends PrestashopModel
         return $snapshotSold + $dynamicSold;
     }
 
+    /**
+     * Return the 12-month sold quantity for several references at once.
+     *
+     * The individual getSoldByRefOf() query is useful for a single product,
+     * but using it while rendering an Auto Orders list causes an expensive
+     * pair of aggregate queries for every row. This preserves its matching
+     * rules (attribute reference, plus product reference without an
+     * attribute) while aggregating all requested references in bulk.
+     */
+    public static function getSoldByReferences(array $references): array
+    {
+        $references = array_values(array_unique(array_filter(array_map(
+            static fn ($reference) => trim((string) $reference),
+            $references
+        ), static fn ($reference) => $reference !== '')));
+
+        if ($references === []) {
+            return [];
+        }
+
+        $sold = array_fill_keys($references, 0);
+        $orderDetailTable = self::tableName('order_detail');
+
+        // Keep chunks comfortably below practical MySQL IN() limits while
+        // still reducing hundreds of per-reference queries to a few queries.
+        foreach (array_chunk($references, 500) as $chunk) {
+            $snapshotByAttribute = self::soldSnapshotQuery()
+                ->whereIn('attribute_reference', $chunk)
+                ->selectRaw('attribute_reference as reference, SUM(quantity_sold) as quantity_sold')
+                ->groupBy('attribute_reference')
+                ->get();
+
+            foreach ($snapshotByAttribute as $row) {
+                $reference = (string) $row->reference;
+                if (array_key_exists($reference, $sold)) {
+                    $sold[$reference] += (int) $row->quantity_sold;
+                }
+            }
+
+            $snapshotByProduct = self::soldSnapshotQuery()
+                ->whereIn('reference', $chunk)
+                ->where('id_product_attribute', 0)
+                ->selectRaw('reference, SUM(quantity_sold) as quantity_sold')
+                ->groupBy('reference')
+                ->get();
+
+            foreach ($snapshotByProduct as $row) {
+                $reference = (string) $row->reference;
+                if (array_key_exists($reference, $sold)) {
+                    $sold[$reference] += (int) $row->quantity_sold;
+                }
+            }
+
+            $dynamicSold = self::soldDynamicQuery()
+                ->whereIn($orderDetailTable . '.product_reference', $chunk)
+                ->selectRaw($orderDetailTable . '.product_reference as reference, SUM(' . $orderDetailTable . '.product_quantity) as quantity_sold')
+                ->groupBy($orderDetailTable . '.product_reference')
+                ->get();
+
+            foreach ($dynamicSold as $row) {
+                $reference = (string) $row->reference;
+                if (array_key_exists($reference, $sold)) {
+                    $sold[$reference] += (int) $row->quantity_sold;
+                }
+            }
+        }
+
+        return $sold;
+    }
+
     public static function getProductsOfOrder($id_order)
     {
         $products = self::select('product_reference')

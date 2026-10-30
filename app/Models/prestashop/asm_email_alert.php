@@ -25,7 +25,6 @@ class asm_email_alert extends PrestashopModel{
         $attributeLangTable = self::tableName('attribute_lang');
         $stockTable = self::tableName('stock_available');
         $packTable = self::tableName('pack');
-        $shopId = (int) config('allstars.stores.ASM.id_shop', 2);
         $languageId = (int) (config('app.id_lang') ?: 1);
 
         $requests = self::select(
@@ -101,7 +100,7 @@ class asm_email_alert extends PrestashopModel{
             ? collect()
             : DB::connection('mysql2')
                 ->table($stockTable)
-                ->where('id_shop', $shopId)
+                ->where('id_shop', 0)
                 ->whereIn('id_product', $stockProductIds->all())
                 ->get(['id_product', 'id_product_attribute', 'quantity'])
                 ->keyBy(fn ($row) => (int) $row->id_product . ':' . (int) $row->id_product_attribute);

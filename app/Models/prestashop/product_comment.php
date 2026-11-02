@@ -21,7 +21,10 @@ class product_comment extends PrestashopModel
 
     public static function dashboard_reviews($type)
     {
-        $pendingReviews = self::where('deleted', 0)
+        // Product comments are scoped by shop. The Sales dashboard is ASM,
+        // whose PrestaShop shop ID is 2.
+        $pendingReviews = self::where('id_shop', 2)
+            ->where('deleted', 0)
             ->where('validate', 0)
             ->count();
 

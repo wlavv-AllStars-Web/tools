@@ -4,11 +4,11 @@
 <div class="container-fluid">
     <div class="navbar navbar-light customPanel" style="margin-bottom: 15px;">
         <form method="get" action="{{ route('autoOrders.calculationLogs') }}" class="row" style="align-items: end;">
-            <div class="col-md-3 form-group">
+            <div class="col-lg-2 col-md-4 form-group">
                 <label for="reference">Reference</label>
                 <input id="reference" type="text" class="form-control" name="reference" value="{{ request('reference') }}" autocomplete="off">
             </div>
-            <div class="col-md-2 form-group">
+            <div class="col-lg-2 col-md-4 form-group">
                 <label for="supplier">Supplier</label>
                 <select id="supplier" class="form-control" name="supplier">
                     <option value="">All</option>
@@ -17,7 +17,16 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-2 form-group">
+            <div class="col-lg-2 col-md-4 form-group">
+                <label for="manufacturer">Manufacturer</label>
+                <select id="manufacturer" class="form-control" name="manufacturer">
+                    <option value="">All</option>
+                    @foreach($manufacturers as $manufacturer)
+                        <option value="{{ $manufacturer->id_manufacturer }}" @selected((string) request('manufacturer') === (string) $manufacturer->id_manufacturer)>{{ $manufacturer->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4 form-group">
                 <label for="action">Result</label>
                 <select id="action" class="form-control" name="action">
                     <option value="">All</option>
@@ -26,15 +35,15 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-2 form-group">
+            <div class="col-lg-1 col-md-3 form-group">
                 <label for="date_from">From</label>
                 <input id="date_from" type="date" class="form-control" name="date_from" value="{{ request('date_from') }}">
             </div>
-            <div class="col-md-2 form-group">
+            <div class="col-lg-1 col-md-3 form-group">
                 <label for="date_to">To</label>
                 <input id="date_to" type="date" class="form-control" name="date_to" value="{{ request('date_to') }}">
             </div>
-            <div class="col-md-1 form-group">
+            <div class="col-lg-2 col-md-3 form-group">
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Search</button>
             </div>
         </form>

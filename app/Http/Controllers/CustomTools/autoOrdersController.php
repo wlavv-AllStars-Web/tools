@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\prestashop\suppliers;
+use App\Models\prestashop\manufacturers;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_lang;
 use App\Models\prestashop\orders_details;
@@ -61,6 +62,17 @@ class autoOrdersController extends Controller
     {
         $hiddenLogSuppliers = ['Keeup', 'JJC Entreprise', 'PIXARTPRINTING'];
 
+        // Calculation logs are stored in the tools database, while the current
+        // product/manufacturer relationship lives in PrestaShop. Resolve the
+        // matching product IDs first so historical logs need no schema change.
+        $manufacturerProductIds = null;
+        if ($request->filled('manufacturer')) {
+            $manufacturerProductIds = product::query()
+                ->where('id_manufacturer', (int) $request->manufacturer)
+                ->pluck('id_product')
+                ->all();
+        }
+
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.show', 0), 'no_translation' => 1];
         $this->breadcrumbs[] = ['name' => __('messages.autoOrders.calculationLogs'), 'url' => route('autoOrders.calculationLogs'), 'no_translation' => 1];
 
@@ -71,6 +83,15 @@ class autoOrdersController extends Controller
             })
             ->when($request->filled('supplier'), function ($query) use ($request) {
                 $query->where('id_supplier', (int) $request->supplier);
+            })
+            ->when($manufacturerProductIds !== null, function ($query) use ($manufacturerProductIds) {
+                if (empty($manufacturerProductIds)) {
+                    $query->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $query->whereIn('id_product', $manufacturerProductIds);
             })
             ->when($request->filled('action'), function ($query) use ($request) {
                 $query->where('action', $request->action);
@@ -99,11 +120,14 @@ class autoOrdersController extends Controller
             ->orderBy('action')
             ->pluck('action');
 
+        $manufacturers = manufacturers::getManufacturersForSelect();
+
         return view('customTools.autoOrders.calculation_logs', [
             'actions' => [],
             'breadcrumbs' => $this->breadcrumbs,
             'logs' => $logs,
             'suppliers' => $suppliers,
+            'manufacturers' => $manufacturers,
             'logActions' => $actions,
         ]);
     }

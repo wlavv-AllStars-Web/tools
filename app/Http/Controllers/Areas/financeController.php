@@ -689,13 +689,14 @@ class financeController extends Controller
             return true;
         }
 
-        foreach (['SHIPPING', 'UPS', 'DPD', 'NAC', 'MON.REL'] as $prefix) {
+        foreach (['SHIPPING', 'UPS', 'DPD', 'NAC', 'MON.REL', 'INP'] as $prefix) {
             if (self::startsWith($reference, $prefix)) {
                 return true;
             }
         }
 
-        return stripos($description, 'shipping') !== false
+        return str_ends_with($reference, '-PARTS')
+            || stripos($description, 'shipping') !== false
             || stripos($description, 'portes') !== false
             || stripos($description, 'transport') !== false;
     }

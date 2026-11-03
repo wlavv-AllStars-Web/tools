@@ -51,25 +51,15 @@ class webController extends Controller{
     private function accessList(){
         
         $accessList = array();
-        $accessList[]                           = ['name' => trans('messages.cars'),         'url' => route('marketing.tools.car_gallery.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-car"></i>'];
-        $accessList[]                           = ['name' => trans('messages.asg_events'),   'url' => route('asg_events.index'),                   'icon' => '<i style="font-size: 40px;" class="fa-solid fa-calendar-days"></i>'];
-        $accessList[]                           = ['name' => trans('messages.homepage'),     'url' => route('marketing.tools.homepage.asm.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];
-        $accessList[]                           = ['name' => trans('messages.homepage_asd'), 'url' => route('marketing.tools.homepage.asd.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-house-laptop"></i>'];
         $accessList[] = ['name' => trans('messages.asm_resources'), 'url' => route('web.tools.resources.asm.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[] = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.logs'),               'url' => route('logs.index'),                       'icon' => '<i style="font-size: 40px;" class="fa fa-history" aria-hidden="true"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.trackingTranslation'),'url' => route('web.tools.tracking.index'),         'icon' => '<i style="font-size: 40px;" class="fa-solid fa-language"></i>'];
-        $accessList[]                           = ['name' => 'Return / Warranty',                    'url' => route('web.tools.return_warranty.index'),  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-arrow-rotate-left"></i>'];
-        $accessList[]                           = ['name' =>  trans('messages.changesTracker'),     'url' => route('web.tools.changes.index'),          'icon' => '<i style="font-size: 40px;" class="fa-solid fa-code"></i>'];
-        $accessList[]                           = ['name' => trans('messages.web.tools.auto_backorder.index'), 'url' => route('web.tools.auto_backorder.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-rotate-left"></i>'];
-        $accessList[]                           = ['name' => 'Customer cart access', 'url' => route('web.tools.customer_cart_access.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-user-shield"></i>'];
 
         /**
         $accessList[]                           = ['name' =>  trans('messages.purchasePrice'),      'url' => route('purchasePrice.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.basePrice'),        'url' => route('basePrice.index'),                  'icon' => '<i style="font-size: 40px;" class="fa-solid fa-eur"></i>'];
         **/
         
-        $accessList[] = ['name' => 'Stock audit', 'url' => route('web.tools.stock_audit.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-stacked"></i>'];
         return $accessList;
     }
 }

@@ -1,8 +1,9 @@
-<nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
-    <div class="container" style="display: inline-block;padding: 0;">
+<nav class="navbar navbar-expand-md navbar-light side-menu-nav">
+    <div class="container side-menu-container">
         <a class="navbar-brand sideMenuLogo" href="{{ route('dashboard.index') }}">
-            <img src="/admin/images/allstarsweb.gif" style="width: calc(100% - 20px); margin: 10px; @guest display: none; @endif">
+            <img src="/admin/images/allstarsweb.gif" alt="All Stars Group">
         </a>
+        <div class="side-menu-heading"><span class="side-menu-heading__accent"></span>Control panel</div>
         <div class="navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto margin-auto sideMenuUL">
 
@@ -23,7 +24,7 @@
                 <li class="nav-item text-center @if(Route::is('finance.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('finance.index') }}">
                         <div><i class="fa-solid fa-chart-line" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('menu.finance') }}</div>
+                        <div class="sideMenuText"> ACCOUNTING </div>
                     </a> 
                 </li>
                 <li class="nav-item text-center @if(Route::is('logistics.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
@@ -35,7 +36,7 @@
                 <li class="nav-item text-center @if(Route::is('marketing.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('marketing.index') }}">
                         <div><i class="fa-solid fa-bullhorn" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('menu.marketing') }}</div>
+                        <div class="sideMenuText"> STUDIO </div>
                     </a> 
                 </li>
                 <li class="nav-item text-center @if(Route::is('purchase.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
@@ -59,7 +60,31 @@
                 <li class="nav-item text-center @if(Route::is('documentsManager.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('documentsManager.index') }}">
                         <div><i class="fa-solid fa-folder" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('messages.Documents Manager') }}</div>
+                        <div class="sideMenuText"> DOCUMENTS </div>
+                    </a>
+                </li>
+                <li class="nav-item text-center @if(request()->routeIs('suppliersMap.*', 'purchase.tools.suppliers.map.*', 'backoffice.tools.suppliers.map.*')) active-link @endif" style="display: inline-block;height: 90px;">
+                    <a class="nav-link uppercase" href="{{ route('purchase.tools.suppliers.map.index') }}">
+                        <div><i class="fa-solid fa-map-location-dot" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> SUPPLIER MAP </div>
+                    </a>
+                </li>
+                <li class="nav-item text-center @if(request()->routeIs('logistics.tools.shipping.*')) active-link @endif" style="display: inline-block;height: 90px;">
+                    <a class="nav-link uppercase" href="{{ route('logistics.tools.shipping.index') }}">
+                        <div><i class="fa-solid fa-truck-fast" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> SHIP STATS </div>
+                    </a>
+                </li>
+                <li class="nav-item text-center @if(Route::is('afterSales.index')) active-link @endif" style="display: inline-block;height: 90px;">
+                    <a class="nav-link uppercase" href="{{ route('afterSales.index') }}">
+                        <div><i class="fa-solid fa-headset" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> AFTER SALES </div>
+                    </a>
+                </li>
+                <li class="nav-item text-center @if(Route::is('design.index')) active-link @endif" style="display: inline-block;height: 90px;">
+                    <a class="nav-link uppercase" href="{{ route('design.index') }}">
+                        <div><i class="fa-solid fa-pen-ruler" style="font-size: 30px;"></i></div>
+                        <div class="sideMenuText"> DESIGN </div>
                     </a>
                 </li>
             </ul>

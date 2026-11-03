@@ -62,6 +62,7 @@ class salesController extends Controller
         $accessList[]                           = ['name' =>  trans('messages.warranties'),             'url' => route('sales.tools.warranties.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-award"></i>'];
         $accessList[]                           = ['name' =>  'Payment links',                           'url' => route('sales.tools.payment_links.index'),           'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-check-dollar"></i>'];
         $accessList[]                           = ['name' =>  'Product visibility',                      'url' => route('sales.tools.product_visibility.index'),       'icon' => '<i style="font-size: 40px;" class="fa-solid fa-eye"></i>'];
+        $accessList[]                           = ['name' =>  'Customer cart access',                    'url' => route('web.tools.customer_cart_access.index'),       'icon' => '<i style="font-size: 40px;" class="fa-solid fa-user-shield"></i>'];
         $accessList[]                           = ['name' => trans('messages.trustpilot'), 'url' => route('web.tools.trustpilot.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-star"></i>'];
         return $accessList;
     }

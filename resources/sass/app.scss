@@ -9,16 +9,39 @@
 
 
 /** app.blade.js **/
-.sideMenu{ float: left; width: 140px; }
-.mainContainer{ width: calc( 100% - 140px); float: left; }
+.sideMenu{ float: left; width: 236px; min-height: 100vh; background: #f5f7fb; border-right: 1px solid #dfe5ee; }
+.mainContainer{ width: calc(100% - 236px); float: left; }
 #mainMenuMobile{ display: none; }
 #mobileAction{ display: none; }
-.sideMenuUL{ margin-top: 10px;display: inline-block; }
-.sideMenuText{ margin-top: 10px; }
+.side-menu-nav{ display: block; padding: 0; background: transparent; box-shadow: none !important; }
+.side-menu-container{ display: block; padding: 0 10px 14px; }
+.sideMenuLogo{ display: block; margin: 0; padding: 14px 6px 8px; }
+.sideMenuLogo img{ display: block; width: 100%; margin: 0; }
+.side-menu-heading{ display: flex; align-items: center; gap: 8px; padding: 4px 7px 13px; color: #121d32; font-size: 17px; font-weight: 800; }
+.side-menu-heading__accent, .area-action-panel__accent{ display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #ff2639; }
+.sideMenuUL{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; margin: 0; }
+.sideMenuUL .nav-item{ display: block !important; height: auto !important; min-width: 0; padding: 0; border: 1px solid #dfe5ee; border-radius: 8px; background: #fff; overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.sideMenuUL .nav-item:hover{ padding: 0; border-color: #b9c8dd; box-shadow: 0 5px 12px rgba(20, 38, 68, .10); transform: translateY(-1px); }
+.sideMenuUL .nav-item.active-link{ border-color: #ffb6bd; box-shadow: inset 3px 0 0 #ff2639; }
+.sideMenuUL .nav-link{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 78px; padding: 9px 5px; color: #121d32; text-decoration: none; }
+.sideMenuUL .nav-link:hover{ color: #121d32; }
+.sideMenuText{ margin: 0; color: inherit; font-size: 10px; font-weight: 700; line-height: 1.1; text-align: center; text-transform: none; }
 .nav-item{ padding: 10px 0 0 0; }
 .nav-item:hover{ padding: 10px 0 0 0; }
 li.nav-item > a > div:hover { color: dodgerblue; }
 li.nav-item > a:hover { color: dodgerblue; }
+
+.area-action-panel{ padding: 26px; color: #121d32; }
+.area-action-panel__heading{ display: flex; align-items: center; gap: 12px; margin: 0 0 24px; }
+.area-action-panel__heading p{ margin: 0 0 2px; color: #64748b; font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+.area-action-panel__heading h1{ margin: 0; font-size: 34px; font-weight: 800; }
+.area-action-panel__body{ padding: 24px; border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; box-shadow: 0 4px 18px rgba(20, 38, 68, .05); }
+.area-action-panel__body h2{ margin: 0 0 16px; font-size: 25px; font-weight: 800; }
+.area-action-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.area-action-card{ display: flex; min-height: 128px; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px 10px; border: 1px solid #dfe5ee; border-radius: 8px; color: #121d32; font-size: 15px; font-weight: 700; line-height: 1.2; text-align: center; text-decoration: none; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.area-action-card:hover{ border-color: #b9c8dd; box-shadow: 0 5px 12px rgba(20, 38, 68, .10); color: #121d32; transform: translateY(-1px); }
+.area-action-card i{ font-size: 34px; }
+.sideMenuUL .nav-link:hover, .sideMenuUL .nav-link:hover .sideMenuText{ color: #121d32; }
 
 
 .card-body { background-color: #FFF; border-radius: 10px; }
@@ -60,6 +83,7 @@ li.nav-item > a:hover { color: dodgerblue; }
     .sideMenuUL >li{ width: 70px; font-size: 14px;}
     .sideMenuText{ font-size: 10px; }
     .sideMenuLogo{ display: none; }
+    .side-menu-heading{ display: none; }
     #mobileMenu{ display: none; }
     .mobileMenuItem{ width: 25%; float: left; height: 75px; padding: 15px 0; border: 1px solid #ddd; }
     #desktopAction{ display: none; }
@@ -74,5 +98,9 @@ li.nav-item > a:hover { color: dodgerblue; }
     .imagesListing{ float: left;width: calc( 50% - 20px);text-align: center; height: 150px; display: inline-table; margin: 10px;}
     .labelContainer{ text-align: right; float: left; font-weight: bolder; width: 150px; }
     .dataContainer{ text-align: left; float: left; overflow-x: hidden; width: calc( 100% - 150px ); }
+    .area-action-panel{ padding: 16px; }
+    .area-action-panel__heading h1{ font-size: 28px; }
+    .area-action-panel__body{ padding: 16px; }
+    .area-action-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 }

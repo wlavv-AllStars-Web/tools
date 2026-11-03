@@ -4,6 +4,8 @@
 use App\Http\Controllers\Areas\dashboardController;
 use App\Http\Controllers\Areas\adminController;
 use App\Http\Controllers\Areas\webController;
+use App\Http\Controllers\Areas\afterSalesController;
+use App\Http\Controllers\Areas\designController;
 use App\Http\Controllers\Areas\hrController;
 use App\Http\Controllers\Areas\financeController;
 use App\Http\Controllers\Areas\logisticsController;
@@ -28,6 +30,8 @@ Route::post( 'customTools/dashboard/shipping_report',   [dashboardController::cl
 
 Route::get('administration', [adminController::class, 'index'])->name('administration.index');
 Route::get('web', [webController::class, 'index'])->name('web.index');
+Route::get('afterSales', [afterSalesController::class, 'index'])->name('afterSales.index');
+Route::get('design', [designController::class, 'index'])->name('design.index');
 Route::post('web/newsletter/send-pending', [webController::class, 'sendPendingNewsletterEmails'])->name('web.newsletter.send_pending');
 Route::get('web/product-export', [WebProductExportController::class, 'index'])->name('web.product_export.index');
 Route::post('web/product-export/generate', [WebProductExportController::class, 'generate'])->name('web.product_export.generate');

@@ -136,6 +136,12 @@
                             <div>ENTRY</div>
                         </a>
                     </div>
+                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;">
+                        <a href="{{ route('web.tools.stock_audit.index') }}" title="STOCK AUDIT">
+                            <div><i class="fa-solid fa-boxes-stacked" style="font-size: 40px;"></i></div>
+                            <div style="line-height: 1.2;">STOCK AUDIT</div>
+                        </a>
+                    </div>
                     {{--
                     <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
                         <span onclick="getShippingReport()" title="SHIPPING REPORT">   

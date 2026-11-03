@@ -49,7 +49,7 @@
                 
                 setTimeout(function() {        
                     var hiddenElement = document.createElement('a');
-                    hiddenElement.href = '{{ request()->getSchemeAndHttpHost() }}' + '/admin/download/' + filename;
+                    hiddenElement.href = '{{ request()->getSchemeAndHttpHost() }}' + '/admin/download/' + filename + '?t=' + Date.now();
                     hiddenElement.className = "export";
                     hiddenElement.target = '_blank';
                     hiddenElement.download = filename;

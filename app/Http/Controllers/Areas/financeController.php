@@ -12,6 +12,7 @@ use App\Models\prestashop\CurrencyVariation;
 use App\Models\prestashop\product;
 use App\Models\modules\issues\issues;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\Finance\CorrectedInventoryService;
 
 use App\Models\modules\dashboard\dashboard;
@@ -547,6 +548,7 @@ class financeController extends Controller
         fputcsv($file, ['FLUXO', 'PERIODO', 'NIF', 'REF', 'NC', 'PAIS', 'PORIGEM', 'REGIAO', 'CODENT', 'NATTRA', 'MODTRA', 'AERPOR', 'MASSA', 'UNSUP', 'VALFAC', 'VAL ESTAT', 'ADQNIF', 'ERRO'], ';');        
         
         $iso_code_list = ['DE', 'AT', 'BE', 'BG', 'CY', 'HR', 'DK', 'SK', 'SI', 'ES', 'EE', 'FI', 'FR', 'GR', 'EL', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'CZ', 'RO', 'SE'];
+        $catalogLookupAvailable = true;
 
         if (($handle = fopen($moloniPath, "r")) !== FALSE) {
 
@@ -566,31 +568,46 @@ class financeController extends Controller
 
                             if(in_array($iso_code, $iso_code_list)){
                                 
-                                $attr = product_attribute::where('reference', $data[12])->first();
-       
-                                if(!is_null($attr)){
-                                    
-                                    $product = product::select('reference')->where('id_product', $attr->id_product)->first();
-                                    $reference = $product->reference;
-                                    
-                                }else{
-                                    $reference = $data[12];
-                                }
-                                
-                                $product = product::select(env('DB2_DB_prefix') . 'product.*', env('DB2_DB_prefix') . 'custom_product.nc')
-                                    ->join( env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer', '=', env('DB2_DB_prefix') . 'product.id_manufacturer' )
-                                    ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
-                                    ->where('reference', $reference)
-                                    ->first();
+                                $reference = $data[12];
+                                $nc = '';
+                                $weight = 0;
+                                $catalogError = $catalogLookupAvailable ? '' : 'CATALOGO_INDISPONIVEL';
 
-                                if(is_null($product)){
-                                    
-                                    $nc='';
-                                    $weight=0;
-                                    
-                                }else{
-                                    $nc=$product->nc;
-                                    $weight = $product->weight;
+                                if ($catalogLookupAvailable) {
+                                    try {
+                                        $attr = product_attribute::where('reference', $data[12])->first();
+
+                                        if (!is_null($attr)) {
+                                            $parentProduct = product::select('reference')
+                                                ->where('id_product', $attr->id_product)
+                                                ->first();
+
+                                            if (!is_null($parentProduct)) {
+                                                $reference = $parentProduct->reference;
+                                            }
+                                        }
+
+                                        $product = product::select(env('DB2_DB_prefix') . 'product.*', env('DB2_DB_prefix') . 'custom_product.nc')
+                                            ->join(env('DB2_DB_prefix') . 'manufacturer', env('DB2_DB_prefix') . 'manufacturer.id_manufacturer', '=', env('DB2_DB_prefix') . 'product.id_manufacturer')
+                                            ->leftJoin(env('DB2_DB_prefix') . 'custom_product', env('DB2_DB_prefix') . 'custom_product.id_product', '=', env('DB2_DB_prefix') . 'product.id_product')
+                                            ->where('reference', $reference)
+                                            ->first();
+
+                                        if (!is_null($product)) {
+                                            $nc = $product->nc;
+                                            $weight = $product->weight;
+                                        } else {
+                                            $catalogError = 'PRODUTO_NAO_ENCONTRADO';
+                                        }
+                                    } catch (\Throwable $exception) {
+                                        $catalogLookupAvailable = false;
+                                        $catalogError = 'CATALOGO_INDISPONIVEL';
+
+                                        Log::warning('Intrastat export proceeding without product catalogue data.', [
+                                            'reference' => $reference,
+                                            'exception' => $exception->getMessage(),
+                                        ]);
+                                    }
                                 }
                                     
                                 $nif='';
@@ -605,7 +622,7 @@ class financeController extends Controller
                                 $weight = str_replace(".",",", $weight );
                                 
                                 
-                                $array = ['INTRA-EX', $period, '513881387', $data[12], $nc, $iso_code, 'PT', '10', 'EXW', '11', '3', '', $weight, $data[15], (int) round($this->parseMoloniDecimal($data[18])), '', $nif, ''];
+                                $array = ['INTRA-EX', $period, '513881387', $data[12], $nc, $iso_code, 'PT', '10', 'EXW', '11', '3', '', $weight, $data[15], (int) round($this->parseMoloniDecimal($data[18])), '', $nif, $catalogError];
                                 
                                 fputcsv($file, $array, ';');
                             }

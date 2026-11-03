@@ -480,9 +480,11 @@ class financeController extends Controller
                 ->table('ps_product as product')
                 ->leftJoin('ps_custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
                 ->leftJoin('ps_manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
+                ->leftJoin('ps_supplier as supplier', 'supplier.id_supplier', '=', 'product.id_supplier')
+                ->leftJoin('ps_country as supplier_country', 'supplier_country.id_country', '=', 'supplier.id_country')
                 ->whereIn('product.id_product', $productIds)
                 ->whereIn('product.id_manufacturer', $manufacturerIds)
-                ->select('product.id_product', 'product.reference', 'product.weight', 'product.wholesale_price', 'custom_product.nc', 'manufacturer.country_code as iso_code')
+                ->select('product.id_product', 'product.reference', 'product.weight', 'product.wholesale_price', 'custom_product.nc', 'supplier_country.iso_code as supplier_iso_code')
                 ->get()
                 ->keyBy('id_product');
 
@@ -503,7 +505,7 @@ class financeController extends Controller
             $attributeReference = $attributes->get((int) $line->product_attribute_id);
 
             return (object) [
-                'iso_code' => $product->iso_code,
+                'supplier_iso_code' => $product->supplier_iso_code,
                 'reference' => $attributeReference ?: $product->reference,
                 'qty' => $quantity,
                 'nc' => $product->nc,
@@ -517,7 +519,7 @@ class financeController extends Controller
             $weight = ($weight == 0.0) ? 0.1 : $weight;
             $weight = str_replace(".",",", $weight );
             
-            fputcsv($file, ['INTRA-CH', $period, '513881387', $row->reference, $row->nc, $row->iso_code, $row->iso_code, '10', 'EXW', '11', '3', '', $weight, $row->qty, intval($row->wholesale_price), '', ''], ";");
+            fputcsv($file, ['INTRA-CH', $period, '513881387', $row->reference, $row->nc, 'PT', $row->supplier_iso_code ?: '', '10', 'EXW', '11', '3', '', $weight, $row->qty, intval($row->wholesale_price), '', ''], ";");
         }
         
         fclose($file);

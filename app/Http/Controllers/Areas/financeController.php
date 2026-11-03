@@ -476,17 +476,28 @@ class financeController extends Controller
 
         $products = $productIds->isEmpty()
             ? collect()
-            : DB::connection('mysql2')
+            : (function () use ($productIds, $manufacturerIds) {
+                $supplierCountries = DB::connection('mysql2')
+                    ->table('ps_address')
+                    ->select('id_supplier', DB::raw('MIN(id_country) as id_country'))
+                    ->where('deleted', 0)
+                    ->where('id_supplier', '>', 0)
+                    ->groupBy('id_supplier');
+
+                return DB::connection('mysql2')
                 ->table('ps_product as product')
                 ->leftJoin('ps_custom_product as custom_product', 'custom_product.id_product', '=', 'product.id_product')
                 ->leftJoin('ps_manufacturer as manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
-                ->leftJoin('ps_supplier as supplier', 'supplier.id_supplier', '=', 'product.id_supplier')
-                ->leftJoin('ps_country as supplier_country', 'supplier_country.id_country', '=', 'supplier.id_country')
+                ->leftJoinSub($supplierCountries, 'supplier_address', function ($join) {
+                    $join->on('supplier_address.id_supplier', '=', 'product.id_supplier');
+                })
+                ->leftJoin('ps_country as supplier_country', 'supplier_country.id_country', '=', 'supplier_address.id_country')
                 ->whereIn('product.id_product', $productIds)
                 ->whereIn('product.id_manufacturer', $manufacturerIds)
                 ->select('product.id_product', 'product.reference', 'product.weight', 'product.wholesale_price', 'custom_product.nc', 'supplier_country.iso_code as supplier_iso_code')
                 ->get()
                 ->keyBy('id_product');
+            })();
 
         $attributes = $attributeIds->isEmpty()
             ? collect()

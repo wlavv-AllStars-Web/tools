@@ -13,7 +13,7 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
-                $hasAction = true;
+                $hasAction = (int) $counter->counter > 0;
                 $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
@@ -22,13 +22,13 @@
             <div class="col-xl-3 col-md-6 nt-monitoring-grid__column">
                 <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
                     <div class="panel panel-default" style="display: flow-root">
-                        <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
+                        <div class="panel-heading text-center" style="text-transform:uppercase;">
                             <div
                                 id="{{ $panelDomId }}_header"
                                 data-panel-title="{{ __("dashboard.$counter->name") }}"
-                                @if($counter->counter > 0 && $headerUrl)
+                                @if($hasAction && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @else
+                                @elseif($hasAction)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
                                 class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
@@ -52,7 +52,7 @@
                         </div>
 
                         @if($hasAction)
-                            <button type="button" class="nt-monitoring-card__footer" @if($counter->counter > 0 && $headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
+                            <button type="button" class="nt-monitoring-card__footer" @if($headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
                                 <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </button>
                         @else
@@ -77,7 +77,7 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
-                $hasAction = true;
+                $hasAction = (int) $counter->counter > 0;
                 $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
@@ -85,13 +85,13 @@
             <div class="col-xl-3 col-md-6 nt-monitoring-grid__column">
                 <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
                     <div class="panel panel-default" style="display: flow-root">
-                        <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
+                        <div class="panel-heading text-center" style="text-transform:uppercase;">
                             <div
                                 id="{{ $panelDomId }}_header"
                                 data-panel-title="{{ __("dashboard.$counter->name") }}"
-                                @if($counter->counter > 0 && $headerUrl)
+                                @if($hasAction && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @else
+                                @elseif($hasAction)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
                                 class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
@@ -115,7 +115,7 @@
                         </div>
 
                         @if($hasAction)
-                            <button type="button" class="nt-monitoring-card__footer" @if($counter->counter > 0 && $headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
+                            <button type="button" class="nt-monitoring-card__footer" @if($headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
                                 <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </button>
                         @else
@@ -136,10 +136,12 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="ntMonitoringModalTitle">Monitoring details</h5>
-                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <div>
+                    <span class="nt-monitoring-modal__eyebrow">Monitoring</span>
+                    <h5 class="modal-title" id="ntMonitoringModalTitle">Monitoring details</h5>
+                    <p class="nt-monitoring-modal__hint">Review the listed items and mark resolved issues when applicable.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="ntMonitoringModalBody"></div>
         </div>

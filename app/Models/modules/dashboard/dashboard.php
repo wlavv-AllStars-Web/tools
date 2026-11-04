@@ -615,8 +615,8 @@ class dashboard extends Model
     }
 
     /**
-     * Orders which cannot be shipped because the order has no shipping value
-     * or no shipping product (ship*) associated with it.
+     * Orders which cannot be shipped because the order has neither a shipping
+     * value nor a shipping product (ship*) associated with it.
      */
     public static function ordersWithoutShipping($tab, $panel)
     {
@@ -637,15 +637,15 @@ class dashboard extends Model
                 ->where('o.valid', 1)
                 ->where('o.date_add', '>=', now()->subDays(15))
                 ->whereNotIn('o.id_order', $exceptionIds)
-                ->where(function ($query) use ($prefix) {
+                ->where(function ($query) {
                     $query->whereNull('o.total_shipping_tax_incl')
-                        ->orWhere('o.total_shipping_tax_incl', '<=', 0)
-                        ->orWhereNotExists(function ($shippingProduct) use ($prefix) {
-                            $shippingProduct->selectRaw('1')
-                                ->from($prefix . 'order_detail as od')
-                                ->whereColumn('od.id_order', 'o.id_order')
-                                ->whereRaw("LOWER(TRIM(COALESCE(od.product_reference, ''))) LIKE ?", ['ship%']);
-                        });
+                        ->orWhere('o.total_shipping_tax_incl', '<=', 0);
+                })
+                ->whereNotExists(function ($shippingProduct) use ($prefix) {
+                    $shippingProduct->selectRaw('1')
+                        ->from($prefix . 'order_detail as od')
+                        ->whereColumn('od.id_order', 'o.id_order')
+                        ->whereRaw("LOWER(TRIM(COALESCE(od.product_reference, ''))) LIKE ?", ['ship%']);
                 })
                 ->select('o.id_order', 'o.reference', 'o.total_shipping_tax_incl')
                 ->orderByDesc('o.id_order')
@@ -657,9 +657,7 @@ class dashboard extends Model
                     'store' => $store,
                     'id_order' => $order->id_order,
                     'reference' => $order->reference,
-                    'issue' => (float) $order->total_shipping_tax_incl <= 0
-                        ? 'Shipping value missing'
-                        : 'Shipping product missing',
+                    'issue' => 'Shipping value and product missing',
                     'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $order->id_order, $store),
                 ];
             }

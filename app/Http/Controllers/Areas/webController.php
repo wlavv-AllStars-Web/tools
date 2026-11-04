@@ -51,8 +51,6 @@ class webController extends Controller{
     private function accessList(){
         
         $accessList = array();
-        $accessList[] = ['name' => trans('messages.asm_resources'), 'url' => route('web.tools.resources.asm.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
-        $accessList[] = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.logs'),               'url' => route('logs.index'),                       'icon' => '<i style="font-size: 40px;" class="fa fa-history" aria-hidden="true"></i>'];
 
         /**

@@ -45,6 +45,16 @@ class designController extends Controller
                     'url' => route('marketing.product_images.index'),
                     'icon' => 'fa-images',
                 ],
+                [
+                    'name' => trans('messages.asm_resources'),
+                    'url' => route('web.tools.resources.asm.index'),
+                    'icon' => 'fa-folder-open',
+                ],
+                [
+                    'name' => trans('messages.resources'),
+                    'url' => route('web.tools.resources.asd.index'),
+                    'icon' => 'fa-folder-open',
+                ],
             ],
         ]);
     }

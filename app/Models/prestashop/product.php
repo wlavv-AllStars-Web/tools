@@ -205,6 +205,7 @@ class product extends PrestashopModel
         $productTable = self::tableName('product');
         $productShopTable = self::tableName('product_shop');
         $manufacturerTable = self::tableName('manufacturer');
+        $exceptionBoard = strtolower($sourceStore . '_not_in_' . $missingStore);
         $sourceShopId = PrestashopAdminLinkService::shopId($sourceStore);
         $missingShopId = PrestashopAdminLinkService::shopId($missingStore);
 
@@ -212,10 +213,13 @@ class product extends PrestashopModel
             return self::productDashboardResponse(
                 sprintf('%s products missing in %s', $sourceStore, $missingStore),
                 $type,
-                strtolower($sourceStore . '_not_in_' . $missingStore),
-                ['id_product', 'reference', 'brand', 'visibility'],
+                $exceptionBoard,
+                ['clean', 'id_product', 'reference', 'brand', 'visibility'],
                 [],
-                ['store' => $sourceStore]
+                [
+                    'store' => $sourceStore,
+                    'exception_fields' => [$exceptionBoard, 'id_product', 'reference', 'brand'],
+                ]
             );
         }
 
@@ -231,6 +235,7 @@ class product extends PrestashopModel
                     ->whereColumn('missing_shop.id_product', $productTable . '.id_product')
                     ->where('missing_shop.id_shop', $missingShopId);
             })
+            ->whereNotIn($productTable . '.id_product', self::excludedProductIds($exceptionBoard))
             ->select(
                 $productTable . '.id_product',
                 $productTable . '.reference',
@@ -240,15 +245,23 @@ class product extends PrestashopModel
             ->orderBy($productTable . '.reference')
             ->orderBy($productTable . '.id_product')
             ->get()
+            ->map(function ($item) {
+                $item->clean = $item->id_product;
+
+                return $item;
+            })
             ->all();
 
         return self::productDashboardResponse(
             sprintf('%s products missing in %s', $sourceStore, $missingStore),
             $type,
-            strtolower($sourceStore . '_not_in_' . $missingStore),
-            ['id_product', 'reference', 'brand', 'visibility'],
+            $exceptionBoard,
+            ['clean', 'id_product', 'reference', 'brand', 'visibility'],
             $data,
-            ['store' => $sourceStore]
+            [
+                'store' => $sourceStore,
+                'exception_fields' => [$exceptionBoard, 'id_product', 'reference', 'brand'],
+            ]
         );
     }
 

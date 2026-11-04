@@ -613,6 +613,66 @@ class dashboard extends Model
             'data'              => $data
         ];  
     }
+
+    /**
+     * Orders which cannot be shipped because the order has no shipping value
+     * or no shipping product (ship*) associated with it.
+     */
+    public static function ordersWithoutShipping($tab, $panel)
+    {
+        $prefix = self::prefix();
+        $exceptionBoard = 'orders_without_shipping';
+        $exceptionIds = asm_dashboard::getExceptions($exceptionBoard)
+            ->pluck('id_product')
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values()
+            ->all();
+        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16]));
+        $data = [];
+
+        foreach (['ASM', 'ASD'] as $store) {
+            $orders = self::ordersBase($store)
+                ->whereIn('o.current_state', $paidStates)
+                ->whereNotIn('o.id_order', $exceptionIds)
+                ->where(function ($query) use ($prefix) {
+                    $query->whereNull('o.total_shipping_tax_incl')
+                        ->orWhere('o.total_shipping_tax_incl', '<=', 0)
+                        ->orWhereNotExists(function ($shippingProduct) use ($prefix) {
+                            $shippingProduct->selectRaw('1')
+                                ->from($prefix . 'order_detail as od')
+                                ->whereColumn('od.id_order', 'o.id_order')
+                                ->whereRaw("LOWER(TRIM(COALESCE(od.product_reference, ''))) LIKE ?", ['ship%']);
+                        });
+                })
+                ->select('o.id_order', 'o.reference', 'o.total_shipping_tax_incl')
+                ->orderByDesc('o.id_order')
+                ->get();
+
+            foreach ($orders as $order) {
+                $data[] = [
+                    'clean' => $order->id_order,
+                    'store' => $store,
+                    'id_order' => $order->id_order,
+                    'reference' => $order->reference,
+                    'issue' => (float) $order->total_shipping_tax_incl <= 0
+                        ? 'Shipping value missing'
+                        : 'Shipping product missing',
+                    'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $order->id_order, $store),
+                ];
+            }
+        }
+
+        return self::dashboardPanel(
+            trans('dashboard.ORDER WITHOUT SHIPPING'),
+            'counter',
+            $exceptionBoard,
+            ['clean', 'store', 'id_order', 'reference', 'issue'],
+            $data,
+            [
+                'exception_fields' => [$exceptionBoard, 'id_order', 'reference', 'store'],
+            ]
+        );
+    }
         
     public static function externalOrdersDuplicatedOrder( $tab, $panel ){ 
 

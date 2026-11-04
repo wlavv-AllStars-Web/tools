@@ -33,13 +33,12 @@ class marketingController extends Controller{
     public function index(){
         $imageReviewManufacturers = $this->imageReviewManufacturers();
         $asdMissingImageBrands = $this->asdMissingImageBrands();
-        $imageReviewPanel = View::make('areas.marketing.includes.image-review-panel', compact('imageReviewManufacturers'))->render();
-        $asdMissingPhotosPanel = View::make('areas.marketing.includes.asd-missing-photos-panel', compact('asdMissingImageBrands'))->render();
-
         $data = [
-            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing', [], $imageReviewPanel . $asdMissingPhotosPanel),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('marketing'),
             'panels'        => [],
             'accessList'    => $this->accessList(),
+            'imageReviewManufacturers' => $imageReviewManufacturers,
+            'asdMissingImageBrands' => $asdMissingImageBrands,
             'actions'       => $this->actions,
             'breadcrumbs'   => $this->breadcrumbs
         ];

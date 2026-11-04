@@ -1,8 +1,5 @@
-<div class="col-lg-4">
-    <div class="navbar navbar-light customPanel">
-        <div class="panel panel-default" style="display: flow-root;">
-            <div class="panel-heading text-center" style="padding: 15px;">
-                <label for="studioAsdImageManufacturer" style="display: block; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">
+<div class="nt-quick-select-action">
+                <label for="studioAsdImageManufacturer">
                     ASD - Product Image Review
                     @if($asdMissingImageBrands->sum('missing_images_count') > 0)
                         <span class="badge bg-danger text-white" style="vertical-align: middle;">{{ $asdMissingImageBrands->sum('missing_images_count') }} images missing</span>
@@ -14,7 +11,4 @@
                         <option value="{{ $brand->id_manufacturer }}">@if($brand->missing_images_count > 0)&#128308; {{ $brand->missing_images_count }} - @endif{{ $brand->name }}</option>
                     @endforeach
                 </select>
-            </div>
-        </div>
-    </div>
 </div>

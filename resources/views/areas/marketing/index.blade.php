@@ -24,6 +24,8 @@
                 </a>
             </div>
             @endforeach
+            @include('areas.marketing.includes.image-review-panel')
+            @include('areas.marketing.includes.asd-missing-photos-panel')
         </div>
     </div>
     @endif

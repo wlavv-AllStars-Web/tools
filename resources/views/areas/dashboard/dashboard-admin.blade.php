@@ -158,8 +158,21 @@
             padding: 15px;
         }
 
+        .logo-container {
+            height: 35%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-container img {
+            max-height: 150px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
         .shop-content {
-            height: 100%;
+            height: 65%;
             display: flex;
             flex-direction: column;
             justify-content: space-evenly;
@@ -267,8 +280,8 @@
                 ['asm',$forcast_asm,$realized_asm,$reached_asm],
             ] as $shop)
                 <div class="card shop-card">
+                    <div class="logo-container"> <img src="/uploads/logos/{{$shop[0]}}-350x250.png?v=1"> </div>
                     <div class="shop-content">
-                        <div class="section-title">{{ strtoupper($shop[0]) }}</div>
                         <div>
                             <div class="section-title">FORCAST</div>
                             <div class="mediumNumber">{{$shop[1]}}</div>

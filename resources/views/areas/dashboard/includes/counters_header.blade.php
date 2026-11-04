@@ -1,4 +1,4 @@
-<div class="row">
+<div class="row nt-monitoring-grid">
 
     @if(!empty($leadingPanel))
         {!! $leadingPanel !!}
@@ -13,10 +13,14 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
+                $hasAction = ($counter->counter > 0 && $headerUrl) || $counter->counter > 0 || $isDeferred;
+                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
+                $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
+                $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
         
-            <div class="col-lg-4">
-                <div class="navbar navbar-light customPanel">
+            <div class="col-xl-3 col-md-6 nt-monitoring-grid__column">
+                <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
@@ -26,33 +30,35 @@
                                 @elseif($counter->counter > 0 || $isDeferred)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
-                                style="
-                                    height: 100px;
-                                    border-radius: 5px;
-                                    padding: 5px 0;
-                                    color: white;
-                                    @if(in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']))
-                                        background-color: dodgerblue; cursor: pointer;
-                                    @elseif($counter->counter < 1)
-                                        background-color: #0BDA51; cursor: {{ $isDeferred ? 'pointer' : 'default' }};
-                                    @else
-                                        background-color: red; cursor: pointer;
-                                    @endif
-                                "
+                                class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
                             >
-                                <div style="font-size: 35px" id="{{ $panelDomId }}_quantity">
+                                <div class="nt-monitoring-card__value" id="{{ $panelDomId }}_quantity">
                                     {{ $counter->counter }}
                                 </div>
 
-                                <div id="{{ $panelDomId }}_loading" style="display: none;">
+                                <div class="nt-monitoring-card__loading" id="{{ $panelDomId }}_loading" style="display: none;">
                                     <div class="spinner"></div>
                                 </div>
 
-                                <div style="font-size: 16px; margin: 0 10px;">
+                                <div class="nt-monitoring-card__name">
                                     {{ __("dashboard.$counter->name") }}
+                                </div>
+                                <div class="nt-monitoring-card__status">
+                                    <i class="fa-solid {{ $state === 'alert' ? 'fa-circle-exclamation' : ($state === 'info' ? 'fa-circle-info' : 'fa-circle-check') }}" aria-hidden="true"></i>
+                                    <span>{{ $stateLabel }}</span>
                                 </div>
                             </div>
                         </div>
+
+                        @if($hasAction)
+                            <button type="button" class="nt-monitoring-card__footer" @if($counter->counter > 0 && $headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
+                                <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                            </button>
+                        @else
+                            <div class="nt-monitoring-card__footer nt-monitoring-card__footer--quiet">
+                                <span>Up to date</span><i class="fa-solid fa-check" aria-hidden="true"></i>
+                            </div>
+                        @endif
 
                         <div id="{{ $panelDomId }}" data-open="0" class="panel-body" style="display: none; overflow-x: scroll;"></div>
                     </div>
@@ -71,9 +77,13 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
+                $hasAction = ($counter->counter > 0 && $headerUrl) || $counter->counter > 0 || $isDeferred;
+                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
+                $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
+                $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
-            <div class="col-lg-4">
-                <div class="navbar navbar-light customPanel">
+            <div class="col-xl-3 col-md-6 nt-monitoring-grid__column">
+                <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
@@ -83,33 +93,35 @@
                                 @elseif($counter->counter > 0 || $isDeferred)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
-                                style="
-                                    height: 100px;
-                                    border-radius: 5px;
-                                    padding: 5px 0;
-                                    color: white;
-                                    @if(in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']))
-                                        background-color: dodgerblue; cursor: pointer;
-                                    @elseif($counter->counter < 1)
-                                        background-color: #0BDA51; cursor: {{ $isDeferred ? 'pointer' : 'default' }};
-                                    @else
-                                        background-color: red; cursor: pointer;
-                                    @endif
-                                "
+                                class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
                             >
-                                <div style="font-size: 35px" id="{{ $panelDomId }}_quantity">
+                                <div class="nt-monitoring-card__value" id="{{ $panelDomId }}_quantity">
                                     {{ $counter->counter }}
                                 </div>
 
-                                <div id="{{ $panelDomId }}_loading" style="display: none;">
+                                <div class="nt-monitoring-card__loading" id="{{ $panelDomId }}_loading" style="display: none;">
                                     <div class="spinner"></div>
                                 </div>
 
-                                <div style="font-size: 16px; margin: 0 10px;">
+                                <div class="nt-monitoring-card__name">
                                     {{ __("dashboard.$counter->name") }}
+                                </div>
+                                <div class="nt-monitoring-card__status">
+                                    <i class="fa-solid {{ $state === 'alert' ? 'fa-circle-exclamation' : ($state === 'info' ? 'fa-circle-info' : 'fa-circle-check') }}" aria-hidden="true"></i>
+                                    <span>{{ $stateLabel }}</span>
                                 </div>
                             </div>
                         </div>
+
+                        @if($hasAction)
+                            <button type="button" class="nt-monitoring-card__footer" @if($counter->counter > 0 && $headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
+                                <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                            </button>
+                        @else
+                            <div class="nt-monitoring-card__footer nt-monitoring-card__footer--quiet">
+                                <span>Up to date</span><i class="fa-solid fa-check" aria-hidden="true"></i>
+                            </div>
+                        @endif
 
                         <div id="{{ $panelDomId }}" data-open="0" class="panel-body" style="display: none; overflow-x: scroll;"></div>
                     </div>

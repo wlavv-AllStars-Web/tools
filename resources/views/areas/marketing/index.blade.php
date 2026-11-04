@@ -31,7 +31,7 @@
     @endif
     
     <section class="nt-monitoring-section">
-        <h2 class="nt-section-title">Monitoring</h2>
+        <div class="nt-monitoring-section__header"><h2 class="nt-section-title">Monitoring</h2><button type="button" class="nt-monitoring-toggle" data-nt-monitoring-toggle aria-pressed="true"><i class="fa-solid fa-list-check" aria-hidden="true"></i><span data-nt-monitoring-toggle-label>Pending only</span></button></div>
         {!! $counters !!}
     </section>
 

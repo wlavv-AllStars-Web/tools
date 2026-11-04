@@ -45,6 +45,8 @@ class StockAuditController extends Controller
 
     public function snapshot(StockAuditService $audit): RedirectResponse
     {
+        abort_unless((int) auth()->id() === 43, 403);
+
         $snapshot = $audit->createSnapshot();
 
         return back()->with('success', 'Backup #' . $snapshot['id'] . ' criado (' . $snapshot['items_count'] . ' linhas).');

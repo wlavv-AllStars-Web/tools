@@ -19,7 +19,7 @@
                 $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
         
-            <div class="col-xl-3 col-md-6 nt-monitoring-grid__column">
+            <div class="col-xl-3 col-md-6 nt-monitoring-grid__column" data-nt-monitoring-pending="{{ (!$isInfo && $hasAction) ? 'true' : 'false' }}">
                 <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="text-transform:uppercase;">
@@ -82,7 +82,7 @@
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
-            <div class="col-xl-3 col-md-6 nt-monitoring-grid__column">
+            <div class="col-xl-3 col-md-6 nt-monitoring-grid__column" data-nt-monitoring-pending="{{ (!$isInfo && $hasAction) ? 'true' : 'false' }}">
                 <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
                     <div class="panel panel-default" style="display: flow-root">
                         <div class="panel-heading text-center" style="text-transform:uppercase;">
@@ -132,6 +132,11 @@
 
 </div>
 
+<div class="nt-monitoring-empty" hidden>
+    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+    <span>No pending actions.</span>
+</div>
+
 <div class="modal fade nt-monitoring-modal" id="ntMonitoringModal" tabindex="-1" role="dialog" aria-labelledby="ntMonitoringModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
         <div class="modal-content">
@@ -167,6 +172,41 @@
 </style>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.querySelector('[data-nt-monitoring-toggle]');
+        const section = toggle?.closest('.nt-monitoring-section');
+
+        if (!toggle || !section) {
+            return;
+        }
+
+        const cards = Array.from(section.querySelectorAll('[data-nt-monitoring-pending]'));
+        const emptyState = section.querySelector('.nt-monitoring-empty');
+        const label = toggle.querySelector('[data-nt-monitoring-toggle-label]');
+
+        const refresh = function () {
+            const pendingOnly = toggle.getAttribute('aria-pressed') === 'true';
+            let visibleCards = 0;
+
+            cards.forEach(function (card) {
+                const visible = !pendingOnly || card.dataset.ntMonitoringPending === 'true';
+                card.hidden = !visible;
+                visibleCards += visible ? 1 : 0;
+            });
+
+            toggle.setAttribute('aria-pressed', pendingOnly ? 'true' : 'false');
+            label.textContent = pendingOnly ? 'Pending only' : 'All panels';
+            emptyState.hidden = visibleCards !== 0;
+        };
+
+        toggle.addEventListener('click', function () {
+            toggle.setAttribute('aria-pressed', toggle.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+            refresh();
+        });
+
+        refresh();
+    });
+
     function getPanelContent(tab, panel, store, panelDomId)
     {
         const header = document.getElementById(panelDomId + '_header');

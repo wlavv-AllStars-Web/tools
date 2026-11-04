@@ -6,9 +6,9 @@
  <div class="col-md-2"><input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control" aria-label="Data inicial"></div>
  <div class="col-md-2"><input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control" aria-label="Data final"></div>
  <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
- @if(auth()->id() === 43)<div class="col-md-2"><button type="submit" form="stock-audit-snapshot-form" class="btn btn-primary w-100">Criar backup agora</button></div>@endif
+ @if((int) auth()->id() === 43)<div class="col-md-2"><button type="submit" form="stock-audit-snapshot-form" class="btn btn-primary w-100">Criar backup agora</button></div>@endif
 </form>
-@if(auth()->id() === 43)<form id="stock-audit-snapshot-form" method="POST" action="{{ route('logistics.tools.stock_audit.snapshot') }}">@csrf</form>@endif
+@if((int) auth()->id() === 43)<form id="stock-audit-snapshot-form" method="POST" action="{{ route('logistics.tools.stock_audit.snapshot') }}">@csrf</form>@endif
 </div></div>
 <div class="card"><div class="card-header">Movimentos</div><div class="table-responsive"><table class="table mb-0">
 <thead><tr><th>Data</th><th>Refer&ecirc;ncia</th><th>Origem</th><th>Encomenda</th><th>User</th><th>Quantity</th><th>Stock arrive</th></tr></thead>

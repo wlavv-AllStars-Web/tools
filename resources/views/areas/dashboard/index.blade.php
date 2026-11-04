@@ -5,7 +5,23 @@
 
 @section('content')
 
-    <style>#yieldContent { width: 100% !important; margin: 0 !important; display: block !important; }</style>
+    <section class="nt-dashboard-heading">
+        <div>
+            <div class="nt-dashboard-eyebrow">ALL STARS GROUP <span aria-hidden="true">|</span> Web Department</div>
+            <h1>Control panel</h1>
+            <p>Visão operacional e acessos rápidos às ferramentas do Back Office.</p>
+        </div>
+    </section>
+
+    <section class="nt-dashboard-quick" aria-labelledby="nt-quick-actions-title">
+        <h2 class="nt-dashboard-quick__title" id="nt-quick-actions-title">Quick actions</h2>
+        <a href="{{ route('erp.oms.simple') }}"><i class="fa-solid fa-warehouse" aria-hidden="true"></i><span>ERP</span></a>
+        <a href="{{ route('purchase.index') }}"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><span>Purchase</span></a>
+        <a href="{{ route('sales.index') }}"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Sales</span></a>
+        <a href="{{ route('documentsManager.index') }}"><i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>Documents</span></a>
+        <a href="{{ route('logistics.tools.shipping.index') }}"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i><span>Ship stats</span></a>
+        <a href="{{ route('afterSales.index') }}"><i class="fa-solid fa-headset" aria-hidden="true"></i><span>After sales</span></a>
+    </section>
 
     <div id="dashboard_content">
         {!! $kpiContent !!}

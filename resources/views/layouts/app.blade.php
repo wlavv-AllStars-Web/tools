@@ -42,67 +42,28 @@
                 </div>
             @else
                 @auth
-                    <div class="sideMenu"> @include('includes.desktopMenu') </div>
-                    <div class="mainContainer">
-                        <script>
-
-                            let divVisivel = false;
-                            
-                            document.addEventListener('keydown', function (event) {
-
-                                if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 's') {
-                                    event.preventDefault();
-                                    const div = document.getElementById('extraMenu');
-                                    divVisivel = !divVisivel;
-                                    div.style.display = divVisivel ? 'block' : 'none';
-                                    
-                                    $('#globalSearch').focus();
-                                }
-                                
-                            });
-  
-                        </script>
-                        @if(isset($breadcrumbs[0]))
-                            <div id="headerBreadcrumbsContainer" class="navbar navbar-light shadow-sm" style="background-color: #ededed;border: 1px solid #ddd;padding-top: 0; margin-top: 0;">
-                                <div style="display: contents;">
-                                    <div style="width: 100%; background-color: #ccc; border-bottom: 1px solid #999;display: none;" id="extraMenu">
-                                        {{--
-                                        <div class="text-center" style="height: auto; margin-bottom: 10px;height: 30px; float: right;display: none;"> 
-                                            <div id="languageSelector" style="text-transform: uppercase; text-align: center; width: 100%; height: 35px; float: right" onclick="$('#languageSelector').toggle();$('#languageSelectorContainer').toggle();">
-                                                <img style="width: 25px; border-radius: 25px; margin: 7px 5px; float: right; border: 1px solid #999;" src="/images/flags/{{app()->getLocale()}}.png">
-                                            </div>
-                                            <div id="languageSelectorContainer" style="display: none;width: 100%; height: 35px;">
-                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/en"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/en.png"> </a>
-                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/es"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/es.png"> </a>
-                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/fr"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/fr.png"> </a>
-                                                <a style="width: 25%; float: left; text-align: center;" class="nav-link uppercase" href="/language/pt"> <img style="width: 25px; border-radius: 25px; margin: 7px 5px; border: 1px solid #999;" src="/images/flags/pt.png"> </a>
-                                            </div>
-                                        </div>
-                                        --}}
-                                        <div>
-                                            <form action="{{route('search.globalSearch')}}" method="POST" id="formGlobalSearch" style="margin: 0px;">
-                                                @csrf
-                                                <input type="text" id="globalSearch" name="tag" value="" style="width: calc( 100% - 150px );float: left;" placeholder="SEARCH...">
-                                                <button style="width: 150px;float: right;padding: 2px;border-radius: 0px;" class="btn btn-success" type="submit">Pesquisar</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                    
-                                    <div style="margin-top: 10px;width: 100%;">
-                                        <div style="width: 65%; float: left;"  id="breadcrumbs">  @include('includes.breadcrumbs') </div>
-                                        <div style="width: 35%; float: right;" id="desktopAction"> @include('includes.actions')    </div>                                    
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                        <div id="mainMenuMobile"> @include('includes.mobileMenu') </div>
-                        <div id="mobileAction">   @include('includes.mobileAction') </div>
-
-                        <div id="yieldContent" style="width: calc(100% - 20px);margin: 0 10px;display: inline-grid;">
+                    <div class="nt-app-shell">
+                        @include('includes.backOfficeSidebar')
+                        <div class="nt-overlay" data-nt-close-sidebar></div>
+                        <div class="nt-main-container">
+                            <header class="nt-topbar">
+                                <button class="nt-menu-button" type="button" aria-controls="nt-sidebar" aria-label="Abrir ou recolher navegação" data-nt-toggle-sidebar><i class="fa-solid fa-bars"></i></button>
+                                <div class="nt-breadcrumbs">@include('includes.breadcrumbs')</div>
+                                <div class="nt-page-actions" id="desktopAction">@include('includes.actions')</div>
+                                <form action="{{ route('search.globalSearch') }}" method="POST" class="nt-global-search" id="formGlobalSearch">
+                                    @csrf
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input type="search" id="globalSearch" name="tag" placeholder="Pesquisar..." aria-label="Pesquisa global">
+                                    <kbd>Ctrl K</kbd>
+                                </form>
+                                <form action="{{ route('logout') }}" method="POST" class="nt-logout-form">@csrf<button type="submit" class="nt-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Terminar sessão</span></button></form>
+                            </header>
+                            <div id="yieldContent">
                             @if(request()->routeIs('erp.oms.*', 'admin.tools.oms.*'))
                                 @include('modules.oms.partials.common_search')
                             @endif
                             @yield('content')
+                            </div>
                         </div>
                     </div>
                 @endauth
@@ -110,5 +71,17 @@
         </main>
     </div>
     @stack('scripts')
+    <script>
+        (() => {
+            const body = document.body;
+            const mobile = () => window.matchMedia('(max-width: 900px)').matches;
+            const setCollapsed = (collapsed) => { body.classList.toggle('nt-sidebar-collapsed', collapsed); localStorage.setItem('nt-sidebar-collapsed', collapsed ? '1' : '0'); };
+            if (!mobile() && localStorage.getItem('nt-sidebar-collapsed') === '1') setCollapsed(true);
+            document.querySelector('[data-nt-toggle-sidebar]')?.addEventListener('click', () => mobile() ? body.classList.toggle('nt-sidebar-mobile-open') : setCollapsed(!body.classList.contains('nt-sidebar-collapsed')));
+            document.querySelector('[data-nt-close-sidebar]')?.addEventListener('click', () => body.classList.remove('nt-sidebar-mobile-open'));
+            document.querySelectorAll('.nt-nav-toggle[type="button"]').forEach((button) => button.addEventListener('click', () => { const group = button.closest('.nt-nav-group'); const open = !group.classList.contains('is-open'); group.classList.toggle('is-open', open); button.setAttribute('aria-expanded', open); }));
+            document.addEventListener('keydown', (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); document.getElementById('globalSearch')?.focus(); } if (event.key === 'Escape') body.classList.remove('nt-sidebar-mobile-open'); });
+        })();
+    </script>
 </body>
 </html>

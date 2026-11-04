@@ -871,8 +871,8 @@ Route::middleware(['auth'])->group(function () {
 
 
 
-    Route::post( 'customTools/search',                      [searchController::class, 'globalSearch'])->name('search.globalSearch');
-    Route::get(  'customTools/search',                      [searchController::class, 'globalSearchGet'])->name('search.globalSearchGet');
+    Route::post( 'search',                                  [searchController::class, 'globalSearch'])->name('search.globalSearch');
+    Route::get(  'search',                                  [searchController::class, 'globalSearchGet'])->name('search.globalSearchGet');
 
     Route::get(  'customTools/dashboard/index',             [dashboardController::class, 'index'])->name('dashboard.index');
     Route::post( 'customTools/dashboard/counters/content',  [dashboardController::class, 'getCountersContent'])->name('dashboard.getCountersContent');

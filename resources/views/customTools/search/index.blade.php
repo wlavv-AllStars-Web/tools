@@ -2,9 +2,14 @@
 @section('content')
     
     <style>
-        .nt-search-results {
-            display: grid;
+        #yieldContent {
+            display: flex;
+            flex-direction: column;
             gap: 12px;
+        }
+
+        .nt-search-results {
+            display: contents;
         }
 
         .nt-search-results .card,
@@ -34,6 +39,11 @@
         .nt-search-results .card:not(.nt-search-summary) .card-header,
         #yieldContent > .card .card-header {
             cursor: pointer;
+        }
+
+        .nt-search-results .card:not(.nt-search-summary) .card-header > span:first-child,
+        #yieldContent > .card .card-header > span:first-child {
+            margin-right: 7px;
         }
 
         .nt-search-results .card.is-static .card-header,

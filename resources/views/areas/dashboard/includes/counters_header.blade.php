@@ -13,7 +13,7 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
-                $hasAction = ($counter->counter > 0 && $headerUrl) || $counter->counter > 0 || $isDeferred;
+                $hasAction = true;
                 $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
@@ -25,9 +25,10 @@
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
                                 id="{{ $panelDomId }}_header"
+                                data-panel-title="{{ __("dashboard.$counter->name") }}"
                                 @if($counter->counter > 0 && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @elseif($counter->counter > 0 || $isDeferred)
+                                @else
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
                                 class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
@@ -60,7 +61,6 @@
                             </div>
                         @endif
 
-                        <div id="{{ $panelDomId }}" data-open="0" class="panel-body" style="display: none; overflow-x: scroll;"></div>
                     </div>
                 </div>
             </div>
@@ -77,7 +77,7 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
-                $hasAction = ($counter->counter > 0 && $headerUrl) || $counter->counter > 0 || $isDeferred;
+                $hasAction = true;
                 $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
@@ -88,9 +88,10 @@
                         <div class="panel-heading text-center" style="cursor:pointer; text-transform:uppercase;">
                             <div
                                 id="{{ $panelDomId }}_header"
+                                data-panel-title="{{ __("dashboard.$counter->name") }}"
                                 @if($counter->counter > 0 && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @elseif($counter->counter > 0 || $isDeferred)
+                                @else
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
                                 class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
@@ -123,13 +124,26 @@
                             </div>
                         @endif
 
-                        <div id="{{ $panelDomId }}" data-open="0" class="panel-body" style="display: none; overflow-x: scroll;"></div>
                     </div>
                 </div>
             </div>
         @endforeach
     @endif
 
+</div>
+
+<div class="modal fade nt-monitoring-modal" id="ntMonitoringModal" tabindex="-1" role="dialog" aria-labelledby="ntMonitoringModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ntMonitoringModalTitle">Monitoring details</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="ntMonitoringModalBody"></div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -153,48 +167,48 @@
 <script>
     function getPanelContent(tab, panel, store, panelDomId)
     {
-        let open = $('#' + panelDomId).attr('data-open');
+        const header = document.getElementById(panelDomId + '_header');
+        const title = header ? header.dataset.panelTitle : 'Monitoring details';
 
-        if (open == 0) {
-            $('#' + panelDomId + '_loading').show();
-            $('#' + panelDomId + '_quantity').hide();
+        $('#ntMonitoringModalTitle').text(title);
+        $('#ntMonitoringModalBody').html('<div class="nt-monitoring-modal__loading"><span class="spinner"></span><span>Loading details…</span></div>');
 
-            $.ajax({
-                type: 'POST',
-                url: "{{ route('dashboard.getCountersContent') }}",
-                dataType: "json",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    tab: tab,
-                    panel: panel,
-                    store: store
-                },
-                success: function(response) {
-                    if (!response.html || !response.html.html) {
-                        $('#' + panelDomId).html('<div class="alert alert-danger" style="margin: 0;">Panel could not be loaded.</div>');
-                        $('#' + panelDomId).show().attr('data-open', 1);
-                        return;
-                    }
-
-                    if (response.html.update_tag == 1) {
-                        $('#' + panelDomId + '_quantity').text(response.html.counter);
-                    }
-
-                    $('#' + panelDomId).replaceWith(response.html.html);
-                    $('#' + panelDomId).attr('data-open', 1);
-                },
-                error: function() {
-                    $('#' + panelDomId).html('<div class="alert alert-danger" style="margin: 0;">Panel could not be loaded.</div>');
-                    $('#' + panelDomId).show().attr('data-open', 1);
-                },
-                complete: function() {
-                    $('#' + panelDomId + '_loading').hide();
-                    $('#' + panelDomId + '_quantity').show();
-                }
-            });
-        } else {
-            $('#' + panelDomId).toggle();
-            $('#' + panelDomId).attr('data-open', 0);
+        const modalElement = document.getElementById('ntMonitoringModal');
+        if (modalElement && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
         }
+        $('#' + panelDomId + '_loading').show();
+        $('#' + panelDomId + '_quantity').hide();
+
+        $.ajax({
+            type: 'POST',
+            url: "{{ route('dashboard.getCountersContent') }}",
+            dataType: "json",
+            data: {
+                _token: "{{ csrf_token() }}",
+                tab: tab,
+                panel: panel,
+                store: store
+            },
+            success: function(response) {
+                if (!response.html || !response.html.html) {
+                    $('#ntMonitoringModalBody').html('<div class="alert alert-danger mb-0">Panel could not be loaded.</div>');
+                    return;
+                }
+
+                if (response.html.update_tag == 1) {
+                    $('#' + panelDomId + '_quantity').text(response.html.counter);
+                }
+
+                $('#ntMonitoringModalBody').html(response.html.html);
+            },
+            error: function() {
+                $('#ntMonitoringModalBody').html('<div class="alert alert-danger mb-0">Panel could not be loaded.</div>');
+            },
+            complete: function() {
+                $('#' + panelDomId + '_loading').hide();
+                $('#' + panelDomId + '_quantity').show();
+            }
+        });
     }
 </script>

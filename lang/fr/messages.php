@@ -304,4 +304,6 @@ return [
     'purchase.tools.currency_price_updates.index' => 'Mise à jour des prix',
     'purchase.tools.currency_price_updates.confirm' => 'CONFIRMER',
     'purchase.tools.currency_price_updates.preview' => 'APERÇU',
+    'After sales' => 'Après-vente',
+    'Design' => 'Design',
 ];

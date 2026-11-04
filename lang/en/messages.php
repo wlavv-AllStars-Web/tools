@@ -651,4 +651,6 @@ return [
         'search' => 'OMS - Search',
     ]],
     'finance.tools.moloni_vat.index' => 'VIES validation',
+    'After sales' => 'After sales',
+    'Design' => 'Design',
 ];

@@ -323,4 +323,6 @@ return [
     'purchase.tools.currency_price_updates.index' => 'Actualización de precios',
     'purchase.tools.currency_price_updates.confirm' => 'CONFIRMAR',
     'purchase.tools.currency_price_updates.preview' => 'VISTA PREVIA',
+    'After sales' => 'Posventa',
+    'Design' => 'Diseño',
 ];

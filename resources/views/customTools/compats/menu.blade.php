@@ -342,7 +342,7 @@
             }));
 
             $.ajax({
-                url: '{{ route("admin.tools.compats.set_order") }}',
+                url: '{{ route("sales.tools.compats.set_order") }}',
                 type: 'POST',
                 data: {
                     _token: $('meta[name="csrf-token"]').attr('content'),
@@ -368,7 +368,7 @@
                 }));
 
                 $.ajax({
-                    url: '{{ route("admin.tools.compats.set_order") }}',
+                    url: '{{ route("sales.tools.compats.set_order") }}',
                     type: 'POST',
                     data: {
                         _token: $('meta[name="csrf-token"]').attr('content'),
@@ -396,7 +396,7 @@
                 }));
 
                 $.ajax({
-                    url: '{{ route("admin.tools.compats.set_order") }}',
+                    url: '{{ route("sales.tools.compats.set_order") }}',
                     type: 'POST',
                     data: {
                         _token: $('meta[name="csrf-token"]').attr('content'),
@@ -425,7 +425,7 @@
                 }));
 
                 $.ajax({
-                    url: '{{ route("admin.tools.compats.set_order") }}',
+                url: '{{ route("sales.tools.compats.set_order") }}',
                     type: 'POST',
                     data: {
                         _token: $('meta[name="csrf-token"]').attr('content'),

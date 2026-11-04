@@ -8,7 +8,7 @@
 
         <section class="card">
             <div class="card-body">
-                <form method="POST" action="{{ route('web.tools.customer_cart_access.lookup') }}">
+                <form method="POST" action="{{ route('sales.tools.customer_cart_access.lookup') }}">
             @csrf
             <label for="email" class="form-label fw-bold">Email do cliente</label>
             <div class="input-group">
@@ -23,7 +23,7 @@
                     <p class="mb-3">O email existe nas duas lojas. Escolhe onde deve ser criado ou reutilizado o carrinho.</p>
                     <div class="d-flex gap-2 flex-wrap">
                         @foreach ($stores as $store)
-                            <form method="POST" action="{{ route('web.tools.customer_cart_access.create') }}">
+                            <form method="POST" action="{{ route('sales.tools.customer_cart_access.create') }}">
                                 @csrf
                                 <input type="hidden" name="email" value="{{ $email }}">
                                 <input type="hidden" name="store" value="{{ $store->store }}">

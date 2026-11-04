@@ -62,7 +62,7 @@ class CustomerCartAccessController extends Controller
         return View::make('customTools.customer-cart-access.index', [
             'breadcrumbs' => [
                 ['name' => 'Web', 'url' => route('web.index')],
-                ['name' => 'Customer cart access', 'url' => route('web.tools.customer_cart_access.index'), 'no_translation' => true],
+                ['name' => 'Customer cart access', 'url' => route('sales.tools.customer_cart_access.index'), 'no_translation' => true],
             ],
             'email' => $email,
             'stores' => $stores ?? collect(),

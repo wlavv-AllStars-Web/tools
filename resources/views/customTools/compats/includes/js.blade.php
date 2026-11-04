@@ -7,7 +7,7 @@
     }
     
     function drawMenu(){
-        window.location.href = "{{ route('admin.tools.compats.update_menu') }}";
+        window.location.href = "{{ route('sales.tools.compats.update_menu') }}";
     }
 
     function clearFrontofficeMenu(){
@@ -46,7 +46,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: "{{ route('admin.tools.compats.clear_frontoffice_menu') }}",
+                    url: "{{ route('sales.tools.compats.clear_frontoffice_menu') }}",
                     data: {
                         _token: "{{ csrf_token() }}",
                         brand_id: brandId
@@ -115,7 +115,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: "{{ route('admin.tools.compats.remove_compat') }}",
+                    url: "{{ route('sales.tools.compats.remove_compat') }}",
                     data: {
                         _token: "{{ csrf_token() }}",
                         id: id_compat,
@@ -136,7 +136,7 @@
         
         $.ajax({
             type: 'POST',
-            url: "{{ route('admin.tools.compats.edit_image') }}",
+            url: "{{ route('sales.tools.compats.edit_image') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 id: id,
@@ -161,7 +161,7 @@
             if (result.value) {
                 $.ajax({
                     type: 'POST',
-                    url: '{{route("admin.tools.compats.update_tag")}}',
+                    url: '{{route("sales.tools.compats.update_tag")}}',
                     data: {
                         _token: "{{ csrf_token() }}",
                         id_lang: id_lang,
@@ -184,7 +184,7 @@
 
         $.ajax({
             type: 'POST',
-            url: '{{route("admin.tools.compats.set_data")}}',
+            url: '{{route("sales.tools.compats.set_data")}}',
             data: {
                 _token: "{{ csrf_token() }}",
                 type: type,
@@ -213,7 +213,7 @@
 
         $.ajax({
             type: 'POST',
-            url: "{{ route('admin.tools.compats.save_new_relationship') }}",
+            url: "{{ route('sales.tools.compats.save_new_relationship') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 type: type,
@@ -251,7 +251,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: "{{ route('admin.tools.compats.get_options_for_modal') }}",
+                url: "{{ route('sales.tools.compats.get_options_for_modal') }}",
                 data: {
                     _token: "{{ csrf_token() }}",
                     type: type
@@ -268,7 +268,7 @@
         next_type = type + 1;
         $.ajax({
             type: 'POST',
-            url: "{{ route('admin.tools.compats.get_options') }}",
+            url: "{{ route('sales.tools.compats.get_options') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 type: next_type, 
@@ -294,7 +294,7 @@
         
         $.ajax({
             type: 'POST',
-            url: "{{ route('admin.tools.compats.create_compatibilities') }}",
+            url: "{{ route('sales.tools.compats.create_compatibilities') }}",
             data: {
                 _token: "{{ csrf_token() }}",
                 id_brand:   $('#option_select_1').val(),

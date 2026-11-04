@@ -19,8 +19,8 @@ class compatsController extends Controller
 
     public function __construct()
     {
-        $indexUrl = request()->routeIs('admin.tools.compats.*')
-            ? route('admin.tools.compats.index')
+        $indexUrl = request()->routeIs('sales.tools.compats.*')
+            ? route('sales.tools.compats.index')
             : route('compats.index');
 
         $this->breadcrumbs[] = ['name' => 'administration', 'url' => route('administration.index')];
@@ -279,8 +279,8 @@ class compatsController extends Controller
 
         $this->breadcrumbs[] = [
             'name' => trans('compats.updateMenu'),
-            'url' => request()->routeIs('admin.tools.compats.*')
-                ? route('admin.tools.compats.update_menu')
+            'url' => request()->routeIs('sales.tools.compats.*')
+                ? route('sales.tools.compats.update_menu')
                 : route('compats.updateMenu'),
             'no_translation' => 1,
         ];

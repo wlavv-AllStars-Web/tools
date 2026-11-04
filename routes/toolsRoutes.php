@@ -102,14 +102,6 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::prefix('web')->name('web.tools.')->group(function () {
 
-        Route::get('/customer-cart-access', [CustomerCartAccessController::class, 'index'])->name('customer_cart_access.index');
-        Route::post('/customer-cart-access', [CustomerCartAccessController::class, 'lookup'])->name('customer_cart_access.lookup');
-        Route::post('/customer-cart-access/create', [CustomerCartAccessController::class, 'create'])->name('customer_cart_access.create');
-
-        Route::get('/stock-audit', [StockAuditController::class, 'index'])->name('stock_audit.index');
-        Route::get('/stock-audit/history', [StockAuditController::class, 'history'])->name('stock_audit.history');
-        Route::post('/stock-audit/snapshot', [StockAuditController::class, 'snapshot'])->name('stock_audit.snapshot');
-
         Route::get('/auto-backorder', [AutoBackorderAuditController::class, 'index'])->name('auto_backorder.index');
         Route::post('/auto-backorder/run', [AutoBackorderAuditController::class, 'runManually'])->name('auto_backorder.run');
 
@@ -303,18 +295,6 @@ Route::middleware(['web', 'auth'])->group(function () {
             });
         });
 
-        Route::get('/compats', [compatsController::class, 'index'])->name('compats.index');
-        Route::post('/compats/options/edit', [compatsController::class, 'updateTag'])->name('compats.update_tag');
-        Route::post('/compats/get/options', [compatsController::class, 'getOptions'])->name('compats.get_options');
-        Route::post('/compats/get/options/modal', [compatsController::class, 'getOptionsForModal'])->name('compats.get_options_for_modal');
-        Route::post('/compats/create/compatibilities', [compatsController::class, 'createCompatibilities'])->name('compats.create_compatibilities');
-        Route::post('/compats/create/relationship', [compatsController::class, 'saveNewRelationship'])->name('compats.save_new_relationship');
-        Route::post('/compats/edit/logo', [compatsController::class, 'editImage'])->name('compats.edit_image');
-        Route::post('/compats/options/edit/options', [compatsController::class, 'setData'])->name('compats.set_data');
-        Route::post('/compats/remove/compat', [compatsController::class, 'removeCompat'])->name('compats.remove_compat');
-        Route::post('/compats/menu/clear-frontoffice', [compatsController::class, 'clearFrontofficeMenu'])->name('compats.clear_frontoffice_menu');
-        Route::get('/compats/menu/update-menu', [compatsController::class, 'updateMenu'])->name('compats.update_menu');
-        Route::post('/compats/menu/set-order', [compatsController::class, 'setOrder'])->name('compats.set_order');
     });
 
     Route::prefix('finance')->name('finance.tools.')->group(function () {
@@ -355,6 +335,10 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::prefix('logistics')->name('logistics.tools.')->group(function () {
         Route::get('/stats', [dashboardController::class, 'index'])->name('stats.index');
+
+        Route::get('/stock-audit', [StockAuditController::class, 'index'])->name('stock_audit.index');
+        Route::get('/stock-audit/history', [StockAuditController::class, 'history'])->name('stock_audit.history');
+        Route::post('/stock-audit/snapshot', [StockAuditController::class, 'snapshot'])->name('stock_audit.snapshot');
 
         Route::get('/shipping', [shippingController::class, 'index'])->name('shipping.index');
         Route::post('/shipping/add/eta/delay', [shippingController::class, 'addDelay'])->name('shipping.add_delay');
@@ -607,6 +591,23 @@ Route::middleware(['web', 'auth'])->group(function () {
     });
 
     Route::prefix('sales')->name('sales.tools.')->group(function () {
+        Route::get('/customer-cart-access', [CustomerCartAccessController::class, 'index'])->name('customer_cart_access.index');
+        Route::post('/customer-cart-access', [CustomerCartAccessController::class, 'lookup'])->name('customer_cart_access.lookup');
+        Route::post('/customer-cart-access/create', [CustomerCartAccessController::class, 'create'])->name('customer_cart_access.create');
+
+        Route::get('/compats', [compatsController::class, 'index'])->name('compats.index');
+        Route::post('/compats/options/edit', [compatsController::class, 'updateTag'])->name('compats.update_tag');
+        Route::post('/compats/get/options', [compatsController::class, 'getOptions'])->name('compats.get_options');
+        Route::post('/compats/get/options/modal', [compatsController::class, 'getOptionsForModal'])->name('compats.get_options_for_modal');
+        Route::post('/compats/create/compatibilities', [compatsController::class, 'createCompatibilities'])->name('compats.create_compatibilities');
+        Route::post('/compats/create/relationship', [compatsController::class, 'saveNewRelationship'])->name('compats.save_new_relationship');
+        Route::post('/compats/edit/logo', [compatsController::class, 'editImage'])->name('compats.edit_image');
+        Route::post('/compats/options/edit/options', [compatsController::class, 'setData'])->name('compats.set_data');
+        Route::post('/compats/remove/compat', [compatsController::class, 'removeCompat'])->name('compats.remove_compat');
+        Route::post('/compats/menu/clear-frontoffice', [compatsController::class, 'clearFrontofficeMenu'])->name('compats.clear_frontoffice_menu');
+        Route::get('/compats/menu/update-menu', [compatsController::class, 'updateMenu'])->name('compats.update_menu');
+        Route::post('/compats/menu/set-order', [compatsController::class, 'setOrder'])->name('compats.set_order');
+
         Route::get('/product-visibility', [ProductStoreVisibilityController::class, 'index'])->name('product_visibility.index');
         Route::get('/product-visibility/export/{store}', [ProductStoreVisibilityController::class, 'exportNone'])
             ->whereIn('store', ['asm', 'asd'])

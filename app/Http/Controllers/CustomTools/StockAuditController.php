@@ -37,7 +37,7 @@ class StockAuditController extends Controller
 
         $breadcrumbs = [
             ['name' => trans('web'), 'url' => route('web.index')],
-            ['name' => 'Stock audit', 'url' => route('web.tools.stock_audit.index'), 'no_translation' => 1],
+            ['name' => 'Stock audit', 'url' => route('logistics.tools.stock_audit.index'), 'no_translation' => 1],
         ];
 
         return view('customTools.stock-audit.index', compact('movements', 'snapshots', 'filters', 'stateColors', 'breadcrumbs'));
@@ -97,8 +97,8 @@ class StockAuditController extends Controller
         $chart = $this->chartData($chartMovements);
         $breadcrumbs = [
             ['name' => trans('web'), 'url' => route('web.index')],
-            ['name' => 'Stock audit', 'url' => route('web.tools.stock_audit.index'), 'no_translation' => 1],
-            ['name' => $reference, 'url' => route('web.tools.stock_audit.history', ['reference' => $reference, 'days' => $days]), 'no_translation' => 1],
+            ['name' => 'Stock audit', 'url' => route('logistics.tools.stock_audit.index'), 'no_translation' => 1],
+            ['name' => $reference, 'url' => route('logistics.tools.stock_audit.history', ['reference' => $reference, 'days' => $days]), 'no_translation' => 1],
         ];
 
         return view('customTools.stock-audit.history', compact('reference', 'days', 'movements', 'chart', 'stateColors', 'breadcrumbs'));

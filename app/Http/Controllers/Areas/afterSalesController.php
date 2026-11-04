@@ -30,11 +30,6 @@ class afterSalesController extends Controller
                     'url' => route('sales.tools.warranties.index'),
                     'icon' => 'fa-shield-heart',
                 ],
-                [
-                    'name' => 'Return / Warranty availability',
-                    'url' => route('web.tools.return_warranty.index'),
-                    'icon' => 'fa-box-open',
-                ],
             ],
         ]);
     }

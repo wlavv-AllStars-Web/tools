@@ -37,6 +37,7 @@ class purchaseController extends Controller
         $accessList = array();
         $accessList[]                           = ['name' =>  trans('messages.Auto Orders'),         	'url' => route('purchase.tools.auto_orders.index'),              'icon' => '<i style="font-size: 40px;" class="fa fa-xl fa-solid fa-boxes-packing"></i>'];
         $accessList[]                           = ['name' =>  trans('messages.backorders_suppliers'),   'url' => route('purchase.tools.suppliersBackorders.index'),       'icon' => '<i style="font-size: 40px;" class="fa fa-xl fa-solid fa-arrow-down-short-wide"></i>'];
+        $accessList[]                           = ['name' =>  trans('messages.PRODUCT ISSUES'),         'url' => route('sales.tools.product_issues.index'),               'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-box-open"></i>'];
         if ((int) auth()->id() === 43) {
             $accessList[]                       = ['name' =>  trans('messages.purchase.tools.currency_price_updates.index'),  'url' => route('purchase.tools.currency_price_updates.index'),     'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-money-bill-transfer"></i>'];
         }

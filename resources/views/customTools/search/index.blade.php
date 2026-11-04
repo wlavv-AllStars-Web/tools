@@ -2,21 +2,103 @@
 @section('content')
     
     <style>
-        .card-body{ padding: 0; }
-        .table{ margin-bottom: 0; border-radius: 0 0 5px 5px; }
-        .search-result-table { text-align: center; margin-bottom: 0; }
-        .search-result-table > tbody > tr:first-child > td {
-            background-color: #f8f9fa;
-            color: #212529;
-            font-size: .8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            vertical-align: middle;
+        .nt-search-results {
+            display: grid;
+            gap: 12px;
         }
+
+        .nt-search-results .card {
+            margin: 0 !important;
+            overflow: hidden;
+            border: 1px solid var(--nt-border, #dbe3ed);
+            border-radius: 12px;
+            background: var(--nt-surface, #fff);
+            box-shadow: 0 3px 12px rgba(16, 24, 40, .035);
+        }
+
+        .nt-search-results .card-header {
+            display: flex;
+            min-height: 52px;
+            align-items: center;
+            padding: 14px 18px;
+            border: 0;
+            background: #fff;
+            color: var(--nt-text, #101828);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .nt-search-results .card:not(.nt-search-summary) .card-header {
+            cursor: pointer;
+        }
+
+        .nt-search-results .card.is-static .card-header {
+            cursor: default;
+        }
+
+        .nt-search-results .card:not(.nt-search-summary) .card-header::after {
+            content: '\f078';
+            margin-left: auto;
+            color: #98a2b3;
+            font-family: 'Font Awesome 6 Free';
+            font-size: 12px;
+            font-weight: 900;
+            transition: transform .18s ease;
+        }
+
+        .nt-search-results .card.is-static .card-header::after {
+            display: none;
+        }
+
+        .nt-search-results .card.is-open .card-header {
+            border-bottom: 1px solid #e7ebf1;
+            background: #f8fafc;
+        }
+
+        .nt-search-results .card.is-open .card-header::after {
+            transform: rotate(180deg);
+        }
+
+        .nt-search-summary .card-header {
+            justify-content: center;
+            background: linear-gradient(135deg, #f8fafc, #fff);
+            color: #667085;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .nt-search-summary .card-header span {
+            margin-left: 6px;
+            color: var(--nt-accent, #ef233c) !important;
+        }
+
+        .nt-search-results .card-body { padding: 0; }
+        .nt-search-results .card-text { margin: 0; padding: 18px; color: #667085; font-size: 13px; }
+        .nt-search-results .table { margin-bottom: 0; }
+        .nt-search-results .table td { padding: 12px 14px; border-color: #e7ebf1; vertical-align: middle; }
+        .nt-search-results .table tr:first-child > td {
+            background-color: #f8fafc;
+            color: #667085;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+        .nt-search-results .table tr:not(:first-child):hover { background: #fafcff; }
+        .search-result-table { text-align: center; margin-bottom: 0; }
         .search-result-table > tbody > tr > td { vertical-align: middle; }
+
+        @media (max-width: 700px) {
+            .nt-search-results { gap: 10px; }
+            .nt-search-results .card-header { min-height: 48px; padding: 12px 14px; font-size: 13px; }
+            .nt-search-results .table { font-size: 12px; }
+            .nt-search-results .table td { padding: 10px; }
+        }
     </style>
-    
-    <div class="card" style="margin-top: 10px;">
+
+    <div class="nt-search-results">
+    <div class="card nt-search-summary" style="margin-top: 10px;">
         <div class="card-header" style="text-align: center;"> SEARCHING FOR: <span style="font-weight: bolder;color: dodgerblue;">{{$tag}}</span></div>
     </div>
     
@@ -440,6 +522,27 @@
                 <p class="card-text" style="text-align: center;">NO DOCUMENTS FOUND</p>
             @endif
         </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.nt-search-results .card:not(.nt-search-summary)').forEach(function (card) {
+                const header = card.querySelector('.card-header');
+                const table = card.querySelector('table');
+
+                if (!header || !table) {
+                    card.classList.add('is-static');
+                    return;
+                }
+
+                header.addEventListener('click', function () {
+                    window.setTimeout(function () {
+                        card.classList.toggle('is-open', $(table).is(':visible'));
+                    }, 0);
+                });
+            });
+        });
+    </script>
     </div>
 
 @endsection

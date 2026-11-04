@@ -11,6 +11,7 @@
     @endif
 
     <div class="navbar navbar-light customPanel">
+        <h2 class="nt-section-title">Quick actions</h2>
         <div class="listUL" style="margin: 0 auto;display: table;">
             <form method="POST" action="{{ route('web.newsletter.send_pending') }}" style="margin: 0; float: left;">
                 @csrf
@@ -30,6 +31,9 @@
         </div>
     </div>
 
-    {!! $counters !!}
+    <section class="nt-monitoring-section">
+        <h2 class="nt-section-title">Monitoring</h2>
+        {!! $counters !!}
+    </section>
     
 @endsection

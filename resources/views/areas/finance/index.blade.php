@@ -6,6 +6,7 @@
     @include("areas.finance.includes.js")
 
     <div class="navbar navbar-light customPanel">
+        <h2 class="nt-section-title">Quick actions</h2>
         <div class="row">
             <div class="col-lg-12">
                 <div class="listUL" style="margin: 0 auto;display: table;">
@@ -103,5 +104,8 @@
         </div>
     </div>
 
-    {!! $counters !!}
+    <section class="nt-monitoring-section">
+        <h2 class="nt-section-title">Monitoring</h2>
+        {!! $counters !!}
+    </section>
 @endsection

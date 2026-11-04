@@ -14,6 +14,7 @@
 
     @if(count($accessList) > 0)
     <div class="navbar navbar-light customPanel">
+        <h2 class="nt-section-title">Quick actions</h2>
         <div class="listUL" style="margin: 0 auto;display: table;">
             @foreach($accessList AS $access)
             <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
@@ -27,6 +28,9 @@
     </div>
     @endif
     
-    {!! $counters !!}
+    <section class="nt-monitoring-section">
+        <h2 class="nt-section-title">Monitoring</h2>
+        {!! $counters !!}
+    </section>
 
 @endsection

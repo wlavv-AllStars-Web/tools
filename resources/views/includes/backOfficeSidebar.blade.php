@@ -19,7 +19,11 @@
 
 <aside class="nt-sidebar" id="nt-sidebar" aria-label="Navegação principal">
     <a class="nt-brand" href="{{ route('dashboard.index') }}">
-        <img class="nt-brand-logo" src="{{ asset('admin/images/all-stars-group.svg') }}" alt="All Stars Group">
+        <span class="nt-brand-wordmark" aria-label="All Stars Group Back Office">
+            <span class="nt-brand-wordmark__main">ALL STARS <b>GROUP</b></span>
+            <span class="nt-brand-wordmark__rule"></span>
+            <span class="nt-brand-wordmark__sub">BACK OFFICE</span>
+        </span>
     </a>
     <nav class="nt-nav">
         @foreach ($areas as $item)

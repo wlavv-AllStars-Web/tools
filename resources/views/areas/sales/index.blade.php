@@ -12,6 +12,7 @@
     @endif
 
     <div class="navbar navbar-light customPanel">
+        <h2 class="nt-section-title">Quick actions</h2>
         <div class="listUL" style="margin: 0 auto;display: table;">
             @foreach($accessList AS $access)
             @if(($access['method'] ?? 'get') === 'post')
@@ -96,6 +97,9 @@
         </div>
     </div>
     
-    {!! $counters !!}
+    <section class="nt-monitoring-section">
+        <h2 class="nt-section-title">Monitoring</h2>
+        {!! $counters !!}
+    </section>
             
 @endsection

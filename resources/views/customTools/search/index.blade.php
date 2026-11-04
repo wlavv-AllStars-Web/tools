@@ -3,9 +3,7 @@
     
     <style>
         #yieldContent {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            display: block;
         }
 
         .nt-search-results {
@@ -14,7 +12,7 @@
 
         .nt-search-results .card,
         #yieldContent > .card {
-            margin: 0 !important;
+            margin: 0 0 12px !important;
             overflow: hidden;
             border: 1px solid var(--nt-border, #dbe3ed);
             border-radius: 12px;

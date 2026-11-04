@@ -5,14 +5,6 @@
 
 @section('content')
 
-    <section class="nt-dashboard-heading">
-        <div>
-            <div class="nt-dashboard-eyebrow">ALL STARS GROUP <span aria-hidden="true">|</span> Web Department</div>
-            <h1>Control panel</h1>
-            <p>Visão operacional e acessos rápidos às ferramentas do Back Office.</p>
-        </div>
-    </section>
-
     <section class="nt-dashboard-quick" aria-labelledby="nt-quick-actions-title">
         <h2 class="nt-dashboard-quick__title" id="nt-quick-actions-title">Quick actions</h2>
         <a href="{{ route('erp.oms.simple') }}"><i class="fa-solid fa-warehouse" aria-hidden="true"></i><span>ERP</span></a>

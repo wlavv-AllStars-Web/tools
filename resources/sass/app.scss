@@ -9,23 +9,24 @@
 
 
 /** app.blade.js **/
-.sideMenu{ float: left; width: 236px; min-height: 100vh; background: #f5f7fb; border-right: 1px solid #dfe5ee; }
-.mainContainer{ width: calc(100% - 236px); float: left; }
+.sideMenu{ float: left; width: 380px; min-height: 100vh; background: #f5f7fb; border-right: 1px solid #dfe5ee; }
+.mainContainer{ width: calc(100% - 380px); float: left; }
 #mainMenuMobile{ display: none; }
 #mobileAction{ display: none; }
 .side-menu-nav{ display: block; padding: 0; background: transparent; box-shadow: none !important; }
-.side-menu-container{ display: block; padding: 0 10px 14px; }
+.side-menu-container{ display: block; width: 100%; box-sizing: border-box; padding: 0 10px 14px; }
 .sideMenuLogo{ display: block; margin: 0; padding: 14px 6px 8px; }
 .sideMenuLogo img{ display: block; width: 100%; margin: 0; }
 .side-menu-heading{ display: flex; align-items: center; gap: 8px; padding: 4px 7px 13px; color: #121d32; font-size: 17px; font-weight: 800; }
 .side-menu-heading__accent, .area-action-panel__accent{ display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #ff2639; }
-.sideMenuUL{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; margin: 0; }
-.sideMenuUL .nav-item{ display: block !important; height: auto !important; min-width: 0; padding: 0; border: 1px solid #dfe5ee; border-radius: 8px; background: #fff; overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.sideMenuUL{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; margin: 0 !important; padding: 0 !important; list-style: none; }
+.sideMenuUL .nav-item{ display: block !important; width: 100% !important; height: auto !important; min-width: 0; max-width: 100%; padding: 0; border: 1px solid #dfe5ee; border-radius: 8px; background: #fff; overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
 .sideMenuUL .nav-item:hover{ padding: 0; border-color: #b9c8dd; box-shadow: 0 5px 12px rgba(20, 38, 68, .10); transform: translateY(-1px); }
 .sideMenuUL .nav-item.active-link{ border-color: #ffb6bd; box-shadow: inset 3px 0 0 #ff2639; }
-.sideMenuUL .nav-link{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 78px; padding: 9px 5px; color: #121d32; text-decoration: none; }
+.sideMenuUL .nav-link{ display: flex; width: 100%; box-sizing: border-box; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; min-height: 54px; padding: 10px 12px; color: #121d32; text-decoration: none; }
+.sideMenuUL .nav-link i{ width: 20px; font-size: 18px !important; text-align: center; }
 .sideMenuUL .nav-link:hover{ color: #121d32; }
-.sideMenuText{ margin: 0; color: inherit; font-size: 10px; font-weight: 700; line-height: 1.1; text-align: center; text-transform: none; }
+.sideMenuText{ margin: 0; color: inherit; font-size: 12px; font-weight: 700; line-height: 1.15; text-align: left; text-transform: none; }
 .nav-item{ padding: 10px 0 0 0; }
 .nav-item:hover{ padding: 10px 0 0 0; }
 li.nav-item > a > div:hover { color: dodgerblue; }

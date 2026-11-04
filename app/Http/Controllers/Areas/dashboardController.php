@@ -27,7 +27,7 @@ class dashboardController extends Controller{
         $canUseDailyDashboard = in_array((int) auth()->id(), [2, 9, 43], true);
 
         $data = [
-            'breadcrumbs' => [ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')],
+            'breadcrumbs' => [[ 'name' =>  trans('Dashboard'), 'url' => route('dashboard.index')]],
             'canUseDailyDashboard' => $canUseDailyDashboard,
             'kpiContent' => app(statsController::class)->dashboardKpiContent($canUseDailyDashboard),
         ];

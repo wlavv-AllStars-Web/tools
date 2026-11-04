@@ -7,6 +7,7 @@
         ['label' => 'After Sales', 'icon' => 'fa-headset', 'route' => 'afterSales.index', 'match' => 'afterSales.index'],
         ['label' => 'Studio', 'icon' => 'fa-wand-magic-sparkles', 'route' => 'marketing.index', 'match' => 'marketing.index'],
         ['label' => 'Design', 'icon' => 'fa-pen-ruler', 'route' => 'design.index', 'match' => 'design.index'],
+        ['label' => 'Webmaster', 'icon' => 'fa-code', 'route' => 'web.index', 'match' => 'web.index', 'users' => [43]],
     ];
     $tools = [
         ['label' => 'ERP', 'icon' => 'fa-warehouse', 'route' => 'erp.oms.simple', 'match' => 'erp.oms.*'],
@@ -23,8 +24,10 @@
     </a>
     <nav class="nt-nav">
         @foreach ($areas as $item)
-            @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
-            <div class="nt-nav-group {{ $itemActive ? 'is-active' : '' }}"><a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $item['label'] }}"><i class="fa-solid {{ $item['icon'] }}" aria-hidden="true"></i><span>{{ $item['label'] }}</span></a></div>
+            @if (empty($item['users']) || in_array((int) Auth::id(), $item['users'], true))
+                @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
+                <div class="nt-nav-group {{ $itemActive ? 'is-active' : '' }}"><a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $item['label'] }}"><i class="fa-solid {{ $item['icon'] }}" aria-hidden="true"></i><span>{{ $item['label'] }}</span></a></div>
+            @endif
         @endforeach
         <div class="nt-nav-divider" role="separator" aria-label="Ferramentas"></div>
         @foreach ($tools as $item)

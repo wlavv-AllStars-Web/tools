@@ -41,31 +41,15 @@
         <span class="nt-brand-copy"><strong>newTools</strong><small>Back Office</small></span>
     </a>
     <nav class="nt-nav">
-        @foreach ($visibleNavigation as $index => $group)
-            @php
-                $active = collect($group['items'])->contains(function ($item) {
-                    return collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match));
-                });
-                $single = count($group['items']) === 1;
-            @endphp
-            <div class="nt-nav-group {{ $active ? 'is-active is-open' : '' }}">
-                @if ($single)
-                    @php($item = $group['items'][0])
-                    <a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $group['label'] }}">
-                        <i class="fa-solid {{ $group['icon'] }}" aria-hidden="true"></i><span>{{ $group['label'] }}</span>
+        @foreach ($visibleNavigation as $group)
+            @foreach ($group['items'] as $item)
+                @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
+                <div class="nt-nav-group {{ $itemActive ? 'is-active' : '' }}">
+                    <a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
+                        <i class="fa-solid {{ $group['icon'] }}" aria-hidden="true"></i><span>{{ $item['label'] }}</span>
                     </a>
-                @else
-                    <button class="nt-nav-toggle" type="button" aria-expanded="{{ $active ? 'true' : 'false' }}" aria-controls="nt-nav-group-{{ $index }}" title="{{ $group['label'] }}">
-                        <i class="fa-solid {{ $group['icon'] }}" aria-hidden="true"></i><span>{{ $group['label'] }}</span><i class="fa-solid fa-chevron-right nt-chevron" aria-hidden="true"></i>
-                    </button>
-                    <div class="nt-subnav" id="nt-nav-group-{{ $index }}">
-                        @foreach ($group['items'] as $item)
-                            @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
-                            <a class="{{ $itemActive ? 'is-active' : '' }}" href="{{ route($item['route']) }}">{{ $item['label'] }}</a>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
+                </div>
+            @endforeach
         @endforeach
     </nav>
 </aside>

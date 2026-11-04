@@ -627,12 +627,15 @@ class dashboard extends Model
             ->filter(fn ($id) => $id !== null && $id !== '')
             ->values()
             ->all();
-        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16]));
+        $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
+        $operationalStates = array_values(array_diff($paidStates, [4, 5, 6, 7, 16]));
         $data = [];
 
         foreach (['ASM', 'ASD'] as $store) {
             $orders = self::ordersBase($store)
-                ->whereIn('o.current_state', $paidStates)
+                ->whereIn('o.current_state', $operationalStates)
+                ->where('o.valid', 1)
+                ->where('o.date_add', '>=', now()->subDays(15))
                 ->whereNotIn('o.id_order', $exceptionIds)
                 ->where(function ($query) use ($prefix) {
                     $query->whereNull('o.total_shipping_tax_incl')

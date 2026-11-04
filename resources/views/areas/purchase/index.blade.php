@@ -12,34 +12,25 @@
                 </a>
             </div>
             @endforeach
-        </div>
-    </div>
-
-    <div class="navbar navbar-light customPanel nt-purchase-sales-report">
-        <h2 class="nt-section-title">{{ __('tags.SALES REPORT') }}</h2>
-        <div class="panel panel-default" style="display: flow-root">
-            <div class="panel-body sales_history" style="min-height: 100px;">
-                <div class="row" style="margin: 0;">
-                    <div class="col-lg-12">
-                        <div style="width: 40%;float: left;">
-                            <select name="brand_sales_history" id="brand_sales_history" style="width: calc( 100% - 10px ); font-size: 22px;">
-                                <option value="0">{{ __('tags.BRAND') }}</option>
-                                @foreach($manufacturers AS $manufacturer)
-                                    <option value="{{ $manufacturer->id_manufacturer }}">{{ $manufacturer->name }}</option>
-                                @endforeach
-                            </select>
-                            <span class="alert alert-danger" style="width: calc( 100% - 10px );display: none;text-align: center; margin-top: 5px;padding: 5px;" id="alert_sales_history_brand"></span>
-                        </div>
-                        <div style="width: 40%;float: left;">
-                            <input id="date_sales_history" name="date_sales_history" type="text" value="" placeholder="2024-01-01" style="width: calc( 100% - 10px ); font-size: 19px;">
-                            <span class="alert alert-danger" style="width: calc( 100% - 10px );display: none;text-align: center; margin-top: 5px;padding: 5px;" id="alert_sales_history_date">{{ __('messages.Please fill the date') }}</span>
-                        </div>
-                        <div style="width: 20%;float: left;">
-                            <span onclick="getSalesHistory()" class="btn btn-dark" style="width: 100%">{{ __('tags.FIND') }}</span>
-                        </div>
+            <div class="nt-quick-sales-report">
+                <div class="nt-quick-sales-report__title">{{ __('tags.SALES REPORT') }}</div>
+                <div class="nt-quick-sales-report__fields">
+                    <div>
+                        <select name="brand_sales_history" id="brand_sales_history">
+                            <option value="0">{{ __('tags.BRAND') }}</option>
+                            @foreach($manufacturers AS $manufacturer)
+                                <option value="{{ $manufacturer->id_manufacturer }}">{{ $manufacturer->name }}</option>
+                            @endforeach
+                        </select>
+                        <span class="alert alert-danger" id="alert_sales_history_brand"></span>
                     </div>
-                    <div class="col-lg-12"><div id="sales_history"></div></div>
+                    <div>
+                        <input id="date_sales_history" name="date_sales_history" type="text" value="" placeholder="2024-01-01">
+                        <span class="alert alert-danger" id="alert_sales_history_date">{{ __('messages.Please fill the date') }}</span>
+                    </div>
+                    <button type="button" onclick="getSalesHistory()" class="btn btn-dark">{{ __('tags.FIND') }}</button>
                 </div>
+                <div id="sales_history"></div>
             </div>
         </div>
     </div>

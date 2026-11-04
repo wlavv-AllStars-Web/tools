@@ -19,19 +19,6 @@
                         </div>
                     @endforeach
 
-                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
-                        <a href="{{route('finance.tools.refunds.index')}}">     
-                            <div><i class="fa-solid fa-file-invoice-dollar" style="font-size: 40px;"></i></div>
-                            <div>REFUNDS</div>
-                        </a>
-                    </div>
-                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
-                        <a href="{{route('finance.tools.vat.check')}}">     
-                            <div><i class="fa-solid fa-user-check" style="font-size: 40px;"></i></div>
-                            <div>VAT</div>
-                        </a>
-                    </div>
-
                 </div>
             </div>
             {{--

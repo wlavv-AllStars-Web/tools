@@ -15,12 +15,6 @@
                     </a> 
                 </li>
                 @endif
-                <li class="nav-item text-center @if(Route::is('administration.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
-                    <a class="nav-link uppercase" href="{{ route('administration.index') }}">
-                        <div><i class="fa-solid fa-people-roof" style="font-size: 30px;"></i></div>
-                        <div class="sideMenuText"> {{ __('menu.admin') }}</div>
-                    </a> 
-                </li>
                 <li class="nav-item text-center @if(Route::is('finance.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 
                     <a class="nav-link uppercase" href="{{ route('finance.index') }}">
                         <div><i class="fa-solid fa-chart-line" style="font-size: 30px;"></i></div>

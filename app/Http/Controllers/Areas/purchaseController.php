@@ -40,7 +40,6 @@ class purchaseController extends Controller
         if ((int) auth()->id() === 43) {
             $accessList[]                       = ['name' =>  trans('messages.purchase.tools.currency_price_updates.index'),  'url' => route('purchase.tools.currency_price_updates.index'),     'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-money-bill-transfer"></i>'];
         }
-        $accessList[]                           = ['name' =>  trans('messages.suppliers_map'),          'url' => route('purchase.tools.suppliers.map.index'),             'icon' => '<i style="font-size: 40px;" class="fa fa-solid fa-puzzle-piece"></i>'];
         return $accessList;
     }
 }

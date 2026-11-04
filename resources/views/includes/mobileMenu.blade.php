@@ -18,12 +18,6 @@
                 <div class="sideMenuText">Accounting</div>
             </a> 
         </div>
-        <div class="text-center mobileMenuItem @if(Route::is('administration.index') ) active-link @endif"> 
-            <a class="nav-link uppercase" href="{{ route('administration.index') }}">
-                <div><i class="fa fa-xl fa-people-roof" style="font-size: 30px;"></i></div>
-                <div class="sideMenuText"> {{ __('menu.admin') }}</div>
-            </a> 
-        </div>
         <div class="text-center mobileMenuItem @if(Route::is('logistics.index') ) active-link @endif"> 
             <a class="nav-link uppercase" href="{{ route('logistics.index') }}">
                 <div><i class="fa fa-xl fa-box" style="font-size: 30px;"></i></div>

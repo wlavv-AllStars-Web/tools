@@ -1,19 +1,4 @@
 <div id="{{ $panelDomId ?? $panel->panel }}" data-open="1" class="panel-body" style="overflow-x: scroll;">
-    @php
-        $panelDescription = trim((string) ($panel->description ?? ''));
-    @endphp
-
-    @if($panelDescription !== '')
-        <details class="dashboard-panel-description">
-            <summary class="dashboard-panel-description-button">
-                Description
-            </summary>
-            <div class="dashboard-panel-description-content">
-                {{ $panelDescription }}
-            </div>
-        </details>
-    @endif
-
     @if($details->name == 'ASD missing images')
         <div style="text-align: center; margin: 5px;">
             <a class="btn btn-info" style="margin: 5px; margin: 0 auto;" href="{{ route('marketing.asdMissingImages') }}">

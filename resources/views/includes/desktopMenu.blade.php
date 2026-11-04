@@ -1,11 +1,11 @@
-<nav class="navbar navbar-expand-md navbar-light side-menu-nav">
-    <div class="container side-menu-container">
+<nav class="side-menu-nav">
+    <div class="side-menu-container">
         <a class="navbar-brand sideMenuLogo" href="{{ route('dashboard.index') }}">
             <img src="/admin/images/allstarsweb.gif" alt="All Stars Group">
         </a>
         <div class="side-menu-heading"><span class="side-menu-heading__accent"></span>Control panel</div>
-        <div class="navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto margin-auto sideMenuUL">
+        <div class="side-menu-content">
+            <ul class="sideMenuUL">
 
                 @if( ( Auth::id() == 2 ) || ( Auth::id() == 43 ) )
                 <li class="nav-item text-center @if(Route::is('web.index') ) active-link @endif" style="display: inline-block;height: 90px;"> 

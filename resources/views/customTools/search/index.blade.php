@@ -7,7 +7,8 @@
             gap: 12px;
         }
 
-        .nt-search-results .card {
+        .nt-search-results .card,
+        #yieldContent > .card {
             margin: 0 !important;
             overflow: hidden;
             border: 1px solid var(--nt-border, #dbe3ed);
@@ -16,7 +17,8 @@
             box-shadow: 0 3px 12px rgba(16, 24, 40, .035);
         }
 
-        .nt-search-results .card-header {
+        .nt-search-results .card-header,
+        #yieldContent > .card .card-header {
             display: flex;
             min-height: 52px;
             align-items: center;
@@ -29,15 +31,18 @@
             line-height: 1.25;
         }
 
-        .nt-search-results .card:not(.nt-search-summary) .card-header {
+        .nt-search-results .card:not(.nt-search-summary) .card-header,
+        #yieldContent > .card .card-header {
             cursor: pointer;
         }
 
-        .nt-search-results .card.is-static .card-header {
+        .nt-search-results .card.is-static .card-header,
+        #yieldContent > .card.is-static .card-header {
             cursor: default;
         }
 
-        .nt-search-results .card:not(.nt-search-summary) .card-header::after {
+        .nt-search-results .card:not(.nt-search-summary) .card-header::after,
+        #yieldContent > .card .card-header::after {
             content: '\f078';
             margin-left: auto;
             color: #98a2b3;
@@ -47,16 +52,19 @@
             transition: transform .18s ease;
         }
 
-        .nt-search-results .card.is-static .card-header::after {
+        .nt-search-results .card.is-static .card-header::after,
+        #yieldContent > .card.is-static .card-header::after {
             display: none;
         }
 
-        .nt-search-results .card.is-open .card-header {
+        .nt-search-results .card.is-open .card-header,
+        #yieldContent > .card.is-open .card-header {
             border-bottom: 1px solid #e7ebf1;
             background: #f8fafc;
         }
 
-        .nt-search-results .card.is-open .card-header::after {
+        .nt-search-results .card.is-open .card-header::after,
+        #yieldContent > .card.is-open .card-header::after {
             transform: rotate(180deg);
         }
 
@@ -73,11 +81,11 @@
             color: var(--nt-accent, #ef233c) !important;
         }
 
-        .nt-search-results .card-body { padding: 0; }
-        .nt-search-results .card-text { margin: 0; padding: 18px; color: #667085; font-size: 13px; }
-        .nt-search-results .table { margin-bottom: 0; }
-        .nt-search-results .table td { padding: 12px 14px; border-color: #e7ebf1; vertical-align: middle; }
-        .nt-search-results .table tr:first-child > td {
+        .nt-search-results .card-body, #yieldContent > .card .card-body { padding: 0; }
+        .nt-search-results .card-text, #yieldContent > .card .card-text { margin: 0; padding: 18px; color: #667085; font-size: 13px; }
+        .nt-search-results .table, #yieldContent > .card .table { margin-bottom: 0; }
+        .nt-search-results .table td, #yieldContent > .card .table td { padding: 12px 14px; border-color: #e7ebf1; vertical-align: middle; }
+        .nt-search-results .table tr:first-child > td, #yieldContent > .card .table tr:first-child > td {
             background-color: #f8fafc;
             color: #667085;
             font-size: 11px;
@@ -85,7 +93,7 @@
             letter-spacing: .04em;
             text-transform: uppercase;
         }
-        .nt-search-results .table tr:not(:first-child):hover { background: #fafcff; }
+        .nt-search-results .table tr:not(:first-child):hover, #yieldContent > .card .table tr:not(:first-child):hover { background: #fafcff; }
         .search-result-table { text-align: center; margin-bottom: 0; }
         .search-result-table > tbody > tr > td { vertical-align: middle; }
 
@@ -526,7 +534,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.nt-search-results .card:not(.nt-search-summary)').forEach(function (card) {
+            document.querySelectorAll('.nt-search-results .card:not(.nt-search-summary), #yieldContent > .card').forEach(function (card) {
                 const header = card.querySelector('.card-header');
                 const table = card.querySelector('table');
 

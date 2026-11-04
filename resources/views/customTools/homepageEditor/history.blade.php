@@ -17,7 +17,7 @@
     <div class="hp-card">
         <div class="hp-card-header">
             <h1 class="hp-title">Histórico Homepage</h1>
-            <a class="hp-btn" href="{{ route('marketing.homepage.index') }}"><i class="fa-solid fa-angle-left"></i> Voltar</a>
+            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.index') }}"><i class="fa-solid fa-angle-left"></i> Voltar</a>
         </div>
 
         <table class="hp-table">
@@ -38,7 +38,7 @@
                         <td>{{ $log->published_by ?: '-' }}</td>
                         <td>{{ $log->notes ?: '-' }}</td>
                         <td>
-                            <a class="hp-btn" href="{{ route('marketing.homepage.restore', $log->id) }}" onclick="return confirm('Restaurar esta publicação para temporário?')">
+                            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.restore', $log->id) }}" onclick="return confirm('Restaurar esta publicação para temporário?')">
                                 <i class="fa-solid fa-clock-rotate-left"></i> Restaurar
                             </a>
                         </td>

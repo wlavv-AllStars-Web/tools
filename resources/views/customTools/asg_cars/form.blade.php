@@ -3,7 +3,7 @@
 @section('content')
 @php
     $isEdit = $mode === 'edit';
-    $action = $isEdit ? route('asg_cars.update', $car->id_asg_car) : route('asg_cars.store');
+    $action = $isEdit ? route('design.tools.car_gallery.update', $car->id_asg_car) : route('design.tools.car_gallery.store');
     $galleryImages = $car->images_array ?? [];
 @endphp
 
@@ -279,7 +279,7 @@
     </form>
 
     @if($isEdit)
-        <form id="delete-car-form" method="POST" action="{{ route('asg_cars.destroy', $car->id_asg_car) }}" class="d-none">
+        <form id="delete-car-form" method="POST" action="{{ route('design.tools.car_gallery.destroy', $car->id_asg_car) }}" class="d-none">
             @csrf
             @method('DELETE')
         </form>

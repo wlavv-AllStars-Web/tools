@@ -123,16 +123,6 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/seo', [SiteSeoCompareController::class, 'compare'])->name('seo.compare');
         Route::get('/raw-text', [SiteTextSideBySideController::class, 'index'])->name('raw_text.index');
         Route::post('/raw-text', [SiteTextSideBySideController::class, 'compare'])->name('raw_text.compare');
-        Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
-        Route::post('/resources/asm/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('resources.asm.upload');
-        Route::post('/resources/asm/{id_manufacturer}/installation-instructions', [asmResourcesController::class, 'uploadInstallationInstructions'])->name('resources.asm.installation_instructions.upload');
-        Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
-        Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
-        Route::get('/resources/asd/{id_manufacturer}/studio-products', [AsdResourcesController::class, 'studioProducts'])->name('resources.asd.studio_products');
-        Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
-        Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
-        Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');
-
         Route::prefix('changes')->name('changes.')->group(function () {
             Route::get('/', [ChangeTrackerController::class, 'index'])->name('index');
             Route::get('/create', [ChangeTrackerController::class, 'create'])->name('create');
@@ -472,10 +462,21 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/tv/toggle-active/{id}', [tvController::class, 'toggleActive'])->name('tv.toggle_active');
         Route::post('/tv/update-text', [tvController::class, 'changeText'])->name('tv.change_text');
 
-        Route::get('/homepage/asm', [HomepageAdminController::class, 'index'])->name('homepage.asm.index');
-        Route::get('/homepage/asd', [HomepageASDAdminController::class, 'index'])->name('homepage.asd.index');
+    });
 
+    Route::prefix('design')->name('design.tools.')->group(function () {
         Route::resource('/car-gallery', asgCarsController::class)->names('car_gallery');
+        Route::resource('/events', asgEventsController::class)->names('events');
+
+        Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
+        Route::post('/resources/asm/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('resources.asm.upload');
+        Route::post('/resources/asm/{id_manufacturer}/installation-instructions', [asmResourcesController::class, 'uploadInstallationInstructions'])->name('resources.asm.installation_instructions.upload');
+        Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
+        Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
+        Route::get('/resources/asd/{id_manufacturer}/studio-products', [AsdResourcesController::class, 'studioProducts'])->name('resources.asd.studio_products');
+        Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
+        Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
+        Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');
     });
 
     Route::prefix('backoffice')->name('backoffice.tools.')->group(function () {
@@ -794,7 +795,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/currency-rates',  [CurrencyVariationController::class, 'index'])->name('currency_variation.index');
     Route::post('/currency-rates', [CurrencyVariationController::class, 'store'])->name('currency_variation.store');
 
-    Route::prefix('marketing/customTools/homepage/ASM')->name('marketing.homepage.')->group(function () {
+    Route::prefix('design/homepage/asm')->name('design.tools.homepage.asm.')->group(function () {
         Route::get('/',                     [HomepageAdminController::class, 'index'])->name('index');
         Route::get('/edit/{id}',            [HomepageAdminController::class, 'edit'])->name('edit');
         Route::post('/update/{id}',         [HomepageAdminController::class, 'update'])->name('update');
@@ -807,7 +808,7 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-    Route::prefix('marketing/customTools/homepage/ASD')->name('marketing.homepage_ASD.')->group(function () {
+    Route::prefix('design/homepage/asd')->name('design.tools.homepage.asd.')->group(function () {
         Route::get('/', [HomepageASDAdminController::class, 'index'])->name('index');
         Route::post('/update', [HomepageASDAdminController::class, 'update'])->name('update');
     });

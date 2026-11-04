@@ -72,27 +72,27 @@
 
         <div class="hp-actions">
             <div class="hp-mode-switch">
-                <a class="hp-btn {{ !$isMobile ? 'active' : '' }}" href="{{ route('marketing.homepage.index', ['mode' => 'desktop', 'lang' => $activeLang]) }}">
+                <a class="hp-btn {{ !$isMobile ? 'active' : '' }}" href="{{ route('design.tools.homepage.asm.index', ['mode' => 'desktop', 'lang' => $activeLang]) }}">
                     <i class="fa-solid fa-desktop"></i> Desktop
                 </a>
-                <a class="hp-btn {{ $isMobile ? 'active' : '' }}" href="{{ route('marketing.homepage.index', ['mode' => 'mobile', 'lang' => $activeLang]) }}">
+                <a class="hp-btn {{ $isMobile ? 'active' : '' }}" href="{{ route('design.tools.homepage.asm.index', ['mode' => 'mobile', 'lang' => $activeLang]) }}">
                     <i class="fa-solid fa-mobile-screen-button"></i> Mobile
                 </a>
             </div>
 
             <div class="hp-lang-switch">
                 @foreach(($supportedLanguages ?? ['en' => 'EN', 'es' => 'ES', 'fr' => 'FR']) as $code => $label)
-                    <a class="hp-btn {{ $activeLang === $code ? 'active' : '' }}" href="{{ route('marketing.homepage.index', ['mode' => $mode, 'lang' => $code]) }}">
+                    <a class="hp-btn {{ $activeLang === $code ? 'active' : '' }}" href="{{ route('design.tools.homepage.asm.index', ['mode' => $mode, 'lang' => $code]) }}">
                         {{ $label }}
                     </a>
                 @endforeach
             </div>
 
-            <a class="hp-btn" href="{{ route('marketing.homepage.history') }}">
+            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.history') }}">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </a>
 
-            <form method="POST" action="{{ route('marketing.homepage.publish', ['mode' => $mode, 'lang' => $activeLang]) }}" style="margin:0" onsubmit="return confirm('Publicar a versão temporária completa para online? Isto publica Desktop e Mobile em conjunto.')">
+            <form method="POST" action="{{ route('design.tools.homepage.asm.publish', ['mode' => $mode, 'lang' => $activeLang]) }}" style="margin:0" onsubmit="return confirm('Publicar a versão temporária completa para online? Isto publica Desktop e Mobile em conjunto.')">
                 @csrf
                 <button type="submit" class="hp-btn hp-btn-success" {{ $hasChanges ? '' : 'disabled' }}>
                     <i class="fa-solid fa-upload"></i>

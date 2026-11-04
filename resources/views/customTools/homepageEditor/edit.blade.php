@@ -4,7 +4,7 @@
 
 <h2>Editar Slot {{ $item->slot_id }}</h2>
 
-<form method="POST" action="{{ route('marketing.homepage.update', $item->slot_id) }}">
+<form method="POST" action="{{ route('design.tools.homepage.asm.update', $item->slot_id) }}">
 @csrf
 
 <input type="text" name="title_en" value="{{ $item->title_en }}">

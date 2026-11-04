@@ -14,8 +14,8 @@ class HomepageASDAdminController extends Controller{
     public $breadcrumbs;
     
     public function __construct(){
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing.homepage_ASD.index'), 'url' => route('marketing.homepage_ASD.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = [ 'name' => 'ASD homepage', 'url' => route('design.tools.homepage.asd.index'), 'no_translation' => 1];
     }
     
     public function index(){
@@ -67,7 +67,7 @@ class HomepageASDAdminController extends Controller{
         ]);
 
         return redirect()
-            ->route('marketing.homepage_ASD.index')
+            ->route('design.tools.homepage.asd.index')
             ->with('success', 'Homepage updated successfully.');
     }
     

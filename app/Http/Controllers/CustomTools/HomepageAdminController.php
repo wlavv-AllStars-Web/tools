@@ -26,7 +26,7 @@ class HomepageAdminController extends Controller
         $lang = $this->normalizeLang($request->get('lang'));
 
         return view('customTools.homepageEditor.index', $this->buildViewPayload($mode, $lang) + [
-            'breadcrumbs' => $this->breadcrumbs('ASM homepage', route('marketing.homepage.index')),
+            'breadcrumbs' => $this->breadcrumbs('ASM homepage', route('design.tools.homepage.asm.index')),
         ]);
     }
 
@@ -35,7 +35,7 @@ class HomepageAdminController extends Controller
         $item = DB::table('homepage_asm_temp')->where('id', $id)->first();
         $mode = ((int) ($item->icon_type ?? 0)) === 5 ? 'mobile' : 'desktop';
 
-        return redirect()->route('marketing.homepage.index', [
+        return redirect()->route('design.tools.homepage.asm.index', [
             'mode' => $mode,
             'lang' => $this->normalizeLang(request()->get('lang')),
             'slot' => $id,
@@ -56,7 +56,7 @@ class HomepageAdminController extends Controller
         $mode = ((int) ($item->icon_type ?? 0)) === 5 ? 'mobile' : 'desktop';
 
         return redirect()
-            ->route('marketing.homepage.index', [
+            ->route('design.tools.homepage.asm.index', [
                 'mode' => $mode,
                 'lang' => $this->normalizeLang($request->get('lang')),
             ])
@@ -65,7 +65,7 @@ class HomepageAdminController extends Controller
 
     public function preview(Request $request): RedirectResponse
     {
-        return redirect()->route('marketing.homepage.index', [
+        return redirect()->route('design.tools.homepage.asm.index', [
             'mode' => $request->get('mode') === 'mobile' ? 'mobile' : 'desktop',
             'lang' => $this->normalizeLang($request->get('lang')),
         ]);
@@ -77,7 +77,7 @@ class HomepageAdminController extends Controller
         $frontendService->clearCache();
 
         return redirect()
-            ->route('marketing.homepage.index', [
+            ->route('design.tools.homepage.asm.index', [
                 'mode' => $request->get('mode', 'desktop'),
                 'lang' => $this->normalizeLang($request->get('lang')),
             ])
@@ -101,7 +101,7 @@ class HomepageAdminController extends Controller
         $service->restore($id);
 
         return redirect()
-            ->route('marketing.homepage.index')
+            ->route('design.tools.homepage.asm.index')
             ->with('success', 'Versão restaurada para temporário. Revê e publica quando estiver correto.');
     }
 
@@ -401,7 +401,7 @@ class HomepageAdminController extends Controller
     private function breadcrumbs(string $currentName, ?string $currentUrl = null): array
     {
         return [
-            ['name' => 'marketing', 'url' => route('marketing.index')],
+            ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1],
             ['name' => $currentName, 'url' => $currentUrl, 'no_translation' => 1],
         ];
     }

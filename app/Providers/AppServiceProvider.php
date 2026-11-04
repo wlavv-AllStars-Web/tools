@@ -58,17 +58,17 @@ class AppServiceProvider extends ServiceProvider
             return $this->areaBreadcrumbs('purchase', 'purchase.index', 'ERP');
         }
 
-        if (str_starts_with($routeName, 'marketing.homepage.')) {
+        if (str_starts_with($routeName, 'design.tools.homepage.asm.')) {
             return [
-                ['name' => 'marketing', 'url' => route('marketing.index')],
-                ['name' => 'ASM homepage', 'url' => route('marketing.homepage.index'), 'no_translation' => 1],
+                ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1],
+                ['name' => 'ASM homepage', 'url' => route('design.tools.homepage.asm.index'), 'no_translation' => 1],
             ];
         }
 
-        if (str_starts_with($routeName, 'marketing.homepage_ASD.')) {
+        if (str_starts_with($routeName, 'design.tools.homepage.asd.')) {
             return [
-                ['name' => 'marketing', 'url' => route('marketing.index')],
-                ['name' => 'ASD homepage', 'url' => route('marketing.homepage_ASD.index'), 'no_translation' => 1],
+                ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1],
+                ['name' => 'ASD homepage', 'url' => route('design.tools.homepage.asd.index'), 'no_translation' => 1],
             ];
         }
 
@@ -142,8 +142,8 @@ class AppServiceProvider extends ServiceProvider
             'autoOrders.' => ['purchase', 'purchase.index', 'Auto orders'],
             'purchase.tools.currency_price_updates.' => ['purchase', 'purchase.index', 'Currency price updates'],
             'suppliersBackorders.' => ['purchase', 'purchase.index', "Supplier's backorders"],
-            'asg_cars.' => ['marketing', 'marketing.index', 'Car gallery'],
-            'asg_events.' => ['marketing', 'marketing.index', 'Event gallery'],
+            'asg_cars.' => ['design', 'design.index', 'Car gallery'],
+            'asg_events.' => ['design', 'design.index', 'Event gallery'],
             'tv.' => ['marketing', 'marketing.index', 'TV'],
             'refund.' => ['finance', 'finance.index', 'Refunds'],
             'carrierReturn.' => ['finance', 'finance.index', 'Carrier check'],
@@ -151,8 +151,8 @@ class AppServiceProvider extends ServiceProvider
             'dashboard.tools.kpi' => ['dashboard', 'dashboard.index', 'KPI'],
             'dashboard.tools.adminKpi' => ['dashboard', 'dashboard.index', 'KPI'],
             'dashboard.tools.changes' => ['dashboard', 'dashboard.index', 'Changes'],
-            'web.tools.resources.asm.' => ['web', 'web.index', 'ASM resources'],
-            'web.tools.resources.asd.' => ['web', 'web.index', 'ASD resources'],
+            'design.tools.resources.asm.' => ['design', 'design.index', 'ASM resources'],
+            'design.tools.resources.asd.' => ['design', 'design.index', 'ASD resources'],
             'web.tools.tracking.' => ['web', 'web.index', 'Tracking'],
             'web.tools.seo.' => ['web', 'web.index', 'SEO'],
             'web.tools.raw_text.' => ['web', 'web.index', 'Raw text'],
@@ -188,9 +188,9 @@ class AppServiceProvider extends ServiceProvider
             'sales.tools.compats.' => ['sales', 'sales.index', 'Compats'],
             'admin.tools.asd_alerts.' => ['administration', 'administration.index', 'ASD - Alerts'],
             'marketing.tools.tv.' => ['marketing', 'marketing.index', 'TV'],
-            'marketing.tools.homepage.asm.' => ['marketing', 'marketing.index', 'ASM homepage'],
-            'marketing.tools.homepage.asd.' => ['marketing', 'marketing.index', 'ASD homepage'],
-            'marketing.tools.car_gallery.' => ['marketing', 'marketing.index', 'Car gallery'],
+            'design.tools.product_images.' => ['design', 'design.index', 'Product image review'],
+            'design.tools.events.' => ['design', 'design.index', 'Event gallery'],
+            'design.tools.car_gallery.' => ['design', 'design.index', 'Car gallery'],
             'backoffice.tools.auto_orders.' => ['purchase', 'purchase.index', 'Auto orders'],
             'backoffice.tools.suppliers.map.' => ['purchase', 'purchase.index', "Supplier's map"],
             'backoffice.tools.price_map.' => ['purchase', 'purchase.index', 'Price map'],

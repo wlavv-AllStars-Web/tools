@@ -3,7 +3,7 @@
 @section('content')
 @php
     $isEdit = $mode === 'edit';
-    $action = $isEdit ? route('asg_events.update', $event->id_gallery) : route('asg_events.store');
+    $action = $isEdit ? route('design.tools.events.update', $event->id_gallery) : route('design.tools.events.store');
     $galleryImages = $event->images_array ?? [];
 @endphp
 
@@ -214,7 +214,7 @@
     </form>
 
     @if($isEdit)
-        <form id="delete-event-form" method="POST" action="{{ route('asg_events.destroy', $event->id_gallery) }}" class="d-none">
+        <form id="delete-event-form" method="POST" action="{{ route('design.tools.events.destroy', $event->id_gallery) }}" class="d-none">
             @csrf
             @method('DELETE')
         </form>

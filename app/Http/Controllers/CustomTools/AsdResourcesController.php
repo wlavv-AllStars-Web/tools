@@ -22,7 +22,8 @@ class ASDResourcesController extends Controller
     
     public function __construct(){
         $this->breadcrumbs[] = ['name' => 'web', 'url' => route('web.index')];
-        $this->breadcrumbs[] = ['name' => 'web.tools.resources.asd.index', 'url' => route('web.tools.resources.asd.index')];
+        $this->breadcrumbs[] = ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => trans('messages.resources'), 'url' => route('design.tools.resources.asd.index')];
     }
 
     public function index()
@@ -158,7 +159,7 @@ class ASDResourcesController extends Controller
         }
 
         return redirect()
-            ->route('web.tools.resources.asd.edit', $brand->id_manufacturer)
+            ->route('design.tools.resources.asd.edit', $brand->id_manufacturer)
             ->with('success', 'ASD brand resources updated successfully.');
     }
 
@@ -171,7 +172,7 @@ class ASDResourcesController extends Controller
         ]);
         $breadcrumbs = [
             ['name' => 'Studio', 'url' => route('marketing.index'), 'no_translation' => 1],
-            ['name' => 'ASD missing photos', 'url' => route('web.tools.resources.asd.edit', ['id_manufacturer' => $id_manufacturer, 'from' => 'studio']), 'no_translation' => 1],
+            ['name' => 'ASD missing photos', 'url' => route('design.tools.resources.asd.edit', ['id_manufacturer' => $id_manufacturer, 'from' => 'studio']), 'no_translation' => 1],
         ];
 
         return view('areas.marketing.asd-missing-photos.edit', compact('brand', 'resource', 'breadcrumbs'));
@@ -306,7 +307,7 @@ class ASDResourcesController extends Controller
         }
 
         return redirect()
-            ->route('web.tools.resources.asd.edit', ['id_manufacturer' => $brand->id_manufacturer, 'from' => 'studio'])
+            ->route('design.tools.resources.asd.edit', ['id_manufacturer' => $brand->id_manufacturer, 'from' => 'studio'])
             ->with('success', 'Images uploaded successfully.');
     }
     public function images(Request $request, int $id_manufacturer)

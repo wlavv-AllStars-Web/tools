@@ -8,7 +8,7 @@
 
             <h3 class="mb-4">Create Car</h3>
 
-            <form method="POST" action="{{ route('asg_cars.store') }}">
+            <form method="POST" action="{{ route('design.tools.car_gallery.store') }}">
                 @csrf
 
                 <div class="mb-3">

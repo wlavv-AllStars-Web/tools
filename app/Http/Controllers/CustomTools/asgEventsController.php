@@ -24,7 +24,8 @@ class asgEventsController extends Controller
     public function index(Request $request)
     {
         $this->breadcrumbs[] = ['name' => trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = ['name' => 'ASG Events', 'url' => route('asg_events.index')];
+        $this->breadcrumbs[] = ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => 'ASG Events', 'url' => route('design.tools.events.index')];
 
         $query = asg_events::query()
             ->with('images')
@@ -95,7 +96,8 @@ class asgEventsController extends Controller
     public function create()
     {
         $this->breadcrumbs[] = ['name' => trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = ['name' => 'ASG Events', 'url' => route('asg_events.index')];
+        $this->breadcrumbs[] = ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => 'ASG Events', 'url' => route('design.tools.events.index')];
 
         return view('customTools.asg_events.form', [
             'event' => new asg_events(),
@@ -123,14 +125,15 @@ class asgEventsController extends Controller
         });
 
         return redirect()
-            ->route('asg_events.index')
+            ->route('design.tools.events.index')
             ->with('success', 'Evento criado com sucesso.');
     }
 
     public function edit($id)
     {
         $this->breadcrumbs[] = ['name' => trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = ['name' => 'ASG Events', 'url' => route('asg_events.index')];
+        $this->breadcrumbs[] = ['name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => 'ASG Events', 'url' => route('design.tools.events.index')];
 
         $event = asg_events::query()->findOrFail($id);
 
@@ -157,7 +160,7 @@ class asgEventsController extends Controller
         });
 
         return redirect()
-            ->route('asg_events.edit', $event->id_gallery)
+            ->route('design.tools.events.edit', $event->id_gallery)
             ->with('success', 'Evento atualizado com sucesso.');
     }
 
@@ -174,7 +177,7 @@ class asgEventsController extends Controller
         });
 
         return redirect()
-            ->route('asg_events.index')
+            ->route('design.tools.events.index')
             ->with('success', 'Evento removido com sucesso.');
     }
 

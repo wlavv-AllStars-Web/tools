@@ -15,7 +15,7 @@
             <div class="text-muted">Gestão da galeria de veículos e produtos associados.</div>
         </div>
 
-        <a href="{{ route('asg_cars.create') }}" class="btn btn-success">
+        <a href="{{ route('design.tools.car_gallery.create') }}" class="btn btn-success">
             + Novo veículo
         </a>
     </div>
@@ -45,7 +45,7 @@
 
             <div class="col-lg-2 d-flex gap-2">
                 <button class="btn btn-primary flex-fill">Filtrar</button>
-                <a href="{{ route('asg_cars.index') }}" class="btn btn-outline-secondary">Limpar</a>
+                <a href="{{ route('design.tools.car_gallery.index') }}" class="btn btn-outline-secondary">Limpar</a>
             </div>
         </div>
     </form>
@@ -85,7 +85,7 @@
                     </div>
 
                     <div class="asg-car-actions">
-                        <a href="{{ route('asg_cars.edit', $car->id_asg_car) }}" class="btn btn-sm btn-outline-primary w-100">
+                        <a href="{{ route('design.tools.car_gallery.edit', $car->id_asg_car) }}" class="btn btn-sm btn-outline-primary w-100">
                             Editar
                         </a>
                     </div>

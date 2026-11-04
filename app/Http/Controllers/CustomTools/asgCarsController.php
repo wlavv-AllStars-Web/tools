@@ -30,8 +30,8 @@ class asgCarsController extends Controller
     public function index(Request $request)
     {
 
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('asg_cars'), 'url' => route('asg_cars.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = [ 'name' =>  trans('asg_cars'), 'url' => route('design.tools.car_gallery.index')];
 
         $query = asg_cars::query()->withCount('products')->orderBy('position')->orderBy('id_asg_car');
 
@@ -91,8 +91,8 @@ class asgCarsController extends Controller
     public function create()
     {
 
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('asg_cars'), 'url' => route('asg_cars.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = [ 'name' =>  trans('asg_cars'), 'url' => route('design.tools.car_gallery.index')];
         
         return view('customTools.asg_cars.form', [
             'car' => new asg_cars(),
@@ -122,15 +122,15 @@ class asgCarsController extends Controller
         });
 
         return redirect()
-            ->route('asg_cars.index')
+            ->route('design.tools.car_gallery.index')
             ->with('success', 'Veículo criado com sucesso.');
     }
 
     public function edit($id)
     {
 
-        $this->breadcrumbs[] = [ 'name' =>  trans('marketing'), 'url' => route('marketing.index')];
-        $this->breadcrumbs[] = [ 'name' =>  trans('asg_cars'), 'url' => route('asg_cars.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = [ 'name' =>  trans('asg_cars'), 'url' => route('design.tools.car_gallery.index')];
         
         $car = asg_cars::query()->with('products')->findOrFail($id);
 
@@ -158,7 +158,7 @@ class asgCarsController extends Controller
         });
 
         return redirect()
-            ->route('asg_cars.edit', $car->id_asg_car)
+            ->route('design.tools.car_gallery.edit', $car->id_asg_car)
             ->with('success', 'Veículo atualizado com sucesso.');
     }
 
@@ -175,7 +175,7 @@ class asgCarsController extends Controller
         });
 
         return redirect()
-            ->route('asg_cars.index')
+            ->route('design.tools.car_gallery.index')
             ->with('success', 'Veículo removido com sucesso.');
     }
 

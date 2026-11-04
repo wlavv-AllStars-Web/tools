@@ -15,7 +15,7 @@
             <div class="text-muted">Gestao da lista de eventos e galerias.</div>
         </div>
 
-        <a href="{{ route('asg_events.create') }}" class="btn btn-success">
+        <a href="{{ route('design.tools.events.create') }}" class="btn btn-success">
             + Novo evento
         </a>
     </div>
@@ -54,7 +54,7 @@
 
             <div class="col-lg-2 d-flex gap-2">
                 <button class="btn btn-primary flex-fill">Filtrar</button>
-                <a href="{{ route('asg_events.index') }}" class="btn btn-outline-secondary">Limpar</a>
+                <a href="{{ route('design.tools.events.index') }}" class="btn btn-outline-secondary">Limpar</a>
             </div>
         </div>
     </form>
@@ -97,7 +97,7 @@
                     </div>
 
                     <div class="asg-event-actions">
-                        <a href="{{ route('asg_events.edit', $event->id_gallery) }}" class="btn btn-sm btn-outline-primary w-100">
+                        <a href="{{ route('design.tools.events.edit', $event->id_gallery) }}" class="btn btn-sm btn-outline-primary w-100">
                             Editar
                         </a>
                     </div>

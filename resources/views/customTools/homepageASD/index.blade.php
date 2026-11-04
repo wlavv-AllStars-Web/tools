@@ -25,7 +25,7 @@
     <div class="card">
         <div class="card-body">
 
-            <form method="POST" action="{{ route('marketing.homepage_ASD.update') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('design.tools.homepage.asd.update') }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row g-4">

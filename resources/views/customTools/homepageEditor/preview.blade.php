@@ -37,11 +37,11 @@
             <div class="hp-subtitle">{{ $isMobile ? 'Mobile' : 'Desktop' }} · idioma {{ strtoupper($lang ?? 'en') }} · dados temporários</div>
         </div>
         <div class="hp-actions">
-            <a class="hp-btn" href="{{ route('marketing.homepage.index', ['mode' => $mode]) }}"><i class="fa-solid fa-angle-left"></i> Voltar</a>
-            <a class="hp-btn" href="{{ route('marketing.homepage.preview', ['mode' => $mode, 'lang' => 'en']) }}">EN</a>
-            <a class="hp-btn" href="{{ route('marketing.homepage.preview', ['mode' => $mode, 'lang' => 'es']) }}">ES</a>
-            <a class="hp-btn" href="{{ route('marketing.homepage.preview', ['mode' => $mode, 'lang' => 'fr']) }}">FR</a>
-            <form method="POST" action="{{ route('marketing.homepage.publish', ['mode' => $mode]) }}" style="margin:0" onsubmit="return confirm('Publicar a versão temporária para online?')">
+            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.index', ['mode' => $mode]) }}"><i class="fa-solid fa-angle-left"></i> Voltar</a>
+            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.preview', ['mode' => $mode, 'lang' => 'en']) }}">EN</a>
+            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.preview', ['mode' => $mode, 'lang' => 'es']) }}">ES</a>
+            <a class="hp-btn" href="{{ route('design.tools.homepage.asm.preview', ['mode' => $mode, 'lang' => 'fr']) }}">FR</a>
+            <form method="POST" action="{{ route('design.tools.homepage.asm.publish', ['mode' => $mode]) }}" style="margin:0" onsubmit="return confirm('Publicar a versão temporária para online?')">
                 @csrf
                 <button class="hp-btn hp-btn-success"><i class="fa-solid fa-upload"></i> Publicar</button>
             </form>

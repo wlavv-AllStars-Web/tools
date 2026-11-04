@@ -17,7 +17,8 @@ class asmResourcesController extends Controller
     
     public function __construct(){
         $this->breadcrumbs[] = [ 'name' => trans('web'), 'url' => route('web.index')];
-        $this->breadcrumbs[] = [ 'name' => trans('messages.asm_resources'), 'url' => route('web.tools.resources.asm.index')];
+        $this->breadcrumbs[] = [ 'name' => 'Design', 'url' => route('design.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = [ 'name' => trans('messages.asm_resources'), 'url' => route('design.tools.resources.asm.index')];
     }
     
     public function index(){
@@ -92,7 +93,7 @@ class asmResourcesController extends Controller
         );
 
         return redirect()
-            ->route('web.tools.resources.asm.index')
+            ->route('design.tools.resources.asm.index')
             ->with('success', $lang . ' banner uploaded successfully for ' . $brand->name . '.');
     }
 
@@ -109,7 +110,7 @@ class asmResourcesController extends Controller
         );
 
         return redirect()
-            ->route('web.tools.resources.asm.index')
+            ->route('design.tools.resources.asm.index')
             ->with('success', 'YouTube updated successfully for ' . $brand->name . '.');
     }
 
@@ -134,7 +135,7 @@ class asmResourcesController extends Controller
         );
 
         return redirect()
-            ->route('web.tools.resources.asm.index')
+            ->route('design.tools.resources.asm.index')
             ->with('success', 'Installation instructions uploaded successfully for ' . $brand->name . '.');
     }
 

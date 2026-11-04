@@ -98,6 +98,7 @@
 @section('content')
 
     <div class="navbar navbar-light customPanel">
+        <h2 class="nt-section-title">Quick actions</h2>
 
         <div class="row">
             <div class="col-lg-12">
@@ -183,5 +184,8 @@
         <div class="col-lg-12" id="shipping_report"> </div>
     </div>
     
-    {!! $counters !!}
+    <section class="nt-monitoring-section">
+        <h2 class="nt-section-title">Monitoring</h2>
+        {!! $counters !!}
+    </section>
 @endsection

@@ -56,7 +56,7 @@
                                     <input type="search" id="globalSearch" name="tag" placeholder="Pesquisar..." aria-label="Pesquisa global">
                                     <kbd>Ctrl K</kbd>
                                 </form>
-                                <form action="{{ route('logout') }}" method="POST" class="nt-logout-form">@csrf<button type="submit" class="nt-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Terminar sessão</span></button></form>
+                                <form action="{{ route('logout') }}" method="POST" class="nt-logout-form">@csrf<button type="submit" class="nt-logout" aria-label="Terminar sessão" title="Terminar sessão"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i></button></form>
                             </header>
                             <div id="yieldContent">
                             @if(request()->routeIs('erp.oms.*', 'admin.tools.oms.*'))

@@ -237,6 +237,14 @@
                                             </button>
                                         </div>
                                     </div>
+                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="{{ route('barcode.printProductBarcode', ['id_product' => $product->id_product, 'id_product_attribute' => $product->id_product_attribute, 'repeat' => 1]) }}">
+                                            <i class="fa-solid fa-barcode"></i> EAN
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="{{ route('barcode.printProductStandString', ['id_product' => $product->id_product, 'id_product_attribute' => $product->id_product_attribute]) }}">
+                                            <i class="fa-solid fa-warehouse"></i> Estante
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
 

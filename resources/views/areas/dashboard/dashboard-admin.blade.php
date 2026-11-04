@@ -250,12 +250,14 @@
                 @if(!empty($canViewKpiDetails))
                 <div class="progressText {{ $statusClass }}"> {{ number_format($status,2,',',' ') }} % </div>
                 <div class="goal-result">
-                    <div class="progressText">
-                        GOAL: {{ number_format($objective_until_today,2,',',' ') }} €
+                    <div class="dashboard-result-stat">
+                        <span>Goal</span>
+                        <strong>{{ number_format($objective_until_today,2,',',' ') }} €</strong>
                     </div>
                 
-                    <div class="progressText {{ $realised_until_today > $objective_until_today ? 'ok' : 'nok' }}">
-                        RESULT: {{ number_format($realised_until_today,2,',',' ') }} €
+                    <div class="dashboard-result-stat {{ $realised_until_today > $objective_until_today ? 'ok' : 'nok' }}">
+                        <span>Result</span>
+                        <strong>{{ number_format($realised_until_today,2,',',' ') }} €</strong>
                     </div>
                 </div>
                 @endif

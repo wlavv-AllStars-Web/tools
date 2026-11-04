@@ -1,38 +1,19 @@
 @php
-    $navigation = [
-        ['label' => 'Painel', 'icon' => 'fa-house', 'items' => [
-            ['label' => 'Control panel', 'route' => 'dashboard.index', 'match' => 'dashboard.index'],
-        ]],
-        ['label' => 'Operações', 'icon' => 'fa-warehouse', 'items' => [
-            ['label' => __('menu.logistics'), 'route' => 'logistics.index', 'match' => 'logistics.index'],
-            ['label' => 'ERP', 'route' => 'erp.oms.simple', 'match' => 'erp.oms.*'],
-            ['label' => 'Ship stats', 'route' => 'logistics.tools.shipping.index', 'match' => 'logistics.tools.shipping.*'],
-        ]],
-        ['label' => 'Comercial', 'icon' => 'fa-chart-line', 'items' => [
-            ['label' => 'Accounting', 'route' => 'finance.index', 'match' => 'finance.index'],
-            ['label' => 'Purchase', 'route' => 'purchase.index', 'match' => 'purchase.index'],
-            ['label' => 'Sales', 'route' => 'sales.index', 'match' => 'sales.index'],
-        ]],
-        ['label' => 'Studio', 'icon' => 'fa-wand-magic-sparkles', 'items' => [
-            ['label' => 'Studio', 'route' => 'marketing.index', 'match' => 'marketing.index'],
-            ['label' => 'Design', 'route' => 'design.index', 'match' => 'design.index'],
-            ['label' => __('menu.webmaster'), 'route' => 'web.index', 'match' => 'web.index', 'users' => [2, 43]],
-        ]],
-        ['label' => 'Recursos', 'icon' => 'fa-folder-open', 'items' => [
-            ['label' => 'Documents', 'route' => 'documentsManager.index', 'match' => 'documentsManager.index'],
-            ['label' => 'Supplier map', 'route' => 'purchase.tools.suppliers.map.index', 'match' => 'suppliersMap.*|purchase.tools.suppliers.map.*|backoffice.tools.suppliers.map.*'],
-        ]],
-        ['label' => 'Pós-venda', 'icon' => 'fa-headset', 'items' => [
-            ['label' => 'After sales', 'route' => 'afterSales.index', 'match' => 'afterSales.index'],
-        ]],
-        ['label' => 'Administração', 'icon' => 'fa-shield-halved', 'items' => [
-            ['label' => __('menu.admin'), 'route' => 'administration.index', 'match' => 'administration.index'],
-        ]],
+    $areas = [
+        ['label' => 'Accounting', 'icon' => 'fa-calculator', 'route' => 'finance.index', 'match' => 'finance.index'],
+        ['label' => 'Purchase', 'icon' => 'fa-cart-shopping', 'route' => 'purchase.index', 'match' => 'purchase.index'],
+        ['label' => 'Logistics', 'icon' => 'fa-boxes-stacked', 'route' => 'logistics.index', 'match' => 'logistics.index'],
+        ['label' => 'Sales', 'icon' => 'fa-chart-line', 'route' => 'sales.index', 'match' => 'sales.index'],
+        ['label' => 'After Sales', 'icon' => 'fa-headset', 'route' => 'afterSales.index', 'match' => 'afterSales.index'],
+        ['label' => 'Studio', 'icon' => 'fa-wand-magic-sparkles', 'route' => 'marketing.index', 'match' => 'marketing.index'],
+        ['label' => 'Design', 'icon' => 'fa-pen-ruler', 'route' => 'design.index', 'match' => 'design.index'],
     ];
-    $visibleNavigation = collect($navigation)->map(function ($group) {
-        $group['items'] = collect($group['items'])->filter(fn ($item) => empty($item['users']) || in_array((int) Auth::id(), $item['users'], true))->values()->all();
-        return $group;
-    })->filter(fn ($group) => count($group['items']))->values();
+    $tools = [
+        ['label' => 'ERP', 'icon' => 'fa-warehouse', 'route' => 'erp.oms.simple', 'match' => 'erp.oms.*'],
+        ['label' => 'Ship stats', 'icon' => 'fa-truck-fast', 'route' => 'logistics.tools.shipping.index', 'match' => 'logistics.tools.shipping.*'],
+        ['label' => 'Suppliers map', 'icon' => 'fa-map-location-dot', 'route' => 'purchase.tools.suppliers.map.index', 'match' => 'suppliersMap.*|purchase.tools.suppliers.map.*|backoffice.tools.suppliers.map.*'],
+        ['label' => 'Documents', 'icon' => 'fa-folder-open', 'route' => 'documentsManager.index', 'match' => 'documentsManager.index'],
+    ];
 @endphp
 
 <aside class="nt-sidebar" id="nt-sidebar" aria-label="Navegação principal">
@@ -41,15 +22,14 @@
         <span class="nt-brand-copy"><strong>newTools</strong><small>Back Office</small></span>
     </a>
     <nav class="nt-nav">
-        @foreach ($visibleNavigation as $group)
-            @foreach ($group['items'] as $item)
-                @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
-                <div class="nt-nav-group {{ $itemActive ? 'is-active' : '' }}">
-                    <a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
-                        <i class="fa-solid {{ $group['icon'] }}" aria-hidden="true"></i><span>{{ $item['label'] }}</span>
-                    </a>
-                </div>
-            @endforeach
+        @foreach ($areas as $item)
+            @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
+            <div class="nt-nav-group {{ $itemActive ? 'is-active' : '' }}"><a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $item['label'] }}"><i class="fa-solid {{ $item['icon'] }}" aria-hidden="true"></i><span>{{ $item['label'] }}</span></a></div>
+        @endforeach
+        <div class="nt-nav-divider" role="separator" aria-label="Ferramentas"></div>
+        @foreach ($tools as $item)
+            @php($itemActive = collect(explode('|', $item['match']))->contains(fn ($match) => request()->routeIs($match)))
+            <div class="nt-nav-group {{ $itemActive ? 'is-active' : '' }}"><a class="nt-nav-toggle" href="{{ route($item['route']) }}" title="{{ $item['label'] }}"><i class="fa-solid {{ $item['icon'] }}" aria-hidden="true"></i><span>{{ $item['label'] }}</span></a></div>
         @endforeach
     </nav>
 </aside>

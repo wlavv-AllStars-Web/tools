@@ -12,7 +12,7 @@
         <div class="alert alert-danger" style="width: 100%;">{{ session('error') }}</div>
     @endif
 
-    @if(count($accessList) > 0)
+    @if(count($accessList) > 0 || $imageReviewManufacturers->isNotEmpty() || $asdMissingImageBrands->isNotEmpty())
     <div class="navbar navbar-light customPanel">
         <h2 class="nt-section-title">Quick actions</h2>
         <div class="listUL" style="margin: 0 auto;display: table;">

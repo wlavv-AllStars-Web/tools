@@ -2526,6 +2526,7 @@ public static function dashboard_end_of_life($type)
         $ordersTable = self::tableName('orders');
         $orderDetailTable = self::tableName('order_detail');
         $productAttributeTable = self::tableName('product_attribute');
+        $customSoldTable = self::tableName('custom_sold');
     
         $products = self::select(
                 $productTable . '.id_product',
@@ -2587,6 +2588,27 @@ public static function dashboard_end_of_life($type)
             ->pluck($orderDetailTable . '.product_reference')
             ->unique()
             ->toArray();
+
+        // The current shop only contains post-migration orders. Add the
+        // monthly ASM sales snapshot so products sold on the previous site
+        // are also considered sold during the last 12 months.
+        if (self::hasPrestashopTable('custom_sold')) {
+            $snapshotStart = Carbon::now('UTC')->startOfMonth()->subMonths(11)->toDateString();
+
+            $historicSoldRefs = DB::connection('mysql2')
+                ->table($customSoldTable)
+                ->where('month', '>=', $snapshotStart)
+                ->get(['reference', 'attribute_reference', 'id_product_attribute'])
+                ->map(static function ($item) {
+                    return (int) $item->id_product_attribute > 0
+                        ? $item->attribute_reference
+                        : $item->reference;
+                })
+                ->filter(static fn ($reference) => trim((string) $reference) !== '')
+                ->all();
+
+            $soldRefs = array_values(array_unique(array_merge($soldRefs, $historicSoldRefs)));
+        }
     
         $data = collect($allProducts)
             ->reject(fn ($item) => in_array($item['reference'], $soldRefs, true))

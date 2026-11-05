@@ -27,14 +27,14 @@
 
             @foreach($details->data as $item)
                 @php
-                    $hasExceptionFields = isset($details->exception_fields)
-                        && is_array($details->exception_fields)
-                        && count($details->exception_fields) >= 4;
-
                     $rowExceptionId = null;
 
-                    if ($hasExceptionFields && isset($item[$details->exception_fields[1]])) {
-                        $rowExceptionId = $item[$details->exception_fields[1]];
+                    $rowExceptionFields = $item['exception_fields'] ?? ($details->exception_fields ?? null);
+                    $hasRowExceptionFields = is_array($rowExceptionFields)
+                        && count($rowExceptionFields) >= 4;
+
+                    if ($hasRowExceptionFields && isset($item[$rowExceptionFields[1]])) {
+                        $rowExceptionId = $item[$rowExceptionFields[1]];
                     }
 
                     /*
@@ -88,13 +88,13 @@
 
                             @elseif($column == 'clean')
                                 <td class="{{ $column }}">
-                                    @if($hasExceptionFields)
+                                    @if($hasRowExceptionFields)
                                         <img
                                             src="/admin/images/check.png"
-                                            data-panel="{{ $details->exception_fields[0] }}"
-                                            data-var-1="{{ $item[$details->exception_fields[1]] ?? '' }}"
-                                            data-var-2="{{ $item[$details->exception_fields[2]] ?? '' }}"
-                                            data-var-3="{{ $item[$details->exception_fields[3]] ?? '' }}"
+                                            data-panel="{{ $rowExceptionFields[0] }}"
+                                            data-var-1="{{ $item[$rowExceptionFields[1]] ?? '' }}"
+                                            data-var-2="{{ $item[$rowExceptionFields[2]] ?? '' }}"
+                                            data-var-3="{{ $item[$rowExceptionFields[3]] ?? '' }}"
                                             data-panel-dom-id="{{ $panelDomId ?? $panel->panel }}"
                                             onclick="setRowAsCheckedFromButton(this)"
                                             style="cursor: pointer;"
@@ -129,7 +129,11 @@
                                     <td
                                         class="{{ $column }}"
                                         @if($rowUrl && !in_array($column, $nonClickableColumns, true))
-                                            onclick="window.open('{{ $rowUrl }}', '_blank');"
+                                            @if(($details->row_navigation ?? null) === 'replace')
+                                                onclick="window.location.assign('{{ $rowUrl }}');"
+                                            @else
+                                                onclick="window.open('{{ $rowUrl }}', '_blank');"
+                                            @endif
                                             style="cursor: pointer;"
                                         @elseif(isset($details->link))
                                             onclick="window.location.replace('{{ $details->link }}');"

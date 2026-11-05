@@ -157,6 +157,153 @@ class order_return extends PrestashopModel
         ];
     }
 
+    /**
+     * One operational queue for every return and warranty that still needs
+     * attention.  The records live in the same table, but each row keeps its
+     * process and state so it can take the operator to the appropriate tool.
+     */
+    public static function dashboard_returns_warranties($type)
+    {
+        $closedReturnIds = asm_dashboard::getExceptions('closed_order_return')
+            ->pluck('id_product')
+            ->map(static fn ($id) => (int) $id)
+            ->all();
+
+        $closedWarrantyIds = asm_dashboard::getExceptions('closed_order_warranty')
+            ->pluck('id_product')
+            ->map(static fn ($id) => (int) $id)
+            ->all();
+
+        $data = self::getReturnsWarrantiesDashboardRows($closedReturnIds, $closedWarrantyIds);
+
+        return [
+            'name' => 'RETURNS & WARRANTIES',
+            'col' => 4,
+            'item_id' => $type . '_returns_warranties',
+            'columns' => ['clean', 'type', 'status', 'id_order', 'id_customer', 'customer_name'],
+            'column_labels' => [
+                'type' => 'Type',
+                'status' => 'Status',
+                'id_order' => 'Order',
+                'id_customer' => 'Customer ID',
+                'customer_name' => 'Customer',
+            ],
+            'row_navigation' => 'replace',
+            'counter' => count($data),
+            'data' => $data,
+        ];
+    }
+
+    protected static function getReturnsWarrantiesDashboardRows(array $closedReturnIds, array $closedWarrantyIds): array
+    {
+        $orderReturnTable = self::tableName('order_return');
+        $ordersTable = self::tableName('orders');
+        $customerTable = self::tableName('customer');
+        $stateLangTable = self::tableName('order_return_state_lang');
+
+        $records = DB::connection('mysql2')
+            ->table($orderReturnTable . ' as or')
+            ->leftJoin($ordersTable . ' as o', 'o.id_order', '=', 'or.id_order')
+            ->leftJoin($customerTable . ' as cu', 'cu.id_customer', '=', 'or.id_customer')
+            ->leftJoin($customerTable . ' as ocu', 'ocu.id_customer', '=', 'o.id_customer')
+            ->leftJoin($stateLangTable . ' as sl', function ($join) {
+                $join->on('sl.id_order_return_state', '=', 'or.state')
+                    ->where('sl.id_lang', '=', 2);
+            })
+            ->where(function ($query) {
+                $query->where(function ($query) {
+                    $query->where('or.process', 'return')
+                        ->whereIn('or.state', [10, 11, 12, 13, 14]);
+                })->orWhere(function ($query) {
+                    $query->where('or.process', 'warranty')
+                        ->whereIn('or.state', [1, 2, 3, 4, 5, 6, 7, 8]);
+                });
+            })
+            ->select(
+                'or.id_order_return',
+                'or.id_order',
+                'or.process',
+                'or.state',
+                'sl.name as state_name',
+                DB::raw('COALESCE(NULLIF(or.id_customer, 0), o.id_customer) AS id_customer'),
+                DB::raw('TRIM(CONCAT(COALESCE(cu.firstname, ocu.firstname, ""), " ", COALESCE(cu.lastname, ocu.lastname, ""))) AS customer_name')
+            )
+            ->orderByDesc('or.id_order_return')
+            ->get();
+
+        $data = [];
+
+        foreach ($records as $record) {
+            $isClosedReturn = $record->process === 'return' && in_array((int) $record->state, [12, 13], true);
+            $isClosedWarranty = $record->process === 'warranty' && in_array((int) $record->state, [4, 5, 6, 7, 8], true);
+
+            if ($isClosedReturn && in_array((int) $record->id_order_return, $closedReturnIds, true)) {
+                continue;
+            }
+
+            if ($isClosedWarranty && in_array((int) $record->id_order_return, $closedWarrantyIds, true)) {
+                continue;
+            }
+
+            $isReturn = $record->process === 'return';
+            $row = [
+                'type' => $isReturn ? 'Return' : 'Warranty',
+                'status' => self::returnWarrantyStatusLabel(
+                    $record->process,
+                    (int) $record->state,
+                    $record->state_name
+                ),
+                'id_order' => $record->id_order,
+                'id_customer' => $record->id_customer,
+                'customer_name' => $record->customer_name,
+                'url' => $isReturn
+                    ? route('sales.tools.returns.index')
+                    : route('sales.tools.warranties.index'),
+            ];
+
+            if ($isClosedReturn || $isClosedWarranty) {
+                $row['clean'] = $record->id_order_return;
+                $row['id_order_return'] = $record->id_order_return;
+                $row['exception_fields'] = $isClosedReturn
+                    ? ['closed_order_return', 'id_order_return', 'id_customer', 'customer_name']
+                    : ['closed_order_warranty', 'id_order_return', 'id_customer', 'customer_name'];
+            }
+
+            $data[] = $row;
+        }
+
+        return $data;
+    }
+
+    protected static function returnWarrantyStatusLabel(string $process, int $state, ?string $stateName): string
+    {
+        if (!empty($stateName)) {
+            return $stateName;
+        }
+
+        $labels = [
+            'return' => [
+                10 => 'Request registered',
+                11 => 'Awaiting delivery',
+                12 => 'Not approved',
+                13 => 'Approved',
+                14 => 'Package received',
+            ],
+            'warranty' => [
+                1 => 'Request registered',
+                2 => 'Request being processed',
+                3 => 'Request for additional information',
+                4 => 'Approved',
+                5 => 'Not approved',
+                6 => 'Closed',
+                7 => 'Closed',
+                8 => 'Closed',
+            ],
+        ];
+
+        return $labels[$process][$state] ?? ('State ' . $state);
+    }
+
     protected static function getDashboardRows(array $states, $includeClean = true, array $excludedReturnIds = [], ?string $process = null)
     {
         $orderReturnTable = self::tableName('order_return');

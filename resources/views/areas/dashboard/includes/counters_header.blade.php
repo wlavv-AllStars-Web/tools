@@ -13,10 +13,10 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
-                $hasAction = (int) $counter->counter > 0;
-                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
+                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration', 'non_standard'], true);
+                $hasAction = !$isInfo && (int) $counter->counter > 0;
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
-                $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
+                $stateLabel = $isInfo ? 'Informational' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
         
             <div class="col-xl-3 col-md-6 nt-monitoring-grid__column" data-nt-monitoring-pending="{{ (!$isInfo && $hasAction) ? 'true' : 'false' }}">
@@ -55,6 +55,10 @@
                             <button type="button" class="nt-monitoring-card__footer" @if($headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
                                 <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </button>
+                        @elseif($isInfo)
+                            <div class="nt-monitoring-card__footer nt-monitoring-card__footer--quiet">
+                                <span>Informational</span><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            </div>
                         @else
                             <div class="nt-monitoring-card__footer nt-monitoring-card__footer--quiet">
                                 <span>Up to date</span><i class="fa-solid fa-check" aria-hidden="true"></i>
@@ -77,10 +81,10 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
-                $hasAction = (int) $counter->counter > 0;
-                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration']);
+                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration', 'non_standard'], true);
+                $hasAction = !$isInfo && (int) $counter->counter > 0;
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
-                $stateLabel = $isInfo ? 'Check required' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
+                $stateLabel = $isInfo ? 'Informational' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
             <div class="col-xl-3 col-md-6 nt-monitoring-grid__column" data-nt-monitoring-pending="{{ (!$isInfo && $hasAction) ? 'true' : 'false' }}">
                 <div class="navbar navbar-light customPanel nt-monitoring-card nt-monitoring-card--{{ $state }}">
@@ -118,6 +122,10 @@
                             <button type="button" class="nt-monitoring-card__footer" @if($headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
                                 <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </button>
+                        @elseif($isInfo)
+                            <div class="nt-monitoring-card__footer nt-monitoring-card__footer--quiet">
+                                <span>Informational</span><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            </div>
                         @else
                             <div class="nt-monitoring-card__footer nt-monitoring-card__footer--quiet">
                                 <span>Up to date</span><i class="fa-solid fa-check" aria-hidden="true"></i>

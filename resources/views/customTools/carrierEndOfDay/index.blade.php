@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="navbar navbar-light customPanel" id="top">
+<div class="navbar navbar-light customPanel" id="top" style="display:flex; flex-wrap:wrap; align-content:flex-start;">
     <div style="width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
         <h5 style="margin:0;">Carrier end of day</h5>
         <form method="GET" style="display:flex; gap:8px; margin:0;">
@@ -13,7 +13,7 @@
     @if(session('success')) <div class="alert alert-success" style="width:100%;">{{ session('success') }}</div> @endif
     @if(session('error')) <div class="alert alert-danger" style="width:100%;">{{ session('error') }}</div> @endif
 
-    <div style="width:100%; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-bottom:12px;">
+    <div style="width:100%; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-bottom:12px; order:3;">
         @forelse($byCarrier as $carrierName => $rows)
             @php
                 $document = $documents->get($carrierName);
@@ -41,7 +41,7 @@
     </div>
 
     @if($byCarrier->isNotEmpty())
-        <form method="POST" action="{{ route('logistics.tools.carrier_end_of_day.checks.store') }}" style="width:100%;">
+        <form method="POST" action="{{ route('logistics.tools.carrier_end_of_day.checks.store') }}" style="width:100%; order:2; margin-bottom:12px;">
             @csrf
             <input type="hidden" name="date" value="{{ $date }}">
             <div style="width:100%; border-top:1px solid #ddd; padding-top:14px;">

@@ -2473,31 +2473,72 @@ public static function dashboard_end_of_life($type)
 
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');
+        $productAttributeTable = self::tableName('product_attribute');
 
-        $query = self::select(
-                DB::raw('MIN(' . $productTable . '.id_product) as id_product'),
+        $productRows = self::select(
+                $productTable . '.id_product',
+                DB::raw('0 AS id_product_attribute'),
                 $productTable . '.reference',
                 DB::raw($manufacturerTable . '.name as brand'),
-                DB::raw('COUNT(reference) AS counter_reference'),
-                DB::raw('COUNT(DISTINCT COALESCE(width, -1)) AS distinct_width'),
-                DB::raw('COUNT(DISTINCT COALESCE(height, -1)) AS distinct_height'),
-                DB::raw('COUNT(DISTINCT COALESCE(depth, -1)) AS distinct_depth'),
-                DB::raw('COUNT(DISTINCT COALESCE(weight, -1)) AS distinct_weight')
+                $productTable . '.width',
+                $productTable . '.height',
+                $productTable . '.depth',
+                $productTable . '.weight'
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->groupBy(
-                $productTable . '.reference',
-                $manufacturerTable . '.name'
-            );
+            ->whereNotNull($productTable . '.reference')
+            ->whereRaw('TRIM(' . $productTable . '.reference) <> ?', [''])
+            ->when(!empty($excluded), fn ($query) => $query->whereNotIn($productTable . '.id_product', $excluded))
+            ->get();
 
-        if (!empty($excluded)) {
-            $query->whereNotIn($productTable . '.id_product', $excluded);
-        }
+        $attributeRows = product_attribute::select(
+                $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
+                $productAttributeTable . '.reference',
+                DB::raw($manufacturerTable . '.name as brand'),
+                $productTable . '.width',
+                $productTable . '.height',
+                $productTable . '.depth',
+                $productTable . '.weight'
+            )
+            ->join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
+            ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
+            ->whereNotNull($productAttributeTable . '.reference')
+            ->whereRaw('TRIM(' . $productAttributeTable . '.reference) <> ?', [''])
+            ->when(!empty($excluded), fn ($query) => $query->whereNotIn($productTable . '.id_product', $excluded))
+            ->get();
 
-        $bd = $query->get();
+        $hasDifferentMeasures = static function ($items): bool {
+            foreach (['width', 'height', 'depth', 'weight'] as $field) {
+                $values = $items->pluck($field)
+                    ->map(fn ($value) => $value === null ? '__NULL__' : (float) $value)
+                    ->unique();
 
-        foreach ($bd as $item) {
-            if (($item->distinct_width > 1) || ($item->distinct_height > 1) || ($item->distinct_depth > 1) || ($item->distinct_weight > 1)) {
+                if ($values->count() > 1) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        $sameSkuGroups = $productRows
+            ->concat($attributeRows)
+            ->map(function ($item) {
+                $item->entity_key = (int) $item->id_product_attribute > 0
+                    ? 'attribute:' . $item->id_product_attribute
+                    : 'product:' . $item->id_product;
+
+                return $item;
+            })
+            ->groupBy('reference')
+            ->filter(function ($items) use ($hasDifferentMeasures) {
+                return $items->pluck('entity_key')->unique()->count() > 1
+                    && $hasDifferentMeasures($items);
+            });
+
+        foreach ($sameSkuGroups as $items) {
+            foreach ($items as $item) {
                 $data[] = [
                     'clean' => $item->id_product,
                     'id_product' => $item->id_product,
@@ -2510,7 +2551,7 @@ public static function dashboard_end_of_life($type)
         return self::productDashboardResponse(
             trans('dashboard.SAME SKU DIFFERENT MEASUREMENTS'),
             $type,
-            'references_with_spaces',
+            'same_sku_diff_measures',
             ['id_product', 'reference', 'brand'],
             $data,
             [
@@ -2889,6 +2930,7 @@ public static function dashboard_end_of_life($type)
             ->where($stockTable . '.id_shop_group', 1)
             ->select(
                 $productTable . '.id_product',
+                DB::raw('0 AS id_product_attribute'),
                 $productTable . '.reference',
                 DB::raw('MAX(' . $stockTable . '.quantity) AS quantity')
             )
@@ -2899,24 +2941,11 @@ public static function dashboard_end_of_life($type)
             )
             ->get();
 
-        $refsProd = $productStockRows
-            ->groupBy('reference')
-            ->filter(function ($items) {
-                return $items->pluck('id_product')->unique()->count() > 1
-                    && $items->min('quantity') != $items->max('quantity');
-            })
-            ->keys();
-
-        $bd_prod = $productStockRows
-            ->whereIn('reference', $refsProd)
-            ->when(!empty($excluded), function ($items) use ($excluded) {
-                return $items->whereNotIn('id_product', $excluded);
-            });
-
         $attributeStockRows = product_attribute::join($productTable, $productAttributeTable . '.id_product', '=', $productTable . '.id_product')
             ->join($stockTable, $productAttributeTable . '.id_product_attribute', '=', $stockTable . '.id_product_attribute')
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->where($manufacturerTable . '.name', '<>', 'Technical Products')
+            ->where($productTable . '.active', 1)
             ->whereNotNull($productAttributeTable . '.reference')
             ->whereRaw('TRIM(' . $productAttributeTable . '.reference) <> ?', [''])
             ->where($stockTable . '.id_product_attribute', '>', 0)
@@ -2926,43 +2955,44 @@ public static function dashboard_end_of_life($type)
                 $productTable . '.id_product',
                 $productAttributeTable . '.id_product_attribute',
                 $productAttributeTable . '.reference',
-                DB::raw($productTable . '.reference AS product_reference'),
                 DB::raw('MAX(' . $stockTable . '.quantity) AS quantity')
             )
             ->orderBy($productAttributeTable . '.reference')
             ->groupBy(
                 $productTable . '.id_product',
                 $productAttributeTable . '.id_product_attribute',
-                $productAttributeTable . '.reference',
-                $productTable . '.reference'
+                $productAttributeTable . '.reference'
             )
             ->get();
 
-        $refsAttr = $attributeStockRows
+        $sameSkuRows = $productStockRows
+            ->concat($attributeStockRows)
+            ->map(function ($item) {
+                $item->entity_key = (int) $item->id_product_attribute > 0
+                    ? 'attribute:' . $item->id_product_attribute
+                    : 'product:' . $item->id_product;
+
+                return $item;
+            });
+
+        $referencesWithDifferentStock = $sameSkuRows
             ->groupBy('reference')
             ->filter(function ($items) {
-                return $items->pluck('id_product_attribute')->unique()->count() > 1
+                return $items->pluck('entity_key')->unique()->count() > 1
                     && $items->min('quantity') != $items->max('quantity');
             })
             ->keys();
 
-        $bd_attr = $attributeStockRows
-            ->whereIn('reference', $refsAttr)
+        $sameSkuRows = $sameSkuRows
+            ->whereIn('reference', $referencesWithDifferentStock)
             ->when(!empty($excluded), function ($items) use ($excluded) {
                 return $items->whereNotIn('id_product', $excluded);
             });
 
-        foreach ($bd_prod as $item) {
+        foreach ($sameSkuRows as $item) {
             $data[] = [
                 'id_product' => $item->id_product,
                 'reference' => $item->reference
-            ];
-        }
-
-        foreach ($bd_attr as $item) {
-            $data[] = [
-                'id_product' => $item->id_product,
-                'reference' => $item->product_reference ?: $item->reference
             ];
         }
 

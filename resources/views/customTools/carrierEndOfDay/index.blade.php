@@ -15,7 +15,9 @@
 
     <div style="width:100%; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-bottom:12px;">
         @forelse($byCarrier as $carrierName => $rows)
-            @php($document = $documents->get($carrierName))
+            @php
+                $document = $documents->get($carrierName);
+            @endphp
             <div style="border:1px solid #ddd; border-radius:5px; padding:10px;">
                 <div style="font-weight:bolder; text-transform:uppercase;">{{ $carrierName }}</div>
                 <div style="font-size:28px; font-weight:bolder; color:dodgerblue;">{{ $rows->count() }}</div>

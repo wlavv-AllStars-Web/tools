@@ -70,9 +70,9 @@
                                         <input type="hidden" name="checks[{{ $inputKey }}][carrier_name]" value="{{ $carrierName }}">
                                     </td>
                                     <td>{{ $rows->count() }}</td>
-                                    <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][qty_checked]" value="{{ $check?->qty_checked ?? $rows->count() }}"></td>
-                                    <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][non_standard]" value="{{ $check?->non_standard ?? 0 }}"></td>
-                                    <td><input class="form-control" type="text" maxlength="2000" name="checks[{{ $inputKey }}][note]" value="{{ $check?->note }}" placeholder="Note"></td>
+                                    <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][qty_checked]" value="{{ optional($check)->qty_checked ?? $rows->count() }}"></td>
+                                    <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][non_standard]" value="{{ optional($check)->non_standard ?? 0 }}"></td>
+                                    <td><input class="form-control" type="text" maxlength="2000" name="checks[{{ $inputKey }}][note]" value="{{ optional($check)->note }}" placeholder="Note"></td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -213,13 +213,13 @@ document.querySelectorAll('.carrier-eod-filter').forEach(input => {
             <select name="check_year" class="form-control" style="width:95px;">
                 <option value="">Year</option>
                 @for($year = now()->year; $year >= 2023; $year--)
-                    <option value="{{ $year }}" @selected((int) request('check_year') === $year)>{{ $year }}</option>
+                    <option value="{{ $year }}" {{ (int) request('check_year') === $year ? 'selected' : '' }}>{{ $year }}</option>
                 @endfor
             </select>
             <select name="check_month" class="form-control" style="width:95px;">
                 <option value="">Month</option>
                 @for($month = 1; $month <= 12; $month++)
-                    <option value="{{ $month }}" @selected((int) request('check_month') === $month)>{{ $month }}</option>
+                    <option value="{{ $month }}" {{ (int) request('check_month') === $month ? 'selected' : '' }}>{{ $month }}</option>
                 @endfor
             </select>
             <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-filter"></i></button>
@@ -241,7 +241,7 @@ document.querySelectorAll('.carrier-eod-filter').forEach(input => {
             </thead>
             <tbody>
                 @forelse($checksHistory as $check)
-                    <tr @if($check->has_diff) style="color:#c62828; font-weight:600;" @endif>
+                    <tr style="{{ $check->has_diff ? 'color:#c62828; font-weight:600;' : '' }}">
                         <td>{{ $check->check_date }}</td>
                         <td>{{ $check->carrier_name }}</td>
                         <td>{{ $check->shipments }}</td>

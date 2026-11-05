@@ -69,8 +69,8 @@
                 </table>
 
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <a class="btn btn-secondary" href="{{ $requestItem->isApproved() ? route('finance.tools.payment_links.archive') : route('finance.tools.payment_links.index') }}">Back</a>
-                    @if(!$requestItem->isApproved())
+                    <a class="btn btn-secondary" href="{{ $requestItem->isApproved() || $requestItem->isArchived() ? route('finance.tools.payment_links.archive') : route('finance.tools.payment_links.index') }}">Back</a>
+                    @if(!$requestItem->isApproved() && !$requestItem->isArchived())
                         <form method="POST" action="{{ route('finance.tools.payment_links.approve', $requestItem) }}" style="margin: 0;">
                             @csrf
                             <button class="btn btn-success" type="submit">

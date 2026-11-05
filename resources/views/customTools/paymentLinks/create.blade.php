@@ -44,8 +44,8 @@
 
                         <div class="col-lg-4">
                             <div class="form-group">
-                                <label for="description">Description * <small>(max. 30 chars)</small></label>
-                                <input id="description" name="description" class="form-control" type="text" maxlength="30" value="{{ old('description') }}" required>
+                                <label for="description">Description * <small>(max. 255 chars)</small></label>
+                                <input id="description" name="description" class="form-control" type="text" maxlength="255" value="{{ old('description') }}" required>
                             </div>
                         </div>
 

@@ -11,6 +11,7 @@ class PaymentLinkRequest extends Model
     public const STATUS_PENDING = 'pending';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_SENT = 'sent';
+    public const STATUS_ARCHIVED = 'archived';
 
     protected $fillable = [
         'store_code',
@@ -71,6 +72,11 @@ class PaymentLinkRequest extends Model
     public function isSent(): bool
     {
         return $this->status === self::STATUS_SENT;
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->status === self::STATUS_ARCHIVED;
     }
 
     public function amountInCents(): int

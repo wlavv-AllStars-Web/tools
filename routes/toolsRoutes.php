@@ -630,11 +630,12 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         Route::prefix('payment-links')->name('payment_links.')->group(function () {
             Route::get('/', [PaymentLinkRequestController::class, 'salesIndex'])->name('index');
-            Route::get('/sent', [PaymentLinkRequestController::class, 'salesSent'])->name('sent');
+            Route::get('/archive', [PaymentLinkRequestController::class, 'salesArchive'])->name('archive');
             Route::get('/create', [PaymentLinkRequestController::class, 'create'])->name('create');
             Route::post('/', [PaymentLinkRequestController::class, 'store'])->name('store');
             Route::get('/dashboard/{storeCode}', fn () => redirect()->route('sales.tools.payment_links.index'))->name('dashboard');
             Route::post('/{paymentLinkRequest}/send-email', [PaymentLinkRequestController::class, 'sendEmail'])->name('send_email');
+            Route::post('/{paymentLinkRequest}/archive', [PaymentLinkRequestController::class, 'archive'])->name('archive_request');
         });
     });
 

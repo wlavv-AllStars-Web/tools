@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('payment_link_requests', function (Blueprint $table) {
             $table->id();
             $table->string('order_id');
-            $table->string('description', 30);
+            $table->string('description', 255);
             $table->decimal('amount', 12, 2);
             $table->string('currency', 3)->default('EUR');
             $table->string('customer_email');

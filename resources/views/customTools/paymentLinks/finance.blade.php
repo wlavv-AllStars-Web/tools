@@ -36,6 +36,8 @@
                         <td>
                             @if($requestItem->isSent())
                                 <span class="badge bg-secondary">Sent</span>
+                            @elseif($requestItem->isArchived())
+                                <span class="badge bg-dark">Archived</span>
                             @elseif($requestItem->isApproved())
                                 <span class="badge bg-success">Approved</span>
                             @else

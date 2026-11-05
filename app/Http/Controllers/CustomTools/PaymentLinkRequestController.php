@@ -40,19 +40,19 @@ class PaymentLinkRequestController extends Controller
         ]);
     }
 
-    public function salesSent()
+    public function salesArchive()
     {
         $requests = PaymentLinkRequest::query()
             ->with(['approver', 'emailSender'])
-            ->where('status', PaymentLinkRequest::STATUS_SENT)
-            ->latest('email_sent_at')
+            ->whereIn('status', [PaymentLinkRequest::STATUS_SENT, PaymentLinkRequest::STATUS_ARCHIVED])
+            ->latest('updated_at')
             ->get();
 
         return View::make('customTools.paymentLinks.sales', [
             'requests' => $requests,
-            'mode' => 'sent',
+            'mode' => 'archive',
             'actions' => [],
-            'breadcrumbs' => $this->breadcrumbs('Sent payment links', route('sales.tools.payment_links.sent')),
+            'breadcrumbs' => $this->breadcrumbs('Archived payment links', route('sales.tools.payment_links.archive')),
         ]);
     }
 
@@ -70,7 +70,7 @@ class PaymentLinkRequestController extends Controller
         $data = $request->validate([
             'store_code' => ['required', 'string', 'in:' . implode(',', PaymentLinkRequest::storeOptions())],
             'order_id' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:30'],
+            'description' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'customer_email' => ['required', 'email', 'max:255'],
         ]);
@@ -119,7 +119,11 @@ class PaymentLinkRequestController extends Controller
     {
         $requests = PaymentLinkRequest::query()
             ->with(['requester', 'approver'])
-            ->whereIn('status', [PaymentLinkRequest::STATUS_APPROVED, PaymentLinkRequest::STATUS_SENT])
+            ->whereIn('status', [
+                PaymentLinkRequest::STATUS_APPROVED,
+                PaymentLinkRequest::STATUS_SENT,
+                PaymentLinkRequest::STATUS_ARCHIVED,
+            ])
             ->latest('approved_at')
             ->get();
 
@@ -147,6 +151,10 @@ class PaymentLinkRequestController extends Controller
         WorldlinePaymentLinkService $worldlinePaymentLinkService
     ): RedirectResponse
     {
+        if ($paymentLinkRequest->isArchived()) {
+            return back()->with('error', 'O link de pagamento está arquivado.');
+        }
+
         if (!$paymentLinkRequest->isApproved()) {
             $paymentLinkRequest->update([
                 'worldline_idempotency_key' => $paymentLinkRequest->worldline_idempotency_key ?: (string) Str::uuid(),
@@ -184,7 +192,7 @@ class PaymentLinkRequestController extends Controller
 
     public function sendEmail(PaymentLinkRequest $paymentLinkRequest): RedirectResponse
     {
-        if (!$paymentLinkRequest->isApproved() || !$paymentLinkRequest->paymentUrl()) {
+        if ($paymentLinkRequest->isArchived() || !$paymentLinkRequest->isApproved() || !$paymentLinkRequest->paymentUrl()) {
             return back()->with('error', 'Este link ainda nao foi aprovado por Finance.');
         }
 
@@ -212,8 +220,32 @@ class PaymentLinkRequestController extends Controller
         ]);
 
         return redirect()
-            ->route('sales.tools.payment_links.sent')
+            ->route('sales.tools.payment_links.archive')
             ->with('success', 'Email enviado com o link de pagamento.');
+    }
+
+    public function archive(PaymentLinkRequest $paymentLinkRequest): RedirectResponse
+    {
+        if ($paymentLinkRequest->isSent() || $paymentLinkRequest->isArchived()) {
+            return redirect()
+                ->route('sales.tools.payment_links.archive')
+                ->with('success', 'O link de pagamento já está arquivado.');
+        }
+
+        if (
+            $paymentLinkRequest->status === PaymentLinkRequest::STATUS_PENDING
+            && (int) $paymentLinkRequest->requested_by !== (int) auth()->id()
+        ) {
+            abort(403);
+        }
+
+        $paymentLinkRequest->update([
+            'status' => PaymentLinkRequest::STATUS_ARCHIVED,
+        ]);
+
+        return redirect()
+            ->route('sales.tools.payment_links.archive')
+            ->with('success', 'Link de pagamento arquivado sem envio de email.');
     }
 
     private function normalizeStoreCode(string $storeCode): string

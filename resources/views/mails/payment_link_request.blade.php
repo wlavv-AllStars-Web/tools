@@ -137,6 +137,10 @@
                             <a class="button" href="{{ $paymentUrl }}" target="_blank">Pay now</a>
                         </p>
 
+                        <p style="margin:0 0 18px; padding:12px 14px; border-left:4px solid {{ $brandColor }}; background:#f7f7f7; color:#333; line-height:1.5;">
+                            <strong>Payment confirmation:</strong> once the payment is complete, please reply to this email to confirm it.
+                        </p>
+
                         <p style="font-size:12px; color:#777; margin-bottom:0;">
                             If the button does not open, copy and paste this link into your browser:<br>
                             <a href="{{ $paymentUrl }}" style="color:{{ $brandColor }}; word-break:break-all;">{{ $paymentUrl }}</a>

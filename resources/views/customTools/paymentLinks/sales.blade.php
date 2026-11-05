@@ -3,10 +3,10 @@
 @section('content')
     <div class="navbar navbar-light customPanel">
         <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h5 style="margin: 0;">{{ ($mode ?? 'active') === 'sent' ? 'Sent payment links' : 'Payment link' }}</h5>
+            <h5 style="margin: 0;">{{ ($mode ?? 'active') === 'archive' ? 'Archived payment links' : 'Payment link' }}</h5>
             <div style="display: flex; gap: 8px;">
                 <a class="btn {{ ($mode ?? 'active') === 'active' ? 'btn-primary' : 'btn-secondary' }}" href="{{ route('sales.tools.payment_links.index') }}">Active</a>
-                <a class="btn {{ ($mode ?? 'active') === 'sent' ? 'btn-primary' : 'btn-secondary' }}" href="{{ route('sales.tools.payment_links.sent') }}">Sent</a>
+                <a class="btn {{ ($mode ?? 'active') === 'archive' ? 'btn-primary' : 'btn-secondary' }}" href="{{ route('sales.tools.payment_links.archive') }}">Archived</a>
                 <a class="btn btn-success" href="{{ route('sales.tools.payment_links.create') }}">
                     <i class="fa-solid fa-plus"></i> New request
                 </a>
@@ -24,7 +24,7 @@
                     <th>OrderID</th>
                     <th>Status</th>
                     <th>Store</th>
-                    <th>Email</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,6 +36,8 @@
                         <td>
                             @if($requestItem->isSent())
                                 <span class="badge bg-secondary">Sent</span>
+                            @elseif($requestItem->isArchived())
+                                <span class="badge bg-dark">Archived</span>
                             @elseif($requestItem->isApproved())
                                 <span class="badge bg-success">Approved</span>
                             @else
@@ -46,23 +48,31 @@
                             <strong style="color: {{ $requestItem->storeColor() }};">{{ $requestItem->storeName() }}</strong>
                         </td>
                         <td>
-                            @if($requestItem->isApproved())
-                                @if(!$requestItem->email_sent_at || in_array(auth()->user()?->role, ['admin', 'manager'], true))
-                                    <form method="POST" action="{{ route('sales.tools.payment_links.send_email', $requestItem) }}" style="margin: 0;">
+                            @if(($mode ?? 'active') === 'active')
+                                <div style="display: flex; justify-content: center; gap: 6px;">
+                                    @if($requestItem->isApproved())
+                                        @if(!$requestItem->email_sent_at || in_array(auth()->user()?->role, ['admin', 'manager'], true))
+                                            <form method="POST" action="{{ route('sales.tools.payment_links.send_email', $requestItem) }}" style="margin: 0;">
                                         @csrf
                                         <button class="btn btn-primary btn-sm" type="submit">
                                             <i class="fa-solid fa-envelope"></i>
                                             {{ $requestItem->email_sent_at ? 'Send new email' : 'Send email' }}
                                         </button>
                                     </form>
-                                @else
-                                    <button class="btn btn-secondary btn-sm" type="button" disabled>
-                                        <i class="fa-solid fa-lock"></i> Admin/manager only
-                                    </button>
+                                        @else
+                                            <button class="btn btn-secondary btn-sm" type="button" disabled>
+                                                <i class="fa-solid fa-lock"></i> Admin/manager only
+                                            </button>
+                                        @endif
+                                    @endif
+                                    <form method="POST" action="{{ route('sales.tools.payment_links.archive_request', $requestItem) }}" style="margin: 0;" onsubmit="return confirm('Archive this payment link without sending an email?')">
+                                        @csrf
+                                        <button class="btn btn-outline-secondary btn-sm" type="submit">
+                                            <i class="fa-solid fa-box-archive"></i> Archive
+                                        </button>
+                                    </form>
+                                </div>
                                 @endif
-                            @else
-                                -
-                            @endif
                         </td>
                     </tr>
                 @empty

@@ -1311,7 +1311,6 @@ class product extends PrestashopModel
 
         $productTable = self::tableName('product');
         $manufacturerTable = self::tableName('manufacturer');
-        $customProductTable = self::tableName('custom_product');
 
         $bd_data = self::select(
                 $productTable . '.id_product',
@@ -1319,13 +1318,16 @@ class product extends PrestashopModel
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->join($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
-            ->leftJoin($customProductTable, $productTable . '.id_product', '=', $customProductTable . '.id_product')
             ->where($manufacturerTable . '.name', '<>', 'Technical Products')
-            ->where(function ($query) use ($productTable, $customProductTable) {
+            ->where(function ($query) use ($productTable) {
                 $query->whereNull($productTable . '.weight')
-                    ->orWhere($productTable . '.weight', 0)
-                    ->orWhereNull($customProductTable . '.dim_verify')
-                    ->orWhere($customProductTable . '.dim_verify', 0);
+                    ->orWhere($productTable . '.weight', '<=', 0)
+                    ->orWhereNull($productTable . '.width')
+                    ->orWhere($productTable . '.width', '<=', 0)
+                    ->orWhereNull($productTable . '.height')
+                    ->orWhere($productTable . '.height', '<=', 0)
+                    ->orWhereNull($productTable . '.depth')
+                    ->orWhere($productTable . '.depth', '<=', 0);
             })
             ->where($productTable . '.active', 1)
             ->where($productTable . '.reference', 'not like', 'shipping%')

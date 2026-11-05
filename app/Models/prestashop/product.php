@@ -2148,26 +2148,79 @@ public static function dashboard_end_of_life($type)
 
     public static function dashboard_wholesale_price_exVAT($type)
     {
-        $data = [];
         $productTable = self::tableName('product');
         $productShopTable = self::tableName('product_shop');
+        $productAttributeTable = self::tableName('product_attribute');
+        $productAttributeShopTable = self::tableName('product_attribute_shop');
+        $shopCodes = config('allstars.auto_orders.shop_codes', []);
+        $shopIds = array_map('intval', array_keys($shopCodes));
 
-        $bd_data = self::query()
+        if (empty($shopIds)) {
+            return self::productDashboardResponse(
+                trans('dashboard.Wholesale > Price ( EX VAT )'),
+                $type,
+                'wholesale_price_exVAT',
+                ['store', 'item_type', 'id_product', 'id_product_attribute', 'reference', 'wholesale_price', 'price'],
+                []
+            );
+        }
+
+        // Simple products use their per-shop cost and selling price.
+        $products = DB::connection('mysql2')
+            ->table($productTable . ' as p')
             ->join($productShopTable . ' as ps', function ($join) use ($productTable) {
-                $join->on('ps.id_product', '=', $productTable . '.id_product')
-                    ->where('ps.id_shop', PrestashopAdminLinkService::shopId('ASM'));
+                $join->on('ps.id_product', '=', 'p.id_product');
             })
-            ->select($productTable . '.id_product', $productTable . '.reference', 'ps.wholesale_price', 'ps.price')
+            ->whereIn('ps.id_shop', $shopIds)
+            ->whereNotExists(function ($query) use ($productAttributeTable) {
+                $query->selectRaw('1')
+                    ->from($productAttributeTable . ' as pa_check')
+                    ->whereColumn('pa_check.id_product', 'p.id_product');
+            })
+            ->selectRaw("ps.id_shop, 'Product' as item_type, p.id_product, 0 as id_product_attribute, p.reference, ps.wholesale_price, ps.price")
             ->whereColumn('ps.wholesale_price', '>', 'ps.price')
-            ->groupBy($productTable . '.id_product', $productTable . '.reference', 'ps.wholesale_price', 'ps.price')
-            ->get();
+            ->groupBy('ps.id_shop', 'p.id_product', 'p.reference', 'ps.wholesale_price', 'ps.price');
+
+        // For combinations, `product_attribute_shop.price` is an impact, not
+        // the final selling price. Compare the effective combination price
+        // (product price + impact) with its own cost, falling back to the
+        // product cost where no combination cost is set.
+        $combinations = DB::connection('mysql2')
+            ->table($productTable . ' as p')
+            ->join($productShopTable . ' as ps', 'ps.id_product', '=', 'p.id_product')
+            ->join($productAttributeTable . ' as pa', 'pa.id_product', '=', 'p.id_product')
+            ->join($productAttributeShopTable . ' as pas', function ($join) {
+                $join->on('pas.id_product_attribute', '=', 'pa.id_product_attribute')
+                    ->on('pas.id_shop', '=', 'ps.id_shop');
+            })
+            ->whereIn('ps.id_shop', $shopIds)
+            ->selectRaw("\n                ps.id_shop,\n                'Combination' as item_type,\n                p.id_product,\n                pa.id_product_attribute,\n                COALESCE(NULLIF(pa.reference, ''), p.reference) as reference,\n                COALESCE(NULLIF(pas.wholesale_price, 0), ps.wholesale_price) as wholesale_price,\n                (ps.price + COALESCE(pas.price, 0)) as price\n            ")
+            ->whereRaw('COALESCE(NULLIF(pas.wholesale_price, 0), ps.wholesale_price) > (ps.price + COALESCE(pas.price, 0))')
+            ->groupBy(
+                'ps.id_shop',
+                'p.id_product',
+                'pa.id_product_attribute',
+                'pa.reference',
+                'p.reference',
+                'pas.wholesale_price',
+                'ps.wholesale_price',
+                'ps.price',
+                'pas.price'
+            );
+
+        $bd_data = $products->unionAll($combinations)->get();
+
+        $data = [];
 
         foreach ($bd_data as $item) {
             $data[] = [
+                'store' => $shopCodes[(int) $item->id_shop] ?? ('Shop ' . $item->id_shop),
+                'item_type' => $item->item_type,
                 'id_product' => $item->id_product,
+                'id_product_attribute' => $item->id_product_attribute,
                 'reference' => $item->reference,
-                'wholesale_price' => $item->wholesale_price,
-                'price' => $item->price
+                'wholesale_price' => (float) $item->wholesale_price,
+                'price' => (float) $item->price,
             ];
         }
 
@@ -2175,8 +2228,19 @@ public static function dashboard_end_of_life($type)
             trans('dashboard.Wholesale > Price ( EX VAT )'),
             $type,
             'wholesale_price_exVAT',
-            ['id_product', 'reference', 'wholesale_price', 'price'],
-            $data
+            ['store', 'item_type', 'id_product', 'id_product_attribute', 'reference', 'wholesale_price', 'price'],
+            $data,
+            [
+                'column_labels' => [
+                    'store' => 'Store',
+                    'item_type' => 'Type',
+                    'id_product' => 'Product ID',
+                    'id_product_attribute' => 'Combination ID',
+                    'reference' => 'Reference',
+                    'wholesale_price' => 'Purchase price (ex VAT)',
+                    'price' => 'Selling price (ex VAT)',
+                ],
+            ]
         );
     }
 

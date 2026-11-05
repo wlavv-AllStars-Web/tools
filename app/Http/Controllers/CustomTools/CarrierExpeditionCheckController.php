@@ -22,7 +22,7 @@ class CarrierExpeditionCheckController extends Controller
 
     public function index()
     {
-        $this->breadcrumbs[] = [ 'name' =>  trans('customTools.shipments.index'), 'url' => route('customTools.shipments.index')];
+        $this->breadcrumbs[] = [ 'name' =>  trans('customTools.shipments.index'), 'url' => route('logistics.tools.shipments_check.index')];
 
         $shipments = DB::connection('mysql2')->select("
             SELECT c.name as carrier_name, COUNT(oc.id_order) as total

@@ -34,7 +34,7 @@ class carrierIssuesController extends Controller
         
     public function index() {
         $this->breadcrumbs[] = ['name' => 'Logistics', 'url' => route('logistics.index')];
-        $this->breadcrumbs[] = ['name' => 'Carrier issues', 'url' => route('carrierIssues.index'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => 'Carrier issues', 'url' => route('logistics.tools.carrier_issues.index'), 'no_translation' => 1];
 
         carrierIssues::updateIssuesDelayDate();
 

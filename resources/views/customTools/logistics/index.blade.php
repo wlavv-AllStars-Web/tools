@@ -104,9 +104,9 @@
             <div class="col-lg-12">
                 <div class="listUL" style="margin: 0 auto;display: table;">
                     <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
-                        <a href="{{ route('logistics.tools.carrier_issues.legacy_index') }}" title="ISSUES">   
+                        <a href="{{ route('logistics.tools.carrier_issues.index') }}" title="Carrier Issues">
                             <div><i class="fa-solid fa-triangle-exclamation" style="font-size: 40px;"></i></div>
-                            <div>{{ __("messages.issues.carrier")}}</div>
+                            <div style="line-height: 1.2;">Carrier Issues</div>
                         </a>
                     </div>
                     
@@ -154,12 +154,6 @@
                         <a href="{{ route('logistics.tools.suppliers.issues.index', ['type' => 2]) }}" title="SUPPLIER">   
                             <div><i class="fa-solid fa-boxes-packing" style="font-size: 40px;"></i></div>
                             <div style="line-height: 1.2;">Supplier's Delivery</div>
-                        </a>
-                    </div>
-                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;">
-                        <a href="{{ route('logistics.tools.shipments_check.index') }}" title="Carrier Check">
-                            <div><i class="fa-solid fa-truck-fast" style="font-size: 40px;"></i></div>
-                            <div style="line-height: 1.2;">Carrier Check</div>
                         </a>
                     </div>
                     <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 

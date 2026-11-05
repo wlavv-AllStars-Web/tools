@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="navbar navbar-light customPanel" id="top" style="display:flex; flex-wrap:wrap; align-content:flex-start;">
+<div class="navbar navbar-light customPanel" id="top">
     <div style="width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
         <h5 style="margin:0;">Carrier end of day</h5>
         <form method="GET" style="display:flex; gap:8px; margin:0;">
@@ -12,45 +12,19 @@
 
     @if(session('success')) <div class="alert alert-success" style="width:100%;">{{ session('success') }}</div> @endif
     @if(session('error')) <div class="alert alert-danger" style="width:100%;">{{ session('error') }}</div> @endif
+</div>
 
-    <div style="width:100%; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-bottom:12px; order:3;">
-        @forelse($byCarrier as $carrierName => $rows)
-            @php
-                $document = $documents->get($carrierName);
-            @endphp
-            <div style="border:1px solid #ddd; border-radius:5px; padding:10px;">
-                <div style="font-weight:bolder; text-transform:uppercase;">{{ $carrierName }}</div>
-                <div style="font-size:28px; font-weight:bolder; color:dodgerblue;">{{ $rows->count() }}</div>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <a class="btn btn-secondary btn-sm" href="#carrier-{{ \Illuminate\Support\Str::slug($carrierName) }}">List</a>
-                    <form method="POST" action="{{ route('logistics.tools.carrier_end_of_day.store') }}" style="margin:0;" onsubmit="return confirm(@js('Generate end of day document for ' . $carrierName . ' on ' . $date . '? Existing archive for this carrier/date will be replaced.'));">
-                        @csrf
-                        <input type="hidden" name="date" value="{{ $date }}">
-                        <input type="hidden" name="carrier_name" value="{{ $carrierName }}">
-                        <button class="btn btn-primary btn-sm" type="submit">Generate</button>
-                    </form>
-                    @if($document)
-                        <a class="btn btn-success btn-sm" href="{{ route('logistics.tools.carrier_end_of_day.pdf', $document) }}">PDF</a>
-                        <a class="btn btn-warning btn-sm" href="{{ route('logistics.tools.carrier_end_of_day.print', $document) }}" target="_blank">Print</a>
-                    @endif
-                </div>
-            </div>
-        @empty
-            <div class="alert alert-warning" style="grid-column:1 / -1; margin:0;">No shipments found for this date.</div>
-        @endforelse
-    </div>
-
+<div class="navbar navbar-light customPanel">
     @if($byCarrier->isNotEmpty())
-        <form method="POST" action="{{ route('logistics.tools.carrier_end_of_day.checks.store') }}" style="width:100%; order:2; margin-bottom:12px;">
+        <form method="POST" action="{{ route('logistics.tools.carrier_end_of_day.checks.store') }}" style="width:100%;">
             @csrf
             <input type="hidden" name="date" value="{{ $date }}">
-            <div style="width:100%; border-top:1px solid #ddd; padding-top:14px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
-                    <h5 style="margin:0;">Carrier check</h5>
-                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save checks</button>
-                </div>
-                <div style="width:100%; overflow-x:auto;">
-                    <table class="table table-bordered customTable text-center" style="min-width:850px; margin-bottom:0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                <h5 style="margin:0;">Carrier check</h5>
+                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save checks</button>
+            </div>
+            <div style="width:100%; overflow-x:auto;">
+                <table class="table table-bordered customTable text-center" style="min-width:1100px; margin-bottom:0;">
                         <thead>
                             <tr style="text-transform:uppercase;">
                                 <th>Carrier</th>
@@ -58,6 +32,7 @@
                                 <th>Checked</th>
                                 <th>Non-standard</th>
                                 <th>Note</th>
+                                <th>End of day</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -65,6 +40,7 @@
                                 @php
                                     $check = $checks->get($carrierName);
                                     $inputKey = \Illuminate\Support\Str::slug($carrierName);
+                                    $document = $documents->get($carrierName);
                                 @endphp
                                 <tr>
                                     <td>
@@ -75,13 +51,35 @@
                                     <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][qty_checked]" value="{{ optional($check)->qty_checked ?? $rows->count() }}"></td>
                                     <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][non_standard]" value="{{ optional($check)->non_standard ?? 0 }}"></td>
                                     <td><input class="form-control" type="text" maxlength="2000" name="checks[{{ $inputKey }}][note]" value="{{ optional($check)->note }}" placeholder="Note"></td>
+                                    <td>
+                                        <div style="display:flex; justify-content:center; gap:5px; flex-wrap:wrap;">
+                                            <a class="btn btn-secondary btn-sm" href="#carrier-{{ $inputKey }}" title="List"><i class="fa-solid fa-list"></i></a>
+                                            <button class="btn btn-primary btn-sm" type="button" title="Generate" onclick="submitCarrierEndOfDayDocument('{{ $inputKey }}')"><i class="fa-solid fa-file-circle-plus"></i></button>
+                                            @if($document)
+                                                <a class="btn btn-success btn-sm" href="{{ route('logistics.tools.carrier_end_of_day.pdf', $document) }}" title="PDF"><i class="fa-solid fa-file-pdf"></i></a>
+                                                <a class="btn btn-warning btn-sm" href="{{ route('logistics.tools.carrier_end_of_day.print', $document) }}" target="_blank" title="Print"><i class="fa-solid fa-print"></i></a>
+                                            @endif
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
-                    </table>
-                </div>
+                </table>
             </div>
         </form>
+
+        @foreach($byCarrier as $carrierName => $rows)
+            @php
+                $inputKey = \Illuminate\Support\Str::slug($carrierName);
+            @endphp
+            <form id="carrier-end-of-day-document-{{ $inputKey }}" method="POST" action="{{ route('logistics.tools.carrier_end_of_day.store') }}" style="display:none;">
+                @csrf
+                <input type="hidden" name="date" value="{{ $date }}">
+                <input type="hidden" name="carrier_name" value="{{ $carrierName }}">
+            </form>
+        @endforeach
+    @else
+        <div class="alert alert-warning" style="width:100%; margin:0;">No shipments found for this date.</div>
     @endif
 </div>
 
@@ -149,6 +147,12 @@
 @endforeach
 
 <script>
+function submitCarrierEndOfDayDocument(carrierKey) {
+    if (window.confirm('Generate or replace the end of day document for this carrier?')) {
+        document.getElementById('carrier-end-of-day-document-' + carrierKey).submit();
+    }
+}
+
 function applyCarrierEodFilters(carrierGroup) {
     const filters = {};
     document.querySelectorAll('.carrier-eod-filter[data-carrier-filter="' + carrierGroup + '"]').forEach(input => {

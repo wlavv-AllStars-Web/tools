@@ -12,7 +12,7 @@ class afterSalesController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->breadcrumbs[] = ['name' => 'After Sales', 'url' => route('afterSales.index')];
+        $this->breadcrumbs[] = ['name' => 'After sales', 'url' => route('afterSales.index')];
     }
 
     public function index()

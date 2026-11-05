@@ -50,4 +50,5 @@ return [
     'Shop 2 VAT = Shop 3 default' => 'TVA ASM = default ASD',
     'Shop 3 VAT = Shop 2 default' => 'TVA ASD = default ASM',
     'MOLONI VATS NOT VALID' => 'VAT FOR VERIFICATION',
+    'VAT MONITORING' => 'SUIVI DE TVA',
 ];

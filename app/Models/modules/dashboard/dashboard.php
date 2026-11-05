@@ -450,12 +450,20 @@ class dashboard extends Model
                     });
             })
             ->whereNotIn('o.id_order', $ids_exceptions)
-            ->select('o.id_order', 'o.reference', 'o.total_products', 'o.total_products_wt')
+            ->select('o.id_order', 'o.reference', 'o.total_products', 'o.total_products_wt', 'ai.vat_number', 'ai.company')
             ->orderBy('o.id_order', 'DESC')
             ->get();
 
         foreach($bd_data AS $item){
-            $data[] = ['clean' => 'ASD_' . $item->id_order, 'id_order' => $item->id_order, 'reference' => $item->reference, 'total_products' => $item->total_products, 'total_products_wt' => $item->total_products_wt];
+            $data[] = [
+                'clean' => 'ASD_' . $item->id_order,
+                'id_order' => $item->id_order,
+                'reference' => $item->reference,
+                'total_products' => $item->total_products,
+                'total_products_wt' => $item->total_products_wt,
+                'vat_number' => $item->vat_number,
+                'company' => $item->company,
+            ];
         }
 
         return [
@@ -877,6 +885,58 @@ class dashboard extends Model
 
 
     
+    public static function vatMonitoring($tab = null, $panel = null): array
+    {
+        $professionalOrders = collect(self::externalOrderInvoiceExVat($tab ?? 'finance', $panel)['data'])
+            ->map(function (array $row) {
+                return [
+                    'clean' => $row['clean'],
+                    'source' => 'Professional order',
+                    'status' => 'VAT check required',
+                    'store' => 'ASD',
+                    'vat' => $row['vat_number'] ?: '-',
+                    'company' => $row['company'] ?: '-',
+                    'id_order' => $row['id_order'],
+                    'reference' => $row['reference'],
+                    'url' => PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $row['id_order'], 'ASD'),
+                    'exception_fields' => ['asd_orders_exvat', 'id_order', 'reference', 'total_products'],
+                ];
+            });
+
+        $moloniValidations = collect(self::moloniVatNotValid($tab, $panel)['data'])
+            ->map(function (array $row) {
+                return [
+                    'source' => 'VIES / Moloni',
+                    'status' => $row['status'],
+                    'store' => $row['store'],
+                    'vat' => $row['vat'],
+                    'company' => $row['company'],
+                    'id_order' => $row['id_order'],
+                    'reference' => '-',
+                    'url' => route('finance.tools.moloni_vat.index'),
+                ];
+            });
+
+        return self::dashboardPanel(
+            trans('dashboard.VAT MONITORING'),
+            'counter',
+            'vat_monitoring',
+            ['clean', 'source', 'status', 'store', 'vat', 'company', 'id_order', 'reference'],
+            $professionalOrders->merge($moloniValidations)->values()->all(),
+            [
+                'column_labels' => [
+                    'source' => 'Source',
+                    'status' => 'Status',
+                    'store' => 'Store',
+                    'vat' => 'VAT',
+                    'company' => 'Company',
+                    'id_order' => 'Order ID',
+                    'reference' => 'Reference',
+                ],
+            ]
+        );
+    }
+
     public static function moloniVatNotValid($tab = null, $panel = null): array
     {
         $validations = \App\Models\modules\moloni_vat_validation\MoloniVatValidation::query()

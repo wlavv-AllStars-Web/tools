@@ -55,6 +55,9 @@ class webController extends Controller{
         if ((int) auth()->id() === 43) {
             $accessList[]                       = ['name' => trans('messages.purchase.tools.currency_price_updates.index'), 'url' => route('purchase.tools.currency_price_updates.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];
         }
+        $accessList[]                           = ['name' => 'Product image review', 'url' => route('web.tools.product_images.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-images"></i>'];
+        $accessList[]                           = ['name' => trans('messages.asm_resources'), 'url' => route('web.tools.resources.asm.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
+        $accessList[]                           = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index'), 'icon' => '<i style="font-size: 40px;" class="fa-solid fa-folder-open"></i>'];
 
         /**
         $accessList[]                           = ['name' =>  trans('messages.purchasePrice'),      'url' => route('purchasePrice.index'),              'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-bill-transfer"></i>'];

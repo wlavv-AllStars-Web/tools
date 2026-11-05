@@ -40,21 +40,6 @@ class designController extends Controller
                     'url' => route('design.tools.homepage.asd.index'),
                     'icon' => 'fa-house-laptop',
                 ],
-                [
-                    'name' => 'Product image review',
-                    'url' => route('design.tools.product_images.index'),
-                    'icon' => 'fa-images',
-                ],
-                [
-                    'name' => trans('messages.asm_resources'),
-                    'url' => route('design.tools.resources.asm.index'),
-                    'icon' => 'fa-folder-open',
-                ],
-                [
-                    'name' => trans('messages.resources'),
-                    'url' => route('design.tools.resources.asd.index'),
-                    'icon' => 'fa-folder-open',
-                ],
             ],
         ]);
     }

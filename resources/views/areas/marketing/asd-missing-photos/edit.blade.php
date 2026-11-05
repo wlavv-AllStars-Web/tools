@@ -28,7 +28,7 @@
                 <button type="button" class="btn btn-sm btn-outline-primary" data-asd-image-filter="all">All images</button>
                 <button type="button" class="btn btn-sm btn-primary" data-asd-image-filter="missing">Missing images</button>
             </div>
-            <div id="studioAsdProductGallery" class="studio-asd-gallery" data-products-url="{{ route('design.tools.resources.asd.studio_products', $brand->id_manufacturer) }}"></div>
+            <div id="studioAsdProductGallery" class="studio-asd-gallery" data-products-url="{{ route('web.tools.resources.asd.studio_products', $brand->id_manufacturer) }}"></div>
             <div class="studio-asd-pagination" id="studioAsdProductPagination">
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="studioAsdPreviousPage">Previous</button>
                 <span class="small text-muted" id="studioAsdPageStatus"></span>

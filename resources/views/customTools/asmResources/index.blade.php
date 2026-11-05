@@ -332,7 +332,7 @@
                                     <td>
                                         <form
                                             method="POST"
-                                            action="{{ route('design.tools.resources.asm.upload', [$brand->id_manufacturer, $lang]) }}"
+                                            action="{{ route('web.tools.resources.asm.upload', [$brand->id_manufacturer, $lang]) }}"
                                             enctype="multipart/form-data"
                                             class="asm-upload-cell"
                                         >
@@ -369,7 +369,7 @@
                                 <td>
                                     <form
                                         method="POST"
-                                        action="{{ route('design.tools.resources.asm.installation_instructions.upload', $brand->id_manufacturer) }}"
+                                        action="{{ route('web.tools.resources.asm.installation_instructions.upload', $brand->id_manufacturer) }}"
                                         enctype="multipart/form-data"
                                         class="asm-installation-instructions-form"
                                     >
@@ -403,7 +403,7 @@
                                 </td>
 
                                 <td>
-                                    <form method="POST" action="{{ route('design.tools.resources.asm.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
+                                    <form method="POST" action="{{ route('web.tools.resources.asm.youtube', $brand->id_manufacturer) }}" class="asm-youtube-form">
                                         @csrf
                                         <input type="text" name="youtube" class="form-control form-control-sm" value="{{ old('youtube', $brand->youtube) }}" placeholder="YouTube URL or code">
                                         <button type="submit" class="btn btn-sm btn-primary" title="Save YouTube">

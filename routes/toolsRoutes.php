@@ -146,6 +146,16 @@ Route::middleware(['web', 'auth'])->group(function () {
             Route::post('/table/{table}/row/{id}/sync', [ToolsMigrationController::class, 'syncRow'])->name('sync_row')->where('table', '[A-Za-z0-9_]+');
             Route::post('/import-all', [ToolsMigrationController::class, 'importAll'])->name('import_all');
         });
+
+        Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
+        Route::post('/resources/asm/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('resources.asm.upload');
+        Route::post('/resources/asm/{id_manufacturer}/installation-instructions', [asmResourcesController::class, 'uploadInstallationInstructions'])->name('resources.asm.installation_instructions.upload');
+        Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
+        Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
+        Route::get('/resources/asd/{id_manufacturer}/studio-products', [AsdResourcesController::class, 'studioProducts'])->name('resources.asd.studio_products');
+        Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
+        Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
+        Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');
     });
 
     Route::prefix('admin')->name('admin.tools.')->group(function () {
@@ -467,16 +477,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('design')->name('design.tools.')->group(function () {
         Route::resource('/car-gallery', asgCarsController::class)->names('car_gallery');
         Route::resource('/events', asgEventsController::class)->names('events');
-
-        Route::get('/resources/asm', [asmResourcesController::class, 'index'])->name('resources.asm.index');
-        Route::post('/resources/asm/{id_manufacturer}/{lang}/upload', [asmResourcesController::class, 'upload'])->name('resources.asm.upload');
-        Route::post('/resources/asm/{id_manufacturer}/installation-instructions', [asmResourcesController::class, 'uploadInstallationInstructions'])->name('resources.asm.installation_instructions.upload');
-        Route::post('/resources/asm/{id_manufacturer}/youtube', [asmResourcesController::class, 'updateYoutube'])->name('resources.asm.youtube');
-        Route::get('/resources/asd', [AsdResourcesController::class, 'index'])->name('resources.asd.index');
-        Route::get('/resources/asd/{id_manufacturer}/studio-products', [AsdResourcesController::class, 'studioProducts'])->name('resources.asd.studio_products');
-        Route::get('/resources/asd/{id_manufacturer}', [AsdResourcesController::class, 'edit'])->name('resources.asd.edit');
-        Route::post('/resources/asd/{id_manufacturer}/update', [AsdResourcesController::class, 'update'])->name('resources.asd.update');
-        Route::get('/resources/asd/{id_manufacturer}/images', [AsdResourcesController::class, 'images'])->name('resources.asd.images');
     });
 
     Route::prefix('backoffice')->name('backoffice.tools.')->group(function () {

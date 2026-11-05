@@ -366,6 +366,8 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         Route::prefix('carrier-end-of-day')->name('carrier_end_of_day.')->group(function () {
             Route::get('/', [CarrierEndOfDayDocumentController::class, 'index'])->name('index');
+            Route::post('/checks', [CarrierEndOfDayDocumentController::class, 'storeChecks'])->name('checks.store');
+            Route::get('/checks/export', [CarrierEndOfDayDocumentController::class, 'exportChecksCsv'])->name('checks.export');
             Route::post('/documents', [CarrierEndOfDayDocumentController::class, 'store'])->name('store');
             Route::get('/documents/{document}', [CarrierEndOfDayDocumentController::class, 'show'])->name('show');
             Route::get('/documents/{document}/print', [CarrierEndOfDayDocumentController::class, 'print'])->name('print');

@@ -37,6 +37,50 @@
             <div class="alert alert-warning" style="grid-column:1 / -1; margin:0;">No shipments found for this date.</div>
         @endforelse
     </div>
+
+    @if($byCarrier->isNotEmpty())
+        <form method="POST" action="{{ route('logistics.tools.carrier_end_of_day.checks.store') }}" style="width:100%;">
+            @csrf
+            <input type="hidden" name="date" value="{{ $date }}">
+            <div style="width:100%; border-top:1px solid #ddd; padding-top:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                    <h5 style="margin:0;">Carrier check</h5>
+                    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save checks</button>
+                </div>
+                <div style="width:100%; overflow-x:auto;">
+                    <table class="table table-bordered customTable text-center" style="min-width:850px; margin-bottom:0;">
+                        <thead>
+                            <tr style="text-transform:uppercase;">
+                                <th>Carrier</th>
+                                <th>Shipments</th>
+                                <th>Checked</th>
+                                <th>Non-standard</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($byCarrier as $carrierName => $rows)
+                                @php
+                                    $check = $checks->get($carrierName);
+                                    $inputKey = \Illuminate\Support\Str::slug($carrierName);
+                                @endphp
+                                <tr>
+                                    <td>
+                                        <strong>{{ $carrierName }}</strong>
+                                        <input type="hidden" name="checks[{{ $inputKey }}][carrier_name]" value="{{ $carrierName }}">
+                                    </td>
+                                    <td>{{ $rows->count() }}</td>
+                                    <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][qty_checked]" value="{{ $check?->qty_checked ?? $rows->count() }}"></td>
+                                    <td><input class="form-control text-center" type="number" min="0" name="checks[{{ $inputKey }}][non_standard]" value="{{ $check?->non_standard ?? 0 }}"></td>
+                                    <td><input class="form-control" type="text" maxlength="2000" name="checks[{{ $inputKey }}][note]" value="{{ $check?->note }}" placeholder="Note"></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
+    @endif
 </div>
 
 @foreach($byCarrier as $carrierName => $rows)
@@ -159,5 +203,58 @@ document.querySelectorAll('.carrier-eod-filter').forEach(input => {
             @endforelse
         </tbody>
     </table>
+</div>
+
+<div class="navbar navbar-light customPanel" id="carrier-check-history">
+    <div style="width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+        <h5 style="margin:0;">Carrier check history</h5>
+        <form method="GET" style="display:flex; gap:8px; margin:0; align-items:center;">
+            <input type="hidden" name="date" value="{{ $date }}">
+            <select name="check_year" class="form-control" style="width:95px;">
+                <option value="">Year</option>
+                @for($year = now()->year; $year >= 2023; $year--)
+                    <option value="{{ $year }}" @selected((int) request('check_year') === $year)>{{ $year }}</option>
+                @endfor
+            </select>
+            <select name="check_month" class="form-control" style="width:95px;">
+                <option value="">Month</option>
+                @for($month = 1; $month <= 12; $month++)
+                    <option value="{{ $month }}" @selected((int) request('check_month') === $month)>{{ $month }}</option>
+                @endfor
+            </select>
+            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-filter"></i></button>
+            <a class="btn btn-success" href="{{ route('logistics.tools.carrier_end_of_day.checks.export', ['year' => request('check_year'), 'month' => request('check_month')]) }}"><i class="fa-solid fa-file-csv"></i></a>
+        </form>
+    </div>
+    <div style="width:100%; overflow-x:auto;">
+        <table class="table table-bordered customTable text-center" style="min-width:900px; margin-bottom:0;">
+            <thead>
+                <tr style="text-transform:uppercase;">
+                    <th>Date</th>
+                    <th>Carrier</th>
+                    <th>Shipments</th>
+                    <th>Checked</th>
+                    <th>Non-standard</th>
+                    <th>Note</th>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($checksHistory as $check)
+                    <tr @if($check->has_diff) style="color:#c62828; font-weight:600;" @endif>
+                        <td>{{ $check->check_date }}</td>
+                        <td>{{ $check->carrier_name }}</td>
+                        <td>{{ $check->shipments }}</td>
+                        <td>{{ $check->qty_checked }}</td>
+                        <td>{{ $check->non_standard }}</td>
+                        <td style="text-align:left;">{{ $check->note ?: '-' }}</td>
+                        <td>{{ $check->user_id }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="7">No carrier checks found.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 @endsection

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\CustomTools;
 
 use App\Http\Controllers\Controller;
 use App\Models\modules\carrierEndOfDay\CarrierEndOfDayDocument;
+use App\Models\modules\shipmentsCheck\CarrierExpeditionCheck;
+use App\Services\Mail\StoreMailer;
 use App\Services\Prestashop\PrestashopAdminLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -32,6 +34,28 @@ class CarrierEndOfDayDocumentController extends Controller
             ->get()
             ->keyBy('carrier_name');
 
+        $checks = $this->checksForDate($date);
+
+        $checksHistoryQuery = CarrierExpeditionCheck::query()
+            ->orderByDesc('check_date')
+            ->orderBy('carrier_name');
+
+        if ($request->filled('check_year')) {
+            $checksHistoryQuery->whereYear('check_date', $request->integer('check_year'));
+        }
+
+        if ($request->filled('check_month')) {
+            $checksHistoryQuery->whereMonth('check_date', $request->integer('check_month'));
+        }
+
+        $checksHistory = $checksHistoryQuery
+            ->limit(100)
+            ->get()
+            ->each(function (CarrierExpeditionCheck $check) {
+                $check->carrier_name = $this->normaliseCarrierName($check->carrier_name);
+                $check->has_diff = (int) $check->qty_checked !== (int) $check->shipments;
+            });
+
         $history = CarrierEndOfDayDocument::query()
             ->orderByDesc('document_date')
             ->orderBy('carrier_name')
@@ -42,11 +66,103 @@ class CarrierEndOfDayDocumentController extends Controller
             'date' => $date,
             'byCarrier' => $byCarrier,
             'documents' => $documents,
+            'checks' => $checks,
+            'checksHistory' => $checksHistory,
             'history' => $history,
             'actions' => [],
             'breadcrumbs' => array_merge($this->breadcrumbs, [
                 ['name' => 'Carrier end of day', 'url' => route('logistics.tools.carrier_end_of_day.index'), 'no_translation' => 1],
             ]),
+        ]);
+    }
+
+    public function storeChecks(Request $request)
+    {
+        $data = $request->validate([
+            'date' => ['required', 'date'],
+            'checks' => ['required', 'array'],
+            'checks.*.carrier_name' => ['required', 'string', 'max:255'],
+            'checks.*.qty_checked' => ['nullable', 'integer', 'min:0'],
+            'checks.*.non_standard' => ['nullable', 'integer', 'min:0'],
+            'checks.*.note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $shipmentsByCarrier = $this->shipmentsForDate($data['date'])->groupBy('carrier_name');
+        $existingChecks = $this->checksForDate($data['date']);
+        $saved = [];
+
+        foreach ($data['checks'] as $checkData) {
+            $carrierName = $this->normaliseCarrierName($checkData['carrier_name']);
+            $shipments = $shipmentsByCarrier->get($carrierName, collect());
+
+            if ($shipments->isEmpty()) {
+                continue;
+            }
+
+            $check = $existingChecks->get($carrierName) ?: new CarrierExpeditionCheck();
+            $check->fill([
+                'carrier_name' => $carrierName,
+                'shipments' => $shipments->count(),
+                'non_standard' => (int) ($checkData['non_standard'] ?? 0),
+                'qty_checked' => (int) ($checkData['qty_checked'] ?? 0),
+                'note' => $checkData['note'] ?? null,
+                'user_id' => auth()->id(),
+                'check_date' => $data['date'],
+            ]);
+            $check->save();
+
+            $saved[] = sprintf('%s: %d/%d', $carrierName, $check->qty_checked, $check->shipments);
+        }
+
+        if (!empty($saved)) {
+            StoreMailer::sendRaw(
+                'asm_sales',
+                'bruno.fernandes.asm@gmail.com',
+                'Shipment Check',
+                sprintf('Shipment check realizado em %s: %s', $data['date'], implode(', ', $saved))
+            );
+        }
+
+        return redirect()
+            ->route('logistics.tools.carrier_end_of_day.index', ['date' => $data['date']])
+            ->with('success', 'Carrier checks saved.');
+    }
+
+    public function exportChecksCsv(Request $request)
+    {
+        $query = CarrierExpeditionCheck::query()->orderByDesc('check_date')->orderBy('carrier_name');
+
+        if ($request->filled('year')) {
+            $query->whereYear('check_date', $request->integer('year'));
+        }
+
+        if ($request->filled('month')) {
+            $query->whereMonth('check_date', $request->integer('month'));
+        }
+
+        $checks = $query->get();
+        $filename = 'carrier_end_of_day_checks_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->stream(function () use ($checks) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Date', 'Carrier', 'Shipments', 'Checked', 'Non-standard', 'Note', 'User']);
+
+            foreach ($checks as $check) {
+                fputcsv($file, [
+                    $check->check_date,
+                    $this->normaliseCarrierName($check->carrier_name),
+                    $check->shipments,
+                    $check->qty_checked,
+                    $check->non_standard,
+                    $check->note,
+                    $check->user_id,
+                ]);
+            }
+
+            fclose($file);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 
@@ -190,18 +306,44 @@ class CarrierEndOfDayDocumentController extends Controller
         );
 
         return collect($rows)->map(function ($row) {
-            $row->carrier_name = match (strtoupper(trim($row->carrier_name))) {
-                'DPD' => 'DPD',
-                'INPOST', 'MONDIAL RELAY' => 'MONDIAL RELAY',
-                'NACEX' => 'NACEX',
-                'UPS', 'UPS DISTRIBUTION' => 'UPS',
-                default => $row->carrier_name,
-            };
+            $row->carrier_name = $this->normaliseCarrierName($row->carrier_name);
             $row->store_code = ((int) ($row->id_shop ?? 0)) === (int) config('shops.ASM.id') ? 'ASM' : 'ASD';
             $row->order_admin_url = PrestashopAdminLinkService::dashboardOrderAdminUrl((int) $row->order_id, $row->store_code);
 
             return $row;
         });
+    }
+
+    private function checksForDate(string $date): Collection
+    {
+        return CarrierExpeditionCheck::query()
+            ->whereDate('check_date', $date)
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (CarrierExpeditionCheck $check) {
+                $check->carrier_name = $this->normaliseCarrierName($check->carrier_name);
+
+                return $check;
+            })
+            ->unique('carrier_name')
+            ->keyBy('carrier_name');
+    }
+
+    private function normaliseCarrierName(?string $carrierName): string
+    {
+        $carrierName = trim((string) $carrierName);
+        $normalisedName = strtoupper($carrierName);
+
+        if (str_contains($normalisedName, 'INPOST') || str_contains($normalisedName, 'MONDIAL')) {
+            return 'MONDIAL RELAY';
+        }
+
+        return match ($normalisedName) {
+            'DPD' => 'DPD',
+            'NACEX' => 'NACEX',
+            'UPS', 'UPS DISTRIBUTION' => 'UPS',
+            default => $carrierName,
+        };
     }
 
     private function filename(CarrierEndOfDayDocument $document): string

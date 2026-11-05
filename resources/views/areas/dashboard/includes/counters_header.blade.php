@@ -14,7 +14,8 @@
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
                 $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration', 'non_standard'], true);
-                $hasAction = !$isInfo && (int) $counter->counter > 0;
+                $hasDetails = (int) $counter->counter > 0;
+                $hasAction = !$isInfo && $hasDetails;
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Informational' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
@@ -26,12 +27,12 @@
                             <div
                                 id="{{ $panelDomId }}_header"
                                 data-panel-title="{{ __("dashboard.$counter->name") }}"
-                                @if($hasAction && $headerUrl)
+                                @if($hasDetails && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @elseif($hasAction)
+                                @elseif($hasDetails)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
-                                class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
+                                class="nt-monitoring-card__summary {{ $hasDetails ? 'is-actionable' : '' }}"
                             >
                                 <div class="nt-monitoring-card__value" id="{{ $panelDomId }}_quantity">
                                     {{ $counter->counter }}
@@ -51,7 +52,7 @@
                             </div>
                         </div>
 
-                        @if($hasAction)
+                        @if($hasDetails)
                             <button type="button" class="nt-monitoring-card__footer" @if($headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
                                 <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </button>
@@ -82,7 +83,8 @@
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASD')
                     : null;
                 $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration', 'non_standard'], true);
-                $hasAction = !$isInfo && (int) $counter->counter > 0;
+                $hasDetails = (int) $counter->counter > 0;
+                $hasAction = !$isInfo && $hasDetails;
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Informational' : ($counter->counter < 1 ? 'OK' : 'Needs attention');
             @endphp
@@ -93,12 +95,12 @@
                             <div
                                 id="{{ $panelDomId }}_header"
                                 data-panel-title="{{ __("dashboard.$counter->name") }}"
-                                @if($hasAction && $headerUrl)
+                                @if($hasDetails && $headerUrl)
                                     onclick="window.open('{{ $headerUrl }}', '_blank')"
-                                @elseif($hasAction)
+                                @elseif($hasDetails)
                                     onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')"
                                 @endif
-                                class="nt-monitoring-card__summary {{ $hasAction ? 'is-actionable' : '' }}"
+                                class="nt-monitoring-card__summary {{ $hasDetails ? 'is-actionable' : '' }}"
                             >
                                 <div class="nt-monitoring-card__value" id="{{ $panelDomId }}_quantity">
                                     {{ $counter->counter }}
@@ -118,7 +120,7 @@
                             </div>
                         </div>
 
-                        @if($hasAction)
+                        @if($hasDetails)
                             <button type="button" class="nt-monitoring-card__footer" @if($headerUrl) onclick="window.open('{{ $headerUrl }}', '_blank')" @else onclick="getPanelContent('{{ $counter->tab }}', '{{ $counter->panel }}', '{{ $counter->store }}', '{{ $panelDomId }}')" @endif>
                                 <span>View details</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             </button>

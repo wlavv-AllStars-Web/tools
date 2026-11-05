@@ -2515,7 +2515,8 @@ public static function dashboard_end_of_life($type)
 
     public static function dashboard_in_stock_not_sold($type)
     {
-        $date = Carbon::now('UTC')->subYear()->toDateTimeString();
+        $createdBefore = Carbon::now('UTC')->subMonths(6)->toDateTimeString();
+        $soldSince = Carbon::now('UTC')->subYear()->toDateTimeString();
         $allProducts = [];
     
         $productTable = self::tableName('product');
@@ -2539,7 +2540,7 @@ public static function dashboard_end_of_life($type)
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($categoryProductTable . ' as cp', $productTable . '.id_product', '=', 'cp.id_product')
             ->where($productTable . '.active', 1)
-            ->where($productTable . '.date_add', '<', $date)
+            ->where($productTable . '.date_add', '<', $createdBefore)
             ->where($stockTable . '.quantity', '>', 0)
             ->where($productTable . '.reference', 'NOT LIKE', '%-Z')
             ->whereNotIn('cp.id_category', [524, 525, 526])
@@ -2566,7 +2567,7 @@ public static function dashboard_end_of_life($type)
             ->leftJoin($manufacturerTable, $productTable . '.id_manufacturer', '=', $manufacturerTable . '.id_manufacturer')
             ->leftJoin($categoryProductTable . ' as cp', $productTable . '.id_product', '=', 'cp.id_product')
             ->where($productTable . '.active', 1)
-            ->where($productTable . '.date_add', '<', $date)
+            ->where($productTable . '.date_add', '<', $createdBefore)
             ->where($stockTable . '.quantity', '>', 0)
             ->whereNotIn('cp.id_category', [524, 525, 526])
             ->distinct()
@@ -2582,6 +2583,7 @@ public static function dashboard_end_of_life($type)
         }
     
         $soldRefs = orders_details::join($ordersTable . ' as o', 'o.id_order', '=', $orderDetailTable . '.id_order')
+            ->where('o.date_add', '>=', $soldSince)
             ->pluck($orderDetailTable . '.product_reference')
             ->unique()
             ->toArray();

@@ -19,18 +19,7 @@ class afterSalesController extends Controller
     {
         return View::make('areas.afterSales.index')->with([
             'breadcrumbs' => $this->breadcrumbs,
-            'accessList' => [
-                [
-                    'name' => 'Returns',
-                    'url' => route('sales.tools.returns.index'),
-                    'icon' => 'fa-arrow-rotate-left',
-                ],
-                [
-                    'name' => 'Warranties',
-                    'url' => route('sales.tools.warranties.index'),
-                    'icon' => 'fa-shield-heart',
-                ],
-            ],
+            'accessList' => [],
         ]);
     }
 }

@@ -18,6 +18,12 @@ class picking extends Model
     use HasFactory;
     protected $table = "picking";
 
+    private const ASD_SHOP_ID = 3;
+
+    // An order that has passed through this state is a warranty replacement
+    // and must be held back from the normal ASD picking flow.
+    private const WARRANTY_ORDER_STATE_ID = 29;
+
     private const TECHNICAL_PRODUCT_REFERENCES = [
         'ccfee',
         'parts',
@@ -38,7 +44,9 @@ class picking extends Model
         
     public static function mountOrdersArray($status, array $shops = []){
         
-        $data_order = self::withoutTechnicalPickingRows(self::where('status', $status))
+        $data_order = self::withoutTechnicalPickingRows(
+            self::withoutAsdWarrantyOrders(self::where('status', $status))
+        )
             ->where('row_done', 0)
             // A legacy picking row can remain after an order detail was
             // corrected to zero. It is not a product to pick.
@@ -200,7 +208,9 @@ class picking extends Model
     public static function addData($id_status, $status){
         
         $states = is_array($id_status) ? $id_status : [$id_status];
-        $orders = orders::with('order_detail', 'carrier')->whereIn('current_state', $states)->get();
+        $orders = self::withoutAsdWarrantyOrders(
+            orders::with('order_detail', 'carrier')->whereIn('current_state', $states)
+        )->get();
 
         if(count($orders)){
             
@@ -353,8 +363,10 @@ class picking extends Model
             return;
         }
 
-        $preparationOrderIds = orders::whereIn('id_order', $orderIds)
-            ->whereIn('current_state', [3, 35])
+        $preparationOrderIds = self::withoutAsdWarrantyOrders(
+            orders::whereIn('id_order', $orderIds)
+                ->whereIn('current_state', [3, 35])
+        )
             ->pluck('id_order')
             ->map(fn ($idOrder) => (int) $idOrder)
             ->all();
@@ -928,8 +940,10 @@ class picking extends Model
             ->values()
             ->all();
 
-        $orders = orders::whereIn('id_order', $orderIds)
-            ->whereIn('current_state', [3, 35])
+        $orders = self::withoutAsdWarrantyOrders(
+            orders::whereIn('id_order', $orderIds)
+                ->whereIn('current_state', [3, 35])
+        )
             ->get()
             ->keyBy('id_order');
 
@@ -990,6 +1004,28 @@ class picking extends Model
         if( $rowsOfOrder == $pickedRowsOfOrder ) return 1;
 
         return 2;
+    }
+
+    /**
+     * Warranty replacements are not dispatched through the normal ASD picking
+     * queue. Other shops remain completely unaffected.
+     */
+    private static function withoutAsdWarrantyOrders($query)
+    {
+        $ordersTable = self::psTable('orders');
+        $orderHistoryTable = self::psTable('order_history');
+
+        return $query->where(function ($query) use ($ordersTable, $orderHistoryTable) {
+            $query->where('id_shop', '<>', self::ASD_SHOP_ID)
+                ->orWhereNotIn('id_order', function ($warrantyOrders) use ($ordersTable, $orderHistoryTable) {
+                    $warrantyOrders
+                        ->select('oh.id_order')
+                        ->from($orderHistoryTable . ' as oh')
+                        ->join($ordersTable . ' as o', 'o.id_order', '=', 'oh.id_order')
+                        ->where('o.id_shop', self::ASD_SHOP_ID)
+                        ->where('oh.id_order_state', self::WARRANTY_ORDER_STATE_ID);
+                });
+        });
     }
 
     private static function withoutTechnicalPickingRows($query)

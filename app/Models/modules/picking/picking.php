@@ -24,6 +24,8 @@ class picking extends Model
     // and must be held back from the normal ASD picking flow.
     private const WARRANTY_ORDER_STATE_ID = 29;
 
+    private static ?array $asdWarrantyOrderIds = null;
+
     private const TECHNICAL_PRODUCT_REFERENCES = [
         'ccfee',
         'parts',
@@ -1012,20 +1014,36 @@ class picking extends Model
      */
     private static function withoutAsdWarrantyOrders($query)
     {
-        $ordersTable = self::psTable('orders');
-        $orderHistoryTable = self::psTable('order_history');
+        $warrantyOrderIds = self::asdWarrantyOrderIds();
 
-        return $query->where(function ($query) use ($ordersTable, $orderHistoryTable) {
+        if (empty($warrantyOrderIds)) {
+            return $query;
+        }
+
+        return $query->where(function ($query) use ($warrantyOrderIds) {
             $query->where('id_shop', '<>', self::ASD_SHOP_ID)
-                ->orWhereNotIn('id_order', function ($warrantyOrders) use ($ordersTable, $orderHistoryTable) {
-                    $warrantyOrders
-                        ->select('oh.id_order')
-                        ->from($orderHistoryTable . ' as oh')
-                        ->join($ordersTable . ' as o', 'o.id_order', '=', 'oh.id_order')
-                        ->where('o.id_shop', self::ASD_SHOP_ID)
-                        ->where('oh.id_order_state', self::WARRANTY_ORDER_STATE_ID);
-                });
+                ->orWhereNotIn('id_order', $warrantyOrderIds);
         });
+    }
+
+    private static function asdWarrantyOrderIds(): array
+    {
+        if (self::$asdWarrantyOrderIds !== null) {
+            return self::$asdWarrantyOrderIds;
+        }
+
+        self::$asdWarrantyOrderIds = DB::connection('mysql2')
+            ->table(self::psTable('order_history') . ' as oh')
+            ->join(self::psTable('orders') . ' as o', 'o.id_order', '=', 'oh.id_order')
+            ->where('o.id_shop', self::ASD_SHOP_ID)
+            ->where('oh.id_order_state', self::WARRANTY_ORDER_STATE_ID)
+            ->pluck('oh.id_order')
+            ->map(static fn ($idOrder) => (int) $idOrder)
+            ->unique()
+            ->values()
+            ->all();
+
+        return self::$asdWarrantyOrderIds;
     }
 
     private static function withoutTechnicalPickingRows($query)

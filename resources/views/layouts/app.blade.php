@@ -71,6 +71,9 @@
         </main>
     </div>
     @stack('scripts')
+    @if(request()->routeIs('erp.oms.simple'))
+        <script src="{{ asset('js/oms-simple-qty.js') }}"></script>
+    @endif
     <script>
         (() => {
             const body = document.body;

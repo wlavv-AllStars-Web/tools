@@ -383,7 +383,7 @@ class OrderNoteController extends Controller
         }
 
         $validated = $request->validate([
-            'qty_ordered' => ['required', 'integer', 'min:0'],
+            'qty_ordered' => ['required', 'integer', 'min:1'],
         ]);
 
         $oldQtyOrdered = (int) $line->qty_ordered;
@@ -399,12 +399,8 @@ class OrderNoteController extends Controller
 
         $deltaStockArrive = $qtyOrdered - $oldQtyOrdered;
 
-        if ($qtyOrdered <= 0) {
-            $line->delete();
-        } else {
-            $line->qty_ordered = $qtyOrdered;
-            $line->save();
-        }
+        $line->qty_ordered = $qtyOrdered;
+        $line->save();
 
         $this->adjustCustomStockArrive(
             (int) $line->product_id,
@@ -414,9 +410,28 @@ class OrderNoteController extends Controller
         $this->refreshOrderNoteStatus($orderNote);
 
         if ($request->expectsJson() || $request->ajax()) {
+            $invoicedQty = (int) $line->qty_billed_total;
+            $receivedQty = (int) $line->qty_received_total;
+            $invoiceState = $invoicedQty <= 0 ? 'zero' : ($invoicedQty >= $qtyOrdered ? 'complete' : 'partial');
+            $receivedState = $receivedQty <= 0 ? 'zero' : ($receivedQty === $invoicedQty ? 'complete' : 'partial');
+            $lineState = ($invoicedQty <= 0 || $receivedQty <= 0)
+                ? 'zero'
+                : (($qtyOrdered === $invoicedQty && $invoicedQty === $receivedQty) ? 'complete' : 'partial');
+
             return response()->json(array_merge([
                 'success' => true,
                 'message' => 'Order note line updated successfully.',
+                'line' => [
+                    'ordered' => $qtyOrdered,
+                    'invoiced' => $invoicedQty,
+                    'received' => $receivedQty,
+                    'remaining' => max(0, $qtyOrdered - $invoicedQty),
+                    'states' => [
+                        'line' => $lineState,
+                        'invoice' => $invoiceState,
+                        'received' => $receivedState,
+                    ],
+                ],
             ], $this->buildBuilderPayload($orderNote, $request)));
         }
 

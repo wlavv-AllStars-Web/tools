@@ -11,11 +11,11 @@
             
             </div>
             <div class="panel-body @if( $counter > 0) {{$item_id}} @endif" style="display: none;">
-                <table class="table table-bordered customTable">
+                <table class="table table-bordered customTable nt-panel-list" data-nt-panel-list>
                     <tr style="text-transform: uppercase">
                         @foreach($columns AS $column)
                             @if($column != 'other')
-                                <td> @if($column == 'clean') @else {{ __('tags.' . $column) }} @endif </td>
+                                <td data-nt-list-action="{{ in_array($column, ['clean', 'delete', 'remove', 'send_email', 'send_email_reviewed', 'extra_action'], true) ? 'true' : 'false' }}"> @if($column == 'clean') @else {{ __('tags.' . $column) }} @endif </td>
                             @endif
                         @endforeach
                     </tr>

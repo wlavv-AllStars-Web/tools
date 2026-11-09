@@ -8,13 +8,13 @@
     @endif
 
     @if(isset($details->columns))
-        <table class="table table-bordered customTable text-center">
+        <table class="table table-bordered customTable text-center nt-panel-list" data-nt-panel-list>
             <tr style="text-transform: uppercase">
                 @foreach($details->columns as $column)
                     @if($column != 'other' && $column != 'url')
                         @if($column == 'email')
                         @else
-                            <td>
+                            <td data-nt-list-action="{{ in_array($column, ['clean', 'delete', 'remove', 'send_email', 'send_email_reviewed', 'extra_action'], true) ? 'true' : 'false' }}">
                                 @if($column == 'clean')
                                 @else
                                     {{ $details->column_labels[$column] ?? __('tags.' . $column) }}

@@ -325,12 +325,6 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/vat/check', [checkVatController::class, 'index'])->name('vat.check');
         Route::get('/vat/verify', [checkVatController::class, 'verify'])->name('vat.verify');
 
-        Route::prefix('payment-links')->name('payment_links.')->group(function () {
-            Route::get('/', [PaymentLinkRequestController::class, 'financeIndex'])->name('index');
-            Route::get('/archive', [PaymentLinkRequestController::class, 'financeArchive'])->name('archive');
-            Route::get('/{paymentLinkRequest}', [PaymentLinkRequestController::class, 'show'])->name('show');
-            Route::post('/{paymentLinkRequest}/approve', [PaymentLinkRequestController::class, 'approve'])->name('approve');
-        });
     });
 
     Route::prefix('logistics')->name('logistics.tools.')->group(function () {

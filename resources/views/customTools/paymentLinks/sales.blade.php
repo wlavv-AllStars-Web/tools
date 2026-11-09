@@ -39,9 +39,9 @@
                             @elseif($requestItem->isArchived())
                                 <span class="badge bg-dark">Archived</span>
                             @elseif($requestItem->isApproved())
-                                <span class="badge bg-success">Approved</span>
+                            <span class="badge bg-success">Ready to send</span>
                             @else
-                                <span class="badge bg-warning text-dark">Pending finance</span>
+                                <span class="badge bg-warning text-dark">Pending send</span>
                             @endif
                         </td>
                         <td>
@@ -50,20 +50,18 @@
                         <td>
                             @if(($mode ?? 'active') === 'active')
                                 <div style="display: flex; justify-content: center; gap: 6px;">
-                                    @if($requestItem->isApproved())
-                                        @if(!$requestItem->email_sent_at || in_array(auth()->user()?->role, ['admin', 'manager'], true))
-                                            <form method="POST" action="{{ route('sales.tools.payment_links.send_email', $requestItem) }}" style="margin: 0;">
+                                    @if(!$requestItem->email_sent_at || in_array(auth()->user()?->role, ['admin', 'manager'], true))
+                                        <form method="POST" action="{{ route('sales.tools.payment_links.send_email', $requestItem) }}" style="margin: 0;">
                                         @csrf
                                         <button class="btn btn-primary btn-sm" type="submit">
                                             <i class="fa-solid fa-envelope"></i>
-                                            {{ $requestItem->email_sent_at ? 'Send new email' : 'Send email' }}
+                                            {{ $requestItem->email_sent_at ? 'Send new email' : 'Create and send link' }}
                                         </button>
                                     </form>
-                                        @else
-                                            <button class="btn btn-secondary btn-sm" type="button" disabled>
-                                                <i class="fa-solid fa-lock"></i> Admin/manager only
-                                            </button>
-                                        @endif
+                                    @else
+                                        <button class="btn btn-secondary btn-sm" type="button" disabled>
+                                            <i class="fa-solid fa-lock"></i> Admin/manager only
+                                        </button>
                                     @endif
                                     <form method="POST" action="{{ route('sales.tools.payment_links.archive_request', $requestItem) }}" style="margin: 0;" onsubmit="return confirm('Archive this payment link without sending an email?')">
                                         @csrf

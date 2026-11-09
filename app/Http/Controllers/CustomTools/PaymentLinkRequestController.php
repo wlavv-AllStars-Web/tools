@@ -22,13 +22,10 @@ class PaymentLinkRequestController extends Controller
     {
         $requests = PaymentLinkRequest::query()
             ->with(['approver', 'emailSender'])
-            ->where(function ($query) {
-                $query->where('status', PaymentLinkRequest::STATUS_APPROVED)
-                    ->orWhere(function ($query) {
-                        $query->where('status', PaymentLinkRequest::STATUS_PENDING)
-                            ->where('requested_by', auth()->id());
-                    });
-            })
+            ->whereIn('status', [
+                PaymentLinkRequest::STATUS_PENDING,
+                PaymentLinkRequest::STATUS_APPROVED,
+            ])
             ->latest()
             ->get();
 
@@ -65,7 +62,10 @@ class PaymentLinkRequestController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(
+        Request $request,
+        WorldlinePaymentLinkService $worldlinePaymentLinkService
+    ): RedirectResponse
     {
         $data = $request->validate([
             'store_code' => ['required', 'string', 'in:' . implode(',', PaymentLinkRequest::storeOptions())],
@@ -79,7 +79,7 @@ class PaymentLinkRequestController extends Controller
         $amount = round((float) $data['amount'], 2);
         $email = strtolower(trim($data['customer_email']));
 
-        PaymentLinkRequest::create([
+        $paymentLinkRequest = PaymentLinkRequest::create([
             'store_code' => $storeCode,
             'order_id' => trim($data['order_id']),
             'description' => trim($data['description']),
@@ -94,9 +94,19 @@ class PaymentLinkRequestController extends Controller
             'requested_at' => now(),
         ]);
 
+        try {
+            $this->sendPaymentLinkEmail($paymentLinkRequest, $worldlinePaymentLinkService);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('sales.tools.payment_links.index')
+                ->with('error', 'O pedido foi criado, mas o link não pôde ser enviado. Pode tentar novamente na lista de links ativos.');
+        }
+
         return redirect()
-            ->route('sales.tools.payment_links.index')
-            ->with('success', 'Pedido de link de pagamento criado. Fica disponivel para envio depois da aprovacao de Finance.');
+            ->route('sales.tools.payment_links.archive')
+            ->with('success', 'Link de pagamento criado e enviado ao cliente.');
     }
 
     public function financeIndex()
@@ -190,15 +200,37 @@ class PaymentLinkRequestController extends Controller
             ->with('success', 'Link de pagamento aprovado.');
     }
 
-    public function sendEmail(PaymentLinkRequest $paymentLinkRequest): RedirectResponse
+    public function sendEmail(
+        PaymentLinkRequest $paymentLinkRequest,
+        WorldlinePaymentLinkService $worldlinePaymentLinkService
+    ): RedirectResponse
     {
-        if ($paymentLinkRequest->isArchived() || !$paymentLinkRequest->isApproved() || !$paymentLinkRequest->paymentUrl()) {
-            return back()->with('error', 'Este link ainda nao foi aprovado por Finance.');
+        if ($paymentLinkRequest->isArchived()) {
+            return back()->with('error', 'Este link de pagamento está arquivado.');
         }
 
         if ($paymentLinkRequest->email_sent_at && !in_array(auth()->user()?->role, ['admin', 'manager'], true)) {
             return back()->with('error', 'Depois do primeiro envio, apenas users do tipo admin ou manager podem reenviar o email.');
         }
+
+        try {
+            $this->sendPaymentLinkEmail($paymentLinkRequest, $worldlinePaymentLinkService);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'O link de pagamento não pôde ser enviado. Reveja o erro e tente novamente.');
+        }
+
+        return redirect()
+            ->route('sales.tools.payment_links.archive')
+            ->with('success', 'Email enviado com o link de pagamento.');
+    }
+
+    private function sendPaymentLinkEmail(
+        PaymentLinkRequest $paymentLinkRequest,
+        WorldlinePaymentLinkService $worldlinePaymentLinkService
+    ): void {
+        $paymentLinkRequest = $this->ensurePaymentLink($paymentLinkRequest, $worldlinePaymentLinkService);
 
         $subject = 'Payment link - Order ' . $paymentLinkRequest->order_id;
         $html = view('mails.payment_link_request', [
@@ -217,11 +249,45 @@ class PaymentLinkRequestController extends Controller
             'status' => PaymentLinkRequest::STATUS_SENT,
             'email_sent_by' => auth()->id(),
             'email_sent_at' => now(),
+            'worldline_error' => null,
+        ]);
+    }
+
+    private function ensurePaymentLink(
+        PaymentLinkRequest $paymentLinkRequest,
+        WorldlinePaymentLinkService $worldlinePaymentLinkService
+    ): PaymentLinkRequest {
+        if ($paymentLinkRequest->isApproved() && $paymentLinkRequest->paymentUrl()) {
+            return $paymentLinkRequest;
+        }
+
+        $paymentLinkRequest->update([
+            'worldline_idempotency_key' => $paymentLinkRequest->worldline_idempotency_key ?: (string) Str::uuid(),
+            'worldline_error' => null,
         ]);
 
-        return redirect()
-            ->route('sales.tools.payment_links.archive')
-            ->with('success', 'Email enviado com o link de pagamento.');
+        try {
+            $worldlineLink = $worldlinePaymentLinkService->create($paymentLinkRequest->fresh());
+        } catch (\Throwable $exception) {
+            $paymentLinkRequest->update([
+                'worldline_error' => mb_substr($exception->getMessage(), 0, 65535),
+            ]);
+
+            throw $exception;
+        }
+
+        $paymentLinkRequest->update([
+            'status' => PaymentLinkRequest::STATUS_APPROVED,
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+            'worldline_payment_link_id' => $worldlineLink['payment_link_id'],
+            'worldline_payment_url' => $worldlineLink['payment_url'],
+            'worldline_expires_at' => $worldlineLink['expires_at'],
+            'worldline_created_at' => now(),
+            'worldline_error' => null,
+        ]);
+
+        return $paymentLinkRequest->fresh();
     }
 
     public function archive(PaymentLinkRequest $paymentLinkRequest): RedirectResponse

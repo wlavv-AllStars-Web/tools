@@ -21,7 +21,7 @@
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="alert alert-info" style="margin-bottom: 15px;">
-                                The payment link is single-use and expires 7 days after Finance approval.
+                                The payment link is single-use, expires after 7 days and is sent to the customer immediately.
                             </div>
                         </div>
                         <div class="col-lg-3">
@@ -73,7 +73,7 @@
                         </div>
 
                         <div class="col-lg-4" style="display: flex; align-items: end; gap: 10px;">
-                            <button class="btn btn-success" type="submit" style="width: 100%;">Request approval</button>
+                            <button class="btn btn-success" type="submit" style="width: 100%;">Create and send link</button>
                             <a class="btn btn-secondary" href="{{ route('sales.tools.payment_links.index') }}" style="width: 100%;">Cancel</a>
                         </div>
                     </div>

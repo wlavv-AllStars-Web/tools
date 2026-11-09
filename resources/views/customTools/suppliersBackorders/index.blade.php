@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('content')
 
-<div style="display: inline-flex;">
-    <div class="navbar navbar-light customPanel" style="width: 250px;float: left;margin-right: 20px;">
+<div style="display: flex; width: 100%; align-items: flex-start;">
+    <div class="navbar navbar-light customPanel" style="width: 350px; flex: 0 0 350px; margin-right: 20px;">
         <div id="backorders_suppliers">
             <table class="table table-hover">
                 @foreach($suppliers AS $supplier)
@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <div class="navbar navbar-light customPanel" style="width: calc( 100% - 270px);float: left;">
+    <div class="navbar navbar-light customPanel" style="flex: 1 1 auto; min-width: 0; margin-top: 0;">
         <div id="backorders_suppliers_holder">
             {!! $supplierBackorder !!}
         </div>

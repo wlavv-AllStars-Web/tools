@@ -200,6 +200,90 @@ class product extends PrestashopModel
         return self::dashboardProductsMissingFromStore($type, 'ASD', 'ASM');
     }
 
+    public static function dashboard_asm_active_hidden_products($type)
+    {
+        return self::dashboardActiveHiddenProducts($type, 'ASM');
+    }
+
+    public static function dashboard_asd_active_hidden_products($type)
+    {
+        return self::dashboardActiveHiddenProducts($type, 'ASD');
+    }
+
+    /**
+     * Products assigned to a store which remain active but are hidden from
+     * both the catalogue and search. An end-of-life product is omitted only
+     * after its total available stock reaches zero.
+     */
+    protected static function dashboardActiveHiddenProducts($type, string $store)
+    {
+        $productTable = self::tableName('product');
+        $productShopTable = self::tableName('product_shop');
+        $productLangTable = self::tableName('product_lang');
+        $manufacturerTable = self::tableName('manufacturer');
+        $customProductTable = self::tableName('custom_product');
+        $stockTable = self::tableName('stock_available');
+        $shopId = PrestashopAdminLinkService::shopId($store);
+
+        if (!$shopId) {
+            return self::productDashboardResponse(
+                sprintf('%s ACTIVE PRODUCTS HIDDEN FROM STORE', $store),
+                $type,
+                strtolower($store) . '_active_hidden_products',
+                ['id_product', 'reference', 'name', 'brand', 'stock'],
+                [],
+                ['store' => $store]
+            );
+        }
+
+        $stockTotals = DB::connection('mysql2')
+            ->table($stockTable . ' as stock')
+            ->select('stock.id_product', DB::raw('SUM(COALESCE(stock.quantity, 0)) AS stock'))
+            ->where('stock.id_shop', 0)
+            ->groupBy('stock.id_product');
+
+        $rows = self::query()
+            ->join($productShopTable . ' as ps', function ($join) use ($productTable, $shopId) {
+                $join->on('ps.id_product', '=', $productTable . '.id_product')
+                    ->where('ps.id_shop', $shopId);
+            })
+            ->leftJoin($productLangTable . ' as pl', function ($join) use ($productTable, $shopId) {
+                $join->on('pl.id_product', '=', $productTable . '.id_product')
+                    ->where('pl.id_shop', $shopId)
+                    ->where('pl.id_lang', 1);
+            })
+            ->leftJoin($manufacturerTable . ' as m', 'm.id_manufacturer', '=', $productTable . '.id_manufacturer')
+            ->leftJoin($customProductTable . ' as cp', 'cp.id_product', '=', $productTable . '.id_product')
+            ->leftJoinSub($stockTotals, 'stock_totals', function ($join) use ($productTable) {
+                $join->on('stock_totals.id_product', '=', $productTable . '.id_product');
+            })
+            ->where('ps.active', 1)
+            ->where('ps.visibility', 'none')
+            ->where(function ($query) {
+                $query->whereRaw('COALESCE(cp.wmdeprecated, 0) <> 1')
+                    ->orWhereRaw('COALESCE(stock_totals.stock, 0) >= 1');
+            })
+            ->select([
+                $productTable . '.id_product',
+                $productTable . '.reference',
+                'pl.name as name',
+                DB::raw("COALESCE(m.name, '') AS brand"),
+                DB::raw('COALESCE(stock_totals.stock, 0) AS stock'),
+            ])
+            ->orderBy($productTable . '.reference')
+            ->orderBy($productTable . '.id_product')
+            ->get();
+
+        return self::productDashboardResponse(
+            sprintf('%s ACTIVE PRODUCTS HIDDEN FROM STORE', $store),
+            $type,
+            strtolower($store) . '_active_hidden_products',
+            ['id_product', 'reference', 'name', 'brand', 'stock'],
+            $rows,
+            ['store' => $store]
+        );
+    }
+
     protected static function dashboardProductsMissingFromStore($type, string $sourceStore, string $missingStore)
     {
         $productTable = self::tableName('product');

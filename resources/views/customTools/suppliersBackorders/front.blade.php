@@ -25,7 +25,7 @@
                        </div>               
                     </td>
                 </tr>
-                <tr> <td colspan="7" style="height: 3px;background-color: #666;"> </td> </tr>
+                <tr> <td colspan="8" style="height: 3px;background-color: #666;"> </td> </tr>
            </table>
             
             <div style="margin: 20px 0;">
@@ -46,8 +46,8 @@
             
                         @foreach($order AS $order_rows)       
                             @foreach($order_rows AS $row)
-                                @if( ( $row->qty_ordered - $row->qty_billed ) != 0 )
-                                   <?php $pending += ($row->qty_ordered - $row->qty_billed ) ?>
+                                @if($row->qty_ordered > $row->qty_billed || $row->qty_ordered > $row->qty_received)
+                                   <?php $pending += max(0, $row->qty_ordered - $row->qty_received) ?>
                                    <?php $refs[$row->order_id] = $row->order_reference ?>
                                 @endif
                             @endforeach
@@ -70,18 +70,19 @@
                                 </tr>
                                 @foreach($order AS $order_rows) 
                                     
-                                    <tr> <td colspan="7" style="height: 30px; background-color: #FFF;"></td> </tr>
+                                    <tr> <td colspan="8" style="height: 30px; background-color: #FFF;"></td> </tr>
                                     <tr style="text-align: center;">
                                        <td style="width: 15%">{{ __('messages.order reference')}}</td>
                                        <td style="width: 15%">{{ __('messages.product reference')}}</td>
                                        <td style="width: 5%">{{ __('messages.ordered')}}</td>
                                        <td style="width: 5%">{{ __('messages.billed')}}</td>
+                                       <td style="width: 5%">{{ __('messages.received')}}</td>
                                        <td style="width: 5%">{{ __('messages.pending')}}</td>
                                        <td style="width: 15%;">{{ __('messages.still in backorder?')}}</td>
-                                       <td style="width: 35%;">{{ __('messages.comment')}}</td>
+                                       <td style="width: 30%;">{{ __('messages.comment')}}</td>
                                     </tr>
                                     <tr style="text-align: center;">
-                                       <td colspan="7" style="height: 5px; background-color: #666;"></td>
+                                       <td colspan="8" style="height: 5px; background-color: #666;"></td>
                                     </tr>                                 
     
                                     <?php $total_pending_by_order += $pending_by_order ?>
@@ -89,13 +90,14 @@
                                             
                                     @foreach($order_rows AS $row)
                                     
-                                        @if( ( $row->qty_ordered - $row->qty_billed ) != 0 )
+                                        @if($row->qty_ordered > $row->qty_billed || $row->qty_ordered > $row->qty_received)
                                            <tr style="text-align: center;">
                                                <td>{{ $row->order_reference}}</td>
                                                <td>{{ $row->product_reference}}</td>
                                                <td>{{ $row->qty_ordered }}</td>
                                                <td>{{ $row->qty_billed }}</td>
-                                               <td>{{ ($row->qty_ordered - $row->qty_billed ) }}</td>
+                                               <td>{{ $row->qty_received }}</td>
+                                               <td>{{ max(0, $row->qty_ordered - $row->qty_received) }}</td>
                                                <td>
                                                    @if($row->in_backorder != 2)
                                                         <input id="input_option_{{$row->id}}" class="pending_inputs" type="hidden" value="0">
@@ -117,13 +119,13 @@
                                                     <input id="comment_{{$row->id}}" type="text" value="{{$row->supplier_comment}}" name="comment" onfocusout="updateComment({{$row->id}}, {{$row->id_supplier}})" style="width: 100%;">
                                                 </td>
                                            </tr>
-                                           <?php $pending_by_order += ($row->qty_ordered - $row->qty_billed ) ?>
+                                           <?php $pending_by_order += max(0, $row->qty_ordered - $row->qty_received) ?>
                                        @endif
                                     @endforeach
                                 
-                                    <tr style="text-align: center;"> <td colspan="7" style="height: 5px; background-color: #666;"></td> </tr>
+                                    <tr style="text-align: center;"> <td colspan="8" style="height: 5px; background-color: #666;"></td> </tr>
                                     <tr style="text-align: center;background-color: #eee;border: 1px solid #ddd;">
-                                       <td colspan="4" style="font-weight: bolder; font-size: 20px;text-align: right;" ><span>TOTAL: </span></td>
+                                       <td colspan="5" style="font-weight: bolder; font-size: 20px;text-align: right;" ><span>TOTAL: </span></td>
                                        <td colspan="1" style="font-weight: bolder; font-size: 20px;"><span style="color: red;">{{$pending_by_order}}</span></td>
                                        <td colspan="2"></td>
                                     </tr>
@@ -138,11 +140,11 @@
                 @endforeach
             </div>
             <table style="width: 100%;margin-top: 20px; font-size: 20px;">
-                <tr> <td colspan="7" style="height: 3px;background-color: #666;">  </td> </tr>
-                <tr> <td colspan="7" style="height: 10px;background-color: #fff;"> </td> </tr>
+                <tr> <td colspan="8" style="height: 3px;background-color: #666;">  </td> </tr>
+                <tr> <td colspan="8" style="height: 10px;background-color: #fff;"> </td> </tr>
                 <tr>
                    <td colspan="2"> <div style="text-align: left;font-size: 20px; font-weight: bolder;"> TOTAL: <span style="color: red;">{{ $total_pending }}</span> PRODUCTS</div> </td>
-                   <td colspan="3"> </td>
+                   <td colspan="4"> </td>
                    <td colspan="2"> <a class="btn btn-info" style="float: right; width: 250px;border-radius: 2px;color:#fff; background-color: #0273EB;border: 1px solid #025bb9" href="#" onclick="checkForm()"> CONFIRM </a> </td>
                 </tr>
             </table>

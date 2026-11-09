@@ -190,6 +190,10 @@ class OmsLegacyProcurementService
             return collect();
         }
 
+        $receptionLineSubquery = DB::table('oms_reception_lines')
+            ->select('billed_order_line_id', DB::raw('SUM(qty_received) as qty_received_sum'))
+            ->groupBy('billed_order_line_id');
+
         $billedSubquery = DB::table('oms_billed_order_lines as bol')
             ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
             ->leftJoin('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
@@ -205,13 +209,33 @@ class OmsLegacyProcurementService
             ->select('bol.order_note_line_id', DB::raw('SUM(COALESCE(bol.qty_billed, 0)) as qty_billed_sum'))
             ->groupBy('bol.order_note_line_id');
 
+        $receivedSubquery = DB::table('oms_billed_order_lines as bol')
+            ->join('oms_billed_orders as bo', 'bo.id', '=', 'bol.billed_order_id')
+            ->leftJoin('oms_supplier_invoices as si', 'si.id', '=', 'bo.supplier_invoice_id')
+            ->leftJoinSub($receptionLineSubquery, 'reception_sum', 'reception_sum.billed_order_line_id', '=', 'bol.id')
+            ->whereNotNull('bol.order_note_line_id')
+            ->where(function ($query) {
+                $query->whereNull('bo.status')
+                    ->orWhereNotIn('bo.status', ['cancelled']);
+            })
+            ->where(function ($query) {
+                $query->whereNull('si.status')
+                    ->orWhere('si.status', '<>', 'cancelled');
+            })
+            ->select('bol.order_note_line_id', DB::raw('SUM(COALESCE(reception_sum.qty_received_sum, bol.qty_received, 0)) as qty_received_sum'))
+            ->groupBy('bol.order_note_line_id');
+
         $rows = DB::table('oms_order_note_lines as onl')
             ->join('oms_order_notes as onote', 'onote.id', '=', 'onl.order_note_id')
             ->leftJoinSub($billedSubquery, 'billed_sum', 'billed_sum.order_note_line_id', '=', 'onl.id')
-            ->where('onote.status', 'order_note')
+            ->leftJoinSub($receivedSubquery, 'received_sum', 'received_sum.order_note_line_id', '=', 'onl.id')
+            ->whereIn('onote.status', ['order_note', 'billed'])
             ->whereDate('onote.created_at', '<', $date)
-            ->whereRaw('COALESCE(onl.qty_ordered, 0) > COALESCE(billed_sum.qty_billed_sum, 0)')
-            ->selectRaw('onote.id AS order_id, onote.reference AS order_reference, onote.created_at AS order_date, onote.supplier_id, onl.product_id, COALESCE(onl.product_attribute_id, 0) AS product_attribute_id, COALESCE(onl.qty_ordered, 0) AS qty_ordered, COALESCE(billed_sum.qty_billed_sum, 0) AS qty_billed, 0 AS qty_received')
+            ->where(function ($query) {
+                $query->whereRaw('COALESCE(onl.qty_ordered, 0) > COALESCE(billed_sum.qty_billed_sum, 0)')
+                    ->orWhereRaw('COALESCE(onl.qty_ordered, 0) > COALESCE(received_sum.qty_received_sum, 0)');
+            })
+            ->selectRaw('onote.id AS order_id, onote.reference AS order_reference, onote.created_at AS order_date, onote.supplier_id, onl.product_id, COALESCE(onl.product_attribute_id, 0) AS product_attribute_id, COALESCE(onl.qty_ordered, 0) AS qty_ordered, COALESCE(billed_sum.qty_billed_sum, 0) AS qty_billed, COALESCE(received_sum.qty_received_sum, 0) AS qty_received')
             ->orderBy('onote.supplier_id')
             ->orderBy('onote.id')
             ->get();

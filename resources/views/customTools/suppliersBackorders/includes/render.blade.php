@@ -29,15 +29,10 @@
     
         <div id="container_row_{{Key($order)}}">       
 
-            @foreach($order AS $order_rows)       
+            @foreach($order AS $order_rows)
                 @foreach($order_rows AS $row)
-                    @if( ( $row->qty_ordered - $row->qty_received ) != 0 )
-                       <?php $pending += ($row->qty_ordered - $row->qty_billed ) ?>
-                       <?php $refs[$row->order_id] = $row->order_reference ?>
-                    @else
-                       <?php $pending += ($row->qty_ordered - $row->qty_billed ) ?>
-                       <?php $refs[$row->order_id] = $row->order_reference ?>
-                    @endif
+                    <?php $pending += max(0, $row->qty_ordered - $row->qty_received) ?>
+                    <?php $refs[$row->order_id] = $row->order_reference ?>
                 @endforeach
             @endforeach
 
@@ -54,7 +49,7 @@
             
             <div id="row_data_{{Key($order)}}" style="display: none;">
                 <table style="width: calc(100% - 20px);margin: 30px 10px;font-size: 18px" class="table table-striped">
-                    <tr> <td colspan="6" style="height: 3px;background-color: #666;padding: 3px;"></td> </tr>
+                    <tr> <td colspan="7" style="height: 3px;background-color: #666;padding: 3px;"></td> </tr>
                     @foreach($order AS $k => $order_rows)  
                         <tr> <td colspan="7" style="height: 30px; background-color: #FFF;"></td> </tr>
                         <tr style="text-align: center;">
@@ -62,10 +57,11 @@
                            <td style="width: 20%">{{ __('messages.product reference')}}</td>
                            <td style="width: 7%">{{ __('messages.ordered')}}</td>
                            <td style="width: 9%">{{ __('messages.billed')}}</td>
+                           <td style="width: 9%">{{ __('messages.received')}}</td>
                            <td style="width: 9%">{{ __('messages.pending')}}</td>
-                           <td style="width: 40%">COMMENTS</td>
+                           <td style="width: 31%">COMMENTS</td>
                         </tr>
-                        <tr> <td colspan="6" style="height: 3px;background-color: #666;padding: 3px;"></td> </tr>                                 
+                        <tr> <td colspan="7" style="height: 3px;background-color: #666;padding: 3px;"></td> </tr>
     
                                     <?php $total_pending_by_order += $pending_by_order ?>
                                     <?php $pending_by_order = 0 ?>
@@ -77,7 +73,8 @@
                                    <td style="text-align: center; @if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ $row->product_reference}}</td>
                                    <td style="text-align: center; @if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ $row->qty_ordered }}</td>
                                    <td style="text-align: center; @if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ $row->qty_billed }}</td>
-                                   <td style="text-align: center; color: red;@if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ ($row->qty_ordered - $row->qty_billed ) }}</td>
+                                   <td style="text-align: center; @if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ $row->qty_received }}</td>
+                                   <td style="text-align: center; color: red;@if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ max(0, $row->qty_ordered - $row->qty_received) }}</td>
                                    <td style="text-align: center; color: dodgerblue;font-weight: bolder;@if($row->in_backorder == 1) background-color: lightgreen !important; @endif @if($row->in_backorder == 0) background-color: #f8d7da !important; @endif">{{ $row->supplier_comment }}</td>
                                 </tr>
                             @endif
@@ -87,7 +84,7 @@
                     @if( $pending > 0 )
                         <tr style="text-align: center;">
                            <td colspan="2"></td>
-                           <td colspan="2" style="text-align: right;font-weight: bolder; font-size: 18px;">SUBTOTAL: </td>
+                           <td colspan="3" style="text-align: right;font-weight: bolder; font-size: 18px;">SUBTOTAL: </td>
                            <td style="font-weight: bolder; font-size: 18px;color: red;">{{$pending - $total_pending_by_order}}</td>
                            <td></td>
                         </tr>

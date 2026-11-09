@@ -47,6 +47,7 @@ class suppliersBackordersController extends Controller
             $selectedSupplier = $suppliers->first();
             $openOrders = backorders_list::getBackordersOfSupplier($selectedSupplier->id_supplier, $current_month, $current_year);
             $replied = backorders_list::getSupplierRepliedFromTokenOf($selectedSupplier->id_supplier, $selectedSupplier->token);
+            $supplierEmail = supplier_map::where('id_supplier', $selectedSupplier->id_supplier)->value('email') ?: '';
 
             $dataView = [ 
                 'openOrders' => $openOrders, 
@@ -55,7 +56,8 @@ class suppliersBackordersController extends Controller
                 'quantity_replied' => $selectedSupplier->quantity_replied,
                 'number_of_rows' => $selectedSupplier->number_of_rows,
                 'selected_supplier_name' => $selectedSupplier->supplier,
-                'selected_supplier_id'   => $selectedSupplier->id_supplier
+                'selected_supplier_id'   => $selectedSupplier->id_supplier,
+                'supplier_email'         => $supplierEmail,
             ];
             
             $supplierBackorder = view('customTools.suppliersBackorders.includes.render', compact('dataView'))->render();
@@ -85,6 +87,7 @@ class suppliersBackordersController extends Controller
         }
 
         $openOrders = backorders_list::getBackordersOfSupplier($request->id_supplier, $current_month, $current_year);
+        $supplierEmail = supplier_map::where('id_supplier', $supplier->id_supplier)->value('email') ?: '';
         
         $dataView = [ 
             'openOrders' => $openOrders, 
@@ -93,7 +96,8 @@ class suppliersBackordersController extends Controller
             'quantity_replied' => $supplier->quantity_replied,
             'number_of_rows' => $supplier->number_of_rows,
             'selected_supplier_name' => $supplier->supplier,
-            'selected_supplier_id'   => $supplier->id_supplier
+            'selected_supplier_id'   => $supplier->id_supplier,
+            'supplier_email'         => $supplierEmail,
         ];
         
         $viewRendered = view('customTools.suppliersBackorders.includes.render', compact('dataView'))->render();

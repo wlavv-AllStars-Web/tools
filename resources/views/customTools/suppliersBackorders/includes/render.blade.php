@@ -6,7 +6,7 @@
                     BACK ORDERS OVERVIEW - LAST 30 DAYS EXCLUDED - 
                         <span style="color: dodgerblue;">{{ $dataView['selected_supplier_name'] }}</span>
                         @if( $dataView['quantity_replied'] != $dataView['number_of_rows'])
-                            <a onclick="send_email()" class="btn btn-info" href="#" style="float: right;color: #FFF;"><i style="color: #FFF;" class="fa-regular fa-paper-plane"></i> SEND</a>
+                            <a onclick="send_email()" class="btn btn-info" href="#" style="float: right;color: #FFF;" title="Send email to: {{ $dataView['supplier_email'] ?: 'No email configured' }}" aria-label="Send email to: {{ $dataView['supplier_email'] ?: 'No email configured' }}"><i style="color: #FFF;" class="fa-regular fa-paper-plane"></i> SEND</a>
                         @endif
                 </div>               
            </td>

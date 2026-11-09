@@ -8,8 +8,8 @@
                     <span>{{ $access['name'] }}</span>
                 </a>
             @empty
-                <div class="text-muted" style="padding: 18px 0; font-weight: 600;">
-                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <div class="nt-monitoring-empty">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                     No quick actions available yet.
                 </div>
             @endforelse

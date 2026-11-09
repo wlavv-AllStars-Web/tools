@@ -217,6 +217,8 @@ class product extends PrestashopModel
      */
     protected static function dashboardActiveHiddenProducts($type, string $store)
     {
+        $exceptionBoard = strtolower($store) . '_active_hidden_products';
+        $excluded = self::excludedProductIds($exceptionBoard);
         $productTable = self::tableName('product');
         $productShopTable = self::tableName('product_shop');
         $productLangTable = self::tableName('product_lang');
@@ -229,10 +231,13 @@ class product extends PrestashopModel
             return self::productDashboardResponse(
                 sprintf('%s ACTIVE PRODUCTS HIDDEN FROM STORE', $store),
                 $type,
-                strtolower($store) . '_active_hidden_products',
-                ['id_product', 'reference', 'name', 'brand', 'stock'],
+                $exceptionBoard,
+                ['clean', 'id_product', 'reference', 'name', 'brand', 'stock'],
                 [],
-                ['store' => $store]
+                [
+                    'store' => $store,
+                    'exception_fields' => [$exceptionBoard, 'id_product', 'reference', 'brand'],
+                ]
             );
         }
 
@@ -259,6 +264,7 @@ class product extends PrestashopModel
             })
             ->where('ps.active', 1)
             ->where('ps.visibility', 'none')
+            ->when(!empty($excluded), fn ($query) => $query->whereNotIn($productTable . '.id_product', $excluded))
             ->where(function ($query) {
                 $query->whereRaw('COALESCE(cp.wmdeprecated, 0) <> 1')
                     ->orWhereRaw('COALESCE(stock_totals.stock, 0) >= 1');
@@ -272,15 +278,23 @@ class product extends PrestashopModel
             ])
             ->orderBy($productTable . '.reference')
             ->orderBy($productTable . '.id_product')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->clean = $item->id_product;
+
+                return $item;
+            });
 
         return self::productDashboardResponse(
             sprintf('%s ACTIVE PRODUCTS HIDDEN FROM STORE', $store),
             $type,
-            strtolower($store) . '_active_hidden_products',
-            ['id_product', 'reference', 'name', 'brand', 'stock'],
+            $exceptionBoard,
+            ['clean', 'id_product', 'reference', 'name', 'brand', 'stock'],
             $rows,
-            ['store' => $store]
+            [
+                'store' => $store,
+                'exception_fields' => [$exceptionBoard, 'id_product', 'reference', 'brand'],
+            ]
         );
     }
 

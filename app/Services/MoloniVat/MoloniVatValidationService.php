@@ -61,17 +61,26 @@ class MoloniVatValidationService
                 $validation = MoloniVatValidation::query()->firstOrNew([
                     'normalized_vat_number' => 'MISSING:' . $orderId,
                 ]);
-                $validation->fill([
-                    'country_iso' => $country,
-                    'vat_number' => $vat,
-                    'status' => MoloniVatValidation::STATUS_MISSING_VAT,
-                    'attempts' => 0,
-                    'next_attempt_at' => null,
-                    'validated_at' => null,
-                    'valid_until' => null,
-                    'last_error' => 'Missing billing-address country or VAT number.',
-                    'vies_response' => null,
-                ]);
+
+                $hasManualDecision = $validation->exists && in_array($validation->status, [
+                    MoloniVatValidation::STATUS_MANUAL_VALID,
+                    MoloniVatValidation::STATUS_MANUAL_INVALID,
+                ], true);
+
+                if (!$hasManualDecision) {
+                    $validation->fill([
+                        'country_iso' => $country,
+                        'vat_number' => $vat,
+                        'status' => MoloniVatValidation::STATUS_MISSING_VAT,
+                        'attempts' => 0,
+                        'next_attempt_at' => null,
+                        'validated_at' => null,
+                        'valid_until' => null,
+                        'last_error' => 'Missing billing-address country or VAT number.',
+                        'vies_response' => null,
+                    ]);
+                }
+
                 $validation->save();
             } else {
                 $validation = MoloniVatValidation::query()->firstOrNew([

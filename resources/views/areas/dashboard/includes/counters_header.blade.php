@@ -151,10 +151,13 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <div>
-                    <span class="nt-monitoring-modal__eyebrow">Monitoring</span>
-                    <h5 class="modal-title" id="ntMonitoringModalTitle">Monitoring details</h5>
-                    <p class="nt-monitoring-modal__hint">Review the listed items and mark resolved issues when applicable.</p>
+                <div class="nt-monitoring-modal__heading">
+                    <span class="nt-monitoring-modal__mark"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span>
+                    <div>
+                        <span class="nt-monitoring-modal__eyebrow">Monitoring</span>
+                        <h5 class="modal-title" id="ntMonitoringModalTitle">Monitoring details</h5>
+                        <p class="nt-monitoring-modal__hint">Review the listed items and mark resolved issues when applicable.</p>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>

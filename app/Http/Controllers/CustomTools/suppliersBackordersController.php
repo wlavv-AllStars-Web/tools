@@ -106,7 +106,8 @@ class suppliersBackordersController extends Controller
 
     public function insertData(){ 
         
-        $openOrderLines = OmsLegacyProcurementService::openBackorderLinesOlderThan(date("Y-m-d", strtotime("-1 months")));
+        $cutoffDate = now()->startOfMonth()->subMonth()->toDateString();
+        $openOrderLines = OmsLegacyProcurementService::openBackorderLinesOlderThan($cutoffDate);
 
         foreach($openOrderLines->groupBy('supplier_id') AS $supplierId => $openOrdersOfSupplier){
 

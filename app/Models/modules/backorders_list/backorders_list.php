@@ -88,7 +88,7 @@ class backorders_list extends Model
         
     public static function saveBackordersReport($data){
         
-        if( $data['qty_billed'] != $data['qty_ordered'] ){
+        if( $data['qty_billed'] < $data['qty_ordered'] ){
             
             $report = new backorders_list();
             $report->id_supplier = $data['id_supplier'];

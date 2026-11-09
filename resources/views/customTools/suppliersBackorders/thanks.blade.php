@@ -25,7 +25,7 @@
                    <td>
                        <div  style="text-align: center; padding: 50px 20px;font-size: 20px; width: 750px; margin: 0 auto;">
                            <p>
-                               <img src="https://asd.euromuscleparts.com/img/asd/icon_correct.svg" width="40" height="40" style="width: 40px;height:auto;">
+                               <img src="{{ config('allstars.services.webtools.base_url') }}/images/suppliersBackorders/icon_correct.svg" width="40" height="40" alt="Confirmed" style="width: 40px;height:auto;">
                                <span>DONE !</span>
                            </p>
                            <br> <p> Thanks for your time completing this overview form </p>

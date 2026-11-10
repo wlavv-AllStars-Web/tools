@@ -1594,6 +1594,7 @@ public static function dashboard_end_of_life($type)
 
         $query = self::select(
                 $productTable . '.id_product',
+                $productAttributeTable . '.id_product_attribute',
                 DB::raw($manufacturerTable . '.name AS name'),
                 DB::raw($productTable . '.location AS housing'),
                 $productTable . '.reference',
@@ -1629,13 +1630,21 @@ public static function dashboard_end_of_life($type)
         $bd_data = $query->get();
 
         foreach ($bd_data as $item) {
+            $printStandUrl = route('barcode.printProductStandString', [
+                'id_product' => (int) $item->id_product,
+                'id_product_attribute' => (int) ($item->id_product_attribute ?? 0),
+            ]);
+
             $data[] = [
                 'clean' => $item->id_product,
                 'id_product' => $item->id_product,
                 'reference' => isset($item->refattr) ? $item->refattr : $item->reference,
                 'name' => $item->name,
                 'housing' => isset($item->housingattr) ? $item->housingattr : $item->housing,
-                'quantity' => $item->quantity
+                'quantity' => $item->quantity,
+                'extra_action' => '<a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="'
+                    . e($printStandUrl)
+                    . '" title="Print shelf label"><i class="fa-solid fa-warehouse"></i> Shelf label</a>',
             ];
         }
 
@@ -1643,10 +1652,13 @@ public static function dashboard_end_of_life($type)
             trans('dashboard.END OF LIFE PRODUCTS label'),
             $type,
             'endoflife_logistics',
-            ['clean', 'id_product', 'housing', 'reference', 'quantity'],
+            ['clean', 'id_product', 'housing', 'reference', 'quantity', 'extra_action'],
             $data,
             [
-                'exception_fields' => ['endoflife_logistics', 'id_product', 'reference', 'name']
+                'exception_fields' => ['endoflife_logistics', 'id_product', 'reference', 'name'],
+                'column_labels' => [
+                    'extra_action' => 'Print',
+                ],
             ]
         );
     }

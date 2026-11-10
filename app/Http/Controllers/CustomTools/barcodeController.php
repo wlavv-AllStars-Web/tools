@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\prestashop\orders;
 use App\Models\prestashop\orders_details;
 use App\Models\prestashop\custom_product;
+use App\Models\prestashop\custom_product_attribute;
 use App\Models\prestashop\product;
 use App\Models\prestashop\product_attribute;
 
@@ -219,7 +220,16 @@ class barcodeController extends Controller
                 $product->wmdeprecated = (int) custom_product::where('id_product', $product->id_product)->value('wmdeprecated');
             }
             if ($item) {
-                $item->cdeprecated = (int) ($product->wmdeprecated ?? 0);
+                $attributeDeprecated = 0;
+
+                if (isset($item->id_product_attribute) && (int) $item->id_product_attribute > 0) {
+                    $attributeDeprecated = (int) custom_product_attribute::where(
+                        'id_product_attribute',
+                        $item->id_product_attribute
+                    )->value('wmdeprecated');
+                }
+
+                $item->cdeprecated = max((int) ($product->wmdeprecated ?? 0), $attributeDeprecated);
             }
             $reference = (isset($item->reference)) ? $item->reference : 'N/D';
             $id_order = (isset($item->id_order)) ? $item->id_order : 'N/D';

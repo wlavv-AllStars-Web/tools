@@ -800,8 +800,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/publish',             [HomepageAdminController::class, 'publish'])->name('publish');
         Route::get('/history',              [HomepageAdminController::class, 'history'])->name('history');
         Route::get('/restore/{id}',         [HomepageAdminController::class, 'restore'])->name('restore');
-        Route::get('/homepage/slot/{id}',   [HomepageAdminController::class, 'getSlot']);
-        Route::post('/homepage/slot/save',  [HomepageAdminController::class, 'saveSlot']);
+        Route::get('/homepage/slot/{id}',   [HomepageAdminController::class, 'getSlot'])->name('slot.get');
+        Route::post('/homepage/slot/save',  [HomepageAdminController::class, 'saveSlot'])->name('slot.save');
 
     });
 

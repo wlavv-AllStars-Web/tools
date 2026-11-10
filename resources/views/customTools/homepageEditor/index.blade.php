@@ -176,7 +176,8 @@
 </div>
 
 <script>
-const BASE_URL = "{{ url('/marketing/customTools/homepage') }}";
+const SLOT_URL_TEMPLATE = @json(route('design.tools.homepage.asm.slot.get', ['id' => '__slot_id__']));
+const SAVE_SLOT_URL = @json(route('design.tools.homepage.asm.slot.save'));
 const CSRF_TOKEN = "{{ csrf_token() }}";
 let choicesInstances = {};
 let sliderIndex = 0;
@@ -184,7 +185,7 @@ let sliderIndex = 0;
 function openModal(id){
     resetModal();
 
-    fetch(BASE_URL + '/ASM/homepage/slot/' + id)
+    fetch(SLOT_URL_TEMPLATE.replace('__slot_id__', encodeURIComponent(id)))
         .then(r => r.json())
         .then(d => {
             if(!d.ok){ alert(d.message || 'Slot não encontrado.'); return; }
@@ -256,7 +257,7 @@ function saveBlock(){
         if(input && input.files && input.files[0]) fd.append('image_' + lang, input.files[0]);
     });
 
-    fetch(BASE_URL + '/ASM/homepage/slot/save', { method:'POST', headers:{'X-CSRF-TOKEN': CSRF_TOKEN}, body: fd })
+    fetch(SAVE_SLOT_URL, { method:'POST', headers:{'X-CSRF-TOKEN': CSRF_TOKEN}, body: fd })
         .then(async r => ({ ok: r.ok, data: await r.json() }))
         .then(({ok, data}) => {
             if(!ok || !data.ok){ console.error(data); alert('Não foi possível guardar. Valida os dados.'); return; }

@@ -158,11 +158,21 @@ class order_return extends PrestashopModel
     }
 
     /**
-     * One operational queue for every return and warranty that still needs
-     * attention.  The records live in the same table, but each row keeps its
-     * process and state so it can take the operator to the appropriate tool.
+     * Separate dashboard panels for returns and warranties. Although both
+     * processes share the order_return table, they must never be mixed in the
+     * same operational queue.
      */
-    public static function dashboard_returns_warranties($type)
+    public static function dashboard_returns($type)
+    {
+        return self::dashboardReturnWarrantyProcess($type, 'return');
+    }
+
+    public static function dashboard_warranties($type)
+    {
+        return self::dashboardReturnWarrantyProcess($type, 'warranty');
+    }
+
+    protected static function dashboardReturnWarrantyProcess($type, string $process): array
     {
         $closedReturnIds = asm_dashboard::getExceptions('closed_order_return')
             ->pluck('id_product')
@@ -174,15 +184,20 @@ class order_return extends PrestashopModel
             ->map(static fn ($id) => (int) $id)
             ->all();
 
-        $data = self::getReturnsWarrantiesDashboardRows($closedReturnIds, $closedWarrantyIds);
+        $data = self::getReturnsWarrantiesDashboardRows(
+            $closedReturnIds,
+            $closedWarrantyIds,
+            $process
+        );
+
+        $isReturn = $process === 'return';
 
         return [
-            'name' => 'RETURNS & WARRANTIES',
+            'name' => $isReturn ? 'RETURNS' : 'WARRANTIES',
             'col' => 4,
-            'item_id' => $type . '_returns_warranties',
-            'columns' => ['clean', 'type', 'status', 'id_order', 'id_customer', 'customer_name'],
+            'item_id' => $type . '_' . ($isReturn ? 'returns' : 'warranties'),
+            'columns' => ['clean', 'status', 'id_order', 'id_customer', 'customer_name'],
             'column_labels' => [
-                'type' => 'Type',
                 'status' => 'Status',
                 'id_order' => 'Order',
                 'id_customer' => 'Customer ID',
@@ -194,7 +209,11 @@ class order_return extends PrestashopModel
         ];
     }
 
-    protected static function getReturnsWarrantiesDashboardRows(array $closedReturnIds, array $closedWarrantyIds): array
+    protected static function getReturnsWarrantiesDashboardRows(
+        array $closedReturnIds,
+        array $closedWarrantyIds,
+        string $process
+    ): array
     {
         $orderReturnTable = self::tableName('order_return');
         $ordersTable = self::tableName('orders');
@@ -210,15 +229,11 @@ class order_return extends PrestashopModel
                 $join->on('sl.id_order_return_state', '=', 'or.state')
                     ->where('sl.id_lang', '=', 2);
             })
-            ->where(function ($query) {
-                $query->where(function ($query) {
-                    $query->where('or.process', 'return')
-                        ->whereIn('or.state', [10, 11, 12, 13, 14]);
-                })->orWhere(function ($query) {
-                    $query->where('or.process', 'warranty')
-                        ->whereIn('or.state', [1, 2, 3, 4, 5, 6, 7, 8]);
-                });
-            })
+            ->where('or.process', $process)
+            ->whereIn('or.state', $process === 'return'
+                ? [10, 11, 12, 13, 14]
+                : [1, 2, 3, 4, 5, 6, 7, 8]
+            )
             ->select(
                 'or.id_order_return',
                 'or.id_order',
@@ -247,7 +262,6 @@ class order_return extends PrestashopModel
 
             $isReturn = $record->process === 'return';
             $row = [
-                'type' => $isReturn ? 'Return' : 'Warranty',
                 'status' => self::returnWarrantyStatusLabel(
                     $record->process,
                     (int) $record->state,

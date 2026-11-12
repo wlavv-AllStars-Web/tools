@@ -110,7 +110,12 @@ class dashboard extends Model
     }
 
     /** Calcula os contadores em tempo real **/
-    public static function calculateAndGetCountersOfTab($tab, array $deferredPanels = [], ?string $leadingPanel = null)
+    public static function calculateAndGetCountersOfTab(
+        $tab,
+        array $deferredPanels = [],
+        ?string $leadingPanel = null,
+        array $excludedDashboardMethods = []
+    )
     {
         $panels = dashboard::where('tab', $tab)
             ->orderBy('store')
@@ -120,6 +125,15 @@ class dashboard extends Model
         $asd = collect();
     
         foreach ($panels as $panel) {
+            [$modelClass, $method] = self::resolveDashboardCallable($panel->function ?? null);
+
+            if (
+                $modelClass === self::class
+                && in_array($method, $excludedDashboardMethods, true)
+            ) {
+                continue;
+            }
+
             $counter = (int) $panel->counter;
             $error = null;
             $calculated = false;
@@ -140,8 +154,6 @@ class dashboard extends Model
 
                 continue;
             }
-    
-            [$modelClass, $method] = self::resolveDashboardCallable($panel->function ?? null);
     
             if ($modelClass && $method && method_exists($modelClass, $method)) {
                 try {
@@ -202,6 +214,13 @@ class dashboard extends Model
         }
     
         return View::make('areas/dashboard/includes/counters_header', compact('asm', 'asd', 'leadingPanel'));
+    }
+
+    public static function isCrossShopVatPanel(self $panel): bool
+    {
+        [$modelClass, $method] = self::resolveDashboardCallable($panel->function ?? null);
+
+        return $modelClass === self::class && $method === 'productsWithOtherShopDefaultVat';
     }
     
     protected static function callDashboardMethod($modelClass, $method, $panel)

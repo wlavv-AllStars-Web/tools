@@ -28,6 +28,21 @@ class dashboardController extends Controller
     }
 
     public function getCountersContent(Request $request){
+        $panel = dashboard::query()
+            ->where('tab', $request->tab)
+            ->where('panel', $request->panel)
+            ->when($request->filled('store'), fn ($query) => $query->where('store', $request->store))
+            ->first();
+
+        if (
+            $request->tab === 'web'
+            && $panel
+            && dashboard::isCrossShopVatPanel($panel)
+            && (int) auth()->id() !== 1003
+        ) {
+            abort(403);
+        }
+
         return response()->json([
             'html' => dashboard::getCountersContentOfTabPanel(
                 $request->tab,

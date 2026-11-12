@@ -19,9 +19,12 @@ class webController extends Controller{
     }
 
     public function index(){
+        $excludedDashboardMethods = (int) auth()->id() === 1003
+            ? []
+            : ['productsWithOtherShopDefaultVat'];
 
         $data = [
-            'counters'      => dashboard::calculateAndGetCountersOfTab('web'),
+            'counters'      => dashboard::calculateAndGetCountersOfTab('web', [], null, $excludedDashboardMethods),
             'breadcrumbs'   => $this->breadcrumbs,
             'accessList'    => $this->accessList()
         ];

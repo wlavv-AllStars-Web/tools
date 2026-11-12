@@ -1,16 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    @php
-        $canViewWorldlineRequestPayload = in_array(
-            strtolower((string) auth()->user()?->email),
-            [
-                'brunofernandes@all-stars-motorsport.com',
-                'brunofernandes@all-stars-distribution.com',
-            ],
-            true
-        );
-    @endphp
+    @php($canViewWorldlineRequestPayload = in_array((int) auth()->id(), [43, 1003], true))
 
     <div class="navbar navbar-light customPanel">
         <div class="panel panel-default" style="width: 100%;">
@@ -52,11 +43,15 @@
                         @if($requestItem->worldline_expires_at)
                             <tr><th>Link expiry</th><td>{{ $requestItem->worldline_expires_at->format('Y-m-d H:i') }} UTC</td></tr>
                         @endif
-                        @if($canViewWorldlineRequestPayload && $requestItem->worldline_request_payload)
+                        @if($canViewWorldlineRequestPayload)
                             <tr>
                                 <th>Worldline request payload</th>
                                 <td>
-                                    <pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ json_encode($requestItem->worldline_request_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    @if($requestItem->worldline_request_payload)
+                                        <pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ json_encode($requestItem->worldline_request_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    @else
+                                        <span class="text-muted">No payload has been saved yet. Approve the link again after adding the database column.</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endif

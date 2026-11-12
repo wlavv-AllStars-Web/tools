@@ -14,7 +14,7 @@ class CurrencyPriceUpdateController extends Controller
     {
         $this->middleware('auth');
         $this->middleware(function (Request $request, $next) {
-            abort_unless((int) $request->user()->id === 43, 403);
+            abort_unless((int) $request->user()->id === 1003, 403);
 
             return $next($request);
         });

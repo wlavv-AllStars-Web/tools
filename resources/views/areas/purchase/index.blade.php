@@ -4,14 +4,6 @@
     <div class="navbar navbar-light customPanel">
         <h2 class="nt-section-title">Quick actions</h2>
         <div class="listUL" style="margin: 0 auto;display: table;">
-            @foreach($accessList AS $access)
-            <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;">
-                <a href="{{$access['url']}}">
-                    <div>{!! $access['icon'] !!}</div>
-                    <div style="line-height: 18px; padding: 5px 0;">{{ $access['name']}}</div>
-                </a>
-            </div>
-            @endforeach
             <div class="nt-quick-sales-report">
                 <div class="nt-quick-sales-report__title">{{ __('tags.SALES REPORT') }}</div>
                 <div class="nt-quick-sales-report__fields">
@@ -32,6 +24,14 @@
                 </div>
                 <div id="sales_history"></div>
             </div>
+            @foreach($accessList AS $access)
+            <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;">
+                <a href="{{$access['url']}}">
+                    <div>{!! $access['icon'] !!}</div>
+                    <div style="line-height: 18px; padding: 5px 0;">{{ $access['name']}}</div>
+                </a>
+            </div>
+            @endforeach
         </div>
     </div>
 

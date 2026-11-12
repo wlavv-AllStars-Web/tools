@@ -103,12 +103,6 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="listUL" style="margin: 0 auto;display: table;">
-                    <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;">
-                        <a href="{{ route('logistics.tools.shipping.index') }}" title="Stats">
-                            <div><i class="fa-solid fa-chart-column" style="font-size: 40px;"></i></div>
-                            <div>STATS</div>
-                        </a>
-                    </div>
                     <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
                         <a href="{{ route('logistics.tools.carrier_issues.index') }}" title="Carrier Issues">
                             <div><i class="fa-solid fa-triangle-exclamation" style="font-size: 40px;"></i></div>

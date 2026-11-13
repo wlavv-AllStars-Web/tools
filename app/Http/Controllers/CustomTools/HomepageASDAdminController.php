@@ -5,8 +5,8 @@ namespace App\Http\Controllers\CustomTools;
 use App\Http\Controllers\Controller;
 use App\Models\modules\homepageASD\HomepageASDItem;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class HomepageASDAdminController extends Controller{
     
@@ -22,8 +22,9 @@ class HomepageASDAdminController extends Controller{
         $this->middleware('auth');
         $item = HomepageASDItem::firstOrCreate( ['id' => 1], ['title' => 'Homepage image'] );
         $breadcrumbs = $this->breadcrumbs;
+        $currentImageUrl = $this->resourcesUrl($item->image_path);
         
-        return view('customTools.homepageASD.index', compact('item', 'breadcrumbs'));
+        return view('customTools.homepageASD.index', compact('item', 'breadcrumbs', 'currentImageUrl'));
     }
 
     public function update(Request $request){
@@ -31,7 +32,7 @@ class HomepageASDAdminController extends Controller{
         $item = HomepageASDItem::firstOrCreate( ['id' => 1], ['title' => 'Homepage image'] );
 
         $validated = $request->validate([
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'link_url' => ['nullable', 'url', 'max:500'],
             'title' => ['nullable', 'string', 'max:255'],
         ]);
@@ -39,16 +40,7 @@ class HomepageASDAdminController extends Controller{
         $imagePath = $item->image_path;
 
         if ($request->hasFile('image')) {
-            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
-            }
-
             $file = $request->file('image');
-
-            $filename = now()->format('YmdHis') . '_' .
-                Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) .
-                '.' . $file->getClientOriginalExtension();
-
             $dbFolder = $this->resourcesHomepageFolder();
             $storageFolder = $this->resourcesHomepageStorageFolder();
             $destinationPath = public_path($storageFolder);
@@ -56,8 +48,27 @@ class HomepageASDAdminController extends Controller{
             if (!is_dir($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
             }
-            
-            $file->move($destinationPath, $filename);
+
+            $filename = now()->format('YmdHis') . '_' .
+                Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) .
+                '_' . Str::lower(Str::random(8)) .
+                '.webp';
+
+            $image = @imagecreatefromstring($file->get());
+
+            if (!$image) {
+                throw ValidationException::withMessages([
+                    'image' => 'Unable to process the uploaded image.',
+                ]);
+            }
+
+            try {
+                $this->writeWebpVariants($image, $destinationPath, $filename);
+            } finally {
+                imagedestroy($image);
+            }
+
+            $this->deleteImageVariants($imagePath);
             
             $imagePath = $dbFolder . '/' . $filename;
         }
@@ -103,5 +114,60 @@ class HomepageASDAdminController extends Controller{
         $path = preg_replace('#^uploads/#', '', ltrim($path, '/'));
 
         return rtrim((string) config('allstars.services.resources.homepage_asd_base_url'), '/') . '/' . $path;
+    }
+
+    /**
+     * Save the full-size banner and the 1305px-wide variant used by ASD's srcset.
+     */
+    private function writeWebpVariants(\GdImage $image, string $destinationPath, string $filename): void
+    {
+        $originalPath = $destinationPath . DIRECTORY_SEPARATOR . $filename;
+
+        if (!imagewebp($image, $originalPath, 85)) {
+            throw ValidationException::withMessages([
+                'image' => 'Unable to save the uploaded image.',
+            ]);
+        }
+
+        $sourceWidth = imagesx($image);
+        $sourceHeight = imagesy($image);
+        $targetWidth = min(1305, $sourceWidth);
+        $targetHeight = max(1, (int) round($sourceHeight * ($targetWidth / $sourceWidth)));
+        $resized = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        imagefill($resized, 0, 0, imagecolorallocatealpha($resized, 0, 0, 0, 127));
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
+
+        try {
+            $responsivePath = $destinationPath . DIRECTORY_SEPARATOR . pathinfo($filename, PATHINFO_FILENAME) . '-1305w.webp';
+
+            if (!imagewebp($resized, $responsivePath, 85)) {
+                throw ValidationException::withMessages([
+                    'image' => 'Unable to save the responsive image variant.',
+                ]);
+            }
+        } finally {
+            imagedestroy($resized);
+        }
+    }
+
+    private function deleteImageVariants(?string $imagePath): void
+    {
+        if (!$imagePath) {
+            return;
+        }
+
+        $filename = basename($imagePath);
+        $folder = public_path($this->resourcesHomepageStorageFolder());
+        $originalPath = $folder . DIRECTORY_SEPARATOR . $filename;
+        $responsivePath = $folder . DIRECTORY_SEPARATOR . pathinfo($filename, PATHINFO_FILENAME) . '-1305w.webp';
+
+        foreach ([$originalPath, $responsivePath] as $path) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
     }
 }

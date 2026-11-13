@@ -33,17 +33,13 @@
                     <div class="col-lg-5">
                         <h6 class="mb-3">Current image</h6>
 
-                        @if($item->image_path)
-                            @php
-                                $img = asset($item->image_path);
-                            @endphp
-
+                        @if($currentImageUrl)
                             @if($item->link_url)
                                 <a href="{{ $item->link_url }}" target="_blank" rel="noopener" title="{{ $item->title }}">
-                                    <img src="{{ $img }}" alt="{{ $item->title ?: 'Homepage image' }}" class="img-fluid rounded border">
+                                    <img src="{{ $currentImageUrl }}" alt="{{ $item->title ?: 'Homepage image' }}" class="img-fluid rounded border">
                                 </a>
                             @else
-                                <img src="{{ $img }}" alt="{{ $item->title ?: 'Homepage image' }}" title="{{ $item->title }}" class="img-fluid rounded border">
+                                <img src="{{ $currentImageUrl }}" alt="{{ $item->title ?: 'Homepage image' }}" title="{{ $item->title }}" class="img-fluid rounded border">
                             @endif
                         @else
                             <div class="border rounded p-4 text-muted text-center">

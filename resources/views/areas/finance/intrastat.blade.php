@@ -25,7 +25,7 @@
                     </div>
                     <div style="width: 10%;float: left;"></div>
                     <div style="text-align: center;font-size: 28px;float: right;width: 45%;">
-                        <button type="button" class="btn btn-info" onclick="$('#upload_area').stop(true, true).slideDown('slow')" style="width: 100%;">
+                        <button type="button" class="btn btn-info" onclick="showIntrastatExportUpload()" style="width: 100%;">
                             <i class="fa-solid fa-download" style="font-size: 28px;color: #FFF;"></i>
                             <br>
                             <span style="font-size: 18px;color: #FFF;">{{ __('tags.INTRA-EX-') }}{{$year}}{{$month}}</span>
@@ -47,3 +47,17 @@
         </div>
     </div>
 @endsection
+
+<script>
+    function showIntrastatExportUpload() {
+        const uploadArea = document.getElementById('upload_area');
+
+        if (!uploadArea) {
+            console.error('Intrastat export upload area was not found.');
+            return;
+        }
+
+        uploadArea.style.display = 'flex';
+        uploadArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+</script>

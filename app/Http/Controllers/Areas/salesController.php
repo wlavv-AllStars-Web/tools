@@ -54,6 +54,7 @@ class salesController extends Controller
     private function accessList(){        
         $accessList = array();
         $accessList[]                           = ['name' =>  trans('messages.COMPATS'),                 'url' => route('sales.tools.compats.index'),                   'icon' => '<i style="font-size: 40px;" class="fa-solid fa-boxes-packing"></i>'];
+        $accessList[]                           = ['name' =>  'Product issues',                           'url' => route('sales.tools.product_issues.index'),            'icon' => '<i style="font-size: 40px;" class="fa-solid fa-triangle-exclamation"></i>'];
         $accessList[]                           = ['name' =>  'Payment links',                           'url' => route('sales.tools.payment_links.index'),           'icon' => '<i style="font-size: 40px;" class="fa-solid fa-money-check-dollar"></i>'];
         $accessList[]                           = ['name' =>  'Customer cart access',                    'url' => route('sales.tools.customer_cart_access.index'),     'icon' => '<i style="font-size: 40px;" class="fa-solid fa-user-shield"></i>'];
         return $accessList;

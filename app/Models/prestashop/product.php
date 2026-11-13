@@ -1056,6 +1056,7 @@ class product extends PrestashopModel
                 DB::raw('DATEDIFF(CURDATE(), ' . $productTable . '.date_add) AS days'),
                 DB::raw('MAX(' . $stockTable . '.quantity) AS quantity'),
                 $productTable . '.reference',
+                DB::raw($productTable . '.location AS housing'),
                 DB::raw($manufacturerTable . '.name AS brand')
             )
             ->leftJoin(
@@ -1100,6 +1101,7 @@ class product extends PrestashopModel
                 $productTable . '.id_product',
                 $productTable . '.date_add',
                 $productTable . '.reference',
+                $productTable . '.location',
                 $manufacturerTable . '.name'
             )
             ->get();
@@ -1113,6 +1115,7 @@ class product extends PrestashopModel
                 'days' => $item->days,
                 'quantity' => (int) $item->quantity,
                 'reference' => $item->reference,
+                'housing' => $item->housing,
                 'brand' => $item->brand ?? ''
             ];
         }
@@ -1121,7 +1124,7 @@ class product extends PrestashopModel
             trans('dashboard.No real photos'),
             $type,
             'no_real_photos',
-            ['days', 'id_product', 'quantity', 'reference', 'brand'],
+            ['days', 'id_product', 'quantity', 'reference', 'brand', 'housing'],
             $data
         );
     }

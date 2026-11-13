@@ -38,7 +38,7 @@ li.nav-item > a:hover { color: dodgerblue; }
 .area-action-panel__heading h1{ margin: 0; font-size: 34px; font-weight: 800; }
 .area-action-panel__body{ padding: 24px; border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; box-shadow: 0 4px 18px rgba(20, 38, 68, .05); }
 .area-action-panel__body h2{ margin: 0 0 16px; font-size: 25px; font-weight: 800; }
-.area-action-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.area-action-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; }
 .area-action-card{ display: flex; min-height: 128px; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px 10px; border: 1px solid #dfe5ee; border-radius: 8px; color: #121d32; font-size: 15px; font-weight: 700; line-height: 1.2; text-align: center; text-decoration: none; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
 .area-action-card:hover{ border-color: #b9c8dd; box-shadow: 0 5px 12px rgba(20, 38, 68, .10); color: #121d32; transform: translateY(-1px); }
 .area-action-card i{ font-size: 34px; }

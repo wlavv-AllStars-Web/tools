@@ -25,23 +25,23 @@
                     </div>
                     <div style="width: 10%;float: left;"></div>
                     <div style="text-align: center;font-size: 28px;float: right;width: 45%;">
-                        <span class="btn btn-info" onclick="$('#upload_area').show('slow')" style="width: 100%;"> 
+                        <button type="button" class="btn btn-info" onclick="$('#upload_area').stop(true, true).slideDown('slow')" style="width: 100%;">
                             <i class="fa-solid fa-download" style="font-size: 28px;color: #FFF;"></i>
                             <br>
                             <span style="font-size: 18px;color: #FFF;">{{ __('tags.INTRA-EX-') }}{{$year}}{{$month}}</span>
-                            
-                            @include("customTools.uploads.upload_container", [
-                                'title' => '', 
-                                'message' => trans('tags.Drop files here or click to upload') . '<br>' . trans('tags.Only CSV files'), 
-                                'upload_path' => "finance/moloni/",
-                                'filename' => "moloni.csv",
-                                'upload_accepted_files' => ".csv",
-                                'max_files' => 1,
-                                'on_success' => '$("#download_intra_ex").show("slow")'
-                            ])
-                        </span>
+                        </button>
                     </div>
                 </div>
+
+                @include("customTools.uploads.upload_container", [
+                    'title' => '',
+                    'message' => trans('tags.Drop files here or click to upload') . '<br>' . trans('tags.Only CSV files'),
+                    'upload_path' => "finance/moloni/",
+                    'filename' => "moloni.csv",
+                    'upload_accepted_files' => ".csv",
+                    'max_files' => 1,
+                    'on_success' => 'download_export()'
+                ])
             </div>
             <div class="col-lg-3"></div>
         </div>

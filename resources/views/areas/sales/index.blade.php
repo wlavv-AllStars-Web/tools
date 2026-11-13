@@ -18,13 +18,13 @@
             @if(($access['method'] ?? 'get') === 'post')
             <form method="POST" action="{{ $access['url'] }}" style="margin: 0; float: left;">
                 @csrf
-                <button type="submit" class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left; border: 1px solid #ccc; padding: 20px 10px; background: transparent;">
+                <button type="submit" class="rowStyling" style="height: 100px; text-align: center; float: left; border: 1px solid #ccc; padding: 20px 10px; background: transparent;">
                     <div>{!! $access['icon'] !!}</div>
                     <div style="line-height: 18px;">{{ $access['name']}}</div>
                 </button>
             </form>
             @else
-            <div class="rowStyling" style="width: 100px; height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
+            <div class="rowStyling" style="height: 100px; text-align: center; float: left;border: 1px solid #ccc;padding: 20px 10px;"> 
                 <a href="{{$access['url']}}">     
                     <div>{!! $access['icon'] !!}</div>
                     <div style="line-height: 18px;">{{ $access['name']}}</div>

@@ -131,6 +131,7 @@ body.nt-sidebar-collapsed .nt-sidebar { width:var(--nt-sidebar-narrow); overflow
     .area-action-panel__heading h1{ font-size: 28px; }
     .area-action-panel__body{ padding: 16px; }
     .area-action-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .customPanel .listUL{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 }
 

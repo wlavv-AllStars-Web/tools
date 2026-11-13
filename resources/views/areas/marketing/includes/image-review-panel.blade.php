@@ -1,5 +1,5 @@
 @if($imageReviewManufacturers->isNotEmpty())
-    <div class="nt-quick-select-action">
+    <div class="nt-quick-select-action nt-quick-select-action--image-review">
         <form action="{{ route('web.tools.product_images.index') }}" method="GET">
             <label for="studioImageManufacturer">ASM - Product Image Review</label>
             <select id="studioImageManufacturer" name="manufacturer_id" class="form-control" onchange="if (this.value) this.form.submit()">

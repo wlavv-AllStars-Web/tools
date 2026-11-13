@@ -1,4 +1,4 @@
-<div class="nt-quick-select-action">
+<div class="nt-quick-select-action nt-quick-select-action--asd-missing-photos">
                 <label for="studioAsdImageManufacturer">
                     ASD - Product Image Review
                     @if($asdMissingImageBrands->sum('missing_images_count') > 0)

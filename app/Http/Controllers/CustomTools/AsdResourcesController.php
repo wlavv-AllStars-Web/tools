@@ -22,11 +22,6 @@ class ASDResourcesController extends Controller
     
     public function __construct(){
         $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            abort_unless((int) $request->user()->id === 1003, 403);
-
-            return $next($request);
-        });
 
         $this->breadcrumbs[] = ['name' => 'web', 'url' => route('web.index')];
         $this->breadcrumbs[] = ['name' => trans('messages.resources'), 'url' => route('web.tools.resources.asd.index')];

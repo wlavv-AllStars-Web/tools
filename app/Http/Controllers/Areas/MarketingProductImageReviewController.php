@@ -15,11 +15,6 @@ class MarketingProductImageReviewController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware(function (Request $request, $next) {
-            abort_unless((int) $request->user()->id === 1003, 403);
-
-            return $next($request);
-        });
     }
 
     public function index(Request $request)

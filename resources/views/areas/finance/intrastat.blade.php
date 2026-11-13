@@ -6,7 +6,7 @@
 
     <style> table, th, td { border: 1px solid black; } </style>
     
-    <div class="navbar navbar-light customPanel" style="margin-top: 10px;display: table;">
+    <div class="navbar navbar-light customPanel" style="margin-top: 10px; width: 100%;">
         <div style="text-align: center;margin: 30px;">
             <h3 style="color: black; font-weight: bolder; text-transform: uppercase;">{{ __('tags.Intrasta documents') }}</h3>
         </div>
@@ -32,6 +32,8 @@
                         </button>
                     </div>
                 </div>
+
+                <div style="clear: both;"></div>
 
                 @include("customTools.uploads.upload_container", [
                     'title' => '',

@@ -11,6 +11,18 @@
     .carrierIssuesArchived{ display: none; }
     .carrierIssuesRetention{ display: none; }
     .carrierIssuesActive{ display: block; }
+
+    .carrierIssuesTabs{
+        display: flex;
+        height: auto !important;
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+    .carrierIssuesTabs > div{
+        float: none !important;
+        margin: 0;
+    }
     
     .customPanel{ height: 100%; }
 </style>

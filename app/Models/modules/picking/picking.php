@@ -1091,18 +1091,59 @@ class picking extends Model
         return false;
     }
 
-    public static function getEAN($data) {
-        
-        $product = product::select('ean13')->where( 'ean13', $data->code )->orWhere( 'reference', $data->code )->first();
-        
-        if( isset( $product->ean13 ) ) return $product->ean13;
-        
-        $product = product_attribute::select('ean13')->where( 'ean13', $data->code )->orWhere( 'reference', $data->code )->first();
-        
-        if( isset( $product->ean13 ) ) return $product->ean13;
+    public static function getEAN($data)
+    {
+        $code = trim((string) ($data->code ?? ''));
+        $code = preg_replace('/\s+/', '', $code) ?? '';
+
+        if ($code === '') {
+            return 999;
+        }
+
+        // Keep support for the EAN-13 and reference values already used by picking.
+        $product = product::select('ean13')
+            ->where('ean13', $code)
+            ->orWhere('reference', $code)
+            ->first();
+
+        if (isset($product->ean13) && $product->ean13 !== '') {
+            return $product->ean13;
+        }
+
+        $product = product_attribute::select('ean13')
+            ->where('ean13', $code)
+            ->orWhere('reference', $code)
+            ->first();
+
+        if (isset($product->ean13) && $product->ean13 !== '') {
+            return $product->ean13;
+        }
+
+        /*
+         * A GTIN-14 with an indicator digit of 0 is the EAN-13 with a
+         * leading zero. Example: 00887753546302 -> 0887753546302.
+         */
+        if (preg_match('/^0(\d{13})$/', $code, $matches)) {
+            $ean13 = $matches[1];
+
+            $product = product::select('ean13')
+                ->where('ean13', $ean13)
+                ->first();
+
+            if (isset($product->ean13) && $product->ean13 !== '') {
+                return $product->ean13;
+            }
+
+            $product = product_attribute::select('ean13')
+                ->where('ean13', $ean13)
+                ->first();
+
+            if (isset($product->ean13) && $product->ean13 !== '') {
+                return $product->ean13;
+            }
+        }
 
         return 999;
-
     }
 
 }

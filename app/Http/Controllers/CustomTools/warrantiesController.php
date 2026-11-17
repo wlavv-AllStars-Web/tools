@@ -179,9 +179,14 @@ class warrantiesController extends Controller{
             case 3:{
                 $template = 'warranties_'.$iso.'_6_3';
 
-                $order_return_detail = order_return_detail::where('id_order_return', $request->id_order_return)->first();
-                $order_return_detail->files_required = $request->supplier_reply;
-                $order_return_detail->update();
+                $order_return_detail = order_return_detail::where('id_order_return', (int) $request->id_order_return)->firstOrFail();
+
+                DB::connection('mysql2')
+                    ->table($order_return_detail->getTable())
+                    ->where('id_order_return', (int) $request->id_order_return)
+                    ->update([
+                        'files_required' => $request->supplier_reply,
+                    ]);
 
                 $order = orders::where('id_order', $warranty->id_order)->first();
                 

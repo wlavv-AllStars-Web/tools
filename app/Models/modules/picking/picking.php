@@ -1120,14 +1120,26 @@ class picking extends Model
         }
 
         /*
-         * A GTIN-14 with an indicator digit of 0 is the EAN-13 with a
-         * leading zero. Example: 00887753546302 -> 0887753546302.
+         * Some suppliers print a GTIN-14 while PrestaShop may store either
+         * its EAN-13 or UPC-A representation. Examples:
+         * 00887753546302 -> 0887753546302 (EAN-13)
+         * 00887753542519 -> 887753542519  (UPC-A)
          */
-        if (preg_match('/^0(\d{13})$/', $code, $matches)) {
-            $ean13 = $matches[1];
+        $barcodeAlternatives = [];
 
+        if (preg_match('/^0(\d{13})$/', $code, $matches)) {
+            $barcodeAlternatives[] = $matches[1];
+        }
+
+        if (preg_match('/^00(\d{12})$/', $code, $matches)) {
+            $barcodeAlternatives[] = $matches[1];
+        }
+
+        $barcodeAlternatives = array_values(array_unique($barcodeAlternatives));
+
+        if ($barcodeAlternatives !== []) {
             $product = product::select('ean13')
-                ->where('ean13', $ean13)
+                ->whereIn('ean13', $barcodeAlternatives)
                 ->first();
 
             if (isset($product->ean13) && $product->ean13 !== '') {
@@ -1135,7 +1147,7 @@ class picking extends Model
             }
 
             $product = product_attribute::select('ean13')
-                ->where('ean13', $ean13)
+                ->whereIn('ean13', $barcodeAlternatives)
                 ->first();
 
             if (isset($product->ean13) && $product->ean13 !== '') {

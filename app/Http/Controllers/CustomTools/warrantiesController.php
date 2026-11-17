@@ -54,11 +54,20 @@ class warrantiesController extends Controller{
 
     public function getModal($id)
     {
-        $detail = order_return_detail::query()
+        $detailQuery = order_return_detail::query()
             ->select('ps_order_return_detail.*')
             ->join('ps_order_return', 'ps_order_return.id_order_return', '=', 'ps_order_return_detail.id_order_return')
-            ->where('ps_order_return_detail.id_order_detail', $id)
-            ->where('ps_order_return.process', 'warranty') 
+            ->where('ps_order_return_detail.id_order_detail', (int) $id)
+            ->where('ps_order_return.process', 'warranty');
+
+        if (request()->filled('id_order_return')) {
+            $detailQuery->where(
+                'ps_order_return_detail.id_order_return',
+                (int) request()->query('id_order_return')
+            );
+        }
+
+        $detail = $detailQuery
             ->with('orderDetail')
             ->firstOrFail();
             

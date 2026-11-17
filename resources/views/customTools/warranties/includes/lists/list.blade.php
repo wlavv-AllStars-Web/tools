@@ -62,7 +62,7 @@
                     <td>{{$detail->chassis}}</td>
                     <td>{{ trim((optional($customer)->firstname ?? '') . ' ' . (optional($customer)->lastname ?? '')) }}</td>
                     <td> {{ str_replace(['\\r', '\\n'], ' ', $detail->problem_description) }} </td>
-                    <td> <button class="btn btn-primary open-ajax-modal" data-route="{{ route('warranties.getModal', ['id' => $detail->id_order_detail]) }}"> <i class="fa-solid fa-magnifying-glass"></i> </button> </td>
+                    <td> <button class="btn btn-primary open-ajax-modal" data-route="{{ route('warranties.getModal', ['id' => $detail->id_order_detail, 'id_order_return' => $warranty->id_order_return]) }}"> <i class="fa-solid fa-magnifying-glass"></i> </button> </td>
                 </tr>
             @endforeach
         @endforeach

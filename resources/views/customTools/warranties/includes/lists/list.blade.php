@@ -3,6 +3,7 @@
         <tr>
             <th></th>
             <th>ORDER</th>
+            <th>OPENED</th>
             <th>STATUS</th>
             <th>REFERENCE</th>
             <th>BRAND</th>
@@ -32,6 +33,7 @@
                         @if(optional($order)->id_lang == 5) <img style="border: 1px solid #ccc;border-radius: 8px;" src="/images/flags/fr.png" alt="French"  width="25" height="20"> @endif
                     </td>
                     <td>@if($detail->new_files == 1) <div style="background-color: red; width: 15px; height: 15px; border-radius: 10px;float: left; margin: 5px;"></div> @endif {{$warranty->id_order}}</td>
+                    <td>{{ $warranty->date_add ? date('d-m-Y', strtotime($warranty->date_add)) : '-' }}</td>
                     <td>
                         <button class="open-ajax-modal" style="display: none;" data-route="{{ route('warranties.getModal', ['id' => $warranty->id_order_return]) }}">{{ optional($statusLang)->name ?? 'Unknown status' }}</button>
                         @if( ( $warranty->state != 4 ) && ( $warranty->state != 5 ) )

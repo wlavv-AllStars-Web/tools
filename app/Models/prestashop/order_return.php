@@ -196,9 +196,10 @@ class order_return extends PrestashopModel
             'name' => $isReturn ? 'RETURNS' : 'WARRANTIES',
             'col' => 4,
             'item_id' => $type . '_' . ($isReturn ? 'returns' : 'warranties'),
-            'columns' => ['clean', 'status', 'id_order', 'id_customer', 'customer_name'],
+            'columns' => ['clean', 'status', 'opened_at', 'id_order', 'id_customer', 'customer_name'],
             'column_labels' => [
                 'status' => 'Status',
+                'opened_at' => 'Opened',
                 'id_order' => 'Order',
                 'id_customer' => 'Customer ID',
                 'customer_name' => 'Customer',
@@ -237,6 +238,7 @@ class order_return extends PrestashopModel
             ->select(
                 'or.id_order_return',
                 'or.id_order',
+                'or.date_add as opened_at',
                 'or.process',
                 'or.state',
                 'sl.name as state_name',
@@ -267,6 +269,9 @@ class order_return extends PrestashopModel
                     (int) $record->state,
                     $record->state_name
                 ),
+                'opened_at' => !empty($record->opened_at)
+                    ? date('d-m-Y', strtotime($record->opened_at))
+                    : '-',
                 'id_order' => $record->id_order,
                 'id_customer' => $record->id_customer,
                 'customer_name' => $record->customer_name,

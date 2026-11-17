@@ -2,7 +2,7 @@
     <thead>
         <tr style="text-align: center;">
             <th></th>
-            <th>RETURN</th>
+            <th>OPENED</th>
             <th>ORDER</th>
             <th>STATUS</th>
             <th>REFERENCE</th>

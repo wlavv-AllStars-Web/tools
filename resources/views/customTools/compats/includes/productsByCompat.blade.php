@@ -4,7 +4,7 @@
         <div id="searchProductsByCompat" class="navbar navbar-light customPanel" style="display: none;">
             <div class="row">
                 <div class="col-lg-1"> </div>
-                <div class="col-lg-2"> @include("customTools.compats.includes.stores",  [ 'store' => 5, 'options' => [ '0' => 'All stores', '1' => 'EuroMuscleParts', '2' => 'All Stars Motorsport', '3' => 'All Stars Distribution', '6' => 'Euro-rider' ] ]) </div>
+                <input type="hidden" id="store" value="2">
                 <div class="col-lg-2"> @include("customTools.compats.includes.options", [ 'type' => 1, 'options' => $options ]) </div>
                 <div class="col-lg-2"> @include("customTools.compats.includes.options", [ 'type' => 2, 'options' => [] ]) </div>
                 <div class="col-lg-2"> @include("customTools.compats.includes.options", [ 'type' => 3, 'options' => [] ]) </div>

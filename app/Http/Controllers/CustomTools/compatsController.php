@@ -66,7 +66,11 @@ class compatsController extends Controller
 
     public function createCompatibilities(Request $request)
     {
-        compats_product::insertNestedCompat((object) $request->all());
+        // Compatibility relations are created only for ASM (shop 2).
+        compats_product::insertNestedCompat((object) array_merge(
+            $request->all(),
+            ['store' => self::DEFAULT_STORE]
+        ));
 
         return response()->json(['success' => true]);
     }

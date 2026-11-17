@@ -659,12 +659,12 @@ class picking extends Model
             $existingRow->housing = $housing;
 
             $reference = trim((string) ($row->product_reference ?? ''));
-            if ($reference !== '') {
+            if (trim((string) ($existingRow->reference ?? '')) === '' && $reference !== '') {
                 $existingRow->reference = $reference;
             }
 
             $productBarcode = trim((string) ($row->product_ean13 ?? ''));
-            if ($productBarcode !== '') {
+            if (trim((string) ($existingRow->product_barcode ?? '')) === '' && $productBarcode !== '') {
                 $existingRow->product_barcode = $productBarcode;
             }
 

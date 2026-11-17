@@ -244,6 +244,17 @@ class picking extends Model
                         }
                         
                         if(isset($product->id_product)){
+
+                            // Order detail keeps a snapshot which can have an empty
+                            // EAN/reference. Picking must use the current product or
+                            // combination identifiers when they are available.
+                            if (trim((string) ($product->ean13 ?? '')) !== '') {
+                                $detail->product_ean13 = (string) $product->ean13;
+                            }
+
+                            if (trim((string) ($product->reference ?? '')) !== '') {
+                                $detail->product_reference = (string) $product->reference;
+                            }
                         
                             $detail->location = self::resolveHousing(
                                 (int) $detail->product_id,
@@ -646,6 +657,16 @@ class picking extends Model
         
         if( $existingRow ){
             $existingRow->housing = $housing;
+
+            $reference = trim((string) ($row->product_reference ?? ''));
+            if ($reference !== '') {
+                $existingRow->reference = $reference;
+            }
+
+            $productBarcode = trim((string) ($row->product_ean13 ?? ''));
+            if ($productBarcode !== '') {
+                $existingRow->product_barcode = $productBarcode;
+            }
 
             // Keep pending rows aligned with refunds made after the row was
             // initially created. A completed pick is never reopened.

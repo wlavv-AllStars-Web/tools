@@ -516,7 +516,7 @@ class dashboard extends Model
         $paidStates = array_map('intval', config('allstars.auto_orders.paid_order_states', [2, 3, 4, 5, 15, 16, 28]));
         $paidStatesWithoutPaymentAccepted = array_values(array_diff($paidStates, [2]));
         $bd_data = self::asdOrdersBase()
-            ->where('o.id_order', '>=', 113324)
+            ->where('o.id_order', '>=', 120000)
             ->whereIn('o.current_state', $paidStatesWithoutPaymentAccepted)
             ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))

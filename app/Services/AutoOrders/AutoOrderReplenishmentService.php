@@ -183,10 +183,10 @@ class AutoOrderReplenishmentService
                 $join->on('cpa.id_product_attribute', '=', 'pa.id_product_attribute')
                     ->on('cpa.id_product', '=', 'p.id_product');
             })
-            ->leftJoin($prefix . 'stock_available as sa', function ($join) use ($attributeId, $shopId) {
+            ->leftJoin($prefix . 'stock_available as sa', function ($join) use ($attributeId) {
                 $join->on('sa.id_product', '=', 'p.id_product')
                     ->where('sa.id_product_attribute', $attributeId)
-                    ->where('sa.id_shop', $shopId);
+                    ->where('sa.id_shop', 0);
             })
             ->where('p.id_product', $productId)
             ->selectRaw('p.id_product')

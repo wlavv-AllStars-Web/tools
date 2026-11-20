@@ -376,7 +376,8 @@ class autoOrdersController extends Controller
                 })
                 ->leftJoin($prefix . 'stock_available as sa', function ($join) {
                     $join->on('sa.id_product', '=', 'p.id_product')
-                        ->whereRaw('sa.id_product_attribute = COALESCE(pa.id_product_attribute, 0)');
+                        ->whereRaw('sa.id_product_attribute = COALESCE(pa.id_product_attribute, 0)')
+                        ->where('sa.id_shop', 0);
                 })
                 ->where(function ($query) use ($ref) {
                     $query->where('p.reference', $ref)

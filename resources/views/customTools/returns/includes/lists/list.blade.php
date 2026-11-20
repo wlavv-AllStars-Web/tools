@@ -33,7 +33,7 @@
                 <td style="cursor: pointer;" @if($orderAdminUrl) onclick="window.open(@json($orderAdminUrl), '_blank')" @endif>{{$return->id_order}}</td>
                 <td>
                     <button class="open-ajax-modal" style="display: none;" data-route="{{ route('returns.getModal', ['id' => $return->id_order_return]) }}">{{$statusName}}</button>
-                    @if( ( $return->state != 3 ) && ( $return->state != 8 ) && ( $return->state != 12 ) && ( $return->state != 13 ) )
+                    @if(!in_array((int) $return->state, [3, 8, 12, 13, 15], true))
                         <form id="returnStatusForm" class="formSubmit-{{$return->id_order_return}}" method="POST" action="{{ route('returns.changeStatus') }}">
                             @csrf
                             <input type="hidden" name="id_order_return" value="{{$return->id_order_return}}" name="id_order_return">
@@ -43,12 +43,12 @@
                                 <option value="14" {{ $return->state=='14' ? 'selected' : '' }}>Return – package received</option>
                                 <option value="12" {{ $return->state=='12' ? 'selected' : '' }}>Return – not approved</option>
                                 <option value="13" {{ $return->state=='13' ? 'selected' : '' }}>Return – approved</option>
+                                <option value="15">Return – closed / no customer response</option>
                             </select>                
                         </form>
                     @else
                         <div style="text-align: center;color: #FFF;background-color: {{$statusColor}}; padding: 10px;border-radius: 5px;width: 100%;">
-                            @if( $return->state=='12') Return – not approved @endif
-                            @if( $return->state=='13') Return – approved @endif
+                            {{ $statusName }}
                         </div>
                     @endif
                 </td>

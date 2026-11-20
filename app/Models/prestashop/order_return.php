@@ -92,7 +92,7 @@ class order_return extends PrestashopModel
             ->pluck('id_product')
             ->toArray();
 
-        $data = self::getDashboardRows([12, 13], true, $excludedReturnIds, 'return');
+        $data = self::getDashboardRows([12, 13, 15], true, $excludedReturnIds, 'return');
 
         return [
             'name' => trans('ORDER RETURN - CLOSED'),
@@ -232,7 +232,7 @@ class order_return extends PrestashopModel
             })
             ->where('or.process', $process)
             ->whereIn('or.state', $process === 'return'
-                ? [10, 11, 12, 13, 14]
+                ? [10, 11, 12, 13, 14, 15]
                 : [1, 2, 3, 4, 5, 6, 7, 8]
             )
             ->select(
@@ -251,7 +251,7 @@ class order_return extends PrestashopModel
         $data = [];
 
         foreach ($records as $record) {
-            $isClosedReturn = $record->process === 'return' && in_array((int) $record->state, [12, 13], true);
+            $isClosedReturn = $record->process === 'return' && in_array((int) $record->state, [12, 13, 15], true);
             $isClosedWarranty = $record->process === 'warranty' && in_array((int) $record->state, [4, 5, 6, 7, 8], true);
 
             if ($isClosedReturn && in_array((int) $record->id_order_return, $closedReturnIds, true)) {
@@ -307,6 +307,7 @@ class order_return extends PrestashopModel
                 12 => 'Not approved',
                 13 => 'Approved',
                 14 => 'Package received',
+                15 => 'Closed - no customer response',
             ],
             'warranty' => [
                 1 => 'Request registered',

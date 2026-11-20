@@ -17,6 +17,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\CustomTools\mailsController;
 
 class returnsController extends Controller{
+    private const CLOSED_WITHOUT_CUSTOMER_EMAIL_STATE = 15;
+
     public $actions = [];
     public $breadcrumbs = [];
     
@@ -32,7 +34,9 @@ class returnsController extends Controller{
         $breadcrumbs = $this->breadcrumbs;
 
         if( $id == 1 ){
-            $returns = order_return::whereIn('state', [12, 13])->where('process', 'return')->get();
+            $returns = order_return::whereIn('state', [12, 13, self::CLOSED_WITHOUT_CUSTOMER_EMAIL_STATE])
+                ->where('process', 'return')
+                ->get();
             $list = 1;
         }else{
             $returns = order_return::whereIn('state', [10, 11, 14])->where('process', 'return')->get();
@@ -73,8 +77,15 @@ class returnsController extends Controller{
             return back()->with('error', 'Return not found.');
         }
 
-        $id_associated = $request->returnStatusSelect;
+        $id_associated = (int) $request->returnStatusSelect;
+
+        if (!in_array($id_associated, [11, 12, 13, 14, self::CLOSED_WITHOUT_CUSTOMER_EMAIL_STATE], true)) {
+            return back()->with('error', 'Invalid return status.');
+        }
+
         $customer = $return->customer ?: optional($return->order)->customer;
+        $template = null;
+        $subject = [];
 
         $data['name'] = $customer
             ? trim((string) $customer->firstname . ' ' . (string) $customer->lastname)
@@ -148,6 +159,10 @@ class returnsController extends Controller{
                 $subject[5] = 'Retour – colis reçu';
                 break;
             }
+            case self::CLOSED_WITHOUT_CUSTOMER_EMAIL_STATE:
+                // This status closes and archives the return without emailing
+                // the customer when they stopped following up.
+                break;
         }
 
         order_return::where('id_order_return', $request->id_order_return)->where('process', 'return')->update(['state' => $id_associated]);
@@ -155,7 +170,7 @@ class returnsController extends Controller{
         
         $mail_object = new mailsController();
         
-        if( $template != 0 && $customer && !empty($customer->email)){
+        if ($template !== null && $customer && !empty($customer->email)){
             $html = $mail_object->createStructure('ASM_white', $template, $subject[$return->order->id_lang], (object)$data, $return->order->id_lang);
             $mail_object->send($customer->email, $html, $subject[$return->order->id_lang], 'asm_sales');
         }

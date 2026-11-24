@@ -13,7 +13,7 @@
                 $headerUrl = $counter->panel === 'reviews'
                     ? \App\Services\Prestashop\PrestashopAdminLinkService::dashboardReviewsUrl($counter->store ?? 'ASM')
                     : null;
-                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration', 'non_standard'], true);
+                $isInfo = in_array($counter->panel, ['products_pack', 'global_discounts', 'newsletter_registration', 'non_standard', 'extra_compats'], true);
                 $hasDetails = (int) $counter->counter > 0;
                 $state = $isInfo ? 'info' : ($counter->counter < 1 ? 'ok' : 'alert');
                 $stateLabel = $isInfo ? 'Informational' : ($counter->counter < 1 ? 'OK' : 'Needs attention');

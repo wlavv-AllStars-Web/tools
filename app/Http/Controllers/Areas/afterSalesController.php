@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Areas;
 
 use App\Http\Controllers\Controller;
+use App\Models\modules\dashboard\dashboard;
 use Illuminate\Support\Facades\View;
 
 class afterSalesController extends Controller
@@ -20,6 +21,7 @@ class afterSalesController extends Controller
         return View::make('areas.afterSales.index')->with([
             'breadcrumbs' => $this->breadcrumbs,
             'accessList' => [],
+            'counters' => dashboard::calculateAndGetCountersOfTab('after_sales'),
         ]);
     }
 }

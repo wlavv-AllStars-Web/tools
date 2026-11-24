@@ -874,7 +874,7 @@ class product extends PrestashopModel
             ->all();
 
         return self::productDashboardResponse(
-            trans('dashboard.Extra compats'),
+            trans('dashboard.EXTRA COMPATS'),
             $type,
             'extra_compats',
             ['id_product', 'reference', 'brand', 'extra_compats'],

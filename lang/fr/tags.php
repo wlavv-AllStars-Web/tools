@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'EXTRA_COMPATS' => 'COMPATIBILITÉS SUPPLÉMENTAIRES',
     'Current stock value: ' => 'Current stock value: ',
     
     'Download' => 'Download',

@@ -2,6 +2,7 @@
 
 return [
     'EXTRA_COMPATS' => 'EXTRA COMPATS',
+    'extra_compats' => 'EXTRA COMPATS',
     'Current stock value: ' => 'Current stock value: ',
     
     'Download' => 'Download',

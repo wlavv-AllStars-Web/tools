@@ -2,6 +2,7 @@
 
 return [
     'EXTRA_COMPATS' => 'COMPATIBILIDADES EXTRA',
+    'extra_compats' => 'COMPATIBILIDADES EXTRA',
     'Current stock value: ' => 'Valor atual de stock: ',
     
     'Download' => 'Download',

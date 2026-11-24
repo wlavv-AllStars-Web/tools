@@ -852,16 +852,35 @@ class product extends PrestashopModel
             ->map(function ($item) {
                 $extraCompats = trim((string) $item->extra_compats);
                 $decoded = json_decode($extraCompats, true);
+                $isValidJson = json_last_error() === JSON_ERROR_NONE && is_array($decoded);
+                $compatibilities = $isValidJson
+                    ? (array_is_list($decoded) ? $decoded : [$decoded])
+                    : [];
+
+                $formattedCompats = collect($compatibilities)
+                    ->filter(fn ($compatibility) => is_array($compatibility))
+                    ->map(function (array $compatibility) {
+                        $compatibility = array_change_key_case($compatibility, CASE_LOWER);
+
+                        return implode(' | ', array_map(function (string $field) use ($compatibility) {
+                            $value = $compatibility[$field] ?? '-';
+
+                            if (is_array($value)) {
+                                $value = implode(', ', $value);
+                            }
+
+                            return e(trim((string) $value) ?: '-');
+                        }, ['brand', 'model', 'type', 'version']));
+                    })
+                    ->filter()
+                    ->implode('<br>');
 
                 return [
                     'id_product' => $item->id_product,
                     'reference' => $item->reference,
                     'brand' => $item->brand,
-                    'extra_compats' => json_last_error() === JSON_ERROR_NONE
-                        ? json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-                        : $extraCompats,
-                    '_has_extra_compats' => $extraCompats !== ''
-                        && (json_last_error() !== JSON_ERROR_NONE || !empty($decoded)),
+                    'extra_compats' => $formattedCompats,
+                    '_has_extra_compats' => $formattedCompats !== '',
                 ];
             })
             ->filter(fn (array $item) => $item['_has_extra_compats'])

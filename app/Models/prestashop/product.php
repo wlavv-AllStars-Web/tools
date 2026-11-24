@@ -830,6 +830,58 @@ class product extends PrestashopModel
         );
     }
 
+    public static function dashboard_extra_compats($type)
+    {
+        $productTable = self::tableName('product');
+        $manufacturerTable = self::tableName('manufacturer');
+        $customProductTable = self::tableName('custom_product');
+
+        $data = DB::connection('mysql2')
+            ->table($customProductTable . ' AS custom_product')
+            ->join($productTable . ' AS product', 'product.id_product', '=', 'custom_product.id_product')
+            ->leftJoin($manufacturerTable . ' AS manufacturer', 'manufacturer.id_manufacturer', '=', 'product.id_manufacturer')
+            ->whereNotNull('custom_product.extra_compats')
+            ->select([
+                'product.id_product',
+                'product.reference',
+                DB::raw('manufacturer.name AS brand'),
+                'custom_product.extra_compats',
+            ])
+            ->orderBy('product.id_product')
+            ->get()
+            ->map(function ($item) {
+                $extraCompats = trim((string) $item->extra_compats);
+                $decoded = json_decode($extraCompats, true);
+
+                return [
+                    'id_product' => $item->id_product,
+                    'reference' => $item->reference,
+                    'brand' => $item->brand,
+                    'extra_compats' => json_last_error() === JSON_ERROR_NONE
+                        ? json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                        : $extraCompats,
+                    '_has_extra_compats' => $extraCompats !== ''
+                        && (json_last_error() !== JSON_ERROR_NONE || !empty($decoded)),
+                ];
+            })
+            ->filter(fn (array $item) => $item['_has_extra_compats'])
+            ->map(function (array $item) {
+                unset($item['_has_extra_compats']);
+
+                return $item;
+            })
+            ->values()
+            ->all();
+
+        return self::productDashboardResponse(
+            trans('dashboard.Extra compats'),
+            $type,
+            'extra_compats',
+            ['id_product', 'reference', 'brand', 'extra_compats'],
+            $data
+        );
+    }
+
     /*
     |--------------------------------------------------------------------------
     | DASHBOARDS - COMPATIBILITIES / ATTACHMENTS

@@ -937,6 +937,7 @@ class dashboard extends Model
                 ->leftJoin($prefix . 'address as a', 'a.id_address', '=', 'o.id_address_invoice')
                 ->leftJoin($prefix . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
                 ->whereIn('o.id_order', $orderIds)
+                ->where('o.date_add', '>', now()->subDays(5))
                 ->select(['o.id_order', 'o.id_shop', 'a.company', 'c.firstname', 'c.lastname'])
                 ->get()
                 ->keyBy('id_order');
@@ -952,7 +953,9 @@ class dashboard extends Model
         ];
 
         $rows = $validations->flatMap(function ($validation) use ($orders, $statusLabels) {
-            return $validation->orders->map(function ($link) use ($validation, $orders, $statusLabels) {
+            return $validation->orders
+                ->filter(fn ($link) => $orders->has((int) $link->id_order))
+                ->map(function ($link) use ($validation, $orders, $statusLabels) {
                 $order = $orders->get((int) $link->id_order);
 
                 $company = trim((string) ($order?->company ?? ''));

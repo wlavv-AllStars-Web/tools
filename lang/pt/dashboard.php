@@ -8,6 +8,7 @@ return [
     'Shipping restrictions' => 'RESTRIÇÕES DE ENVIO',
     'No compatibilities' => 'SEM COMPATIBILIDADES',
     'Compatibilities exceptions' => 'EXCEÇÕES DE COMPATIBILIDADES',
+    'Extra compats' => 'COMPATIBILIDADES EXTRA',
     'Product without brand' => 'PRODUTOS SEM MARCA',
     'Product without category' => 'PRODUTOS SEM CATEGORIA',
     'Products without search tags' => 'PRODUTOS SEM TAGS DE PESQUISA',

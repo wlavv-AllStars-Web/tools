@@ -892,7 +892,7 @@ class product extends PrestashopModel
             ->values()
             ->all();
 
-        return self::productDashboardResponse(
+        return self::dashboardPanel(
             trans('dashboard.EXTRA COMPATS'),
             $type,
             'extra_compats',

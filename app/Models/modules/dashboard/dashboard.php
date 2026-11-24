@@ -414,7 +414,7 @@ class dashboard extends Model
         $bd_data = self::asdOrdersBase()
             ->leftJoin(self::prefix() . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
             ->leftJoin(self::prefix() . 'address as ai', 'ai.id_address', '=', 'o.id_address_invoice')
-            ->where('o.date_add', '>', now()->subDays(5))
+            ->where('o.date_add', '>', now()->subDays(7))
             ->where(function ($query) {
                 $query->where('c.id_default_group', 4)
                     ->orWhere(function ($missingVat) {
@@ -937,7 +937,7 @@ class dashboard extends Model
                 ->leftJoin($prefix . 'address as a', 'a.id_address', '=', 'o.id_address_invoice')
                 ->leftJoin($prefix . 'customer as c', 'c.id_customer', '=', 'o.id_customer')
                 ->whereIn('o.id_order', $orderIds)
-                ->where('o.date_add', '>', now()->subDays(5))
+                ->where('o.date_add', '>', now()->subDays(7))
                 ->select(['o.id_order', 'o.id_shop', 'a.company', 'c.firstname', 'c.lastname'])
                 ->get()
                 ->keyBy('id_order');

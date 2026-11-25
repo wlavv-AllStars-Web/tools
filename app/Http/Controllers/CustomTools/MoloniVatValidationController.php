@@ -16,7 +16,7 @@ class MoloniVatValidationController extends Controller
     public function index(Request $request)
     {
         $status=$request->string('status')->toString();
-        $query=MoloniVatValidation::query()->with(['orders'=>fn($q)=>$q->latest('id')])->withCount('orders')->latest('updated_at');
+        $query=MoloniVatValidation::query()->where('created_at','>',now()->subDays(7))->with(['orders'=>fn($q)=>$q->latest('id')])->withCount('orders')->latest('updated_at');
         if($status!=='')$query->where('status',$status);
         $validations=$query->paginate(50)->withQueryString();
         $this->attachOrderMetadata($validations->getCollection());

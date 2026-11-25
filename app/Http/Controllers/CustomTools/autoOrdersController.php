@@ -167,6 +167,15 @@ class autoOrdersController extends Controller
         ]);
     }
 
+    public function reconciliationAdd(int $manufacturer)
+    {
+        $this->ensureReconciliationAccess();
+
+        $added = app(AutoOrdersReconciliationService::class)->addToDraft($manufacturer);
+
+        return response()->json(['success' => true, 'added' => $added]);
+    }
+
     private function ensureReconciliationAccess(): void
     {
         abort_unless((int) auth()->id() === 43, 403);

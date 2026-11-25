@@ -3,6 +3,7 @@
 namespace App\Services\AutoOrders;
 
 use Illuminate\Support\Facades\DB;
+use App\Models\modules\auto_orders\AutoOrdersPurchaseList;
 
 /** Builds a read-only, current-state reconciliation using the shared stock row. */
 final class AutoOrdersReconciliationService
@@ -49,6 +50,7 @@ final class AutoOrdersReconciliationService
         $cp = $ps->table($p . 'custom_product')->whereIn('id_product',$productIds)->select('id_product','stock_arrive','wmdeprecated','not_to_order')->get()->keyBy('id_product');
         $cpa = $ps->table($p . 'custom_product_attribute')->whereIn('id_product',$productIds)->select('id_product','id_product_attribute','stock_arrive','wmdeprecated')->get()->keyBy(fn($r) => $key($r->id_product,$r->id_product_attribute));
         $drafts = DB::table('auto_orders_purchase_list')->selectRaw('id_supplier,reference,SUM(quantity) qty')->groupBy('id_supplier','reference')->get()->keyBy(fn($r) => $r->id_supplier . ':' . $r->reference);
+        $suppliers = $ps->table($p . 'supplier')->whereIn('id_supplier', $skus->pluck('id_supplier')->unique()->all())->pluck('name', 'id_supplier');
 
         $rows = [];
         foreach ($wanted as $skuKey => $sku) {
@@ -60,9 +62,36 @@ final class AutoOrdersReconciliationService
             $arrive = (int)($attr->stock_arrive ?? $base->stock_arrive ?? 0);
             $draft = (int)($drafts->get($sku->id_supplier . ':' . $sku->reference)->qty ?? 0);
             $needed = max(0, $target - $physical - $arrive - $draft);
-            if ($needed > 0) $rows[] = (object) compact('sku','sold','target','physical','arrive','draft','needed');
+            if ($needed > 0) {
+                $supplier = (string) ($suppliers[$sku->id_supplier] ?? 'Unknown');
+                $rows[] = (object) compact('sku','supplier','sold','target','physical','arrive','draft','needed');
+            }
         }
         usort($rows, fn($a,$b) => $b->needed <=> $a->needed ?: strcmp($a->sku->reference,$b->sku->reference));
         return $rows;
+    }
+
+    /** Add only the currently uncovered quantity; existing draft quantities are never replaced. */
+    public function addToDraft(int $manufacturerId): int
+    {
+        $rows = $this->forManufacturer($manufacturerId);
+
+        return DB::transaction(function () use ($rows): int {
+            foreach ($rows as $row) {
+                $draft = AutoOrdersPurchaseList::firstOrNew([
+                    'id_supplier' => (int) $row->sku->id_supplier,
+                    'reference' => (string) $row->sku->reference,
+                ]);
+
+                $draft->supplier = $row->supplier;
+                $draft->quantity = (int) ($draft->exists ? $draft->quantity : 0) + (int) $row->needed;
+                $draft->is_automatic = true;
+                $draft->automatic_expected_quantity = $draft->quantity;
+                $draft->automatic_calculated_at = now();
+                $draft->save();
+            }
+
+            return count($rows);
+        });
     }
 }

@@ -18,9 +18,15 @@ document.querySelectorAll('.js-brand').forEach(button => button.addEventListener
 addButton.addEventListener('click', async () => {
  if (!selectedManufacturer || !confirm('Add the currently missing quantities to To order?')) return;
  addButton.disabled = true;
- const response = await fetch('{{ url('customTools/autoOrders/reconciliation') }}/' + selectedManufacturer + '/add', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','X-Requested-With':'XMLHttpRequest'}});
- const data = await response.json(); addButton.disabled = false;
- if (response.ok) { alert(data.added + ' references added to To order.'); document.querySelector('.js-brand[data-id="' + selectedManufacturer + '"]').click(); }
- else alert('Unable to add the references.');
+ try {
+  const response = await fetch('{{ url('customTools/autoOrders/reconciliation') }}/' + selectedManufacturer + '/add', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','X-Requested-With':'XMLHttpRequest','Accept':'application/json'}});
+  const data = await response.json();
+  if (response.ok) { alert(data.added + ' references added to To order.'); document.querySelector('.js-brand[data-id="' + selectedManufacturer + '"]').click(); }
+  else alert(data.message || 'Unable to add the references.');
+ } catch (error) {
+  alert('Unable to add the references. Please reload the page and try again.');
+ } finally {
+  addButton.disabled = false;
+ }
 });
 </script>@endpush

@@ -29,11 +29,20 @@ final class AutoOrdersReconciliationService
         $ps = DB::connection('mysql2');
         $p = $this->prefix;
         $attributeRows = $ps->table($p . 'product as product')->join($p . 'product_attribute as pa', 'pa.id_product', '=', 'product.id_product')
+            ->leftJoin($p . 'product_lang as pl', function ($join) {
+                $join->on('pl.id_product', '=', 'product.id_product')
+                    ->where('pl.id_lang', 1)
+                    ->where('pl.id_shop', 1);
+            })
             ->where('product.id_manufacturer', $manufacturerId)
-            ->selectRaw('product.id_product, pa.id_product_attribute, product.id_supplier, COALESCE(NULLIF(pa.reference, ""), product.reference) reference')->get();
-        $simpleRows = $ps->table($p . 'product as product')->where('product.id_manufacturer', $manufacturerId)
+            ->selectRaw('product.id_product, pa.id_product_attribute, product.id_supplier, COALESCE(NULLIF(pa.reference, ""), product.reference) reference, COALESCE(pl.name, "") name')->get();
+        $simpleRows = $ps->table($p . 'product as product')->leftJoin($p . 'product_lang as pl', function ($join) {
+            $join->on('pl.id_product', '=', 'product.id_product')
+                ->where('pl.id_lang', 1)
+                ->where('pl.id_shop', 1);
+        })->where('product.id_manufacturer', $manufacturerId)
             ->whereNotExists(function ($q) use ($p) { $q->selectRaw('1')->from($p . 'product_attribute as pa')->whereColumn('pa.id_product', 'product.id_product'); })
-            ->selectRaw('product.id_product, 0 id_product_attribute, product.id_supplier, product.reference')->get();
+            ->selectRaw('product.id_product, 0 id_product_attribute, product.id_supplier, product.reference, COALESCE(pl.name, "") name')->get();
         $skus = $attributeRows->merge($simpleRows)->filter(fn ($r) => $r->reference !== '')->values();
         if ($skus->isEmpty()) return [];
 
@@ -84,6 +93,7 @@ final class AutoOrdersReconciliationService
                 ]);
 
                 $draft->supplier = $row->supplier;
+                $draft->name = (string) $row->sku->name;
                 $draft->quantity = (int) ($draft->exists ? $draft->quantity : 0) + (int) $row->needed;
                 $draft->is_automatic = true;
                 $draft->automatic_expected_quantity = $draft->quantity;

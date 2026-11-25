@@ -87,10 +87,15 @@ final class AutoOrdersReconciliationService
 
         return DB::transaction(function () use ($rows): int {
             foreach ($rows as $row) {
-                $draft = AutoOrdersPurchaseList::firstOrNew([
-                    'id_supplier' => (int) $row->sku->id_supplier,
-                    'reference' => (string) $row->sku->reference,
-                ]);
+                $draft = AutoOrdersPurchaseList::where('id_supplier', (int) $row->sku->id_supplier)
+                    ->where('reference', (string) $row->sku->reference)
+                    ->first();
+
+                if ($draft === null) {
+                    $draft = new AutoOrdersPurchaseList();
+                    $draft->id_supplier = (int) $row->sku->id_supplier;
+                    $draft->reference = (string) $row->sku->reference;
+                }
 
                 $draft->supplier = $row->supplier;
                 $draft->name = (string) $row->sku->name;

@@ -20,6 +20,11 @@ class ViesVatService
         return in_array(strtoupper(trim((string) $countryIso)), self::SUPPORTED_COUNTRY_ISOS, true);
     }
 
+    public static function supportedCountryIsos(): array
+    {
+        return self::SUPPORTED_COUNTRY_ISOS;
+    }
+
     public function check(string $countryIso, string $vatNumber): array
     {
         $countryIso = strtoupper(trim($countryIso));

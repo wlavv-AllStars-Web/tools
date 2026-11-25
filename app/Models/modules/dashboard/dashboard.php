@@ -924,7 +924,7 @@ class dashboard extends Model
             ->with(['orders' => fn ($query) => $query->orderBy('id_order')])
             ->latest('updated_at')
             ->get()
-            ->filter(fn ($validation) => trim((string) $validation->country_iso) === '' || \App\Services\Vat\ViesVatService::supportsCountry($validation->country_iso))
+            ->filter(fn ($validation) => \App\Services\Vat\ViesVatService::supportsCountry($validation->country_iso))
             ->values();
 
         $orderIds = $validations->flatMap(fn ($validation) => $validation->orders->pluck('id_order'))

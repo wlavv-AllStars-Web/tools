@@ -6,6 +6,7 @@ use App\Models\modules\moloni_vat_validation\MoloniVatValidation;
 use App\Models\modules\moloni_vat_validation\MoloniVatValidationOrder;
 use App\Services\MoloniVat\MoloniVatValidationService;
 use App\Services\Prestashop\PrestashopAdminLinkService;
+use App\Services\Vat\ViesVatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class MoloniVatValidationController extends Controller
     public function index(Request $request)
     {
         $status=$request->string('status')->toString();
-        $query=MoloniVatValidation::query()->where('created_at','>',now()->subDays(7))->with(['orders'=>fn($q)=>$q->latest('id')])->withCount('orders')->latest('updated_at');
+        $query=MoloniVatValidation::query()->where('created_at','>',now()->subDays(7))->whereIn(DB::raw('UPPER(TRIM(country_iso))'),ViesVatService::supportedCountryIsos())->with(['orders'=>fn($q)=>$q->latest('id')])->withCount('orders')->latest('updated_at');
         if($status!=='')$query->where('status',$status);
         $validations=$query->paginate(50)->withQueryString();
         $this->attachOrderMetadata($validations->getCollection());

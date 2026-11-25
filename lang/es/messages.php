@@ -317,6 +317,7 @@ return [
     'web.tools.customer_cart_access.lookup' => 'Acceso al carrito del cliente',
     'finance.tools.moloni_vat.index' => 'VIES validation',
     'autoOrders.calculationLogs' => 'LOGS',
+    'autoOrders.reconciliation' => 'Conciliación',
     'currencyPriceUpdates' => 'Actualización de precios por moneda',
     'currencyPriceUpdates.index' => 'Actualización de precios por moneda',
     'currencyPriceUpdates.logs' => 'LOGS',

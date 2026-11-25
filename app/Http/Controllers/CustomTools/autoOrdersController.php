@@ -48,14 +48,12 @@ class autoOrdersController extends Controller
             'url' => route('autoOrders.calculationLogs'),
             'class' => 'btn-info',
         ];
-        if ((int) auth()->id() === 43) {
-            $this->actions[] = [
-                'name' => 'Reconciliation',
-                'icon' => '<i class="fa fa-balance-scale"></i>',
-                'url' => route('autoOrders.reconciliation'),
-                'class' => 'btn-warning',
-            ];
-        }
+        $this->actions[] = [
+            'name' => __('messages.autoOrders.reconciliation'),
+            'icon' => '<i class="fa fa-balance-scale"></i>',
+            'url' => route('autoOrders.reconciliation'),
+            'class' => 'btn-warning',
+        ];
 
         $data = [
             'actions'    => $this->actions,
@@ -144,10 +142,8 @@ class autoOrdersController extends Controller
     /** Read-only audit of recommendations missed before shared-stock correction. */
     public function reconciliation()
     {
-        $this->ensureReconciliationAccess();
-
         $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.show', 0), 'no_translation' => 1];
-        $this->breadcrumbs[] = ['name' => 'Reconciliation', 'url' => route('autoOrders.reconciliation'), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => __('messages.autoOrders.reconciliation'), 'url' => route('autoOrders.reconciliation'), 'no_translation' => 1];
 
         return view('customTools.autoOrders.reconciliation', [
             'actions' => [],
@@ -158,8 +154,6 @@ class autoOrdersController extends Controller
 
     public function reconciliationManufacturer(int $manufacturer)
     {
-        $this->ensureReconciliationAccess();
-
         return response()->json([
             'html' => view('customTools.autoOrders.includes.reconciliation_rows', [
                 'rows' => app(AutoOrdersReconciliationService::class)->forManufacturer($manufacturer),
@@ -169,16 +163,9 @@ class autoOrdersController extends Controller
 
     public function reconciliationAdd(int $manufacturer)
     {
-        $this->ensureReconciliationAccess();
-
         $added = app(AutoOrdersReconciliationService::class)->addToDraft($manufacturer);
 
         return response()->json(['success' => true, 'added' => $added]);
-    }
-
-    private function ensureReconciliationAccess(): void
-    {
-        abort_unless((int) auth()->id() === 43, 403);
     }
 
     public function index() { 

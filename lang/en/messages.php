@@ -445,6 +445,7 @@ return [
     "logs.index" => "Logs",
     "logs details" => "logs details",
     "autoOrders.calculationLogs" => "LOGS",
+    "autoOrders.reconciliation" => "Reconciliation",
     "currencyPriceUpdates" => "Currency price updates",
     "currencyPriceUpdates.index" => "Currency price updates",
     "currencyPriceUpdates.logs" => "Logs",

@@ -49,7 +49,7 @@ class autoOrdersController extends Controller
             'class' => 'btn-info',
         ];
         $this->actions[] = [
-            'name' => __('messages.autoOrders.reconciliation'),
+            'name' => 'autoOrders.reconciliation',
             'icon' => '<i class="fa fa-balance-scale"></i>',
             'url' => route('autoOrders.reconciliation'),
             'class' => 'btn-warning',

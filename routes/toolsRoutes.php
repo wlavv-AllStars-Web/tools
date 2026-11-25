@@ -1030,6 +1030,8 @@ Route::post('customTools/housing/bulkSaveHousing', [housingController::class, 'b
     Route::post( 'customTools/autoOrders/load/attributes',  [autoOrdersController::class, 'loadAttributes'])->name('autoOrders.loadAttributes');
     Route::post( 'customTools/autoOrders/new/order/scratch',[autoOrdersController::class, 'saveNewOrderFromScratch'])->name('autoOrders.saveNewOrderFromScratch');
     Route::get( 'customTools/autoOrders/calculation-logs',  [autoOrdersController::class, 'calculationLogs'])->name('autoOrders.calculationLogs');
+    Route::get( 'customTools/autoOrders/reconciliation',  [autoOrdersController::class, 'reconciliation'])->name('autoOrders.reconciliation');
+    Route::get( 'customTools/autoOrders/reconciliation/{manufacturer}',  [autoOrdersController::class, 'reconciliationManufacturer'])->name('autoOrders.reconciliation.manufacturer');
 
     Route::post( 'customTools/uploads/upload',              [uploadsController::class, 'upload'])->name('uploads.upload');
 

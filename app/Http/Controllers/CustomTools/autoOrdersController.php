@@ -20,6 +20,7 @@ use App\Models\modules\auto_orders\AutoOrdersCalculationLog;
 use App\Models\modules\oms\OrderNote;
 use App\Models\modules\oms\OrderNoteLine;
 use App\Services\AutoOrders\AutoOrderReplenishmentService;
+use App\Services\AutoOrders\AutoOrdersReconciliationService;
 use App\Services\StockAudit\StockAuditService;
 
 class autoOrdersController extends Controller
@@ -47,6 +48,14 @@ class autoOrdersController extends Controller
             'url' => route('autoOrders.calculationLogs'),
             'class' => 'btn-info',
         ];
+        if ((int) auth()->id() === 43) {
+            $this->actions[] = [
+                'name' => 'Reconciliation',
+                'icon' => '<i class="fa fa-balance-scale"></i>',
+                'url' => route('autoOrders.reconciliation'),
+                'class' => 'btn-warning',
+            ];
+        }
 
         $data = [
             'actions'    => $this->actions,
@@ -130,6 +139,37 @@ class autoOrdersController extends Controller
             'manufacturers' => $manufacturers,
             'logActions' => $actions,
         ]);
+    }
+
+    /** Read-only audit of recommendations missed before shared-stock correction. */
+    public function reconciliation()
+    {
+        $this->ensureReconciliationAccess();
+
+        $this->breadcrumbs[] = ['name' => 'Auto orders', 'url' => route('autoOrders.show', 0), 'no_translation' => 1];
+        $this->breadcrumbs[] = ['name' => 'Reconciliation', 'url' => route('autoOrders.reconciliation'), 'no_translation' => 1];
+
+        return view('customTools.autoOrders.reconciliation', [
+            'actions' => [],
+            'breadcrumbs' => $this->breadcrumbs,
+            'manufacturers' => app(AutoOrdersReconciliationService::class)->manufacturers(),
+        ]);
+    }
+
+    public function reconciliationManufacturer(int $manufacturer)
+    {
+        $this->ensureReconciliationAccess();
+
+        return response()->json([
+            'html' => view('customTools.autoOrders.includes.reconciliation_rows', [
+                'rows' => app(AutoOrdersReconciliationService::class)->forManufacturer($manufacturer),
+            ])->render(),
+        ]);
+    }
+
+    private function ensureReconciliationAccess(): void
+    {
+        abort_unless((int) auth()->id() === 43, 403);
     }
 
     public function index() { 

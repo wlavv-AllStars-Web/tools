@@ -517,8 +517,9 @@ class dashboard extends Model
         $paidStatesWithoutPaymentAccepted = array_values(array_diff($paidStates, [2]));
         $bd_data = DB::connection('mysql2')
             ->table(self::prefix() . 'orders as o')
-            ->where('o.id_order', '>=', 120000)
+            ->where('o.id_order', '>', 122000)
             ->whereIn('o.current_state', $paidStatesWithoutPaymentAccepted)
+            ->whereNotIn('o.current_state', [16, 29, 34])
             ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))
                     ->from(self::prefix() . 'order_history as oh')

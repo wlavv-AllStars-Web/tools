@@ -48,12 +48,14 @@ class autoOrdersController extends Controller
             'url' => route('autoOrders.calculationLogs'),
             'class' => 'btn-info',
         ];
-        $this->actions[] = [
-            'name' => 'autoOrders.reconciliation',
-            'icon' => '<i class="fa fa-balance-scale"></i>',
-            'url' => route('autoOrders.reconciliation'),
-            'class' => 'btn-warning',
-        ];
+        if ((int) auth()->id() === 43) {
+            $this->actions[] = [
+                'name' => 'autoOrders.reconciliation',
+                'icon' => '<i class="fa fa-balance-scale"></i>',
+                'url' => route('autoOrders.reconciliation'),
+                'class' => 'btn-warning',
+            ];
+        }
 
         $data = [
             'actions'    => $this->actions,
